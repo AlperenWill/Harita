@@ -1,0 +1,136 @@
+import type { HeritageSite } from '../types';
+
+const sites: HeritageSite[] = [
+  {
+    id: 'aspendos', name: 'Aspendos Tiyatrosu', province: 'Antalya', category: 'arkeoloji', period: 'antik',
+    coord: [31.1720, 36.9390], wiki: 'Aspendos',
+    summary: 'MS 2. yüzyılda yapılan, antik dünyanın en iyi korunmuş Roma tiyatrolarından biri.',
+    didYouKnow: 'Akustiği o kadar iyidir ki sahnede düşen bir bozuk para üst sıralardan duyulabilir.',
+    detail: 'Sahne binasının cephe nişleri',
+  },
+  {
+    id: 'xanthos', name: 'Ksanthos-Letoon', province: 'Antalya', category: 'unesco', period: 'antik',
+    coord: [29.3180, 36.3560], wiki: 'Ksanthos',
+    summary: 'Likya Birliği’nin başkenti ve kutsal alanı Letoon; Likçe yazıtlarıyla UNESCO listesinde.',
+    didYouKnow: 'Letoon’da bulunan üç dilli yazıt, Likçenin çözülmesine yardım etti.',
+  },
+  {
+    id: 'myra', name: 'Myra ve Aziz Nikolaos Kilisesi', province: 'Antalya', category: 'mimari', period: 'bizans',
+    coord: [29.9850, 36.2450], wiki: 'Aziz Nikolaos Kilisesi',
+    summary: 'Demre’deki kilise, Noel Baba figürüne ilham veren Myra Piskoposu Nikolaos ile anılır.',
+    didYouKnow: 'Kilisenin tabanı yüzyıllar içinde biriken alüvyon nedeniyle bugünkü yol seviyesinin metrelerce altındadır.',
+  },
+  {
+    id: 'karain', name: 'Karain Mağarası', province: 'Antalya', category: 'arkeoloji', period: 'prehistorik',
+    coord: [30.5710, 37.0790], wiki: 'Karain Mağarası',
+    summary: 'Paleolitik çağdan itibaren kesintisiz kullanılmış, Türkiye’nin en önemli tarih öncesi mağaralarından.',
+    didYouKnow: 'Mağarada Neandertal ve modern insana ait izler aynı stratigrafide bulunmuştur.',
+  },
+  {
+    id: 'kizilkule', name: 'Alanya Kızılkule', province: 'Antalya', category: 'mimari', period: 'selcuklu',
+    coord: [32.0010, 36.5380], wiki: 'Kızıl Kule (Alanya)',
+    summary: '1226’da Alaeddin Keykubad’ın yaptırdığı sekizgen kule, Selçuklu tersanesini korurdu.',
+    didYouKnow: 'Alanya tersanesi, Selçukluların Akdeniz’deki tek tersanesiydi ve beş gözlü kemeriyle hâlâ ayaktadır.',
+    detail: 'Sekizgen gövde',
+  },
+  {
+    id: 'adada', name: 'Adada Antik Kenti', province: 'Isparta', category: 'arkeoloji', period: 'antik',
+    coord: [30.9900, 37.5800], wiki: 'Adada',
+    summary: 'Toros eteklerinde, Kral Yolu güzergâhında az bilinen ama çok iyi korunmuş bir Pisidya kenti.',
+    didYouKnow: 'Kente çıkan antik yolun taşları hâlâ yerindedir; ziyaretçiler Roma yolunda yürüyebilir.',
+  },
+  {
+    id: 'isparta-gul', name: 'Isparta Gül Hasadı', province: 'Isparta', category: 'somut-olmayan', period: 'yasayan',
+    coord: [30.5500, 37.7600], wiki: 'Isparta gülü',
+    summary: 'Mayıs-haziranda şafakta yapılan gül toplama ve gülyağı damıtma geleneği.',
+    didYouKnow: 'Bir kilogram gülyağı için yaklaşık 3–4 ton gül yaprağı gerekir.',
+  },
+  {
+    id: 'sagalassos', name: 'Sagalassos', province: 'Burdur', category: 'arkeoloji', period: 'antik',
+    coord: [30.5170, 37.6770], wiki: 'Sagalassos',
+    summary: '1.500 m rakımdaki dağ kenti; Antoninler Çeşmesi yeniden ayağa kaldırılarak suyla buluşturuldu.',
+    didYouKnow: 'Kent depremler ve salgınlar sonrası terk edildiği için üzeri sonraki dönemlerde yapılaşmadı.',
+    detail: 'Antoninler Çeşmesi',
+  },
+  {
+    id: 'hacilar', name: 'Hacılar Höyüğü', province: 'Burdur', category: 'arkeoloji', period: 'prehistorik',
+    coord: [30.0806, 37.5917], wiki: 'Hacılar',
+    summary: 'Neolitik ve Kalkolitik dönem boyalı çanak çömleği ve kadın figürinleriyle tanınan yerleşim.',
+    didYouKnow: 'Hacılar seramikleri Burdur Müzesi’nin en çarpıcı koleksiyonlarındandır.',
+  },
+  {
+    id: 'kizkalesi', name: 'Kızkalesi', province: 'Mersin', category: 'mimari', period: 'bizans',
+    coord: [34.1480, 36.4560], wiki: 'Kızkalesi',
+    summary: 'Kıyıdan birkaç yüz metre açıktaki adacığa kurulmuş Ortaçağ kalesi; karşı kıyıdaki Korykos Kalesi’nin ikizidir.',
+    didYouKnow: 'Rivayete göre iki kale arasında deniz altından bir yol vardı.',
+  },
+  {
+    id: 'uzuncaburc', name: 'Uzuncaburç (Diokaisareia)', province: 'Mersin', category: 'arkeoloji', period: 'antik',
+    coord: [33.9300, 36.5800], wiki: 'Diokaisareia',
+    summary: 'Olbia Zeus Tapınağı ve beş katlı kulesiyle Toros yaylalarında saklı bir kent.',
+    didYouKnow: 'Zeus Tapınağı, Anadolu’daki en erken Korint düzeni tapınaklarından biri kabul edilir.',
+  },
+  {
+    id: 'yumuktepe', name: 'Yumuktepe Höyüğü', province: 'Mersin', category: 'arkeoloji', period: 'prehistorik',
+    coord: [34.6050, 36.8150], wiki: 'Yumuktepe',
+    summary: 'Yaklaşık 9.000 yıllık iskân geçmişi olan, kent içinde kalmış önemli bir höyük.',
+    didYouKnow: 'Kalkolitik katmanlarda bilinen en erken sur sistemlerinden biri tespit edilmiştir.',
+  },
+  {
+    id: 'taskopru-adana', name: 'Taşköprü', province: 'Adana', category: 'kopru', period: 'antik',
+    coord: [35.3330, 36.9850], wiki: 'Taşköprü (Adana)',
+    summary: 'Seyhan Nehri üzerindeki Roma köprüsü; dünyada hâlâ kullanılan en eski köprülerden biri.',
+    didYouKnow: 'Köprü yüzyıllarca araç trafiğine açıktı; 2007’de yayalara ayrıldı.',
+    detail: 'Göz kemerleri arasındaki tahliye boşlukları',
+  },
+  {
+    id: 'misis', name: 'Misis Mozaik Müzesi', province: 'Adana', category: 'muze', period: 'antik',
+    coord: [35.6260, 36.9590], wiki: 'Misis Mozaik Müzesi',
+    summary: 'Antik Mopsuestia kentinde bulunan Nuh’un Gemisi mozaiğini yerinde sergileyen küçük müze.',
+    didYouKnow: 'Mozaikte geminin etrafında çok sayıda hayvan figürü işlenmiştir.',
+  },
+  {
+    id: 'yilankale', name: 'Yılankale', province: 'Adana', category: 'mimari', period: 'bizans',
+    coord: [35.7470, 37.0110], wiki: 'Yılankale',
+    summary: 'Ceyhan Ovası’na hâkim kayalık üzerindeki Ortaçağ Kilikya kalesi.',
+    didYouKnow: 'Adını efsanevi yılanlar kralı Şahmeran’dan aldığı anlatılır.',
+  },
+  {
+    id: 'hatay-muze', name: 'Hatay Arkeoloji Müzesi', province: 'Hatay', category: 'muze', period: 'antik',
+    coord: [36.1590, 36.2090], wiki: 'Hatay Arkeoloji Müzesi',
+    summary: 'Antakya mozaiklerinin dünyanın en zengin koleksiyonlarından birine sahip müze; 2023 depreminden sonra koleksiyon koruma altına alındı.',
+    didYouKnow: '“Mutlu İskelet” mozaiği, “neşeli ol ve hayatın tadını çıkar” yazısıyla ünlüdür.',
+  },
+  {
+    id: 'st-pierre', name: 'St. Pierre Kilisesi', province: 'Hatay', category: 'mimari', period: 'bizans',
+    coord: [36.1760, 36.2140], wiki: 'Sen Piyer Kilisesi',
+    summary: 'Habib-i Neccar Dağı yamacındaki kaya kilisesi, Hristiyanlığın en erken ibadet yerlerinden biri sayılır.',
+    didYouKnow: 'Dağın içinden geçen bir tünelin, baskı dönemlerinde kaçış yolu olarak kullanıldığı anlatılır.',
+  },
+  {
+    id: 'habib-neccar', name: 'Habib-i Neccar Camii', province: 'Hatay', category: 'mimari', period: 'osmanli',
+    coord: [36.1630, 36.2050], wiki: 'Habib-i Neccar Camii',
+    summary: 'Anadolu’nun en eski cami yerlerinden biri; 2023 depremlerinde büyük hasar gördü ve yeniden inşa sürecindedir.',
+    didYouKnow: 'Bugünkü yapı Osmanlı döneminde yeniden yapılmıştı; yerinde daha önce tapınak ve kilise bulunuyordu.',
+  },
+  {
+    id: 'titus', name: 'Titus Tüneli', province: 'Hatay', category: 'arkeoloji', period: 'antik',
+    coord: [35.9300, 36.1250], wiki: 'Titus Tüneli',
+    summary: 'Seleukeia Pieria limanını sel sularından korumak için kayaya oyulan Roma dönemi derivasyon tüneli.',
+    didYouKnow: 'Tünelin çevresindeki kaya mezarlarına Beşikli Mağara denir.',
+  },
+  {
+    id: 'karatepe', name: 'Karatepe-Aslantaş', province: 'Osmaniye', category: 'arkeoloji', period: 'demir',
+    coord: [36.2530, 37.2950], wiki: 'Karatepe-Aslantaş',
+    summary: 'Geç Hitit beyi Azatiwada’nın kalesi; kapılarındaki kabartmalar açık hava müzesinde yerinde sergilenir.',
+    didYouKnow: 'Burada bulunan iki dilli (Fenike-Luvice) yazıtlar Anadolu hiyerogliflerinin çözülmesini sağladı.',
+    detail: 'Kapı aslanı kabartması',
+  },
+  {
+    id: 'germanicia', name: 'Germanicia Mozaikleri', province: 'Kahramanmaraş', category: 'arkeoloji', period: 'antik',
+    coord: [36.9240, 37.5770], wiki: 'Germanicia',
+    summary: 'Kent merkezinde, evlerin altında ortaya çıkan Roma villası mozaikleri.',
+    didYouKnow: 'Antik kentin büyük kısmı hâlâ modern mahallelerin altında uyuyor.',
+  },
+];
+export default sites;
