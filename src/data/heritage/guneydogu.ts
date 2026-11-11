@@ -1,0 +1,143 @@
+import type { HeritageSite } from '../types';
+
+const sites: HeritageSite[] = [
+  {
+    id: 'zeugma', name: 'Zeugma Mozaik Müzesi', province: 'Gaziantep', category: 'muze', period: 'antik',
+    coord: [37.3840, 37.0750], wiki: 'Zeugma Mozaik Müzesi',
+    summary: 'Fırat kıyısındaki antik Zeugma’dan kurtarılan mozaikleri sergileyen, dünyanın en büyük mozaik müzelerinden biri.',
+    didYouKnow: '“Çingene Kızı” mozaiğinin gözleri, izleyen nereye geçerse geçsin onu takip ediyormuş gibi görünür.',
+    detail: 'Çingene Kızı’nın bakışı',
+  },
+  {
+    id: 'gaziantep-kale', name: 'Gaziantep Kalesi', province: 'Gaziantep', category: 'mimari', period: 'bizans',
+    coord: [37.3830, 37.0660], wiki: 'Gaziantep Kalesi',
+    summary: 'Kökeni Roma dönemine giden, Bizans ve sonraki dönemlerde genişletilen höyük üzerindeki kale; 2023 depreminde hasar gördü.',
+    didYouKnow: 'Kale bir höyüğün üzerinde yükselir: altında binlerce yıllık yerleşim katmanları vardır.',
+  },
+  {
+    id: 'bakircilar', name: 'Gaziantep Bakırcılığı ve Mutfağı', province: 'Gaziantep', category: 'somut-olmayan', period: 'yasayan',
+    coord: [37.3880, 37.0630], wiki: 'Gaziantep mutfağı',
+    summary: 'Bakırcılar Çarşısı’nda süren dövme bakır zanaatı ve UNESCO Yaratıcı Şehirler Ağı’nda gastronomi kenti unvanı.',
+    didYouKnow: 'Gaziantep, 2015’te UNESCO Yaratıcı Şehirler Ağı’na gastronomi alanında katıldı.',
+  },
+  {
+    id: 'yesemek', name: 'Yesemek Açık Hava Müzesi', province: 'Gaziantep', category: 'arkeoloji', period: 'demir',
+    coord: [36.9000, 36.9200], wiki: 'Yesemek Açık Hava Müzesi',
+    summary: 'Geç Hitit döneminin heykel atölyesi ve taş ocağı; yarım kalmış yüzlerce aslan ve sfenks.',
+    didYouKnow: 'Eserlerin yarım kalmış olması, antik heykeltıraşların çalışma aşamalarını adım adım gösterir.',
+    detail: 'Yarım kalmış aslan heykeli',
+  },
+  {
+    id: 'gobeklitepe', name: 'Göbeklitepe', province: 'Şanlıurfa', category: 'unesco', period: 'prehistorik',
+    coord: [38.9224, 37.2232], wiki: 'Göbekli Tepe',
+    summary: 'Yaklaşık 11.600 yıllık anıtsal T biçimli dikilitaşlar; çiftçilikten önce inşa edilmiş bilinen en eski toplu yapılar.',
+    didYouKnow: 'Bazı dikilitaşlarda kollar ve eller işlenmiştir: taşlar aslında stilize insan figürleridir.',
+    detail: 'T dikilitaştaki el kabartması',
+  },
+  {
+    id: 'karahantepe', name: 'Karahantepe', province: 'Şanlıurfa', category: 'arkeoloji', period: 'prehistorik',
+    coord: [39.4200, 37.3700], wiki: 'Karahan Tepe',
+    summary: '“Taş Tepeler” projesi kapsamında kazılan, kayaya oyulmuş mekânları ve insan başı heykeliyle Göbeklitepe’nin çağdaşı.',
+    didYouKnow: 'Bölgede aynı döneme ait onu aşkın yerleşim bulunduğu belirlendi.',
+  },
+  {
+    id: 'balikligol', name: 'Balıklıgöl ve Rızvaniye Külliyesi', province: 'Şanlıurfa', category: 'mimari', period: 'osmanli',
+    coord: [38.7860, 37.1460], wiki: 'Balıklıgöl',
+    summary: 'Hz. İbrahim anlatısıyla bağlantılı kutsal göl ve kıyısındaki 18. yüzyıl Osmanlı külliyesi.',
+    didYouKnow: 'Göldeki sazan balıkları kutsal sayılır; avlanmaları geleneksel olarak yasaktır.',
+  },
+  {
+    id: 'harran', name: 'Harran Kümbet Evleri', province: 'Şanlıurfa', category: 'kultur-peyzaji', period: 'yasayan',
+    coord: [39.0310, 36.8640], wiki: 'Harran',
+    summary: 'Ağaç azlığı nedeniyle tuğladan, konik kubbeli inşa edilen evler; sıcak iklime uyumlu bir mimari çözüm.',
+    didYouKnow: 'Harran’da Ortaçağ’ın önemli bilim merkezlerinden biri olan bir üniversitenin kalıntıları bulunur.',
+    detail: 'Konik tuğla kubbe',
+  },
+  {
+    id: 'diyarbakir-sur', name: 'Diyarbakır Surları ve Hevsel Bahçeleri', province: 'Diyarbakır', category: 'unesco', period: 'bizans',
+    coord: [40.2370, 37.9100], wiki: 'Diyarbakır Surları',
+    summary: 'Yaklaşık 6 km’lik bazalt surlar ve Dicle kıyısındaki bahçeler; 2015’ten beri UNESCO listesinde.',
+    didYouKnow: 'Surların üzerinde farklı dönemlere ait onlarca kitabe ve kabartma bulunur.',
+  },
+  {
+    id: 'ongozlu', name: 'On Gözlü Köprü', province: 'Diyarbakır', category: 'kopru', period: 'selcuklu',
+    coord: [40.2380, 37.8940], wiki: 'Dicle Köprüsü',
+    summary: '1065’te Mervaniler döneminde Dicle üzerine yapılan on kemerli bazalt köprü.',
+    didYouKnow: 'Kitabesine göre köprünün mimarı Ubeydullah’tır.',
+  },
+  {
+    id: 'diyarbakir-ulu', name: 'Diyarbakır Ulu Camii', province: 'Diyarbakır', category: 'mimari', period: 'selcuklu',
+    coord: [40.2350, 37.9130], wiki: 'Diyarbakır Ulu Camii',
+    summary: '1091’de Büyük Selçuklu Sultanı Melikşah döneminde yeniden düzenlenen, Anadolu’nun en eski camilerinden.',
+    didYouKnow: 'Avlu cephesinde antik dönemden devşirilmiş sütunlar ve başlıklar kullanılmıştır.',
+  },
+  {
+    id: 'dara', name: 'Dara Antik Kenti', province: 'Mardin', category: 'arkeoloji', period: 'bizans',
+    coord: [40.9480, 37.1760], wiki: 'Dara (Mezopotamya)',
+    summary: '6. yüzyıl Doğu Roma sınır kenti; kayaya oyulmuş nekropolü ve dev sarnıçlarıyla.',
+    didYouKnow: 'Kentin yer altı sarnıçları o kadar büyüktür ki ziyaretçiler içinde gezebilir.',
+  },
+  {
+    id: 'zinciriye', name: 'Zinciriye Medresesi', province: 'Mardin', category: 'mimari', period: 'selcuklu',
+    coord: [40.7350, 37.3120], wiki: 'Zinciriye Medresesi',
+    summary: '1385’te Artuklular döneminde yapılan medrese; teras çatısından Mezopotamya ovası görünür.',
+    didYouKnow: 'Mardin’in taş evleri, birinin damı diğerinin avlusu olacak şekilde yamaca kademelenir.',
+  },
+  {
+    id: 'deyrulzafaran', name: 'Deyrulzafaran Manastırı', province: 'Mardin', category: 'mimari', period: 'bizans',
+    coord: [40.7880, 37.2970], wiki: 'Deyrulzafaran Manastırı',
+    summary: 'Süryani Ortodoks geleneğinin tarihî merkezlerinden, bugün de yaşayan manastır.',
+    didYouKnow: 'Adı “Safran Manastırı” anlamına gelir; taşlarının sarımsı rengine bağlanır.',
+  },
+  {
+    id: 'hasankeyf', name: 'Hasankeyf', province: 'Batman', category: 'arkeoloji', period: 'selcuklu',
+    coord: [41.4140, 37.7130], wiki: 'Hasankeyf',
+    summary: 'Dicle kıyısındaki binlerce yıllık yerleşim; 2020’de baraj gölü altında kaldı, bazı anıtlar yeni alana taşındı.',
+    didYouKnow: 'Zeynel Bey Türbesi tek parça hâlinde taşınarak yeni kültür parkına yerleştirildi.',
+  },
+  {
+    id: 'tillo', name: 'Tillo (Aydınlar) ve Fakirullah Türbesi', province: 'Siirt', category: 'mimari', period: 'osmanli',
+    coord: [42.0100, 37.9200], wiki: 'Aydınlar, Siirt',
+    summary: 'İbrahim Hakkı Erzurumi’nin hocası İsmail Fakirullah’ın türbesi; bilimle bezenmiş bir ilim kasabası.',
+    didYouKnow: 'Yılda iki kez güneş ışığı, tepeye yerleştirilmiş bir düzenekle türbedeki mezarın üzerine düşer.',
+    detail: 'Işık düşme düzeneği',
+  },
+  {
+    id: 'siirt-battaniye', name: 'Siirt Battaniyesi (Tiftik Dokuma)', province: 'Siirt', category: 'somut-olmayan', period: 'yasayan',
+    coord: [41.9400, 37.9300], wiki: 'Siirt battaniyesi',
+    summary: 'Tiftik keçisi yününden el tezgâhlarında dokunan battaniyeler ve şal-şapik giysisi.',
+    didYouKnow: 'Siirt battaniyesi coğrafi işaretle korunan ürünlerdendir.',
+  },
+  {
+    id: 'cizre-kirmizi', name: 'Cizre Kırmızı Medrese', province: 'Şırnak', category: 'mimari', period: 'selcuklu',
+    coord: [42.1900, 37.3300], wiki: 'Kırmızı Medrese',
+    summary: 'Dicle kıyısındaki Cizre’de, Bohtan Beyliği dönemine ait, adını kırmızı boyalı süslemelerinden alan medrese.',
+    didYouKnow: 'Kentte, Kürt edebiyatının klasiği Mem û Zîn ile anılan bir türbe de bulunur.',
+  },
+  {
+    id: 'nemrut', name: 'Nemrut Dağı', province: 'Adıyaman', category: 'unesco', period: 'antik',
+    coord: [38.7410, 37.9810], wiki: 'Nemrut Dağı',
+    summary: 'Kommagene Kralı I. Antiokhos’un 2.134 m’deki anıt mezarı; dev tanrı heykelleri ve gün doğumu ile ünlü.',
+    didYouKnow: 'Heykel başları yüzyıllar içinde depremlerle gövdelerinden düşmüş ve terasa dizilmiştir.',
+    detail: 'Kartal başlı heykel',
+  },
+  {
+    id: 'cendere', name: 'Cendere Köprüsü', province: 'Adıyaman', category: 'kopru', period: 'antik',
+    coord: [38.6280, 37.9370], wiki: 'Cendere Köprüsü',
+    summary: 'MS 2. yüzyılda Septimius Severus adına yapılan tek kemerli Roma köprüsü.',
+    didYouKnow: 'Köprü başlangıçta dört sütunla süslüydü; bugün üç sütun ayaktadır.',
+  },
+  {
+    id: 'perre', name: 'Perre Antik Kenti', province: 'Adıyaman', category: 'arkeoloji', period: 'antik',
+    coord: [38.2800, 37.7800], wiki: 'Perre',
+    summary: 'Kommagene’nin beş büyük kentinden biri; kaya mezarları ve antik çeşmesiyle az bilinen bir durak.',
+    didYouKnow: 'Antik çeşme hâlâ akmaktadır ve köylüler tarafından kullanılır.',
+  },
+  {
+    id: 'oylum', name: 'Oylum Höyük', province: 'Kilis', category: 'arkeoloji', period: 'tunc',
+    coord: [37.0270, 36.7286], wiki: 'Oylum Höyük',
+    summary: 'Güneydoğu’nun en büyük höyüklerinden; Tunç Çağı’nda kuzey Suriye ile Anadolu arasında bir köprü.',
+    didYouKnow: 'Höyükte bulunan mühürler, bölgenin uzak ticaret ağlarına bağlı olduğunu gösterir.',
+  },
+];
+export default sites;

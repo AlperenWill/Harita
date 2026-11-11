@@ -1,0 +1,135 @@
+import type { HeritageSite } from '../types';
+
+const sites: HeritageSite[] = [
+  {
+    id: 'efes', name: 'Efes Antik Kenti', province: 'İzmir', category: 'unesco', period: 'antik',
+    coord: [27.3417, 37.9395], wiki: 'Efes',
+    summary: 'Roma döneminde Asya eyaletinin en büyük kentlerinden; Celsus Kütüphanesi ve büyük tiyatrosuyla 2015’ten beri UNESCO listesinde.',
+    didYouKnow: 'Celsus Kütüphanesi’nin cephesi, gerçekte olduğundan daha büyük görünmesi için kenarlara doğru küçülen sütunlarla tasarlandı.',
+    detail: 'Celsus cephesindeki bilgelik heykeli',
+  },
+  {
+    id: 'bergama', name: 'Bergama (Pergamon)', province: 'İzmir', category: 'unesco', period: 'antik',
+    coord: [27.1840, 39.1310], wiki: 'Pergamon',
+    summary: 'Helenistik Pergamon Krallığı’nın başkenti; dik yamaçtaki tiyatrosu ve Asklepion’uyla çok katmanlı bir kültürel peyzaj.',
+    didYouKnow: '“Parşömen” kelimesi, Pergamon’da geliştirilen yazı malzemesinden (charta pergamena) gelir.',
+  },
+  {
+    id: 'kizlaragasi', name: 'Kızlarağası Hanı', province: 'İzmir', category: 'han', period: 'osmanli',
+    coord: [27.1310, 38.4190], wiki: 'Kızlarağası Hanı',
+    summary: '1744’te yapılan han, Kemeraltı Çarşısı’nın kalbinde bugün de el sanatları ve kahve ile canlıdır.',
+    didYouKnow: 'İzmir’de günümüze sağlam ulaşabilen tek klasik Osmanlı hanıdır.',
+  },
+  {
+    id: 'yesilova', name: 'Yeşilova Höyüğü', province: 'İzmir', category: 'arkeoloji', period: 'prehistorik',
+    coord: [27.2160, 38.4650], wiki: 'Yeşilova Höyüğü',
+    summary: 'Bornova Ovası’ndaki höyük, İzmir’in yaklaşık 8.500 yıllık ilk yerleşim yeridir.',
+    didYouKnow: 'Höyük, şehrin ortasında, apartmanların arasında kalan bir “zaman adası”dır.',
+  },
+  {
+    id: 'sardes', name: 'Sardes', province: 'Manisa', category: 'arkeoloji', period: 'demir',
+    coord: [28.0400, 38.4880], wiki: 'Sardes',
+    summary: 'Lidya Krallığı’nın başkenti; Artemis Tapınağı, gymnasium ve sinagog kalıntıları görülebilir.',
+    didYouKnow: 'Altın-gümüş alaşımı elektrondan basılan ilk sikkeler Lidya’ya atfedilir.',
+  },
+  {
+    id: 'mesir', name: 'Mesir Macunu Festivali', province: 'Manisa', category: 'somut-olmayan', period: 'yasayan',
+    coord: [27.4320, 38.6110], wiki: 'Mesir Macunu Festivali',
+    summary: 'Sultan Camii’nin kubbesinden halka mesir macunu saçılan, 2012’de UNESCO listesine giren bahar şenliği.',
+    didYouKnow: 'Geleneksel tarife göre macunda 41 farklı baharat ve bitki bulunur.',
+  },
+  {
+    id: 'muradiye-manisa', name: 'Muradiye Camii', province: 'Manisa', category: 'mimari', period: 'osmanli',
+    coord: [27.4270, 38.6140], wiki: 'Muradiye Camii (Manisa)',
+    summary: 'Mimar Sinan’ın tasarlayıp 1586’da tamamlanan cami; zengin İznik çinileriyle bilinir.',
+    didYouKnow: 'Şehzadelerin sancağa çıktığı Manisa’ya “şehzadeler şehri” denir; III. Murad da burada bulunmuştu.',
+  },
+  {
+    id: 'afrodisias', name: 'Afrodisias', province: 'Aydın', category: 'unesco', period: 'antik',
+    coord: [28.7240, 37.7085], wiki: 'Afrodisias',
+    summary: 'Afrodit kültüyle ünlü antik kent ve Roma döneminin önemli heykeltıraşlık okulu; 2017’de UNESCO listesine girdi.',
+    didYouKnow: 'Yakındaki mermer ocakları sayesinde heykeltıraşların imzalı eserleri Roma’ya kadar ulaştı.',
+    detail: 'Tetrapylon’un yivli sütunları',
+  },
+  {
+    id: 'priene', name: 'Priene', province: 'Aydın', category: 'arkeoloji', period: 'antik',
+    coord: [27.2975, 37.6595], wiki: 'Priene',
+    summary: 'Hippodamos ızgara planının en iyi korunmuş örneklerinden; Athena Tapınağı Mykale eteklerine yaslanır.',
+    didYouKnow: 'Kent kurulduğunda bir limandı; Büyük Menderes’in getirdiği alüvyon kıyıyı kilometrelerce uzaklaştırdı.',
+  },
+  {
+    id: 'didyma', name: 'Didyma Apollon Tapınağı', province: 'Aydın', category: 'arkeoloji', period: 'antik',
+    coord: [27.2560, 37.3850], wiki: 'Didyma',
+    summary: 'Antik dünyanın en büyük kehanet merkezlerinden; yüz yirmiyi aşkın sütunla planlanan dev tapınak.',
+    didYouKnow: 'Tapınak duvarlarına kazınmış inşaat çizimleri, antik mimarların “planlarını” bugüne taşıdı.',
+  },
+  {
+    id: 'hierapolis', name: 'Hierapolis-Pamukkale', province: 'Denizli', category: 'unesco', period: 'antik',
+    coord: [29.1250, 37.9250], wiki: 'Hierapolis',
+    summary: 'Travertenlerin üzerindeki antik kurort kenti; doğal ve kültürel karma UNESCO alanı.',
+    didYouKnow: 'Antik havuzda, depremle yıkılmış sütunların arasında yüzmek hâlâ mümkün.',
+  },
+  {
+    id: 'laodikeia', name: 'Laodikeia', province: 'Denizli', category: 'arkeoloji', period: 'antik',
+    coord: [29.1070, 37.8350], wiki: 'Laodikeia',
+    summary: 'Helenistik dönemde kurulan, tekstil ve ticaretle zenginleşen kent; son yıllardaki kazılarla hızla gün yüzüne çıkıyor.',
+    didYouKnow: 'Kentin siyah, parlak yünlü kumaşları antik dünyada bir marka gibi tanınırdı.',
+  },
+  {
+    id: 'akhan', name: 'Akhan Kervansarayı', province: 'Denizli', category: 'han', period: 'selcuklu',
+    coord: [29.1720, 37.8160], wiki: 'Akhan',
+    summary: '1253’te tamamlanan Selçuklu kervansarayı; beyaz traverten taşından adını alır.',
+    didYouKnow: 'Kervansaraylar yaklaşık bir günlük yürüyüş mesafesiyle dizilir, yolculara üç gün ücretsiz konaklama sunardı.',
+    detail: 'Taç kapıdaki mukarnas',
+  },
+  {
+    id: 'bodrum-kalesi', name: 'Bodrum Kalesi ve Sualtı Arkeoloji Müzesi', province: 'Muğla', category: 'muze', period: 'bizans',
+    coord: [27.4290, 37.0320], wiki: 'Bodrum Kalesi',
+    summary: '15. yüzyılda Rodos Şövalyeleri’nin yaptığı kale, bugün dünyanın önde gelen sualtı arkeoloji müzelerinden birine ev sahipliği yapar.',
+    didYouKnow: 'Kale inşa edilirken antik Mausoleion’un taşları da kullanıldı.',
+  },
+  {
+    id: 'kaunos', name: 'Kaunos Kral Mezarları', province: 'Muğla', category: 'arkeoloji', period: 'antik',
+    coord: [28.6220, 36.8270], wiki: 'Kaunos',
+    summary: 'Dalyan Çayı kıyısında kayaya oyulmuş tapınak cepheli Karia mezarları.',
+    didYouKnow: 'Mezarlar, ölülerin denizcilere yukarıdan bakması için kıyıya dönük oyuldu.',
+  },
+  {
+    id: 'stratonikeia', name: 'Stratonikeia', province: 'Muğla', category: 'arkeoloji', period: 'antik',
+    coord: [28.0640, 37.3150], wiki: 'Stratonikeia',
+    summary: 'Antik çağdan Osmanlı’ya kesintisiz yaşamış bir kent; Roma kalıntıları ile Osmanlı evleri yan yanadır.',
+    didYouKnow: '“Gladyatörlerin kenti” olarak da anılır; ancak bugün en çok çok katmanlı mahalleleriyle dikkat çeker.',
+  },
+  {
+    id: 'afyon-ulu', name: 'Afyonkarahisar Ulu Camii', province: 'Afyon', category: 'unesco', period: 'selcuklu',
+    coord: [30.5400, 38.7570], wiki: 'Afyonkarahisar Ulu Camii',
+    summary: '1272’de yapılan ahşap direkli cami, 2023’te “Anadolu’nun Ortaçağ Ahşap Hipostil Camileri” kapsamında UNESCO listesine girdi.',
+    didYouKnow: 'Kırk ahşap direğin başlıkları mukarnaslı ve her biri farklıdır.',
+    detail: 'Mukarnaslı ahşap başlıklar',
+  },
+  {
+    id: 'ayazini', name: 'Ayazini Kaya Yerleşimi (Frig Vadisi)', province: 'Afyon', category: 'arkeoloji', period: 'demir',
+    coord: [30.7000, 38.9900], wiki: 'Ayazini',
+    summary: 'Frig Vadisi’nde tüf kayalara oyulmuş mezarlar, odalar ve Bizans dönemi kaya kilisesi.',
+    didYouKnow: 'Aynı kayalar önce Frigler, sonra Romalılar ve Bizanslılar tarafından yeniden kullanıldı.',
+  },
+  {
+    id: 'aizanoi', name: 'Aizanoi (Zeus Tapınağı)', province: 'Kütahya', category: 'arkeoloji', period: 'antik',
+    coord: [29.6100, 39.2000], wiki: 'Aizanoi',
+    summary: 'Çavdarhisar’daki antik kent; Anadolu’nun en iyi korunmuş Zeus tapınaklarından birine sahiptir.',
+    didYouKnow: 'Kentin bir binasında, antik dünyanın “fiyat listesi” sayılan Diocletianus’un azami fiyat fermanı yazılıdır.',
+  },
+  {
+    id: 'kutahya-cini', name: 'Kütahya Çini Müzesi', province: 'Kütahya', category: 'muze', period: 'osmanli',
+    coord: [29.9870, 39.4190], wiki: 'Kütahya Çini Müzesi',
+    summary: 'Germiyanoğlu döneminden kalma imaret binasında, Kütahya’nın yüzyıllık çini ve seramik geleneğini anlatır.',
+    didYouKnow: 'Kütahya’da çinicilik hiç kesintiye uğramadan bugüne kadar sürmüş bir zanaattır.',
+  },
+  {
+    id: 'karun', name: 'Uşak Müzesi – Karun Hazinesi', province: 'Uşak', category: 'muze', period: 'demir',
+    coord: [29.4050, 38.6740], wiki: 'Karun Hazinesi',
+    summary: 'Lidya dönemine ait altın ve gümüş eserler; yurt dışına kaçırıldıktan sonra uzun bir hukuk mücadelesiyle geri getirildi.',
+    didYouKnow: 'Hazinenin simgesi olan kanatlı denizatı broşu müzeden çalınmış, yıllar sonra Almanya’da bulunarak iade edilmişti.',
+  },
+];
+export default sites;
