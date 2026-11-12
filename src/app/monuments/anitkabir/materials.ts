@@ -5,7 +5,7 @@ import * as THREE from 'three';
  * dünya koordinatına bağlı gürültü ve taş sırası derzleri eklenir; aynı malzeme InstancedMesh ile
  * binlerce parçada paylaşılır. Dünya koordinatı kullanıldığı için UV açmaya da gerek kalmaz.
  */
-type Variant = 'stone' | 'kilim' | 'grass' | 'paving';
+type Variant = 'stone' | 'kilim' | 'grass' | 'paving' | 'hall' | 'mosaic';
 
 const NOISE = /* glsl */ `
   varying vec3 vWPos;
@@ -25,17 +25,42 @@ const BODY: Record<Variant, string> = {
     // gece projektörü: emissive ışık taş dokusunu korur ve yukarı doğru söner
     totalEmissiveRadiance *= (0.65 + 0.55 * n) * (1.0 - 0.3 * max(j, jv)) * mix(1.3, 0.55, clamp((vWPos.y - 6.7) / 17.0, 0.0, 1.0));
   `,
-  // Tören Meydanı: kilim desenli traverten döşeme (kırmızı, siyah ve krem taşlar)
+  // Tören Meydanı: açık traverten zemin, içte dikdörtgen bordür ve soluk kilim desenleri
   kilim: /* glsl */ `
     vec2 c = vWPos.xz / 6.0, id = floor(c), f = fract(c) - 0.5;
     float d = abs(f.x) + abs(f.y);
     float pick = h3(vec3(id, 1.0));
-    vec3 cream = vec3(0.86, 0.80, 0.68), red = vec3(0.62, 0.27, 0.22), black = vec3(0.20, 0.19, 0.19);
+    vec3 cream = vec3(0.87, 0.81, 0.69), red = vec3(0.70, 0.45, 0.38), black = vec3(0.45, 0.42, 0.40);
     vec3 col = cream;
-    col = mix(col, pick > 0.5 ? red : black, step(d, 0.34) * step(0.24, d));
-    col = mix(col, pick > 0.5 ? black : red, step(d, 0.12));
-    col = mix(col, vec3(0.50, 0.46, 0.40), step(0.47, max(abs(f.x), abs(f.y))));
-    diffuseColor.rgb = col * (0.88 + 0.2 * vnoise(vWPos * 1.7));
+    float inside = step(abs(vWPos.x), 52.0) * step(abs(vWPos.z), 30.0);
+    col = mix(col, pick > 0.5 ? red : black, inside * step(d, 0.30) * step(0.22, d) * 0.6);
+    col = mix(col, pick > 0.5 ? black : red, inside * step(d, 0.10) * 0.6);
+    col = mix(col, vec3(0.74, 0.68, 0.57), step(0.485, max(abs(f.x), abs(f.y))) * 0.6);
+    float border = max(abs(vWPos.x) - 54.0, abs(vWPos.z) - 32.0);
+    col = mix(col, vec3(0.62, 0.55, 0.45), step(0.0, border) * step(border, 1.2));
+    diffuseColor.rgb = col * (0.9 + 0.16 * vnoise(vWPos * 1.7));
+  `,
+  // Şeref Holü zemini: krem, kırmızı ve siyah mermer şeritler
+  hall: /* glsl */ `
+    vec2 c = vWPos.xz / 3.0, f = abs(fract(c) - 0.5);
+    float pick = h3(vec3(floor(c), 3.0));
+    vec3 col = vec3(0.90, 0.86, 0.78);
+    col = mix(col, vec3(0.55, 0.16, 0.14), step(0.38, max(f.x, f.y)));
+    col = mix(col, vec3(0.10, 0.10, 0.11), step(0.46, max(f.x, f.y)));
+    col = mix(col, vec3(0.55, 0.16, 0.14), step(f.x + f.y, 0.16) * step(0.5, pick));
+    diffuseColor.rgb = col * (0.85 + 0.25 * vnoise(vWPos * 0.9));
+  `,
+  // Şeref Holü tavanı: kilim motifli altın mozaik
+  mosaic: /* glsl */ `
+    vec2 c = vWPos.xz / 2.2, f = fract(c) - 0.5;
+    float d = abs(f.x) + abs(f.y);
+    vec3 gold = vec3(0.86, 0.66, 0.22);
+    vec3 col = mix(gold, vec3(0.55, 0.14, 0.12), step(d, 0.30) * step(0.20, d));
+    col = mix(col, vec3(0.12, 0.25, 0.30), step(d, 0.10));
+    col = mix(col, vec3(0.45, 0.32, 0.10), step(0.47, max(abs(f.x), abs(f.y))));
+    float t = h3(vec3(floor(vWPos.xz * 6.0), 5.0));
+    diffuseColor.rgb = col * (0.8 + 0.35 * t);
+    totalEmissiveRadiance = diffuseColor.rgb * 0.35;
   `,
   grass: /* glsl */ `
     float n = vnoise(vWPos * 0.05) * 0.55 + vnoise(vWPos * 0.6) * 0.3 + vnoise(vWPos * 4.0) * 0.15;
@@ -89,14 +114,32 @@ export function createMaterials() {
     trunk: new THREE.MeshStandardMaterial({ color: '#5a4634', roughness: 1 }),
     steel: new THREE.MeshStandardMaterial({ color: '#d9dde0', roughness: 0.35, metalness: 0.8 }),
     flame: new THREE.MeshBasicMaterial({ color: '#ffb347' }),
+    roofMetal: new THREE.MeshStandardMaterial({ color: '#8d99a4', roughness: 0.55, metalness: 0.35 }),
+    asphalt: new THREE.MeshStandardMaterial({ color: '#77777a', roughness: 1 }),
+    hallFloor: proceduralMaterial('hall', '#ffffff', { roughness: 0.35 }),
+    mosaic: proceduralMaterial('mosaic', '#ffffff', { roughness: 0.5 }),
+    hallWall: proceduralMaterial('stone', '#eee6d6', { roughness: 0.6 }),
+    // gündüz sönük, gece parlayan yüzeyler (ışık hesabı gerektirmez)
+    bulb: new THREE.MeshBasicMaterial({ color: '#b9b4a6' }),
+    windowGlow: new THREE.MeshBasicMaterial({ color: '#2a2622' }),
+    hallWindow: new THREE.MeshBasicMaterial({ color: '#dfeaf2' }),
   };
 }
 export type Materials = ReturnType<typeof createMaterials>;
 
-/** Gece modu: yalnızca mozole ve meşaleler aydınlanır (projektör etkisi emissive ile taklit edilir, ek ışık maliyeti yok) */
+/**
+ * Gece modu: mozole projektörle aydınlanmış gibi parlar (emissive; ek ışık maliyeti yok),
+ * lambalar, pencereler ve galeriler yanar.
+ */
 export function applyNight(m: Materials, night: boolean) {
-  for (const mat of [m.travertineLight, m.marble]) { mat.emissive.set(night ? '#ffcf8a' : '#000000'); mat.emissiveIntensity = night ? 0.3 : 0; }
+  for (const mat of [m.travertineLight, m.marble]) { mat.emissive.set(night ? '#ffcf8a' : '#000000'); mat.emissiveIntensity = night ? 0.34 : 0; }
+  m.travertine.emissive.set(night ? '#ffb86a' : '#000000'); m.travertine.emissiveIntensity = night ? 0.12 : 0;
+  m.kilim.emissive.set(night ? '#ffc98a' : '#000000'); m.kilim.emissiveIntensity = night ? 0.1 : 0;
   m.gold.emissive.set(night ? '#c98a2a' : '#000000'); m.gold.emissiveIntensity = night ? 0.6 : 0;
+  m.hallWall.emissive.set('#ffd9a0'); m.hallWall.emissiveIntensity = night ? 0.3 : 0.12;
+  m.bulb.color.set(night ? '#fff0c2' : '#b9b4a6');
+  m.windowGlow.color.set(night ? '#ffc56e' : '#2a2622');
+  m.hallWindow.color.set(night ? '#1b2440' : '#dfeaf2');
 }
 
 let _flag: THREE.CanvasTexture | null = null;
