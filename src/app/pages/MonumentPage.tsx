@@ -1,11 +1,13 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BatteryLow, Home, Lightbulb, Moon, RotateCw, Sun, Sunrise, Sunset, X } from 'lucide-react';
+import { useRef } from 'react';
+import { ArrowLeft, BatteryLow, DoorOpen, Footprints, Home, Lightbulb, Moon, Plane, RotateCw, Sun, Sunrise, Sunset, X } from 'lucide-react';
+import { walkInput } from '../monuments/walkInput';
 import { MONUMENTS } from '../monuments/registry';
 import { useMonumentStore } from '../monuments/store';
 import { supportsWebGL, useDeviceProfile } from '../monuments/useDeviceProfile';
 import type { MonumentData, Quality, TimeOfDay } from '../monuments/types';
-import { PLAZA, MAUSOLEUM, LION_ROAD, HOTSPOTS, STAIRS, towers } from '../monuments/anitkabir/layout';
+import { PLAZA, MAUSOLEUM, LION_ROAD, HOTSPOTS, STAIRS, STAIRS_DEPTH, STAIR_X0, WALK, buildings, towers } from '../monuments/anitkabir/layout';
 import NotFound from './NotFound';
 
 const TIMES: { id: TimeOfDay; label: string; icon: typeof Sun }[] = [
@@ -42,6 +44,7 @@ export default function MonumentPage() {
 
       <TopBar data={data} />
       {supportsWebGL && <Controls />}
+      {supportsWebGL && <WalkPad />}
       <InfoPanel data={data} />
 
       {isMobile && portrait && !hintClosed && (
@@ -80,11 +83,12 @@ function Controls() {
   const quality = useMonumentStore((s) => s.quality);
   const saver = useMonumentStore((s) => s.batterySaver);
   const panelOpen = useMonumentStore((s) => s.selectedPoint !== null);
+  const walking = useMonumentStore((s) => s.mode === 'walk');
   const st = useMonumentStore.getState();
   const next: Record<Quality, Quality> = { high: 'medium', medium: 'low', low: 'high' };
   return (
     <div className={`pointer-events-none absolute bottom-3 left-3 z-30 max-w-[calc(100%-6rem)] flex-wrap items-end gap-2 ${panelOpen ? 'hidden sm:flex' : 'flex'}`}>
-      <div className="pointer-events-auto flex rounded-xl bg-white/90 p-1 shadow-card backdrop-blur" role="radiogroup" aria-label="Günün saati">
+      <div className={`pointer-events-auto rounded-xl bg-white/90 p-1 shadow-card backdrop-blur ${walking ? 'hidden [@media(pointer:fine)]:flex' : 'flex'}`} role="radiogroup" aria-label="Günün saati">
         {TIMES.map(({ id, label, icon: Icon }) => (
           <button key={id} role="radio" aria-checked={time === id} onClick={() => st.setTimeOfDay(id)}
             className={`flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition ${time === id ? 'bg-brand text-white' : 'text-ink-muted hover:bg-slate-100'}`}>
@@ -92,12 +96,28 @@ function Controls() {
           </button>
         ))}
       </div>
-      <button onClick={() => { st.selectPoint(null); st.setCameraTarget('overview'); }}
-        className="pointer-events-auto inline-flex h-[52px] items-center gap-2 rounded-xl bg-white/90 px-3 text-sm font-medium shadow-card backdrop-blur hover:bg-white" aria-label="Genel görünüme dön">
-        <Home size={17} /> <span className="hidden sm:inline">Genel görünüm</span>
-      </button>
+      {walking ? (
+        <>
+          <button onClick={() => st.setMode('orbit')} className="pointer-events-auto inline-flex h-[52px] items-center gap-2 rounded-xl bg-brand px-3 text-sm font-semibold text-white shadow-card hover:bg-brand-600">
+            <Plane size={17} /> Kuş bakışı
+          </button>
+          <button onClick={() => st.teleportTo(WALK.door.x, WALK.door.z, WALK.door.yaw)} className="pointer-events-auto inline-flex h-[52px] items-center gap-2 rounded-xl bg-white/90 px-3 text-sm font-medium shadow-card backdrop-blur hover:bg-white">
+            <DoorOpen size={17} /> Mozole kapısına git
+          </button>
+        </>
+      ) : (
+        <>
+          <button onClick={() => st.teleportTo(WALK.spawn.x, WALK.spawn.z, WALK.spawn.yaw)} className="pointer-events-auto inline-flex h-[52px] items-center gap-2 rounded-xl bg-brand px-3 text-sm font-semibold text-white shadow-card hover:bg-brand-600">
+            <Footprints size={17} /> Yürü
+          </button>
+          <button onClick={() => { st.selectPoint(null); st.setCameraTarget('overview'); }}
+            className="pointer-events-auto inline-flex h-[52px] items-center gap-2 rounded-xl bg-white/90 px-3 text-sm font-medium shadow-card backdrop-blur hover:bg-white" aria-label="Genel görünüme dön">
+            <Home size={17} /> <span className="hidden sm:inline">Genel görünüm</span>
+          </button>
+        </>
+      )}
       <button onClick={() => st.setQuality(next[quality])} disabled={saver}
-        className="pointer-events-auto inline-flex h-[52px] items-center rounded-xl bg-white/90 px-3 text-sm font-medium shadow-card backdrop-blur hover:bg-white disabled:opacity-60"
+        className={`pointer-events-auto h-[52px] items-center rounded-xl bg-white/90 px-3 text-sm font-medium shadow-card backdrop-blur hover:bg-white disabled:opacity-60 ${walking ? 'hidden [@media(pointer:fine)]:inline-flex' : 'inline-flex'}`}
         aria-label={`Grafik kalitesi: ${QUALITY_LABEL[saver ? 'low' : quality]}. Değiştirmek için dokun.`}>
         Kalite: {QUALITY_LABEL[saver ? 'low' : quality]}
       </button>
@@ -135,24 +155,61 @@ function Skeleton({ name }: { name: string }) {
   );
 }
 
+/** Yürüme modu: dokunmatikte sanal joystick, masaüstünde tuş ipucu */
+function WalkPad() {
+  const walking = useMonumentStore((s) => s.mode === 'walk');
+  const knob = useRef<HTMLSpanElement>(null);
+  const [hint, setHint] = useState(true);
+  useEffect(() => { if (!walking) return; setHint(true); const t = setTimeout(() => setHint(false), 6000); return () => clearTimeout(t); }, [walking]);
+  if (!walking) return null;
+  const set = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    let x = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), y = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+    const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; }
+    walkInput.x = x; walkInput.y = y;
+    if (knob.current) knob.current.style.transform = `translate(${x * 34}px, ${y * 34}px)`;
+  };
+  const reset = () => { walkInput.x = walkInput.y = 0; if (knob.current) knob.current.style.transform = ''; };
+  return (
+    <>
+      <div
+        className="absolute bottom-24 left-5 z-30 grid h-28 w-28 touch-none place-items-center rounded-full border-2 border-white/80 bg-white/30 backdrop-blur [@media(pointer:fine)]:hidden"
+        aria-label="Yürüme joystick'i"
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); set(e); }}
+        onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) set(e); }}
+        onPointerUp={reset} onPointerCancel={reset}
+      >
+        <span ref={knob} className="h-12 w-12 rounded-full bg-brand shadow-lg" />
+      </div>
+      {hint && (
+        <p className="pointer-events-none absolute left-1/2 top-20 z-30 -translate-x-1/2 rounded-xl bg-ink/85 px-4 py-2 text-center text-sm text-white" role="status">
+          <span className="[@media(pointer:coarse)]:hidden">WASD ile yürü, fareyi sürükleyerek etrafa bak. Shift: hızlı yürü.</span>
+          <span className="[@media(pointer:fine)]:hidden">Soldaki joystick ile yürü, ekranı sürükleyerek etrafa bak.</span>
+        </p>
+      )}
+    </>
+  );
+}
+
 /**
  * WebGL yoksa: 3D sahne yerine aynı yerleşim verisinden çizilen vaziyet planı.
  * metadata.fallbackImage verilirse onun yerine o panorama fotoğrafı gösterilir.
  */
 function StaticFallback({ data }: { data: MonumentData }) {
   if (data.metadata.fallbackImage) return <img src={data.metadata.fallbackImage} alt={`${data.metadata.name} panoraması`} className="h-full w-full object-cover" />;
-  const x0 = LION_ROAD.startX - LION_ROAD.length - 30, w = PLAZA.w / 2 + 60 - x0, z0 = MAUSOLEUM.z - MAUSOLEUM.d / 2 - 20, h = PLAZA.d / 2 + 30 - z0;
-  const stairD = STAIRS.steps * STAIRS.tread;
+  const P = MAUSOLEUM.podium, x0 = -PLAZA.w / 2 - 40, z0 = LION_ROAD.startZ - LION_ROAD.length - 30, w = P.x1 + 30 - x0, h = PLAZA.d / 2 + 40 - z0;
   return (
     <div className="flex h-full flex-col bg-emerald-50 pt-16">
       <p className="px-4 pb-2 text-sm text-ink-muted">Cihazın 3D görüntülemeyi desteklemiyor. Vaziyet planından bir noktaya dokunarak bilgi alabilirsin.</p>
       <svg viewBox={`${x0} ${z0} ${w} ${h}`} className="min-h-0 w-full flex-1" role="img" aria-label={`${data.metadata.name} vaziyet planı`}>
         <rect x={x0} y={z0} width={w} height={h} fill="#cfe3c4" />
-        <rect x={LION_ROAD.startX - LION_ROAD.length} y={-LION_ROAD.width / 2} width={LION_ROAD.length + 12} height={LION_ROAD.width} fill="#e6dcc6" />
+        <rect x={LION_ROAD.x - LION_ROAD.width / 2} y={LION_ROAD.startZ - LION_ROAD.length} width={LION_ROAD.width} height={LION_ROAD.length + 14} fill="#e6dcc6" />
         <rect x={-PLAZA.w / 2} y={-PLAZA.d / 2} width={PLAZA.w} height={PLAZA.d} fill="#ead9b8" stroke="#b9a888" strokeWidth="1.5" />
-        <rect x={-STAIRS.width / 2} y={-PLAZA.d / 2 - stairD} width={STAIRS.width} height={stairD} fill="#d9c8a6" />
-        <rect x={-MAUSOLEUM.w / 2} y={MAUSOLEUM.z - MAUSOLEUM.d / 2} width={MAUSOLEUM.w} height={MAUSOLEUM.d} fill="#f4ecd9" stroke="#8a7a5a" strokeWidth="2" />
-        {towers().map((t) => <rect key={t.name} x={t.pos[0] - 6} y={t.pos[2] - 7} width="12" height="14" fill="#c9b894" />)}
+        {buildings().map((b) => <rect key={b.name} x={b.pos[0] - b.size[0] / 2} y={b.pos[2] - b.size[2] / 2} width={b.size[0]} height={b.size[2]} fill="#9aa5ae" />)}
+        <rect x={STAIR_X0} y={-STAIRS.width / 2} width={STAIRS_DEPTH} height={STAIRS.width} fill="#d9c8a6" />
+        <rect x={P.x0} y={-P.halfW} width={P.x1 - P.x0} height={P.halfW * 2} fill="#e0d2b4" />
+        <rect x={MAUSOLEUM.x - MAUSOLEUM.len / 2} y={-MAUSOLEUM.wid / 2} width={MAUSOLEUM.len} height={MAUSOLEUM.wid} fill="#f4ecd9" stroke="#8a7a5a" strokeWidth="2" />
+        {towers().map((t) => <rect key={t.name} x={t.pos[0] - 6} y={t.pos[2] - 6} width="12" height="12" fill="#7f8a94" />)}
         {data.metadata.points.map((p) => (
           <g key={p.id} onClick={() => useMonumentStore.getState().selectPoint(p.id)} className="cursor-pointer" role="button" aria-label={p.name}>
             <circle cx={HOTSPOTS[p.id][0]} cy={HOTSPOTS[p.id][2]} r="16" fill="transparent" />

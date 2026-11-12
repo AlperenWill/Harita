@@ -46,6 +46,22 @@ Bağımlılıklar (hepsi projede mevcut): `three`, `@react-three/fiber`, `@react
 - **Sis:** üstel sis (gerçek hacimsel değildir); park sınırını ve uzak ağaçları yumuşatır.
 - **Saat:** sabah / öğle / akşam / gece. Gece modunda mozole emissive ile aydınlanır, iki meşale yanar; gölge kapanır.
 
+## Yerleşim (hava fotoğrafına göre)
+Mozole meydanın kısa kenarında (+X), Aslanlı Yol uzun kenara dik (-Z), bayrak direği ön kenarın ortasında (+Z),
+İnönü'nün lahdi karşı kısa kenardaki galeride (-X). Binalar gri kırma çatılı ve meydana bakan sütunlu galerilidir.
+
+## Yürüme modu ve Şeref Holü
+"Yürü" düğmesi birinci şahıs moduna geçer: WASD + fareyi sürükleyerek bakış; dokunmatikte joystick + ekranı sürükleme.
+Zemin yüksekliği `groundHeight()` ile hesaplanır: 42 basamak rampa gibi çıkılır, kaide kenarından düşülmez.
+Çarpışma `walkColliders()` dikdörtgenleriyle yapılır (binalar, kuleler, sütunlar, hol duvarları, lahit).
+Mozolenin içi boştur ve kapıdan girilir: mermer desenli zemin, altın mozaik tavan, duvar meşaleleri, bronz parmaklıklı
+pencere ve sembolik lahit. İç mekân temsilîdir; gerçek süslemeler sadeleştirilmiştir.
+
+## Gece aydınlatması
+Gece modunda mozole projektörle aydınlatılmış gibi parlar, yol ve meydan lambaları yanar (ışık halesi + yere düşen
+ışık havuzu), bina pencereleri ve galeriler aydınlanır. Bunlar emissive/eklemeli yüzeylerdir; gerçek ışık kaynakları
+yalnızca meşalelerde, holün içinde ve "Yüksek" kalitede birkaç noktada kullanılır.
+
 ## 3. Kamera
 Varsayılan: 45° kuş bakışı. Tek parmak döndürme, iki parmak pinch-zoom ve kaydırma; fare: sol döndür, sağ kaydır, tekerlek zoom.
 Uzaklık 34–760 m, zeminin altına inilmez, hedef bir kutuyla sınırlıdır ve kamera mozole bloğunun içinden geçemez.
