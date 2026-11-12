@@ -7,6 +7,7 @@ import SettingsPage from './pages/SettingsPage';
 import NotFound from './pages/NotFound';
 
 const MapPage = lazy(() => import('./pages/MapPage'));
+const MonumentPage = lazy(() => import('./pages/MonumentPage'));
 
 const Loading = () => (
   <div className="grid min-h-[50vh] place-items-center text-ink-muted" role="status">
@@ -21,6 +22,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="harita" element={<MapPage />} />
+          <Route path="anit/:id" element={<MonumentPage />} />
           <Route path="kaynakca" element={<SourcesPage />} />
           <Route path="ayarlar" element={<SettingsPage />} />
           <Route path="*" element={<NotFound />} />

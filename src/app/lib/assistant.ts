@@ -47,7 +47,7 @@ export function localAnswer(input: string): ChatMessage {
       role: 'assistant',
       text: `${site.name} — ${site.city.name}${site.district ? ` / ${site.district}` : ''}\n` +
         `${site.categoryLabel} · ${site.periodLabel}\n\n${site.summary}\n\nBiliyor muydunuz? ${site.didYouKnow}`,
-      links: [{ label: 'Haritada keşfet', to: '/harita' }],
+      links: [...(site.id === 'anitkabir' ? [{ label: '3D Anıtkabir’i aç', to: '/anit/ankara-anitkabir' }] : []), { label: 'Haritada keşfet', to: '/harita' }],
     };
   }
   if (city) {

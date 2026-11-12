@@ -54,7 +54,7 @@ function SidebarContent({ onNavigate, drawer }: { onNavigate?: () => void; drawe
 export function Layout() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
-  const fullBleed = pathname === '/harita';   // 3D harita içerik alanının tamamını kaplar
+  const fullBleed = pathname === '/harita' || pathname.startsWith('/anit/');   // 3D harita içerik alanının tamamını kaplar
   useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [pathname]);
 
   return (

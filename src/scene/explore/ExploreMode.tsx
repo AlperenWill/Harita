@@ -10,7 +10,7 @@ import { Dust, LightShafts } from './Atmosphere';
 import { ambient, presetFor } from '../../audio/ambient';
 import { useWikiImage } from '../../ui/useWikiImage';
 import { Seal } from '../../ui/Seal';
-import { PlayButton } from '../../ui/PlayButton';
+import { MonumentButton, PlayButton } from '../../ui/PlayButton';
 import { PALETTE } from '../theme';
 
 /**
@@ -139,6 +139,7 @@ function InfoCard() {
               ? `✓ Kayıp detay incelendi${site.detail ? `: ${site.detail}` : ''}`
               : 'Modelin üzerinde parıldayan kayıp mimari detayı bul ve incele.'}
           </p>
+          <MonumentButton siteId={site.id} />
           <PlayButton province={site.province} />
           {wiki?.url && (
             <a className="source" href={wiki.url} target="_blank" rel="noreferrer">
