@@ -17,7 +17,6 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes('node_modules/three/')) return 'three';
           if (id.includes('@react-three')) return 'r3f';
-          if (id.includes('node_modules/leaflet') || id.includes('react-leaflet')) return 'leaflet';
         },
       },
     },

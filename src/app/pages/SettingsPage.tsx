@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { MessageSquareX, RotateCcw, Sparkles } from 'lucide-react';
-import { resetProgress, useProgress } from '../lib/progress';
+import { MessageSquareX, Sparkles } from 'lucide-react';
 import { clearChat } from '../components/AssistantWidget';
 
 export default function SettingsPage() {
-  const progress = useProgress();
   const [reduce, setReduce] = useState(() => document.documentElement.classList.contains('reduce-motion'));
   const [msg, setMsg] = useState('');
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 2500); };
@@ -27,10 +25,6 @@ export default function SettingsPage() {
             className={`relative h-7 w-12 rounded-full transition ${reduce ? 'bg-brand' : 'bg-slate-200'}`}>
             <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${reduce ? 'left-6' : 'left-1'}`} />
           </button>
-        </Row>
-        <Row icon={RotateCcw} title="İlerlemeyi sıfırla" desc={`${Object.keys(progress.sites).length} oyun skoru ve test sonucu silinir.`}>
-          <button className="btn-ghost h-10 px-4 text-sm text-brand"
-            onClick={() => { if (confirm('Tüm skorlar silinsin mi?')) { resetProgress(); flash('İlerleme sıfırlandı.'); } }}>Sıfırla</button>
         </Row>
         <Row icon={MessageSquareX} title="Sohbet geçmişini temizle" desc="AI asistan konuşmalarını siler (sayfa yenilenince uygulanır).">
           <button className="btn-ghost h-10 px-4 text-sm" onClick={() => { clearChat(); flash('Sohbet geçmişi temizlendi.'); }}>Temizle</button>

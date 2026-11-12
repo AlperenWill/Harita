@@ -5,7 +5,7 @@ import { askAssistant, type ChatMessage } from '../lib/assistant';
 
 const KEY = 'tk-chat-v1';
 const WELCOME: ChatMessage = { role: 'assistant', text: 'Merhaba! Ben Keşif Asistanı. Bir şehir ya da tarihi yer sor, sana anlatayım.' };
-const SUGGEST = ['Efes hakkında bilgi', 'Kars’ta ne görülür?', 'UNESCO alanları', 'Nasıl oynanır?'];
+const SUGGEST = ['Efes hakkında bilgi', 'Kars’ta ne görülür?', 'UNESCO alanları', 'Harita nasıl kullanılır?'];
 
 export const clearChat = () => { try { localStorage.removeItem(KEY); } catch { /* yok */ } };
 
