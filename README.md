@@ -15,6 +15,7 @@ npm run data       # src/data → src/app/data/turkiye.json (şehirler + tarihi 
 |---|---|
 | `/` | Anasayfa: Miras. logosu, Haritayı Aç, Oyun Hakkında |
 | `/harita` | **Miras. Haritası** — 3D harita (aşağıdaki proje), sayfaya gömülü |
+| `/anit/ankara-anitkabir` | **Anıtkabir 3D sahnesi** — ayrıntılar: [docs/anitkabir.md](docs/anitkabir.md) |
 | `/kaynakca`, `/ayarlar` | Kaynaklar; animasyon azaltma ve sohbet geçmişi temizleme |
 
 Logo: **M** ve **.** kırmızı (#F04448), **iras** (ve “Haritası”) beyaz; bu yüzden logo daima koyu zemin üzerinde kullanılır

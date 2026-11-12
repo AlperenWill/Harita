@@ -1,0 +1,66 @@
+{
+  "id": "ankara-anitkabir",
+  "type": "monument",
+  "coordinates": [32.8375, 39.9255],
+  "lodConfig": { "near": 20000, "mid": 5000, "far": 500 },
+  "interactions": ["orbit", "zoom", "info-panel"],
+  "metadata": {
+    "name": "Anıtkabir",
+    "city": "Ankara",
+    "siteId": "anitkabir",
+    "summary": "Mustafa Kemal Atatürk’ün anıt mezarı. Anıttepe’de, Barış Parkı’nın ortasında yükselir.",
+    "built": "1944–1953",
+    "architects": ["Emin Onat", "Orhan Arda"],
+    "points": [
+      {
+        "id": "mozole",
+        "name": "Mozole (Anıt Blok)",
+        "short": "72 × 52 × 17 metrelik anıt yapı",
+        "body": "Anıtkabir’in kalbi olan mozole 72 × 52 metre tabanlı ve 17 metre yüksekliğindedir. Çevresini 14,4 metre yüksekliğinde 44 sütun sarar. Tören Meydanı’ndan 42 basamaklı merdivenle çıkılır. İçindeki Şeref Holü’nde tek parça mermerden sembolik lahit bulunur; Atatürk’ün naaşı bunun altındaki mezar odasındadır.",
+        "didYouKnow": "Atatürk’ün naaşı 10 Kasım 1953’te, vefatının 15. yılında Etnografya Müzesi’nden buraya taşındı."
+      },
+      {
+        "id": "aslanli-yol",
+        "name": "Aslanlı Yol",
+        "short": "262 metre, 24 aslan heykeli",
+        "body": "Ziyaretçileri Tören Meydanı’na ulaştıran 262 metrelik yolun iki yanında, Hitit sanatından esinlenen 24 aslan heykeli oturur. Aslanlar gücü, oturur duruşları ise barışı simgeler.",
+        "didYouKnow": "Yolun taşları arasında 5 santimetrelik boşluklar bırakılmıştır; ziyaretçiler yere bakarak ve yavaş yürüyerek saygıyla ilerler."
+      },
+      {
+        "id": "toren-meydani",
+        "name": "Tören Meydanı",
+        "short": "129 × 84 metre, 15.000 kişi",
+        "body": "Yaklaşık 129 × 84 metrelik meydan 15.000 kişi alır. Zemini, renkli traverten taşlarla işlenmiş 373 halı ve kilim deseniyle kaplıdır.",
+        "didYouKnow": "Meydandaki desenlerin her biri Anadolu kilimlerinden esinlenmiştir."
+      },
+      {
+        "id": "muze",
+        "name": "Atatürk ve Kurtuluş Savaşı Müzesi",
+        "short": "Mozolenin altındaki müze",
+        "body": "Kuleler arasındaki galerilerde ve Şeref Holü’nün altındaki bölümde yer alan müze 2002’de açıldı. Atatürk’ün kişisel eşyaları, kütüphanesi ve Cumhuriyet’in kuruluş sürecini anlatan bölümler sergilenir.",
+        "didYouKnow": "Atatürk’ün özel kütüphanesindeki binlerce kitap da burada korunur."
+      },
+      {
+        "id": "inonu",
+        "name": "İsmet İnönü’nün Lahdi",
+        "short": "Mozolenin tam karşısında",
+        "body": "Türkiye’nin ikinci cumhurbaşkanı İsmet İnönü’nün kabri, Tören Meydanı’nın mozolenin karşısına düşen kenarında, Barış ve Zafer kuleleri arasındaki sütunlu galeridedir.",
+        "didYouKnow": "İnönü 1973’te buraya defnedildi."
+      },
+      {
+        "id": "kuleler",
+        "name": "İstiklal ve Hürriyet Kuleleri",
+        "short": "On kuleden ilk ikisi",
+        "body": "Aslanlı Yol’un başındaki bu iki kule, Anıtkabir’deki on kulenin ilk ikisidir. Kulelerin piramit biçimli çatıları geleneksel Türk çadırlarını anımsatır; tepelerinde bronz mızrak uçları bulunur.",
+        "didYouKnow": "On kulenin her biri bir kavramın adını taşır: İstiklal, Hürriyet, Mehmetçik, Müdafaa-i Hukuk, Cumhuriyet, Zafer, Barış, 23 Nisan, Misak-ı Millî ve İnkılap."
+      },
+      {
+        "id": "bayrak",
+        "name": "Bayrak Direği",
+        "short": "Yaklaşık 30 metrelik çelik direk",
+        "body": "Tören Meydanı’nın Çankaya yönündeki girişinde yükselen çelik direk toplam 33,53 metredir; bunun yaklaşık 4 metresi kaidenin altındadır.",
+        "didYouKnow": "Direğin kaidesindeki kabartmalarda meşale, kılıç, miğfer, meşe dalı ve zeytin dalı figürleri yer alır."
+      }
+    ]
+  }
+}
