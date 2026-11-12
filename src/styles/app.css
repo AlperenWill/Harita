@@ -232,3 +232,6 @@ h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; letter-spacin
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+.play-btn { margin: 6px 0 4px; }
+.dock-play { margin-top: 10px; }
