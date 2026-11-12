@@ -14,12 +14,9 @@ export function TopBar() {
 
   return (
     <header className="topbar">
-      <div className="brand glass">
-        <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
-          <path d="M16 2l3.5 8.5L28 14l-8.5 3.5L16 26l-3.5-8.5L4 14l8.5-3.5z" fill="var(--cini)" />
-          <circle cx="16" cy="14" r="3" fill="var(--bg)" />
-        </svg>
-        <span>Anadolu Mirası</span>
+      <div className="brand glass" aria-label="Miras. Haritası">
+        <span className="logo-red">M</span><span className="logo-white">iras</span><span className="logo-red">.</span>
+        <span className="logo-white brand-long">&nbsp;Haritası</span>
       </div>
       <nav className="crumbs glass" aria-label="Konum">
         {level !== 'country' && (

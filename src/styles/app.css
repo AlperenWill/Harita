@@ -56,7 +56,10 @@ h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; letter-spacin
   display: flex; gap: 10px; align-items: center; pointer-events: none;
 }
 .topbar > * { pointer-events: auto; }
-.brand { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-family: var(--display); font-size: 16px; font-weight: 600; }
+.brand { display: flex; align-items: baseline; padding: 8px 14px; font-family: var(--font); font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+/* "Miras." logosu: M ve nokta kırmızı, "iras" ve "Haritası" beyaz */
+.logo-red { color: #F04448; }
+.logo-white { color: #FFFFFF; }
 .crumbs { display: flex; align-items: center; gap: 4px; padding: 4px 8px; min-width: 0; }
 .crumbs ol { display: flex; list-style: none; margin: 0; padding: 0 4px; gap: 4px; min-width: 0; overflow: hidden; }
 .crumbs li { display: flex; align-items: center; white-space: nowrap; min-width: 0; }
@@ -202,7 +205,7 @@ h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; letter-spacin
 
 /* ---------- Küçük / yatay telefon ekranları ---------- */
 @media (max-width: 900px), (max-height: 520px) {
-  .brand span { display: none; }
+  .brand .brand-long { display: none; }
   .quest { width: 220px; padding: 10px 12px; }
   .quest-desc { display: none; }
   .intro { width: 280px; }

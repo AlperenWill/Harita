@@ -30,12 +30,6 @@ export const SITES = CITIES.flatMap((c) => c.sites.map((s) => ({ ...s, city: c }
 export const SITE_BY_ID = new Map(SITES.map((s) => [s.id, s]));
 export type SiteWithCity = (typeof SITES)[number];
 
-/** Bazı illerin ayrıca kendi 3D macera oyunu vardır (public/ altındaki bağımsız oyunlar). */
-export const EXTRA_GAMES: Record<string, { title: string; desc: string; href: string }[]> = {
-  sanliurfa: [{ title: 'Urfa’nın Minik Kaşifleri — Balıklıgöl', desc: 'Göl Bahçesi’nde yürü, rehberle konuş ve hatıra taşlarını topla.', href: 'sanliurfa-oyun/index.html' }],
-  izmir: [{ title: 'Efes’in Gezgini 3D', desc: 'Efes’te dolaş, üç bilgenin güvenini kazan ve görevleri tamamla.', href: 'izmir-efes/index.html' }],
-};
-export const gameCount = (c: City) => c.sites.length + (EXTRA_GAMES[c.id]?.length ?? 0);
 
 /** Türkçe duyarlı, aksan bağımsız arama anahtarı */
 export const norm = (s: string) =>

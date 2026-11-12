@@ -1,13 +1,12 @@
 import { Suspense, useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { BookOpen, ClipboardCheck, Compass, Gamepad2, Home, Map, Menu, Settings, X } from 'lucide-react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { BookOpen, Home, Map, Menu, Settings, X } from 'lucide-react';
+import { Logo } from './Logo';
 import { AssistantWidget } from './AssistantWidget';
 
 const NAV = [
   { to: '/', label: 'Anasayfa', icon: Home, end: true },
   { to: '/harita', label: 'Harita', icon: Map },
-  { to: '/oyunlar', label: 'Oyunlar', icon: Gamepad2 },
-  { to: '/test', label: 'Test', icon: ClipboardCheck },
   { to: '/kaynakca', label: 'Kaynakça', icon: BookOpen },
 ];
 
@@ -34,15 +33,13 @@ function NavItem({ to, label, icon: Icon, end, onClick }: { to: string; label: s
   );
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ onNavigate, drawer }: { onNavigate?: () => void; drawer?: boolean }) {
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2.5 px-4 pb-5 pt-5">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-white"><Compass size={20} /></span>
-        <div className="leading-tight">
-          <p className="text-[15px] font-bold">Türkiye’yi</p>
-          <p className="text-[15px] font-bold text-brand">Keşfet</p>
-        </div>
+      <div className={`px-3 pb-5 pt-4 ${drawer ? 'pr-16' : ''}`}>
+        <Link to="/" onClick={onNavigate} className="flex h-12 items-center rounded-xl bg-ink px-4 text-2xl" aria-label="Miras. — Anasayfa">
+          <Logo />
+        </Link>
       </div>
       <nav className="flex-1 space-y-1 px-3" aria-label="Ana menü">
         {NAV.map((n) => <NavItem key={n.to} {...n} onClick={onNavigate} />)}
@@ -57,6 +54,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 export function Layout() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  const fullBleed = pathname === '/harita';   // 3D harita içerik alanının tamamını kaplar
   useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [pathname]);
 
   return (
@@ -69,20 +67,20 @@ export function Layout() {
       {/* Mobil üst bar + çekmece */}
       <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-white/90 px-4 backdrop-blur lg:hidden">
         <button className="btn-ghost h-10 w-10 !p-0" onClick={() => setOpen(true)} aria-label="Menüyü aç"><Menu size={20} /></button>
-        <span className="font-bold">Türkiye’yi <span className="text-brand">Keşfet</span></span>
+        <span className="rounded-lg bg-ink px-3 py-1 text-lg"><Logo /></span>
       </header>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-ink/30" onClick={() => setOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-[260px] animate-fade-up bg-white shadow-xl">
-            <button className="absolute right-3 top-4 btn-ghost h-9 w-9 !p-0" onClick={() => setOpen(false)} aria-label="Menüyü kapat"><X size={18} /></button>
-            <SidebarContent onNavigate={() => setOpen(false)} />
+            <button className="absolute right-3 top-[22px] btn-ghost h-9 w-9 !p-0" onClick={() => setOpen(false)} aria-label="Menüyü kapat"><X size={18} /></button>
+            <SidebarContent onNavigate={() => setOpen(false)} drawer />
           </aside>
         </div>
       )}
 
       <main className="lg:pl-[220px]">
-        <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-10">
+        <div className={fullBleed ? '' : 'mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-10'}>
           <Suspense fallback={<div className="grid min-h-[40vh] place-items-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-brand" /></div>}>
             <Outlet />
           </Suspense>

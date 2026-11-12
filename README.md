@@ -1,24 +1,24 @@
-# Türkiye'yi Keşfet
+# Miras.
 
-Türkiye'nin 81 ilini, tarihi yerlerini ve bilgi oyunlarını bir araya getiren web uygulaması.
+Türkiye'nin 81 ilindeki tarihi ve kültürel mirası 3D harita üzerinde keşfetmek için web uygulaması.
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173  (ana uygulama)  ·  /3d/  (3D Anadolu Mirası haritası)
-npm test           # veri, oyun üretici ve asistan testleri
+npm run dev        # http://localhost:5173  (ana uygulama)  ·  /3d/  (Miras. Haritası tek başına)
+npm test           # veri ve asistan testleri
 npm run build      # tip kontrolü + üretim paketi
-npm run data       # src/data → src/app/data/turkiye.json (şehirler + tarihi noktalar)
+npm run data       # src/data → src/app/data/turkiye.json (şehirler + tarihi noktalar; asistan bilgi tabanı)
 ```
 
 ## Sayfalar
 | Yol | İçerik |
 |---|---|
-| `/` | Anasayfa: “Türkiye’yi Keşfet”, Haritayı Aç, Oyun Hakkında |
-| `/harita` | Tam ekran Leaflet haritası: 81 il sınırı + işaretçiler, popup’ta şehir bilgisi ve **🎮 Oyna** |
-| `/oyunlar` | 81 il (alfabetik) akordiyon listesi; `?il=<şehir>` ile doğrudan açılır |
-| `/oyun/:id` | Tarihi nokta oyunu: 5 soru, 4 seçenek, geri bildirim, puan, ilerleme çubuğu, Tekrar Oyna |
-| `/test` | 20 soruluk genel Türkiye testi |
-| `/kaynakca`, `/ayarlar` | Kaynaklar; animasyon azaltma, ilerleme ve sohbet sıfırlama |
+| `/` | Anasayfa: Miras. logosu, Haritayı Aç, Oyun Hakkında |
+| `/harita` | **Miras. Haritası** — 3D harita (aşağıdaki proje), sayfaya gömülü |
+| `/kaynakca`, `/ayarlar` | Kaynaklar; animasyon azaltma ve sohbet geçmişi temizleme |
+
+Logo: **M** ve **.** kırmızı (#F04448), **iras** (ve “Haritası”) beyaz; bu yüzden logo daima koyu zemin üzerinde kullanılır
+(`src/app/components/Logo.tsx`, 3D haritada `src/ui/TopBar.tsx`).
 
 Sağ alttaki **AI asistan** her sayfada açılır. Varsayılan olarak yerel bilgi tabanından (81 il + tarihi noktalar)
 yanıt verir. Gerçek bir dil modeline bağlamak için `.env` dosyasına
@@ -26,13 +26,10 @@ yanıt verir. Gerçek bir dil modeline bağlamak için `.env` dosyasına
 (`src/app/lib/assistant.ts`).
 
 ## Yapı
-- `src/app/` — yeni uygulama (React + TypeScript + Tailwind + React Router + Leaflet + Lucide)
-  - `data/turkiye.json` — 81 il, 192 tarihi nokta (ilçe, dönem, tür, açıklama, “Biliyor muydunuz?”)
-  - `lib/quiz.ts` — her nokta için veriden otomatik soru üretimi · `lib/generalQuiz.ts` — 20 soruluk test
-  - `lib/progress.ts` — skorlar (localStorage) · `lib/assistant.ts` — asistan ve API entegrasyon noktası
+- `src/app/` — ana uygulama (React + TypeScript + Tailwind + React Router + Lucide)
 - `src/data/` — doğrulanmış miras veri seti (her koordinat, testte il sınırına karşı kontrol edilir)
-- `3d/` + `src/main3d.tsx`, `src/scene/` … — 3D Anadolu Mirası haritası (aşağıda)
-- `public/sanliurfa-oyun/`, `public/izmir-efes/` — Oyunlar sayfasından açılan 3D macera oyunları
+- `3d/` + `src/main3d.tsx`, `src/scene/` … — Miras. Haritası (3D harita; aşağıda ayrıntılı)
+- `public/sanliurfa-oyun/`, `public/izmir-efes/` — 3D haritadaki Şanlıurfa ve İzmir kartlarından açılan 3D macera oyunları
 
 ---
 

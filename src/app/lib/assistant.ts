@@ -47,14 +47,14 @@ export function localAnswer(input: string): ChatMessage {
       role: 'assistant',
       text: `${site.name} — ${site.city.name}${site.district ? ` / ${site.district}` : ''}\n` +
         `${site.categoryLabel} · ${site.periodLabel}\n\n${site.summary}\n\nBiliyor muydunuz? ${site.didYouKnow}`,
-      links: [{ label: 'Bu yerin oyununu oyna', to: `/oyun/${site.id}` }, { label: `${site.city.name} sayfası`, to: `/oyunlar?il=${site.city.id}` }],
+      links: [{ label: 'Haritada keşfet', to: '/harita' }],
     };
   }
   if (city) {
     return {
       role: 'assistant',
       text: `${city.name} (${String(city.plate).padStart(2, '0')})\n${city.summary}\n\nTarihi noktalar: ${city.sites.map((s) => s.name).join(', ')}.`,
-      links: [{ label: `${city.name} oyunlarını aç`, to: `/oyunlar?il=${city.id}` }, { label: 'Haritada gör', to: `/harita?il=${city.id}` }],
+      links: [{ label: 'Haritada keşfet', to: '/harita' }],
     };
   }
   if (t.includes('unesco')) {
@@ -64,9 +64,9 @@ export function localAnswer(input: string): ChatMessage {
   if (/(merhaba|selam|iyi gun|naber)/.test(t)) {
     return { role: 'assistant', text: 'Merhaba! Bir şehir ya da tarihi yer adı yaz; sana bilgi vereyim. Örnek: “Efes”, “Kars’ta ne var?”, “UNESCO alanları”.' };
   }
-  if (/(oyun|puan|nasil oyna|test)/.test(t)) {
-    return { role: 'assistant', text: 'Oyunlar sayfasında 81 ili açıp bir tarihi yer seç ve “Oyuna Başla”ya bas. Her oyunda 5 soru var; her doğru cevap 20 puan. Genel Türkiye bilgini ölçmek için Test sayfasında 20 soruluk sınav seni bekliyor.',
-      links: [{ label: 'Oyunlar', to: '/oyunlar' }, { label: 'Test', to: '/test' }] };
+  if (/(harita|nasil|kullan|gez)/.test(t)) {
+    return { role: 'assistant', text: 'Haritada önce bir bölgeye, sonra bir ile dokun. İldeki tarihi noktalara tıklayınca kamera yaklaşır ve bilgi kartı açılır. Keşfettiğin her yer Keşif Günlüğü’ne mühür olarak eklenir.',
+      links: [{ label: 'Haritayı aç', to: '/harita' }] };
   }
   return {
     role: 'assistant',
