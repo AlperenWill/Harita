@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#3E2723">
+<title>Efes'in Gezgini — İzmir</title>
+<style>
+  :root { --bej:#F5E6D3; --altin:#D4AF37; --kahve:#3E2723; --mermer:#FAF8F2; --kahve2:#5D4037; --kirmizi:#B23A2E; --yesil:#4E7D3A; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; overflow:hidden; background:var(--kahve); color:var(--kahve);
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif; touch-action:manipulation; user-select:none; }
+  canvas { position:fixed; inset:0; width:100%; height:100%; display:block; cursor:default; }
+  .hud { position:fixed; top:0; left:0; right:0; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left)); pointer-events:none; }
+  .hud > * { pointer-events:auto; }
+  .tag { background:rgba(62,39,35,.88); color:var(--bej); border:2px solid var(--altin); border-radius:10px; padding:6px 10px; font-weight:700; font-size:14px; }
+  .tag b { color:var(--altin); }
+  .spacer { flex:1; }
+  .btn { font:inherit; font-weight:700; cursor:pointer; border:2px solid var(--kahve); border-radius:10px; padding:9px 16px;
+    background:var(--altin); color:var(--kahve); box-shadow:0 3px 0 var(--kahve); }
+  .btn:active { transform:translateY(2px); box-shadow:0 1px 0 var(--kahve); }
+  .btn:focus-visible { outline:3px solid var(--mermer); outline-offset:2px; }
+  .btn.ghost { background:var(--bej); }
+  .btn:disabled { opacity:.45; cursor:default; }
+  .iconbtn { padding:6px 10px; }
+
+  /* Görsel roman tarzı diyalog kutusu */
+  #dialog { position:fixed; left:50%; transform:translateX(-50%); bottom:max(10px,env(safe-area-inset-bottom));
+    width:min(820px, calc(100% - 20px)); background:var(--mermer); border:3px solid var(--kahve); border-radius:14px;
+    box-shadow:0 6px 0 var(--kahve2), 0 18px 40px rgba(0,0,0,.35); padding:12px 14px 14px; display:none; }
+  #dialog.on { display:block; animation:up .25s ease-out; }
+  @keyframes up { from { transform:translate(-50%,20px); opacity:0; } }
+  .who { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .who .face { font-size:34px; line-height:1; width:46px; height:46px; display:grid; place-items:center; background:var(--bej); border:2px solid var(--altin); border-radius:10px; }
+  .who .face.angry { animation:shake .35s; background:#f3c4bc; }
+  @keyframes shake { 25% { transform:translateX(-4px); } 75% { transform:translateX(4px); } }
+  .who strong { display:block; font-size:16px; }
+  .trust { height:8px; width:150px; background:#e5d6c1; border:1px solid var(--kahve); border-radius:4px; overflow:hidden; margin-top:3px; }
+  .trust i { display:block; height:100%; background:linear-gradient(90deg,var(--altin),var(--yesil)); transition:width .4s; }
+  #text { font-size:16px; line-height:1.45; margin:6px 0 10px; min-height:44px; }
+  #choices { display:grid; gap:8px; }
+  .choice { text-align:left; font:inherit; font-size:15px; cursor:pointer; padding:10px 12px; border-radius:10px; border:2px solid var(--kahve2); background:var(--bej); color:var(--kahve); }
+  .choice:hover { background:#efd9b8; }
+  .choice.ok { background:#cfe3c1; border-color:var(--yesil); }
+  .choice.bad { background:#f3c4bc; border-color:var(--kirmizi); }
+  .row { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+
+  /* Modallar: görev, envanter, final */
+  .modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(30,18,14,.6); padding:14px; }
+  .modal.on { display:flex; }
+  .sheet { width:min(560px,100%); max-height:92vh; overflow:auto; background:var(--mermer); border:3px solid var(--kahve); border-radius:14px; padding:16px; box-shadow:0 6px 0 var(--kahve2); }
+  .sheet h2 { margin:0 0 4px; font-size:21px; }
+  .sheet p { margin:6px 0; line-height:1.45; }
+  .hint { font-size:13px; opacity:.8; }
+  .grid { display:grid; gap:8px; margin:10px 0; }
+  .two { grid-template-columns:1fr 1fr; }
+  .tile { font:inherit; font-size:14px; padding:10px; border-radius:10px; border:2px solid var(--kahve2); background:var(--bej); color:var(--kahve); cursor:pointer; text-align:left; min-height:44px; }
+  .tile.sel { border-color:var(--altin); box-shadow:0 0 0 3px var(--altin) inset; }
+  .tile.done { background:#cfe3c1; border-color:var(--yesil); cursor:default; }
+  .tile.bad { animation:shake .35s; background:#f3c4bc; }
+  .order { display:flex; flex-wrap:wrap; gap:6px; min-height:42px; padding:6px; border:2px dashed var(--kahve2); border-radius:10px; margin:6px 0; }
+  .order span { background:var(--altin); padding:5px 8px; border-radius:8px; font-size:13px; font-weight:700; }
+  .inv { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin-top:10px; }
+  .item { background:var(--bej); border:2px solid var(--altin); border-radius:10px; padding:10px; }
+  .item .e { font-size:28px; }
+  .item.empty { opacity:.4; border-style:dashed; border-color:var(--kahve2); }
+  .item small { display:block; font-size:12px; opacity:.85; margin-top:3px; }
+  .facts { background:var(--bej); border-left:4px solid var(--altin); padding:8px 10px; border-radius:0 10px 10px 0; margin:8px 0; font-size:14px; }
+  #toast { position:fixed; top:58px; left:50%; transform:translate(-50%,-10px); opacity:0; transition:.3s; background:var(--kahve); color:var(--bej); border:2px solid var(--altin); border-radius:10px; padding:8px 14px; font-weight:700; pointer-events:none; text-align:center; max-width:90vw; }
+  #toast.on { opacity:1; transform:translate(-50%,0); }
+  @media (max-height:500px) {
+    #dialog { padding:8px 10px 10px; }
+    #text { font-size:13.5px; min-height:0; margin:2px 0 6px; white-space:normal !important; }
+    #choices { grid-template-columns:repeat(3,1fr); gap:6px; }
+    .choice { padding:6px 8px; font-size:13px; }
+    .who { margin-bottom:2px; } .who .face { width:34px; height:34px; font-size:22px; }
+    .who strong { font-size:14px; } .trust { width:110px; }
+    .btn { padding:6px 12px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Efes antik kenti sahnesi. NPC'lere dokunarak konuş."></canvas>
+
+<div class="hud">
+  <div class="tag">🏛️ Efes · Skor <b id="score">0</b></div>
+  <div class="tag">📜 Görev <b id="qcount">0</b>/3</div>
+  <div class="spacer"></div>
+  <button class="btn ghost iconbtn" id="soundBtn" aria-label="Sesi aç veya kapat">🔊</button>
+  <button class="btn ghost" id="invBtn">🎒 Envanter</button>
+</div>
+
+<section id="dialog" role="dialog" aria-live="polite">
+  <div class="who">
+    <div class="face" id="face">📚</div>
+    <div><strong id="npcName">—</strong><div class="trust" title="Güven"><i id="trustBar" style="width:0%"></i></div><small id="trustTxt">Güven %0</small></div>
+  </div>
+  <p id="text"></p>
+  <div id="choices"></div>
+  <div class="row" id="dlgRow"></div>
+</section>
+
+<section class="modal" id="questModal" role="dialog" aria-modal="true"><div class="sheet" id="questSheet"></div></section>
+<section class="modal" id="invModal" role="dialog" aria-modal="true">
+  <div class="sheet">
+    <h2>🎒 Envanter</h2>
+    <p class="hint">Görevleri tamamladıkça Efes'ten hatıralar topla.</p>
+    <div class="inv" id="invList"></div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="invClose">Kapat</button></div>
+  </div>
+</section>
+<section class="modal" id="startModal" role="dialog" aria-modal="true">
+  <div class="sheet">
+    <h2>🏛️ Efes'in Gezgini</h2>
+    <p>Ege kıyısındaki antik Efes'e yeni geldin. Kentin üç bilgesi seni henüz tanımıyor.</p>
+    <p><b>Kütüphaneci</b>, <b>Artemis Rahibi</b> ve <b>Tüccar</b> ile konuş. Doğru cevaplarla güvenlerini <b>%100</b>'e çıkar, görevlerini tamamla ve Büyük Tiyatro'nun kapısını arala.</p>
+    <p class="hint">Karaktere dokun ya da tıkla. Yanlış cevap güveni azaltır. Zaman sınırı yok, rahatça oyna. İlerlemen otomatik kaydedilir.</p>
+    <div class="row"><button class="btn ghost" id="resetBtn2">Sıfırdan başla</button><button class="btn" id="startBtn">Keşfe başla</button></div>
+  </div>
+</section>
+<section class="modal" id="endModal" role="dialog" aria-modal="true">
+  <div class="sheet">
+    <h2>🎭 Büyük Tiyatro seni bekliyor!</h2>
+    <p>Üç bilgenin de güvenini kazandın. Liman Caddesi'nden yürüyüp Panayır Dağı'nın yamacındaki tiyatroya ulaştın.</p>
+    <div class="facts">Efes Büyük Tiyatrosu yaklaşık <b>25.000</b> seyirci alır; Anadolu'nun en büyük antik tiyatrolarındandır. Helenistik dönemde yapıldı, Roma döneminde genişletildi. Efes, 2015'te <b>UNESCO Dünya Mirası</b> listesine girdi.</div>
+    <p style="font-size:20px;text-align:center">Skor: <b id="endScore">300</b></p>
+    <div class="row"><button class="btn ghost" id="endClose">Kentte gezin</button><button class="btn" id="replayBtn">Yeniden Oyna</button></div>
+  </div>
+</section>
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+(() => {
+/* =========================================================
+   VERİ: NPC diyalog ağaçları, görevler, eşyalar
+   Bilgiler UNESCO ve arkeolojik kaynaklardaki genel kabul görmüş verilere dayanır.
+   ========================================================= */
+const NPC_DATA = [
+  {
+    id: 'kutuphaneci', name: 'Celsus Kütüphanecisi', emoji: '👴🏻', angry: '😠', fx: .22, place: 'Celsus Kütüphanesi',
+    greet: 'Hoş geldin gezgin. Kütüphaneme girmek isteyen önce bilgisini göstermeli.',
+    rounds: [
+      { info: 'Bu kütüphaneyi Gaius Julius Aquila, babası Celsus Polemaeanus\'un anısına yaptırdı; MS 117 civarında tamamlandı.',
+        q: 'Peki kütüphane kimin anısına yapıldı?', a: ['Babası Celsus\'un anısına', 'İmparator Neron\'un anısına', 'Tanrıça Athena\'nın anısına'], ok: 0 },
+      { info: 'Raflarımızda yaklaşık 12.000 parşömen tomarı bulunurdu. Antik dünyanın en büyük kütüphanelerinden biriydi.',
+        q: 'Kaç parşömen tomarı barındırıyorduk?', a: ['Yaklaşık 1.200', 'Yaklaşık 12.000', 'Yaklaşık 120.000'], ok: 1 },
+      { info: 'Cephe iki katlıdır; içeride ise rafların bulunduğu üç seviyeli galeriler vardır. Cephedeki dört heykel bilgelik, bilgi, düşünce ve erdemi simgeler.',
+        q: 'Cephedeki dört heykel neyi simgeler?', a: ['Dört mevsimi', 'Dört imparatoru', 'Bilgelik, bilgi, düşünce ve erdemi'], ok: 2 },
+      { info: 'Celsus\'un lahdi hâlâ kütüphanenin altındaki mezar odasındadır. Bir kütüphanenin içine gömülmek o çağda büyük bir onurdu.',
+        q: 'Celsus\'un lahdi nerededir?', a: ['Kütüphanenin altındaki mezar odasında', 'Artemis Tapınağı\'nda', 'Roma\'da'], ok: 0 },
+    ],
+    quest: 'scrolls', reward: { id: 'parsomen', e: '📜', name: 'Celsus Parşömeni', d: 'Kütüphaneci kronolojiyi doğru dizdiğin için bir parşömen hediye etti.' },
+  },
+  {
+    id: 'rahip', name: 'Artemis Rahibi', emoji: '🧙🏽', angry: '😤', fx: .52, place: 'Artemis Tapınağı',
+    greet: 'Artemis\'in kutsal alanına adım atan yabancı... Tapınağımızı ne kadar tanıyorsun?',
+    rounds: [
+      { info: 'Artemis Tapınağı, Antik Dünyanın Yedi Harikası\'ndan biridir.',
+        q: 'Tapınağımız hangi listede yer alır?', a: ['Antik Dünyanın Yedi Harikası', 'Roma\'nın Yedi Tepesi', 'Yedi Bilge'], ok: 0 },
+      { info: 'Yaşlı Plinius\'a göre büyük tapınağın yapımı tam 120 yıl sürdü.',
+        q: 'Plinius\'a göre yapım kaç yıl sürdü?', a: ['12 yıl', '120 yıl', '1.200 yıl'], ok: 1 },
+      { info: 'MÖ 356\'da Herostratos ün kazanmak için tapınağı yaktı. Rivayete göre o gece Büyük İskender doğdu.',
+        q: 'Tapınağı MÖ 356\'da kim yaktı?', a: ['Büyük İskender', 'Kral Kroisos', 'Herostratos'], ok: 2 },
+      { info: 'Tapınak İyon düzenindeydi ve 120\'den fazla mermer sütunu vardı. Bugün yerinde yalnızca tek bir sütun ayakta.',
+        q: 'Bugün tapınaktan kaç sütun ayakta?', a: ['Tek bir sütun', 'Yirmi sütun', 'Hepsi ayakta'], ok: 0 },
+    ],
+    quest: 'columns', reward: { id: 'mermer', e: '🏺', name: 'Artemis Mermer Parçası', d: 'Rahip, sütun düzenlerini bildiğin için kutsal bir mermer parçası verdi.' },
+  },
+  {
+    id: 'tuccar', name: 'Efes Tüccarı', emoji: '👳🏻‍♂️', angry: '😒', fx: .8, place: 'Liman Agorası',
+    greet: 'Selam yolcu! Ben vakit nakittir derim. Bakalım ticaretten anlıyor musun?',
+    rounds: [
+      { info: 'Efes bir liman kentiydi; Akdeniz\'in mallarıyla Anadolu içlerine giden yollar burada buluşurdu.',
+        q: 'Efes\'i zenginleştiren neydi?', a: ['Altın madenleri', 'Limanı ve ticaret yolları', 'Pamuk tarlaları'], ok: 1 },
+      { info: 'Küçük Menderes Nehri\'nin getirdiği alüvyon limanı yüzyıllar içinde doldurdu. Bugün deniz kentin kilometrelerce uzağında.',
+        q: 'Limanı ne bitirdi?', a: ['Nehrin taşıdığı alüvyon', 'Bir deprem', 'Bir savaş'], ok: 0 },
+      { info: 'Limandan tiyatroya uzanan sütunlu caddeye Arkadiane derdik; geceleri fenerlerle aydınlatılırdı.',
+        q: 'Limandan tiyatroya uzanan caddenin adı neydi?', a: ['Kuretler Caddesi', 'Via Appia', 'Arkadiane'], ok: 2 },
+      { info: 'Büyük Tiyatro yaklaşık 25.000 kişi alır. Panayır Dağı\'nın yamacına oyulmuştur.',
+        q: 'Büyük Tiyatro yaklaşık kaç kişi alır?', a: ['2.500', '25.000', '250.000'], ok: 1 },
+    ],
+    quest: 'goods', reward: { id: 'muhur', e: '🪙', name: 'Tüccar Mührü', d: 'Tüccar, mal-köken eşleştirmesini bildiğin için mührünü emanet etti. Tiyatronun kapısı açılır!' },
+  },
+];
+
+const QUESTS = {
+  scrolls: {
+    title: '📜 Parşömenleri Sırala',
+    intro: 'Kütüphanenin arşivi karıştı! Olayları en eskiden en yeniye doğru sıraya koy.',
+    items: [
+      'Artemis Tapınağı\'nın büyük yapımı başlar (MÖ 6. yy)',
+      'Herostratos tapınağı yakar (MÖ 356)',
+      'Celsus Kütüphanesi tamamlanır (MS ~117)',
+      'Kütüphanenin içi yangınla yok olur (MS 262)',
+      'Efes UNESCO Dünya Mirası olur (2015)',
+    ],
+  },
+  columns: {
+    title: '🏛️ Sütunları Eşleştir',
+    intro: 'Her sütun başlığını doğru tanımıyla eşleştir. Önce soldan bir sütun, sonra sağdan tanımı seç.',
+    pairs: [
+      ['Dor', 'Sade, yastık biçimli başlık'],
+      ['İyon', 'Sarmal (volüt) başlık: Artemis Tapınağı\'nın düzeni'],
+      ['Korint', 'Akantus yapraklı, süslü başlık'],
+    ],
+  },
+  goods: {
+    title: '⚖️ Malları Kökenleriyle Eşleştir',
+    intro: 'Limana gemiler yanaştı! Her malı geldiği yerle eşleştir.',
+    pairs: [
+      ['📄 Papirüs', 'Mısır (İskenderiye)'],
+      ['🪨 Beyaz mermer', 'Prokonnesos (Marmara Adası)'],
+      ['🍷 Şarap', 'Ege adaları (Sakız)'],
+      ['🧵 İpek', 'Doğu\'dan gelen kervan yolları'],
+    ],
+  },
+};
+
+/* =========================================================
+   OYUN DURUMU + KAYIT
+   ========================================================= */
+const SAVE_KEY = 'efes-gezgini-v1';
+class NPC {
+  constructor(d) { Object.assign(this, d); this.trust = 0; this.round = 0; this.questDone = false; this.mood = 0; this.hover = false; }
+  get unlocked() { return this.trust >= 100; }
+  toJSON() { return { trust: this.trust, round: this.round, questDone: this.questDone }; }
+}
+const state = { npcs: NPC_DATA.map(d => new NPC(d)), inventory: [], active: null, muted: false, finaleSeen: false };
+const score = () => state.npcs.filter(n => n.questDone).length * 100;
+
+function save() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      npcs: Object.fromEntries(state.npcs.map(n => [n.id, n.toJSON()])),
+      inventory: state.inventory, muted: state.muted, finaleSeen: state.finaleSeen,
+    }));
+  } catch (e) { /* gizli sekme vb. */ }
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!s) return false;
+    for (const n of state.npcs) Object.assign(n, s.npcs?.[n.id] || {});
+    state.inventory = s.inventory || []; state.muted = !!s.muted; state.finaleSeen = !!s.finaleSeen;
+    return true;
+  } catch (e) { return false; }
+}
+function resetGame() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  for (const n of state.npcs) { n.trust = 0; n.round = 0; n.questDone = false; n.mood = 0; }
+  state.inventory = []; state.finaleSeen = false; state.active = null;
+  closeDialog(); hideModal('endModal'); updateHud(); save();
+}
+
+/* =========================================================
+   SES (Web Audio, opsiyonel)
+   ========================================================= */
+let actx = null;
+function beep(freqs, dur = .09, type = 'square', vol = .05) {
+  if (state.muted) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    let t = actx.currentTime;
+    for (const f of freqs) {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + .02); t += dur * .9;
+    }
+  } catch (e) {}
+}
+const sfx = { click: () => beep([660], .05), ok: () => beep([523, 659, 784], .09, 'triangle', .06),
+  bad: () => beep([220, 165], .14, 'sawtooth', .04), win: () => beep([523, 659, 784, 1047, 1319], .12, 'triangle', .07) };
+
+/* =========================================================
+   ÇİZİM: düşük çözünürlüklü piksel sahne + ölçekli emoji karakterler
+   ========================================================= */
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const PX_W = 240, PX_H = 135;                 // piksel sanat çözünürlüğü (16:9)
+const off = document.createElement('canvas'); off.width = PX_W; off.height = PX_H;
+const px = off.getContext('2d');
+let W = 0, H = 0, dpr = 1, view = { x: 0, y: 0, s: 1 };
+
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  // Sahne ekranı kaplar (cover), dikeyde ortalanır
+  const s = Math.max(W / PX_W, H / PX_H);
+  view = { s, x: (W - PX_W * s) / 2, y: (H - PX_H * s) / 2 };
+  drawStatic();
+}
+
+const C = { bej: '#F5E6D3', altin: '#D4AF37', kahve: '#3E2723', kahve2: '#5D4037', mermer: '#FAF8F2', golge: '#D9C4A5', gok1: '#F7D9A8', gok2: '#F5E6D3', tepe: '#C9A97E', tepe2: '#B08F63', deniz: '#8FB3B0' };
+const R = (x, y, w, h, c) => { px.fillStyle = c; px.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+
+function drawStatic() {
+  // Gökyüzü: kademeli bantlar (piksel sanatı geçişi)
+  const bands = ['#F2C98F', '#F4D3A0', '#F5DCB2', '#F5E2C2', '#F5E6D3'];
+  bands.forEach((c, i) => R(0, i * 14, PX_W, 14, c));
+  R(0, 70, PX_W, 65, C.bej);
+  // Güneş
+  px.fillStyle = '#F9E7A6'; px.beginPath(); px.arc(200, 26, 11, 0, 7); px.fill();
+  // Uzak deniz şeridi ve tepeler (Panayır ve Bülbül dağları)
+  R(0, 66, PX_W, 4, C.deniz);
+  px.fillStyle = C.tepe; px.beginPath(); px.moveTo(0, 74);
+  for (let x = 0; x <= PX_W; x += 8) px.lineTo(x, 60 + Math.round(Math.sin(x * .03) * 6 + Math.sin(x * .011) * 5));
+  px.lineTo(PX_W, 80); px.lineTo(0, 80); px.fill();
+
+  // --- Büyük Tiyatro (sağ arka, yamaca oyulmuş yarım daire) ---
+  const tx = 168, ty = 76;
+  for (let r = 0; r < 7; r++) {
+    px.fillStyle = r % 2 ? C.golge : C.mermer;
+    px.beginPath(); px.ellipse(tx, ty, 44 - r * 5, 20 - r * 2.6, 0, Math.PI, 0); px.fill();
+  }
+  R(tx - 30, ty - 2, 60, 5, C.kahve2); // sahne binası
+  for (let i = 0; i < 8; i++) R(tx - 28 + i * 8, ty - 7, 2, 5, C.mermer);
+
+  // --- Artemis Tapınağı: tek ayakta kalan sütun + yıkık kaide (orta) ---
+  const ax = 118;
+  R(ax - 22, 92, 44, 4, C.golge); R(ax - 18, 89, 36, 3, C.mermer);
+  for (let i = 0; i < 6; i++) R(ax - 16 + i * 6.5, 86 - (i % 3), 4, 3 + (i % 3), C.golge); // kırık sütun dipleri
+  R(ax - 2, 44, 5, 45, C.mermer); R(ax - 1, 44, 1, 45, C.golge); R(ax + 2, 44, 1, 45, '#EDE3D1');
+  R(ax - 4, 42, 9, 3, C.mermer); R(ax - 5, 41, 2, 2, C.golge); R(ax + 4, 41, 2, 2, C.golge); // İyon volütleri
+  // Leylek yuvası (bugünkü sütunun simgesi)
+  R(ax - 4, 38, 9, 3, C.kahve2);
+
+  // --- Celsus Kütüphanesi (sol, iki katlı cephe) ---
+  const cx = 52, base = 100;
+  R(cx - 34, base - 4, 68, 4, C.golge);           // basamaklar
+  R(cx - 36, base, 72, 3, C.kahve2);
+  R(cx - 30, base - 60, 60, 56, C.bej);           // arka duvar
+  // Alt kat: 8 sütun çift çift, 3 kapı
+  for (let i = 0; i < 4; i++) {
+    const x = cx - 28 + i * 16;
+    R(x, base - 30, 3, 26, C.mermer); R(x + 6, base - 30, 3, 26, C.mermer);
+    R(x - 1, base - 32, 11, 3, C.golge);
+  }
+  [[-15, 9], [0, 11], [13, 9]].forEach(([dx, h]) => R(cx + dx - 3, base - 4 - h, 6, h, C.kahve));
+  R(cx - 32, base - 35, 64, 3, C.mermer);         // ara korniş
+  // Üst kat: 6 sütun, alınlıklar
+  for (let i = 0; i < 3; i++) {
+    const x = cx - 22 + i * 18;
+    R(x, base - 56, 3, 20, C.mermer); R(x + 7, base - 56, 3, 20, C.mermer);
+    px.fillStyle = C.golge; px.beginPath(); px.moveTo(x - 2, base - 57); px.lineTo(x + 5, base - 63); px.lineTo(x + 12, base - 57); px.fill();
+  }
+  R(cx - 32, base - 58, 64, 2, C.mermer);
+  // Erdem heykeli nişleri
+  [-21, -6, 6, 21].forEach(dx => R(cx + dx - 2, base - 18, 4, 7, C.golge));
+
+  // Ön plan: mermer yol (Kuretler/Arkadiane), taşlar
+  R(0, 104, PX_W, 31, '#E8D6BC');
+  for (let y = 106; y < PX_H; y += 6) for (let x = (y / 6 % 2) * 6; x < PX_W; x += 12) R(x, y, 10, 1, '#DCC7A8');
+  // Devrik sütun parçaları
+  R(84, 110, 18, 4, C.mermer); R(84, 110, 18, 1, '#fff'); R(200, 116, 14, 4, C.mermer);
+  R(10, 118, 6, 6, C.golge); R(226, 106, 8, 5, C.golge);
+}
+
+// Karakter konumları (sahne koordinatında)
+const npcPos = n => ({ x: n.fx * PX_W, y: 118 });
+function toScreen(x, y) { return { x: view.x + x * view.s, y: view.y + y * view.s }; }
+
+let t0 = performance.now(), particles = [];
+function frame(now) {
+  const t = (now - t0) / 1000;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = C.kahve; ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(off, view.x, view.y, PX_W * view.s, PX_H * view.s);
+
+  // Toz zerrecikleri (piksel)
+  if (particles.length < 40) particles.push({ x: Math.random() * PX_W, y: 70 + Math.random() * 60, v: .5 + Math.random(), a: Math.random() * 6 });
+  ctx.fillStyle = 'rgba(255,248,230,.75)';
+  for (const p of particles) {
+    p.x += p.v * .15; p.a += .02; if (p.x > PX_W) p.x = 0;
+    const s = toScreen(p.x, p.y + Math.sin(p.a) * 2);
+    ctx.fillRect(Math.round(s.x), Math.round(s.y), Math.ceil(view.s * .8), Math.ceil(view.s * .8));
+  }
+
+  // NPC'ler: kaide + emoji + güven çubuğu + etiket
+  const fs = Math.max(28, Math.min(64, view.s * 13));
+  for (const n of state.npcs) {
+    const p = npcPos(n), s = toScreen(p.x, p.y);
+    const bob = Math.sin(t * 2 + n.fx * 10) * 3 + (n.hover ? -4 : 0);
+    // gölge + taş kaide
+    ctx.fillStyle = 'rgba(62,39,35,.25)'; ctx.beginPath(); ctx.ellipse(s.x, s.y + fs * .45, fs * .55, fs * .14, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = n.questDone ? C.altin : C.mermer; ctx.strokeStyle = C.kahve; ctx.lineWidth = 2;
+    ctx.fillRect(s.x - fs * .45, s.y + fs * .3, fs * .9, fs * .16); ctx.strokeRect(s.x - fs * .45, s.y + fs * .3, fs * .9, fs * .16);
+    // hover/aktif hale
+    if (n.hover || state.active === n) { ctx.fillStyle = 'rgba(212,175,55,.35)'; ctx.beginPath(); ctx.arc(s.x, s.y - fs * .1 + bob, fs * .62, 0, 7); ctx.fill(); }
+    ctx.font = `${fs}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const face = n.mood > 0 ? n.angry : n.emoji;
+    ctx.fillText(face, s.x + (n.mood > 0 ? Math.sin(t * 40) * 3 : 0), s.y - fs * .1 + bob);
+    if (n.mood > 0) n.mood -= 1 / 60;
+    // durum rozeti
+    ctx.font = `${fs * .42}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+    ctx.fillText(n.questDone ? '✅' : n.unlocked ? '❗' : '💬', s.x + fs * .48, s.y - fs * .62 + bob);
+    // güven çubuğu
+    const bw = fs * 1.1, bx = s.x - bw / 2, by = s.y - fs * .85 + bob;
+    ctx.fillStyle = C.kahve; ctx.fillRect(bx - 2, by - 2, bw + 4, 9);
+    ctx.fillStyle = '#E5D6C1'; ctx.fillRect(bx, by, bw, 5);
+    ctx.fillStyle = n.trust >= 100 ? '#4E7D3A' : C.altin; ctx.fillRect(bx, by, bw * n.trust / 100, 5);
+    // isim etiketi
+    ctx.font = `700 ${Math.max(11, fs * .26)}px "Trebuchet MS",sans-serif`;
+    const label = n.name, tw = ctx.measureText(label).width + 12;
+    ctx.fillStyle = 'rgba(62,39,35,.88)'; ctx.fillRect(s.x - tw / 2, s.y + fs * .55, tw, fs * .34);
+    ctx.fillStyle = C.bej; ctx.fillText(label, s.x, s.y + fs * .72);
+  }
+  requestAnimationFrame(frame);
+}
+
+function hitNpc(cx, cy) {
+  const fs = Math.max(28, Math.min(64, view.s * 13));
+  return state.npcs.find(n => { const s = toScreen(npcPos(n).x, npcPos(n).y); return Math.hypot(cx - s.x, cy - (s.y - fs * .1)) < fs * .75; });
+}
+cv.addEventListener('pointermove', e => {
+  const h = hitNpc(e.clientX, e.clientY);
+  for (const n of state.npcs) n.hover = n === h;
+  cv.style.cursor = h ? 'pointer' : 'default';
+});
+cv.addEventListener('pointerdown', e => {
+  const h = hitNpc(e.clientX, e.clientY);
+  if (h && !anyModalOpen()) { sfx.click(); openNpc(h); }
+});
+
+/* =========================================================
+   DİYALOG SİSTEMİ
+   ========================================================= */
+const $ = id => document.getElementById(id);
+function setTrustUI(n) { $('trustBar').style.width = n.trust + '%'; $('trustTxt').textContent = `Güven %${n.trust} · ${n.place}`; }
+
+function openNpc(n) {
+  state.active = n;
+  $('dialog').classList.add('on');
+  $('face').textContent = n.emoji; $('face').classList.remove('angry');
+  $('npcName').textContent = n.name; setTrustUI(n);
+  if (n.questDone) return say(n, `Teşekkürler gezgin, ${n.reward.name} artık senin. Efes'te her zaman hoş karşılanırsın.`, [btn('Kapat', closeDialog, 'ghost')]);
+  if (n.unlocked) return say(n, 'Artık sana güveniyorum. Senin için bir görevim var.', [btn('Görevi başlat', () => openQuest(n)), btn('Sonra', closeDialog, 'ghost')]);
+  say(n, n.round === 0 && n.trust === 0 ? n.greet : 'Kaldığımız yerden devam edelim.', [btn('Dinliyorum', () => askRound(n)), btn('Sonra', closeDialog, 'ghost')]);
+}
+function closeDialog() { $('dialog').classList.remove('on'); state.active = null; }
+function btn(label, fn, cls = '') { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; b.onclick = () => { sfx.click(); fn(); }; return b; }
+function say(n, text, buttons = [], choices = []) {
+  $('text').textContent = text;
+  $('choices').replaceChildren(...choices);
+  $('dlgRow').replaceChildren(...buttons);
+  (choices[0] || buttons[0])?.focus({ preventScroll: true });
+}
+function askRound(n) {
+  const r = n.rounds[n.round % n.rounds.length];
+  const choices = r.a.map((txt, i) => {
+    const b = document.createElement('button'); b.className = 'choice'; b.textContent = txt;
+    b.onclick = () => answer(n, r, i, b, choices);
+    return b;
+  });
+  say(n, `${r.info}\n\n${r.q}`, [], choices);
+  $('text').style.whiteSpace = 'pre-line';
+}
+function answer(n, r, i, b, all) {
+  all.forEach(x => (x.disabled = true));
+  if (i === r.ok) {
+    b.classList.add('ok'); sfx.ok();
+    n.trust = Math.min(100, n.trust + 25); n.round++;
+    setTrustUI(n); save();
+    setTimeout(() => {
+      if (n.unlocked) say(n, '✨ Doğru! Bilgine güvenim tam. Senin için bir görevim var.', [btn('Görevi başlat', () => openQuest(n)), btn('Sonra', closeDialog, 'ghost')]);
+      else say(n, 'Doğru! Devam edelim.', [btn('Devam', () => askRound(n))]);
+    }, 550);
+  } else {
+    b.classList.add('bad'); all[r.ok].classList.add('ok'); sfx.bad();
+    n.trust = Math.max(0, n.trust - 15); n.mood = 1.2; n.round++;   // sıradaki soruya geçer; bu soru turda tekrar gelir
+    $('face').textContent = n.angry; $('face').classList.add('angry');
+    setTrustUI(n); save();
+    setTimeout(() => {
+      $('face').textContent = n.emoji; $('face').classList.remove('angry');
+      say(n, 'Hmm... Bu yanlıştı. Doğru cevabı aklında tut, bir daha soracağım.', [btn('Tekrar dene', () => askRound(n)), btn('Sonra', closeDialog, 'ghost')]);
+    }, 900);
+  }
+}
+
+/* =========================================================
+   GÖREV SİSTEMİ
+   ========================================================= */
+const modalIds = ['questModal', 'invModal', 'startModal', 'endModal'];
+const anyModalOpen = () => modalIds.some(id => $(id).classList.contains('on'));
+const showModal = id => $(id).classList.add('on');
+const hideModal = id => $(id).classList.remove('on');
+const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(v => v[1]);
+
+function openQuest(n) {
+  closeDialog();
+  const q = QUESTS[n.quest];
+  const sheet = $('questSheet');
+  sheet.innerHTML = `<h2>${q.title}</h2><p>${q.intro}</p>`;
+  if (q.items) sortQuest(n, q, sheet); else matchQuest(n, q, sheet);
+  const row = document.createElement('div'); row.className = 'row';
+  row.append(btn('Vazgeç', () => hideModal('questModal'), 'ghost'));
+  sheet.append(row);
+  showModal('questModal');
+}
+function sortQuest(n, q, sheet) {
+  const picked = [];
+  const order = document.createElement('div'); order.className = 'order'; order.setAttribute('aria-label', 'Senin sıralaman');
+  const grid = document.createElement('div'); grid.className = 'grid';
+  const info = document.createElement('p'); info.className = 'hint'; info.textContent = 'Parşömenlere sırayla dokun. Yanlışta sıralama sıfırlanır.';
+  shuffle(q.items).forEach(txt => {
+    const b = document.createElement('button'); b.className = 'tile'; b.textContent = '📜 ' + txt;
+    b.onclick = () => {
+      if (b.classList.contains('done')) return;
+      if (txt === q.items[picked.length]) {
+        picked.push(txt); b.classList.add('done'); sfx.click();
+        const s = document.createElement('span'); s.textContent = picked.length + '. ' + txt.split(' (')[0]; order.append(s);
+        if (picked.length === q.items.length) completeQuest(n);
+      } else {
+        sfx.bad(); b.classList.add('bad'); setTimeout(() => b.classList.remove('bad'), 400);
+        picked.length = 0; order.replaceChildren(); grid.querySelectorAll('.tile').forEach(x => x.classList.remove('done'));
+      }
+    };
+    grid.append(b);
+  });
+  sheet.append(info, order, grid);
+}
+function matchQuest(n, q, sheet) {
+  const grid = document.createElement('div'); grid.className = 'grid two';
+  const left = document.createElement('div'); left.className = 'grid';
+  const right = document.createElement('div'); right.className = 'grid';
+  let sel = null, done = 0;
+  q.pairs.forEach(([k]) => {
+    const b = document.createElement('button'); b.className = 'tile'; b.textContent = k; b.dataset.k = k;
+    b.onclick = () => { if (b.classList.contains('done')) return; left.querySelectorAll('.tile').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); sel = k; sfx.click(); };
+    left.append(b);
+  });
+  shuffle(q.pairs).forEach(([k, v]) => {
+    const b = document.createElement('button'); b.className = 'tile'; b.textContent = v;
+    b.onclick = () => {
+      if (b.classList.contains('done') || !sel) return;
+      const lb = left.querySelector(`[data-k="${CSS.escape(sel)}"]`);
+      if (sel === k) {
+        b.classList.add('done'); lb.classList.remove('sel'); lb.classList.add('done'); sel = null; done++; sfx.ok();
+        if (done === q.pairs.length) completeQuest(n);
+      } else { sfx.bad(); b.classList.add('bad'); setTimeout(() => b.classList.remove('bad'), 400); }
+    };
+    right.append(b);
+  });
+  grid.append(left, right);
+  sheet.append(grid);
+}
+function completeQuest(n) {
+  n.questDone = true;
+  if (!state.inventory.includes(n.reward.id)) state.inventory.push(n.reward.id);
+  save(); updateHud(); sfx.win();
+  setTimeout(() => {
+    hideModal('questModal');
+    toast(`${n.reward.e} ${n.reward.name} envanterine eklendi! +100`);
+    if (state.npcs.every(x => x.questDone)) setTimeout(showFinale, 1200);
+  }, 600);
+}
+function showFinale() { state.finaleSeen = true; save(); $('endScore').textContent = score(); showModal('endModal'); $('replayBtn').focus(); }
+
+/* =========================================================
+   ENVANTER + HUD
+   ========================================================= */
+function renderInventory() {
+  $('invList').replaceChildren(...state.npcs.map(n => {
+    const has = state.inventory.includes(n.reward.id);
+    const d = document.createElement('div'); d.className = 'item' + (has ? '' : ' empty');
+    d.innerHTML = `<div class="e">${has ? n.reward.e : '❔'}</div><b>${has ? n.reward.name : 'Bilinmeyen eşya'}</b><small>${has ? n.reward.d : n.name + ' görevini tamamla.'}</small>`;
+    return d;
+  }));
+}
+function updateHud() {
+  $('score').textContent = score();
+  $('qcount').textContent = state.npcs.filter(n => n.questDone).length;
+  $('soundBtn').textContent = state.muted ? '🔇' : '🔊';
+}
+let toastT;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+
+$('invBtn').onclick = () => { sfx.click(); renderInventory(); showModal('invModal'); };
+$('invClose').onclick = () => hideModal('invModal');
+$('soundBtn').onclick = () => { state.muted = !state.muted; updateHud(); save(); sfx.click(); };
+$('startBtn').onclick = () => { hideModal('startModal'); sfx.ok(); };
+$('resetBtn2').onclick = () => { resetGame(); hideModal('startModal'); toast('Yeni bir yolculuk başladı!'); };
+$('replayBtn').onclick = () => { resetGame(); toast('Yeniden hoş geldin, gezgin!'); };
+$('endClose').onclick = () => hideModal('endModal');
+addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (anyModalOpen()) modalIds.forEach(hideModal); else closeDialog();
+});
+for (const id of modalIds) $(id).addEventListener('pointerdown', e => { if (e.target === $(id) && id !== 'startModal') hideModal(id); });
+
+addEventListener('resize', resize);
+addEventListener('orientationchange', resize);
+const hadSave = load();
+if (!hadSave) $('resetBtn2').style.display = 'none';
+resize(); updateHud(); showModal('startModal');
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

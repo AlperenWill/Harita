@@ -139,7 +139,7 @@ function InfoCard() {
               ? `✓ Kayıp detay incelendi${site.detail ? `: ${site.detail}` : ''}`
               : 'Modelin üzerinde parıldayan kayıp mimari detayı bul ve incele.'}
           </p>
-          {site.province === 'Şanlıurfa' && <PlayButton />}
+          <PlayButton province={site.province} />
           {wiki?.url && (
             <a className="source" href={wiki.url} target="_blank" rel="noreferrer">
               Fotoğraf ve kaynak: Vikipedi / Wikimedia Commons ↗

@@ -84,7 +84,7 @@ export function Dock() {
         <span>{title}</span>
         <span aria-hidden="true">{open ? '▾' : '▴'}</span>
       </button>
-      {open && <div className="dock-body">{body}{level === 'province' && province === 'Şanlıurfa' && <PlayButton className="dock-play" />}</div>}
+      {open && <div className="dock-body">{body}{level === 'province' && province && <PlayButton province={province} className="dock-play" />}</div>}
     </section>
   );
 }
