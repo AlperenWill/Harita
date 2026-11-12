@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { @apply bg-canvas text-ink font-sans antialiased; }
+  :focus-visible { @apply outline-none ring-2 ring-brand/60 ring-offset-2; }
+  html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation: none !important; transition: none !important; }
+}
+@layer components {
+  .card { @apply bg-white border border-line rounded-2xl shadow-card; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none; }
+  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-600 shadow-sm; }
+  .btn-ghost { @apply btn bg-white text-ink border border-line hover:bg-slate-50; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; }
+}
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.animate-fade-up { animation: fade-up .25s ease-out both; }
+
+/* Leaflet açılır pencereleri temaya uydur */
+.leaflet-popup-content-wrapper { border-radius: 14px; box-shadow: 0 8px 30px rgba(15,23,42,.15); }
+.leaflet-popup-content { margin: 14px 16px; font-family: Inter, system-ui, sans-serif; }
+.leaflet-container { font-family: Inter, system-ui, sans-serif; }
+.city-pin { background: transparent; border: 0; }

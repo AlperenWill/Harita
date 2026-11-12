@@ -164,5 +164,17 @@ const sites: HeritageSite[] = [
     summary: 'Fatih döneminde boğazın en dar noktasına yapılan, yonca yaprağı planlı kale.',
     didYouKnow: 'Adı “denizin kilidi” anlamına gelir; karşı kıyıdaki Çimenlik Kalesi ile çift olarak düşünülmüştür.',
   },
+  {
+    id: 'galata', name: 'Galata Kulesi', province: 'İstanbul', category: 'mimari', period: 'bizans',
+    coord: [28.9742, 41.0256], wiki: 'Galata Kulesi',
+    summary: '1348’de Cenevizliler tarafından Galata surlarının bir parçası olarak yapılan kule; Osmanlı döneminde yangın gözetleme kulesi oldu.',
+    didYouKnow: 'Evliya Çelebi’ye göre Hezârfen Ahmed Çelebi 17. yüzyılda bu kuleden Üsküdar’a uçmuştur.',
+  },
+  {
+    id: 'kiz-kulesi', name: 'Kız Kulesi', province: 'İstanbul', category: 'mimari', period: 'osmanli',
+    coord: [29.0041, 41.0211], wiki: 'Kız Kulesi',
+    summary: 'Üsküdar açıklarında küçük bir adacık üzerindeki kule; tarih boyunca gözetleme, fener ve karantina yeri olarak kullanıldı.',
+    didYouKnow: 'Bugünkü yapının büyük bölümü 18. yüzyıldaki yangından sonra yeniden inşa edilmiştir; 2023’te restorasyon sonrası yeniden açıldı.',
+  },
 ];
 export default sites;

@@ -1,0 +1,4210 @@
+{
+ "cities": [
+  {
+   "id": "adana",
+   "name": "Adana",
+   "plate": 1,
+   "region": "akdeniz",
+   "regionName": "Akdeniz",
+   "center": [
+    35.5923,
+    37.4595
+   ],
+   "summary": "Akdeniz Bölgesi’nde yer alan Adana (01), ortalama 400 m rakımlı bir ildir. Öne çıkan miras: Taşköprü, Misis Mozaik Müzesi, Yılankale.",
+   "sites": [
+    {
+     "id": "taskopru-adana",
+     "name": "Taşköprü",
+     "district": "Seyhan",
+     "category": "kopru",
+     "categoryLabel": "Tarihî Köprü",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      35.333,
+      36.985
+     ],
+     "summary": "Seyhan Nehri üzerindeki Roma köprüsü; dünyada hâlâ kullanılan en eski köprülerden biri.",
+     "didYouKnow": "Köprü yüzyıllarca araç trafiğine açıktı; 2007’de yayalara ayrıldı.",
+     "wiki": "Taşköprü (Adana)"
+    },
+    {
+     "id": "misis",
+     "name": "Misis Mozaik Müzesi",
+     "district": "Yüreğir",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      35.626,
+      36.959
+     ],
+     "summary": "Antik Mopsuestia kentinde bulunan Nuh’un Gemisi mozaiğini yerinde sergileyen küçük müze.",
+     "didYouKnow": "Mozaikte geminin etrafında çok sayıda hayvan figürü işlenmiştir.",
+     "wiki": "Misis Mozaik Müzesi"
+    },
+    {
+     "id": "yilankale",
+     "name": "Yılankale",
+     "district": "Ceyhan",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      35.747,
+      37.011
+     ],
+     "summary": "Ceyhan Ovası’na hâkim kayalık üzerindeki Ortaçağ Kilikya kalesi.",
+     "didYouKnow": "Adını efsanevi yılanlar kralı Şahmeran’dan aldığı anlatılır.",
+     "wiki": "Yılankale"
+    }
+   ]
+  },
+  {
+   "id": "adiyaman",
+   "name": "Adıyaman",
+   "plate": 2,
+   "region": "guneydogu",
+   "regionName": "Güneydoğu Anadolu",
+   "center": [
+    38.3346,
+    37.8049
+   ],
+   "summary": "Güneydoğu Anadolu Bölgesi’nde yer alan Adıyaman (02), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Nemrut Dağı, Cendere Köprüsü, Perre Antik Kenti; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "nemrut",
+     "name": "Nemrut Dağı",
+     "district": "Kahta",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      38.741,
+      37.981
+     ],
+     "summary": "Kommagene Kralı I. Antiokhos’un 2.134 m’deki anıt mezarı; dev tanrı heykelleri ve gün doğumu ile ünlü.",
+     "didYouKnow": "Heykel başları yüzyıllar içinde depremlerle gövdelerinden düşmüş ve terasa dizilmiştir.",
+     "wiki": "Nemrut Dağı"
+    },
+    {
+     "id": "cendere",
+     "name": "Cendere Köprüsü",
+     "district": "Kahta",
+     "category": "kopru",
+     "categoryLabel": "Tarihî Köprü",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      38.628,
+      37.937
+     ],
+     "summary": "MS 2. yüzyılda Septimius Severus adına yapılan tek kemerli Roma köprüsü.",
+     "didYouKnow": "Köprü başlangıçta dört sütunla süslüydü; bugün üç sütun ayaktadır.",
+     "wiki": "Cendere Köprüsü"
+    },
+    {
+     "id": "perre",
+     "name": "Perre Antik Kenti",
+     "district": "Merkez",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      38.28,
+      37.78
+     ],
+     "summary": "Kommagene’nin beş büyük kentinden biri; kaya mezarları ve antik çeşmesiyle az bilinen bir durak.",
+     "didYouKnow": "Antik çeşme hâlâ akmaktadır ve köylüler tarafından kullanılır.",
+     "wiki": "Perre"
+    }
+   ]
+  },
+  {
+   "id": "afyonkarahisar",
+   "name": "Afyonkarahisar",
+   "plate": 3,
+   "region": "ege",
+   "regionName": "Ege",
+   "center": [
+    30.6527,
+    38.622
+   ],
+   "summary": "Ege Bölgesi’nde yer alan Afyonkarahisar (03), ortalama 1.100 m rakımlı bir ildir. Öne çıkan miras: Afyonkarahisar Ulu Camii, Ayazini Kaya Yerleşimi (Frig Vadisi); 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "afyon-ulu",
+     "name": "Afyonkarahisar Ulu Camii",
+     "district": "Merkez",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      30.54,
+      38.757
+     ],
+     "summary": "1272’de yapılan ahşap direkli cami, 2023’te “Anadolu’nun Ortaçağ Ahşap Hipostil Camileri” kapsamında UNESCO listesine girdi.",
+     "didYouKnow": "Kırk ahşap direğin başlıkları mukarnaslı ve her biri farklıdır.",
+     "wiki": "Afyonkarahisar Ulu Camii"
+    },
+    {
+     "id": "ayazini",
+     "name": "Ayazini Kaya Yerleşimi (Frig Vadisi)",
+     "district": "İhsaniye",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      30.7,
+      38.99
+     ],
+     "summary": "Frig Vadisi’nde tüf kayalara oyulmuş mezarlar, odalar ve Bizans dönemi kaya kilisesi.",
+     "didYouKnow": "Aynı kayalar önce Frigler, sonra Romalılar ve Bizanslılar tarafından yeniden kullanıldı.",
+     "wiki": "Ayazini"
+    }
+   ]
+  },
+  {
+   "id": "agri",
+   "name": "Ağrı",
+   "plate": 4,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    43.2689,
+    39.5753
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Ağrı (04), ortalama 1.900 m rakımlı bir ildir. Öne çıkan miras: İshak Paşa Sarayı.",
+   "sites": [
+    {
+     "id": "ishakpasa",
+     "name": "İshak Paşa Sarayı",
+     "district": "Doğubayazıt",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      44.13,
+      39.521
+     ],
+     "summary": "Doğubayazıt’ta İpek Yolu’na bakan 18. yüzyıl sarayı; Osmanlı, Selçuklu ve İran üsluplarını birleştirir.",
+     "didYouKnow": "Sarayda ısıtma için duvar içi kanalların kullanıldığı bir merkezi ısıtma sistemi vardı.",
+     "wiki": "İshak Paşa Sarayı"
+    }
+   ]
+  },
+  {
+   "id": "aksaray",
+   "name": "Aksaray",
+   "plate": 68,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    33.8411,
+    38.3707
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Aksaray (68), ortalama 1.100 m rakımlı bir ildir. Öne çıkan miras: Ihlara Vadisi, Sultanhanı Kervansarayı, Aşıklı Höyük.",
+   "sites": [
+    {
+     "id": "ihlara",
+     "name": "Ihlara Vadisi",
+     "district": "Güzelyurt",
+     "category": "kultur-peyzaji",
+     "categoryLabel": "Kültürel Peyzaj",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      34.3,
+      38.253
+     ],
+     "summary": "Melendiz Çayı’nın oyduğu kanyonun duvarlarında freskli onlarca kaya kilisesi.",
+     "didYouKnow": "Vadi yaklaşık 14 km uzunluğunda ve yer yer 100 m derinliğindedir.",
+     "wiki": "Ihlara Vadisi"
+    },
+    {
+     "id": "sultanhani-aksaray",
+     "name": "Sultanhanı Kervansarayı",
+     "district": "Sultanhanı",
+     "category": "han",
+     "categoryLabel": "Han & Kervansaray",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      33.546,
+      38.248
+     ],
+     "summary": "1229’da yapılan, Anadolu’nun en büyük Selçuklu kervansaraylarından biri.",
+     "didYouKnow": "Avlunun ortasında ayaklar üzerinde yükselen bir köşk mescit bulunur.",
+     "wiki": "Sultanhanı Kervansarayı"
+    },
+    {
+     "id": "asikli",
+     "name": "Aşıklı Höyük",
+     "district": "Gülağaç",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      34.229,
+      38.348
+     ],
+     "summary": "Yaklaşık 10.000 yıllık yerleşim; insanların avcılıktan çiftçiliğe geçişini adım adım gösterir.",
+     "didYouKnow": "Burada yapılan bir beyin ameliyatının (trepanasyon) izleri bulunmuştur.",
+     "wiki": "Aşıklı Höyük"
+    }
+   ]
+  },
+  {
+   "id": "amasya",
+   "name": "Amasya",
+   "plate": 5,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    35.7215,
+    40.6915
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Amasya (05), ortalama 700 m rakımlı bir ildir. Öne çıkan miras: Amasya Kral Kaya Mezarları, Amasya Darüşşifası, Hazeranlar Konağı.",
+   "sites": [
+    {
+     "id": "kral-kaya",
+     "name": "Amasya Kral Kaya Mezarları",
+     "district": "Merkez",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      35.83,
+      40.654
+     ],
+     "summary": "Pontus krallarının Harşena Dağı’na oyulmuş anıtsal mezarları; geceleri ışıklandırılır.",
+     "didYouKnow": "Mezarları kente bağlayan kaya içi tüneller, “Aynalı Mağara” gibi gizli geçitler bulunur.",
+     "wiki": "Amasya Kral Kaya Mezarları"
+    },
+    {
+     "id": "amasya-bimarhane",
+     "name": "Amasya Darüşşifası",
+     "district": "Merkez",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      35.835,
+      40.652
+     ],
+     "summary": "1308’de İlhanlı döneminde açılan hastane; bugün Tıp ve Cerrahi Tarihi Müzesi.",
+     "didYouKnow": "Burada çalışan Sabuncuoğlu Şerefeddin, minyatürlü ilk Türkçe cerrahi kitabını yazdı.",
+     "wiki": "Amasya Darüşşifası"
+    },
+    {
+     "id": "hazeranlar",
+     "name": "Hazeranlar Konağı",
+     "district": "Merkez",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      35.832,
+      40.651
+     ],
+     "summary": "Yeşilırmak kıyısındaki 1872 tarihli konak, Osmanlı ev yaşamını anlatan etnografya müzesidir.",
+     "didYouKnow": "Kıyıdaki “Yalıboyu evleri” suya yansıyan cumbalarıyla kentin kartpostal görüntüsüdür.",
+     "wiki": "Hazeranlar Konağı"
+    }
+   ]
+  },
+  {
+   "id": "ankara",
+   "name": "Ankara",
+   "plate": 6,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    32.6207,
+    39.7937
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Ankara (06), ortalama 1.000 m rakımlı bir ildir. Öne çıkan miras: Anıtkabir, Anadolu Medeniyetleri Müzesi, Augustus Tapınağı; 2 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "anitkabir",
+     "name": "Anıtkabir",
+     "district": "Çankaya",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "cumhuriyet",
+     "periodLabel": "Cumhuriyet",
+     "coord": [
+      32.837,
+      39.925
+     ],
+     "summary": "Mustafa Kemal Atatürk’ün anıt mezarı (1953); Anadolu uygarlıklarından motifleri modern bir dille yorumlar.",
+     "didYouKnow": "Yapıda Türkiye’nin farklı bölgelerinden getirilen renkli taşlar kullanıldı.",
+     "wiki": "Anıtkabir"
+    },
+    {
+     "id": "amm",
+     "name": "Anadolu Medeniyetleri Müzesi",
+     "district": "Altındağ",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "tunc",
+     "periodLabel": "Tunç Çağı & Hitit",
+     "coord": [
+      32.862,
+      39.9385
+     ],
+     "summary": "Bir Osmanlı bedesteni ve hanında kurulan müze, Paleolitik’ten Osmanlı’ya Anadolu’yu kronolojik anlatır.",
+     "didYouKnow": "Müze 1997’de İsviçre’de “Avrupa’da Yılın Müzesi” seçildi.",
+     "wiki": "Anadolu Medeniyetleri Müzesi"
+    },
+    {
+     "id": "augustus",
+     "name": "Augustus Tapınağı",
+     "district": "Altındağ",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      32.858,
+      39.9446
+     ],
+     "summary": "Galatya’nın başkenti Ankyra’daki tapınak, İmparator Augustus’un vasiyetini (Res Gestae) taşır.",
+     "didYouKnow": "Res Gestae metninin en eksiksiz kopyası Roma’da değil, Ankara’dadır.",
+     "wiki": "Augustus Tapınağı"
+    },
+    {
+     "id": "gordion",
+     "name": "Gordion",
+     "district": "Polatlı",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      31.98,
+      39.65
+     ],
+     "summary": "Frig başkenti; 2023’te UNESCO listesine girdi. Büyük tümülüsü dünyanın en eski ayakta duran ahşap yapılarından birini korur.",
+     "didYouKnow": "Efsanevi “Gordion düğümü” bu kentle ilişkilendirilir.",
+     "wiki": "Gordion"
+    },
+    {
+     "id": "arslanhane",
+     "name": "Arslanhane (Ahi Şerafettin) Camii",
+     "district": "Altındağ",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      32.864,
+      39.937
+     ],
+     "summary": "13. yüzyıl sonunda yapılan ahşap direkli cami; 2023’te UNESCO listesine girdi.",
+     "didYouKnow": "Adını avludaki Roma dönemine ait devşirme aslan heykelinden alır.",
+     "wiki": "Arslanhane Camii"
+    },
+    {
+     "id": "ankara-kalesi",
+     "name": "Ankara Kalesi",
+     "district": "Altındağ",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      32.8644,
+      39.941
+     ],
+     "summary": "Kentin en eski bölümüne hâkim tepedeki kale; bugünkü surların önemli kısmı Bizans döneminden kalır.",
+     "didYouKnow": "Kale duvarlarında Roma dönemine ait devşirme yazıtlı taşlar ve sütun parçaları görülebilir.",
+     "wiki": "Ankara Kalesi"
+    }
+   ]
+  },
+  {
+   "id": "antalya",
+   "name": "Antalya",
+   "plate": 7,
+   "region": "akdeniz",
+   "regionName": "Akdeniz",
+   "center": [
+    31.172,
+    36.939
+   ],
+   "summary": "Akdeniz Bölgesi’nde yer alan Antalya (07), ortalama 700 m rakımlı bir ildir. Öne çıkan miras: Aspendos Tiyatrosu, Ksanthos-Letoon, Myra ve Aziz Nikolaos Kilisesi; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "aspendos",
+     "name": "Aspendos Tiyatrosu",
+     "district": "Serik",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      31.172,
+      36.939
+     ],
+     "summary": "MS 2. yüzyılda yapılan, antik dünyanın en iyi korunmuş Roma tiyatrolarından biri.",
+     "didYouKnow": "Akustiği o kadar iyidir ki sahnede düşen bir bozuk para üst sıralardan duyulabilir.",
+     "wiki": "Aspendos"
+    },
+    {
+     "id": "xanthos",
+     "name": "Ksanthos-Letoon",
+     "district": "Kaş",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      29.318,
+      36.356
+     ],
+     "summary": "Likya Birliği’nin başkenti ve kutsal alanı Letoon; Likçe yazıtlarıyla UNESCO listesinde.",
+     "didYouKnow": "Letoon’da bulunan üç dilli yazıt, Likçenin çözülmesine yardım etti.",
+     "wiki": "Ksanthos"
+    },
+    {
+     "id": "myra",
+     "name": "Myra ve Aziz Nikolaos Kilisesi",
+     "district": "Demre",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      29.985,
+      36.245
+     ],
+     "summary": "Demre’deki kilise, Noel Baba figürüne ilham veren Myra Piskoposu Nikolaos ile anılır.",
+     "didYouKnow": "Kilisenin tabanı yüzyıllar içinde biriken alüvyon nedeniyle bugünkü yol seviyesinin metrelerce altındadır.",
+     "wiki": "Aziz Nikolaos Kilisesi"
+    },
+    {
+     "id": "karain",
+     "name": "Karain Mağarası",
+     "district": "Döşemealtı",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      30.571,
+      37.079
+     ],
+     "summary": "Paleolitik çağdan itibaren kesintisiz kullanılmış, Türkiye’nin en önemli tarih öncesi mağaralarından.",
+     "didYouKnow": "Mağarada Neandertal ve modern insana ait izler aynı stratigrafide bulunmuştur.",
+     "wiki": "Karain Mağarası"
+    },
+    {
+     "id": "kizilkule",
+     "name": "Alanya Kızılkule",
+     "district": "Alanya",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      32.001,
+      36.538
+     ],
+     "summary": "1226’da Alaeddin Keykubad’ın yaptırdığı sekizgen kule, Selçuklu tersanesini korurdu.",
+     "didYouKnow": "Alanya tersanesi, Selçukluların Akdeniz’deki tek tersanesiydi ve beş gözlü kemeriyle hâlâ ayaktadır.",
+     "wiki": "Kızıl Kule (Alanya)"
+    },
+    {
+     "id": "hadrian-kapisi",
+     "name": "Hadrian Kapısı",
+     "district": "Muratpaşa",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      30.7083,
+      36.8853
+     ],
+     "summary": "İmparator Hadrianus’un MS 130’daki ziyareti onuruna yapılan üç kemerli mermer tören kapısı.",
+     "didYouKnow": "Kapının altından geçen antik yolda arabaların bıraktığı tekerlek izleri hâlâ görülebilir.",
+     "wiki": "Hadrian Kapısı"
+    },
+    {
+     "id": "perge",
+     "name": "Perge Antik Kenti",
+     "district": "Aksu",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      30.854,
+      36.9612
+     ],
+     "summary": "Pamfilya’nın önemli kentlerinden; Helenistik kapı kuleleri, sütunlu caddesi ve stadyumuyla tanınır.",
+     "didYouKnow": "Antalya Müzesi’ndeki heykellerin büyük bölümü Perge kazılarından çıkmıştır.",
+     "wiki": "Perge"
+    },
+    {
+     "id": "termessos",
+     "name": "Termessos",
+     "district": null,
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      30.4642,
+      36.9839
+     ],
+     "summary": "Güllük Dağı’nda yaklaşık 1.000 m yükseklikte kurulmuş Pisidya kenti; tiyatrosu dağların arasında bir balkon gibidir.",
+     "didYouKnow": "Büyük İskender MÖ 333’te kenti kuşattı ancak alamadan ayrıldı.",
+     "wiki": "Termessos"
+    }
+   ]
+  },
+  {
+   "id": "ardahan",
+   "name": "Ardahan",
+   "plate": 75,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    42.7618,
+    41.1157
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Ardahan (75), ortalama 1.900 m rakımlı bir ildir. Öne çıkan miras: Şeytan Kalesi.",
+   "sites": [
+    {
+     "id": "seytan-kalesi",
+     "name": "Şeytan Kalesi",
+     "district": "Çıldır",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      43.01,
+      41.07
+     ],
+     "summary": "Çıldır’da derin bir kanyonun kenarına tünemiş Ortaçağ kalesi.",
+     "didYouKnow": "Kışın Çıldır Gölü donduğunda, buz üzerinde atlı kızak yolculukları yapılır.",
+     "wiki": "Şeytan Kalesi"
+    }
+   ]
+  },
+  {
+   "id": "artvin",
+   "name": "Artvin",
+   "plate": 8,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    41.8158,
+    41.1092
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Artvin (08), ortalama 1.200 m rakımlı bir ildir. Öne çıkan miras: İşhan Manastırı.",
+   "sites": [
+    {
+     "id": "ishan",
+     "name": "İşhan Manastırı",
+     "district": "Yusufeli",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      41.73,
+      40.77
+     ],
+     "summary": "Yusufeli’nin dağlarında Ortaçağ Gürcü mimarisinin önemli örneklerinden; restorasyonla yeniden ayağa kalkıyor.",
+     "didYouKnow": "Kubbe kasnağındaki fresklerin bir bölümü 11. yüzyıldan kalmadır.",
+     "wiki": "İşhan Kilisesi"
+    }
+   ]
+  },
+  {
+   "id": "aydin",
+   "name": "Aydın",
+   "plate": 9,
+   "region": "ege",
+   "regionName": "Ege",
+   "center": [
+    28.0168,
+    37.7534
+   ],
+   "summary": "Ege Bölgesi’nde yer alan Aydın (09), ortalama 300 m rakımlı bir ildir. Öne çıkan miras: Afrodisias, Priene, Didyma Apollon Tapınağı; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "afrodisias",
+     "name": "Afrodisias",
+     "district": "Karacasu",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      28.724,
+      37.7085
+     ],
+     "summary": "Afrodit kültüyle ünlü antik kent ve Roma döneminin önemli heykeltıraşlık okulu; 2017’de UNESCO listesine girdi.",
+     "didYouKnow": "Yakındaki mermer ocakları sayesinde heykeltıraşların imzalı eserleri Roma’ya kadar ulaştı.",
+     "wiki": "Afrodisias"
+    },
+    {
+     "id": "priene",
+     "name": "Priene",
+     "district": "Söke",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      27.2975,
+      37.6595
+     ],
+     "summary": "Hippodamos ızgara planının en iyi korunmuş örneklerinden; Athena Tapınağı Mykale eteklerine yaslanır.",
+     "didYouKnow": "Kent kurulduğunda bir limandı; Büyük Menderes’in getirdiği alüvyon kıyıyı kilometrelerce uzaklaştırdı.",
+     "wiki": "Priene"
+    },
+    {
+     "id": "didyma",
+     "name": "Didyma Apollon Tapınağı",
+     "district": "Didim",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      27.256,
+      37.385
+     ],
+     "summary": "Antik dünyanın en büyük kehanet merkezlerinden; yüz yirmiyi aşkın sütunla planlanan dev tapınak.",
+     "didYouKnow": "Tapınak duvarlarına kazınmış inşaat çizimleri, antik mimarların “planlarını” bugüne taşıdı.",
+     "wiki": "Didyma"
+    }
+   ]
+  },
+  {
+   "id": "balikesir",
+   "name": "Balıkesir",
+   "plate": 10,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    27.8665,
+    39.6748
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Balıkesir (10), ortalama 300 m rakımlı bir ildir. Öne çıkan miras: Kyzikos Antik Kenti, Zağnos Paşa Camii.",
+   "sites": [
+    {
+     "id": "kyzikos",
+     "name": "Kyzikos Antik Kenti",
+     "district": "Erdek",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      27.88,
+      40.39
+     ],
+     "summary": "Kapıdağ Yarımadası’nın girişindeki antik liman kenti; Hadrianus Tapınağı’nın kalıntılarıyla bilinir.",
+     "didYouKnow": "Kentin elektron sikkeleri “kyzikenos” adıyla antik dünyada uluslararası para gibi kullanıldı.",
+     "wiki": "Kyzikos"
+    },
+    {
+     "id": "zagnos",
+     "name": "Zağnos Paşa Camii",
+     "district": "Karesi",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      27.885,
+      39.648
+     ],
+     "summary": "15. yüzyılda Fatih’in veziri Zağnos Paşa’nın yaptırdığı külliyenin camisi.",
+     "didYouKnow": "Külliyenin hamamı bugün de kullanılmaktadır.",
+     "wiki": "Zağnos Paşa Camii"
+    }
+   ]
+  },
+  {
+   "id": "bartin",
+   "name": "Bartın",
+   "plate": 74,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    32.4689,
+    41.5486
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Bartın (74), ortalama 300 m rakımlı bir ildir. Öne çıkan miras: Amasra Kalesi.",
+   "sites": [
+    {
+     "id": "amasra",
+     "name": "Amasra Kalesi",
+     "district": "Amasra",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      32.387,
+      41.748
+     ],
+     "summary": "Antik Amastris’in surları üzerine kurulan ve Cenevizlilerce de kullanılan çok katmanlı kale.",
+     "didYouKnow": "Kemere Köprüsü, kaleyi küçük ada Boztepe’ye bağlar.",
+     "wiki": "Amasra Kalesi"
+    }
+   ]
+  },
+  {
+   "id": "batman",
+   "name": "Batman",
+   "plate": 72,
+   "region": "guneydogu",
+   "regionName": "Güneydoğu Anadolu",
+   "center": [
+    41.4079,
+    38.0001
+   ],
+   "summary": "Güneydoğu Anadolu Bölgesi’nde yer alan Batman (72), ortalama 700 m rakımlı bir ildir. Öne çıkan miras: Hasankeyf.",
+   "sites": [
+    {
+     "id": "hasankeyf",
+     "name": "Hasankeyf",
+     "district": "Hasankeyf",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      41.414,
+      37.713
+     ],
+     "summary": "Dicle kıyısındaki binlerce yıllık yerleşim; 2020’de baraj gölü altında kaldı, bazı anıtlar yeni alana taşındı.",
+     "didYouKnow": "Zeynel Bey Türbesi tek parça hâlinde taşınarak yeni kültür parkına yerleştirildi.",
+     "wiki": "Hasankeyf"
+    }
+   ]
+  },
+  {
+   "id": "bayburt",
+   "name": "Bayburt",
+   "plate": 69,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    40.2312,
+    40.2369
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Bayburt (69), ortalama 1.700 m rakımlı bir ildir. Öne çıkan miras: Bayburt Kalesi, Dede Korkut Mirası.",
+   "sites": [
+    {
+     "id": "bayburt-kale",
+     "name": "Bayburt Kalesi",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      40.228,
+      40.261
+     ],
+     "summary": "Çoruh kıyısında kenti çevreleyen, Bizans’tan Saltuklulara ve Osmanlı’ya uzanan çok katmanlı kale.",
+     "didYouKnow": "Seyyah Marco Polo’nun da Bayburt’tan geçtiği bilinir.",
+     "wiki": "Bayburt Kalesi"
+    },
+    {
+     "id": "dede-korkut",
+     "name": "Dede Korkut Mirası",
+     "district": "Merkez",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      40.15,
+      40.2
+     ],
+     "summary": "Dede Korkut destanları, anlatıları ve müziği; 2018’de çok uluslu dosyayla UNESCO listesine girdi. Bayburt’ta her yıl Dede Korkut Şöleni yapılır.",
+     "didYouKnow": "Masat Köyü’ndeki geleneğe göre Dede Korkut’un mezarı Bayburt’tadır.",
+     "wiki": "Dede Korkut"
+    }
+   ]
+  },
+  {
+   "id": "bilecik",
+   "name": "Bilecik",
+   "plate": 11,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    30.1197,
+    40.1158
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Bilecik (11), ortalama 600 m rakımlı bir ildir. Öne çıkan miras: Ertuğrul Gazi Türbesi.",
+   "sites": [
+    {
+     "id": "ertugrul-turbe",
+     "name": "Ertuğrul Gazi Türbesi",
+     "district": "Söğüt",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      30.181,
+      40.017
+     ],
+     "summary": "Söğüt’te Osmanlı Beyliği’nin kuruluş hikâyesiyle özdeşleşmiş türbe; her yıl Söğüt Şenlikleri’ne ev sahipliği yapar.",
+     "didYouKnow": "Bugünkü yapı, II. Abdülhamid döneminde yeniden düzenlenmiştir.",
+     "wiki": "Ertuğrul Gazi Türbesi"
+    }
+   ]
+  },
+  {
+   "id": "bingol",
+   "name": "Bingöl",
+   "plate": 12,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    40.7216,
+    39.0451
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Bingöl (12), ortalama 1.400 m rakımlı bir ildir. Öne çıkan miras: Solhan Yüzen Adalar.",
+   "sites": [
+    {
+     "id": "yuzen-adalar",
+     "name": "Solhan Yüzen Adalar",
+     "district": "Solhan",
+     "category": "kultur-peyzaji",
+     "categoryLabel": "Kültürel Peyzaj",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      41.05,
+      38.95
+     ],
+     "summary": "Turbadan oluşan adacıkların göl yüzeyinde rüzgârla yer değiştirdiği nadir bir doğa olayı.",
+     "didYouKnow": "Adaların üzerinde ağaçlar yetişir ve yerel halk bu adacıklara binerek gölde dolaşabilir.",
+     "wiki": "Yüzen Adalar"
+    }
+   ]
+  },
+  {
+   "id": "bitlis",
+   "name": "Bitlis",
+   "plate": 13,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    42.4014,
+    38.5504
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Bitlis (13), ortalama 1.700 m rakımlı bir ildir. Öne çıkan miras: Ahlat Selçuklu Meydan Mezarlığı, Bitlis Ulu Camii.",
+   "sites": [
+    {
+     "id": "ahlat",
+     "name": "Ahlat Selçuklu Meydan Mezarlığı",
+     "district": "Ahlat",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      42.463,
+      38.757
+     ],
+     "summary": "Van Gölü kıyısında binlerce işlemeli mezar taşından oluşan, dünyanın en büyük Türk-İslam mezarlıklarından biri.",
+     "didYouKnow": "Bazı şahideler 4 m’yi aşar ve üzerlerindeki desenler bir dantel gibi işlenmiştir.",
+     "wiki": "Ahlat Selçuklu Meydan Mezarlığı"
+    },
+    {
+     "id": "bitlis-ulu",
+     "name": "Bitlis Ulu Camii",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      42.11,
+      38.4
+     ],
+     "summary": "12. yüzyılda Artuklular döneminde yapılan, kentin dar vadisine sıkışmış sade taş cami.",
+     "didYouKnow": "Bitlis, kendine özgü taş evleri ve dere boyunca kademelenen yerleşimiyle bilinir.",
+     "wiki": "Bitlis Ulu Camii"
+    }
+   ]
+  },
+  {
+   "id": "bolu",
+   "name": "Bolu",
+   "plate": 14,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    31.6656,
+    40.6015
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Bolu (14), ortalama 1.000 m rakımlı bir ildir. Öne çıkan miras: Mudurnu Tarihî Çarşısı.",
+   "sites": [
+    {
+     "id": "mudurnu",
+     "name": "Mudurnu Tarihî Çarşısı",
+     "district": "Mudurnu",
+     "category": "kultur-peyzaji",
+     "categoryLabel": "Kültürel Peyzaj",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      31.208,
+      40.463
+     ],
+     "summary": "Ahi teşkilatının izlerini taşıyan çarşı, Yıldırım Bayezid Camii ve hamamı ile korunmuş bir Osmanlı kasabası.",
+     "didYouKnow": "Mudurnu, “sakin şehir” (Cittaslow) ağına katılan kasabalardandır.",
+     "wiki": "Mudurnu"
+    }
+   ]
+  },
+  {
+   "id": "burdur",
+   "name": "Burdur",
+   "plate": 15,
+   "region": "akdeniz",
+   "regionName": "Akdeniz",
+   "center": [
+    30.09,
+    37.4231
+   ],
+   "summary": "Akdeniz Bölgesi’nde yer alan Burdur (15), ortalama 1.100 m rakımlı bir ildir. Öne çıkan miras: Sagalassos, Hacılar Höyüğü.",
+   "sites": [
+    {
+     "id": "sagalassos",
+     "name": "Sagalassos",
+     "district": "Ağlasun",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      30.517,
+      37.677
+     ],
+     "summary": "1.500 m rakımdaki dağ kenti; Antoninler Çeşmesi yeniden ayağa kaldırılarak suyla buluşturuldu.",
+     "didYouKnow": "Kent depremler ve salgınlar sonrası terk edildiği için üzeri sonraki dönemlerde yapılaşmadı.",
+     "wiki": "Sagalassos"
+    },
+    {
+     "id": "hacilar",
+     "name": "Hacılar Höyüğü",
+     "district": "Merkez",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      30.0806,
+      37.5917
+     ],
+     "summary": "Neolitik ve Kalkolitik dönem boyalı çanak çömleği ve kadın figürinleriyle tanınan yerleşim.",
+     "didYouKnow": "Hacılar seramikleri Burdur Müzesi’nin en çarpıcı koleksiyonlarındandır.",
+     "wiki": "Hacılar"
+    }
+   ]
+  },
+  {
+   "id": "bursa",
+   "name": "Bursa",
+   "plate": 16,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    29.026,
+    40.1149
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Bursa (16), ortalama 500 m rakımlı bir ildir. Öne çıkan miras: Cumalıkızık, Koza Han, Karagöz Gölge Oyunu; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "cumalikizik",
+     "name": "Cumalıkızık",
+     "district": "Yıldırım",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      29.172,
+      40.176
+     ],
+     "summary": "Osmanlı’nın erken dönem vakıf köylerinden; taş-ahşap evleri ve dar sokaklarıyla “Bursa ve Cumalıkızık” UNESCO alanının parçası.",
+     "didYouKnow": "Köyün adındaki “Cuma”, Cuma namazının burada kılındığı merkez köy olmasından gelir.",
+     "wiki": "Cumalıkızık"
+    },
+    {
+     "id": "koza-han",
+     "name": "Koza Han",
+     "district": "Osmangazi",
+     "category": "han",
+     "categoryLabel": "Han & Kervansaray",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      29.063,
+      40.1836
+     ],
+     "summary": "1491’de II. Bayezid döneminde yapılan han, yüzyıllardır ipek kozası ticaretinin merkezidir.",
+     "didYouKnow": "Avlunun ortasında bir köşk mescit bulunur; tüccarlar alışveriş arasında burada namaz kılardı.",
+     "wiki": "Koza Han"
+    },
+    {
+     "id": "karagoz",
+     "name": "Karagöz Gölge Oyunu",
+     "district": "Osmangazi",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      29.04,
+      40.19
+     ],
+     "summary": "Deriden kesilmiş renkli tasvirlerle oynanan gölge oyunu; 2009’da UNESCO listesine girdi.",
+     "didYouKnow": "Tasvirler deve derisinden yapılır ve ışığı geçirecek kadar inceltilir.",
+     "wiki": "Karagöz ve Hacivat"
+    },
+    {
+     "id": "aktopraklik",
+     "name": "Aktopraklık Höyüğü",
+     "district": "Nilüfer",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      28.86,
+      40.15
+     ],
+     "summary": "Nilüfer’deki Neolitik-Kalkolitik yerleşim; Marmara’nın ilk köy topluluklarının yaşamını anlatır. Arkeopark olarak gezilebilir.",
+     "didYouKnow": "Kazılarda kerpiç evlerin yanında yuvarlak planlı kulübe izleri de bulundu.",
+     "wiki": "Aktopraklık Höyük"
+    }
+   ]
+  },
+  {
+   "id": "canakkale",
+   "name": "Çanakkale",
+   "plate": 17,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    26.7508,
+    40.0558
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Çanakkale (17), ortalama 200 m rakımlı bir ildir. Öne çıkan miras: Troya Antik Kenti, Assos (Athena Tapınağı), Kilitbahir Kalesi; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "troya",
+     "name": "Troya Antik Kenti",
+     "district": "Merkez",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      26.2389,
+      39.9575
+     ],
+     "summary": "Yaklaşık 4.000 yıl boyunca üst üste kurulmuş katmanlarıyla Anadolu ile Ege dünyası arasındaki ilişkiyi gösteren UNESCO alanı.",
+     "didYouKnow": "Höyükte birbirinin üzerine kurulmuş en az 9 ana yerleşim katmanı tanımlanmıştır.",
+     "wiki": "Truva"
+    },
+    {
+     "id": "assos",
+     "name": "Assos (Athena Tapınağı)",
+     "district": "Ayvacık",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      26.337,
+      39.49
+     ],
+     "summary": "Behramkale’de Midilli’ye bakan andezit tepenin üzerindeki Dor düzenindeki Athena Tapınağı ve antik liman.",
+     "didYouKnow": "Aristoteles burada yaklaşık üç yıl yaşayıp bir felsefe okulu kurdu.",
+     "wiki": "Assos"
+    },
+    {
+     "id": "kilitbahir",
+     "name": "Kilitbahir Kalesi",
+     "district": "Eceabat",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      26.38,
+      40.149
+     ],
+     "summary": "Fatih döneminde boğazın en dar noktasına yapılan, yonca yaprağı planlı kale.",
+     "didYouKnow": "Adı “denizin kilidi” anlamına gelir; karşı kıyıdaki Çimenlik Kalesi ile çift olarak düşünülmüştür.",
+     "wiki": "Kilitbahir Kalesi"
+    }
+   ]
+  },
+  {
+   "id": "cankiri",
+   "name": "Çankırı",
+   "plate": 18,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    33.4281,
+    40.6899
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Çankırı (18), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Taş Mescit (Cemaleddin Ferruh Darüşşifası).",
+   "sites": [
+    {
+     "id": "tas-mescit",
+     "name": "Taş Mescit (Cemaleddin Ferruh Darüşşifası)",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      33.615,
+      40.6
+     ],
+     "summary": "1235 tarihli Selçuklu darüşşifası; kent içinde az bilinen bir sağlık mirası.",
+     "didYouKnow": "Yapı zamanla mescit olarak kullanıldığı için adı “Taş Mescit”e dönüştü.",
+     "wiki": "Taş Mescit (Çankırı)"
+    }
+   ]
+  },
+  {
+   "id": "corum",
+   "name": "Çorum",
+   "plate": 19,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    34.6623,
+    40.5653
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Çorum (19), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Hattuşa, Alacahöyük; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "hattusa",
+     "name": "Hattuşa",
+     "district": "Boğazkale",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "tunc",
+     "periodLabel": "Tunç Çağı & Hitit",
+     "coord": [
+      34.615,
+      40.014
+     ],
+     "summary": "Hitit İmparatorluğu’nun başkenti; Aslanlı Kapı, Yazılıkaya kutsal alanı ve binlerce çivi yazılı tabletiyle UNESCO listesinde.",
+     "didYouKnow": "Bilinen en eski yazılı barış antlaşmalarından Kadeş Antlaşması’nın Hititçe nüshası burada bulundu.",
+     "wiki": "Hattuşa"
+    },
+    {
+     "id": "alacahoyuk",
+     "name": "Alacahöyük",
+     "district": "Alaca",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "tunc",
+     "periodLabel": "Tunç Çağı & Hitit",
+     "coord": [
+      34.695,
+      40.234
+     ],
+     "summary": "Sfenksli Kapısı ve Erken Tunç Çağı kral mezarlarındaki güneş kursları ile tanınan yerleşim.",
+     "didYouKnow": "Ankara’nın simgesi olan Hitit güneşi motifi, Alacahöyük’te bulunan bir sancak başlığından esinlenmiştir.",
+     "wiki": "Alacahöyük"
+    }
+   ]
+  },
+  {
+   "id": "denizli",
+   "name": "Denizli",
+   "plate": 20,
+   "region": "ege",
+   "regionName": "Ege",
+   "center": [
+    29.2616,
+    37.7327
+   ],
+   "summary": "Ege Bölgesi’nde yer alan Denizli (20), ortalama 800 m rakımlı bir ildir. Öne çıkan miras: Hierapolis-Pamukkale, Laodikeia, Akhan Kervansarayı; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "hierapolis",
+     "name": "Hierapolis-Pamukkale",
+     "district": "Pamukkale",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      29.125,
+      37.925
+     ],
+     "summary": "Travertenlerin üzerindeki antik kurort kenti; doğal ve kültürel karma UNESCO alanı.",
+     "didYouKnow": "Antik havuzda, depremle yıkılmış sütunların arasında yüzmek hâlâ mümkün.",
+     "wiki": "Hierapolis"
+    },
+    {
+     "id": "laodikeia",
+     "name": "Laodikeia",
+     "district": "Pamukkale",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      29.107,
+      37.835
+     ],
+     "summary": "Helenistik dönemde kurulan, tekstil ve ticaretle zenginleşen kent; son yıllardaki kazılarla hızla gün yüzüne çıkıyor.",
+     "didYouKnow": "Kentin siyah, parlak yünlü kumaşları antik dünyada bir marka gibi tanınırdı.",
+     "wiki": "Laodikeia"
+    },
+    {
+     "id": "akhan",
+     "name": "Akhan Kervansarayı",
+     "district": "Pamukkale",
+     "category": "han",
+     "categoryLabel": "Han & Kervansaray",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      29.172,
+      37.816
+     ],
+     "summary": "1253’te tamamlanan Selçuklu kervansarayı; beyaz traverten taşından adını alır.",
+     "didYouKnow": "Kervansaraylar yaklaşık bir günlük yürüyüş mesafesiyle dizilir, yolculara üç gün ücretsiz konaklama sunardı.",
+     "wiki": "Akhan"
+    }
+   ]
+  },
+  {
+   "id": "diyarbakir",
+   "name": "Diyarbakır",
+   "plate": 21,
+   "region": "guneydogu",
+   "regionName": "Güneydoğu Anadolu",
+   "center": [
+    40.3457,
+    38.1364
+   ],
+   "summary": "Güneydoğu Anadolu Bölgesi’nde yer alan Diyarbakır (21), ortalama 700 m rakımlı bir ildir. Öne çıkan miras: Diyarbakır Surları ve Hevsel Bahçeleri, On Gözlü Köprü, Diyarbakır Ulu Camii; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "diyarbakir-sur",
+     "name": "Diyarbakır Surları ve Hevsel Bahçeleri",
+     "district": "Sur",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      40.237,
+      37.91
+     ],
+     "summary": "Yaklaşık 6 km’lik bazalt surlar ve Dicle kıyısındaki bahçeler; 2015’ten beri UNESCO listesinde.",
+     "didYouKnow": "Surların üzerinde farklı dönemlere ait onlarca kitabe ve kabartma bulunur.",
+     "wiki": "Diyarbakır Surları"
+    },
+    {
+     "id": "ongozlu",
+     "name": "On Gözlü Köprü",
+     "district": "Sur",
+     "category": "kopru",
+     "categoryLabel": "Tarihî Köprü",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      40.238,
+      37.894
+     ],
+     "summary": "1065’te Mervaniler döneminde Dicle üzerine yapılan on kemerli bazalt köprü.",
+     "didYouKnow": "Kitabesine göre köprünün mimarı Ubeydullah’tır.",
+     "wiki": "Dicle Köprüsü"
+    },
+    {
+     "id": "diyarbakir-ulu",
+     "name": "Diyarbakır Ulu Camii",
+     "district": "Sur",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      40.235,
+      37.913
+     ],
+     "summary": "1091’de Büyük Selçuklu Sultanı Melikşah döneminde yeniden düzenlenen, Anadolu’nun en eski camilerinden.",
+     "didYouKnow": "Avlu cephesinde antik dönemden devşirilmiş sütunlar ve başlıklar kullanılmıştır.",
+     "wiki": "Diyarbakır Ulu Camii"
+    }
+   ]
+  },
+  {
+   "id": "duzce",
+   "name": "Düzce",
+   "plate": 81,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    31.2677,
+    40.8943
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Düzce (81), ortalama 300 m rakımlı bir ildir. Öne çıkan miras: Prusias ad Hypium (Konuralp).",
+   "sites": [
+    {
+     "id": "konuralp",
+     "name": "Prusias ad Hypium (Konuralp)",
+     "district": "Merkez",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      31.15,
+      40.9
+     ],
+     "summary": "Bithynia’nın antik kenti; Roma tiyatrosu ve Konuralp Müzesi ile az bilinen bir durak.",
+     "didYouKnow": "Tiyatronun bir bölümü, üzerinde yükselen modern köy evleri nedeniyle hâlâ gün ışığına çıkarılmayı bekliyor.",
+     "wiki": "Prusias ad Hypium"
+    }
+   ]
+  },
+  {
+   "id": "edirne",
+   "name": "Edirne",
+   "plate": 22,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    26.6018,
+    41.2431
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Edirne (22), ortalama 100 m rakımlı bir ildir. Öne çıkan miras: Selimiye Camii ve Külliyesi, II. Bayezid Külliyesi Sağlık Müzesi, Uzunköprü; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "selimiye",
+     "name": "Selimiye Camii ve Külliyesi",
+     "district": "Merkez",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      26.5594,
+      41.6781
+     ],
+     "summary": "Mimar Sinan’ın “ustalık eserim” dediği yapı (1575). Kubbesi sekiz ayağa oturan merkezi plan ile Osmanlı mimarisinin doruğu kabul edilir.",
+     "didYouKnow": "Dört minaresinin her biri üç şerefelidir ve şerefelere çıkan merdivenlerden bazıları birbirini hiç görmeden yükselir.",
+     "wiki": "Selimiye Camii"
+    },
+    {
+     "id": "bayezid-saglik",
+     "name": "II. Bayezid Külliyesi Sağlık Müzesi",
+     "district": "Merkez",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      26.545,
+      41.6852
+     ],
+     "summary": "1488’de açılan darüşşifa, akıl hastalarının su sesi ve müzikle tedavi edildiği bir sağlık kurumuydu.",
+     "didYouKnow": "Tedavi odalarının kubbeli akustiği, sesin hastalara yumuşak ve yankılı ulaşması için tasarlanmıştı.",
+     "wiki": "II. Bayezid Külliyesi"
+    },
+    {
+     "id": "uzunkopru",
+     "name": "Uzunköprü",
+     "district": "Uzunköprü",
+     "category": "kopru",
+     "categoryLabel": "Tarihî Köprü",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      26.687,
+      41.265
+     ],
+     "summary": "Ergene Nehri üzerinde, 1427–1443 arasında inşa edilen ve ilçeye adını veren yaklaşık 1.400 m’lik taş köprü.",
+     "didYouKnow": "Kemerlerinin ayaklarında aslan, kuş ve fil gibi hayvan kabartmaları bulunur.",
+     "wiki": "Uzunköprü (köprü)"
+    },
+    {
+     "id": "hidrellez",
+     "name": "Hıdrellez",
+     "district": "Merkez",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      26.555,
+      41.665
+     ],
+     "summary": "Baharın gelişini kutlayan 5–6 Mayıs geleneği; 2017’de çok uluslu dosya ile UNESCO listesine girdi. Edirne’de Sarayiçi’nde coşkuyla kutlanır.",
+     "didYouKnow": "Dilekler bir gül ağacının dibine bırakılır ya da “kakava” ateşinin üzerinden atlanarak dilenir.",
+     "wiki": "Hıdrellez"
+    }
+   ]
+  },
+  {
+   "id": "elazig",
+   "name": "Elazığ",
+   "plate": 23,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    39.4263,
+    38.6772
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Elazığ (23), ortalama 1.100 m rakımlı bir ildir. Öne çıkan miras: Harput.",
+   "sites": [
+    {
+     "id": "harput",
+     "name": "Harput",
+     "district": "Merkez",
+     "category": "kultur-peyzaji",
+     "categoryLabel": "Kültürel Peyzaj",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      39.256,
+      38.706
+     ],
+     "summary": "Elazığ’a tepeden bakan tarihî kent; eğri minareli Ulu Camii ve kalesiyle bir açık hava müzesi.",
+     "didYouKnow": "Ulu Camii’nin minaresi yüzyıllardır yaklaşık 2 m eğiktir ve “Anadolu’nun Pisa’sı” diye anılır.",
+     "wiki": "Harput"
+    }
+   ]
+  },
+  {
+   "id": "erzincan",
+   "name": "Erzincan",
+   "plate": 24,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    39.3147,
+    39.667
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Erzincan (24), ortalama 1.600 m rakımlı bir ildir. Öne çıkan miras: Altıntepe Urartu Kalesi, Mama Hatun Kümbeti.",
+   "sites": [
+    {
+     "id": "altintepe",
+     "name": "Altıntepe Urartu Kalesi",
+     "district": "Üzümlü",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      39.68,
+      39.7
+     ],
+     "summary": "Erzincan Ovası’na bakan tepede Urartu tapınağı, sarayı ve mezarları.",
+     "didYouKnow": "Kazılarda bulunan duvar resimleri, Urartu saray süslemesine ender bir pencere açtı.",
+     "wiki": "Altıntepe"
+    },
+    {
+     "id": "mama-hatun",
+     "name": "Mama Hatun Kümbeti",
+     "district": "Tercan",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      40.388,
+      39.778
+     ],
+     "summary": "Tercan’daki 13. yüzyıl başına ait, dairesel bir avlu duvarıyla çevrili özgün plandaki Saltuklu kümbeti.",
+     "didYouKnow": "Anadolu’da çevre duvarı içine yerleştirilmiş tek kümbet örneği olarak kabul edilir.",
+     "wiki": "Mama Hatun Kümbeti"
+    }
+   ]
+  },
+  {
+   "id": "erzurum",
+   "name": "Erzurum",
+   "plate": 25,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    41.5625,
+    40.0537
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Erzurum (25), ortalama 2.000 m rakımlı bir ildir. Öne çıkan miras: Çifte Minareli Medrese, Erzurum Kongre Binası, Öşk Vank Manastırı.",
+   "sites": [
+    {
+     "id": "cifte-minareli",
+     "name": "Çifte Minareli Medrese",
+     "district": "Yakutiye",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      41.277,
+      39.904
+     ],
+     "summary": "13. yüzyılın ikinci yarısına tarihlenen, iki katlı ve iki minareli anıtsal Selçuklu medresesi; Erzurum’un simgesi.",
+     "didYouKnow": "Taç kapıdaki hayat ağacı, çift başlı kartal ve ejder motifleri Anadolu Selçuklu ikonografisinin özetidir.",
+     "wiki": "Çifte Minareli Medrese (Erzurum)"
+    },
+    {
+     "id": "erzurum-kongre",
+     "name": "Erzurum Kongre Binası",
+     "district": "Yakutiye",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "cumhuriyet",
+     "periodLabel": "Cumhuriyet",
+     "coord": [
+      41.269,
+      39.905
+     ],
+     "summary": "1919’da Erzurum Kongresi’nin toplandığı okul binası, bugün Atatürk ve Kongre Müzesi’dir.",
+     "didYouKnow": "Kongre 23 Temmuz–7 Ağustos 1919 arasında toplandı; alınan kararlar Sivas Kongresi’ne zemin hazırladı.",
+     "wiki": "Erzurum Kongresi"
+    },
+    {
+     "id": "osk-vank",
+     "name": "Öşk Vank Manastırı",
+     "district": "Uzundere",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      41.6767,
+      40.5603
+     ],
+     "summary": "Uzundere’de 10. yüzyıl Gürcü manastırı; dev kubbe kasnağı köy meydanına hâkimdir.",
+     "didYouKnow": "Yapının bir bölümü uzun süre köyün camisi olarak kullanıldığı için ayakta kaldı.",
+     "wiki": "Öşk Vank"
+    }
+   ]
+  },
+  {
+   "id": "eskisehir",
+   "name": "Eskişehir",
+   "plate": 26,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    31.0795,
+    39.5988
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Eskişehir (26), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Midas Şehri (Yazılıkaya), Odunpazarı Evleri, Lületaşı İşçiliği.",
+   "sites": [
+    {
+     "id": "midas",
+     "name": "Midas Şehri (Yazılıkaya)",
+     "district": "Han",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      30.532,
+      39.173
+     ],
+     "summary": "Frig kutsal alanı; kayaya oyulmuş 17 m’lik anıtsal cephe “Midas Anıtı” olarak bilinir.",
+     "didYouKnow": "Anıtın üzerinde Frig alfabesiyle “Midas” adının geçtiği bir yazıt bulunur.",
+     "wiki": "Midas Şehri"
+    },
+    {
+     "id": "odunpazari",
+     "name": "Odunpazarı Evleri",
+     "district": "Odunpazarı",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      30.524,
+      39.764
+     ],
+     "summary": "Cumbalı, renkli ahşap Osmanlı evlerinin kentsel dokusu; UNESCO Geçici Listesi’nde.",
+     "didYouKnow": "Mahallenin adı, eskiden burada kurulan odun pazarından gelir.",
+     "wiki": "Odunpazarı"
+    },
+    {
+     "id": "luletasi",
+     "name": "Lületaşı İşçiliği",
+     "district": "Odunpazarı",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      30.51,
+      39.775
+     ],
+     "summary": "Dünyada en çok Eskişehir çevresinde çıkarılan beyaz mineralin oyma sanatı.",
+     "didYouKnow": "Lületaşı ocaktan yumuşak çıkar; kurudukça sertleşir — bu yüzden ustalar hızlı çalışır.",
+     "wiki": "Lületaşı"
+    }
+   ]
+  },
+  {
+   "id": "gaziantep",
+   "name": "Gaziantep",
+   "plate": 27,
+   "region": "guneydogu",
+   "regionName": "Güneydoğu Anadolu",
+   "center": [
+    37.3437,
+    37.0921
+   ],
+   "summary": "Güneydoğu Anadolu Bölgesi’nde yer alan Gaziantep (27), ortalama 850 m rakımlı bir ildir. Öne çıkan miras: Zeugma Mozaik Müzesi, Gaziantep Kalesi, Gaziantep Bakırcılığı ve Mutfağı.",
+   "sites": [
+    {
+     "id": "zeugma",
+     "name": "Zeugma Mozaik Müzesi",
+     "district": "Şehitkamil",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      37.384,
+      37.075
+     ],
+     "summary": "Fırat kıyısındaki antik Zeugma’dan kurtarılan mozaikleri sergileyen, dünyanın en büyük mozaik müzelerinden biri.",
+     "didYouKnow": "“Çingene Kızı” mozaiğinin gözleri, izleyen nereye geçerse geçsin onu takip ediyormuş gibi görünür.",
+     "wiki": "Zeugma Mozaik Müzesi"
+    },
+    {
+     "id": "gaziantep-kale",
+     "name": "Gaziantep Kalesi",
+     "district": "Şahinbey",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      37.383,
+      37.066
+     ],
+     "summary": "Kökeni Roma dönemine giden, Bizans ve sonraki dönemlerde genişletilen höyük üzerindeki kale; 2023 depreminde hasar gördü.",
+     "didYouKnow": "Kale bir höyüğün üzerinde yükselir: altında binlerce yıllık yerleşim katmanları vardır.",
+     "wiki": "Gaziantep Kalesi"
+    },
+    {
+     "id": "bakircilar",
+     "name": "Gaziantep Bakırcılığı ve Mutfağı",
+     "district": "Şahinbey",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      37.388,
+      37.063
+     ],
+     "summary": "Bakırcılar Çarşısı’nda süren dövme bakır zanaatı ve UNESCO Yaratıcı Şehirler Ağı’nda gastronomi kenti unvanı.",
+     "didYouKnow": "Gaziantep, 2015’te UNESCO Yaratıcı Şehirler Ağı’na gastronomi alanında katıldı.",
+     "wiki": "Gaziantep mutfağı"
+    },
+    {
+     "id": "yesemek",
+     "name": "Yesemek Açık Hava Müzesi",
+     "district": "İslahiye",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      36.9,
+      36.92
+     ],
+     "summary": "Geç Hitit döneminin heykel atölyesi ve taş ocağı; yarım kalmış yüzlerce aslan ve sfenks.",
+     "didYouKnow": "Eserlerin yarım kalmış olması, antik heykeltıraşların çalışma aşamalarını adım adım gösterir.",
+     "wiki": "Yesemek Açık Hava Müzesi"
+    }
+   ]
+  },
+  {
+   "id": "giresun",
+   "name": "Giresun",
+   "plate": 28,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    38.5911,
+    40.575
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Giresun (28), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Kuş Dili, Giresun Adası.",
+   "sites": [
+    {
+     "id": "kus-dili",
+     "name": "Kuş Dili",
+     "district": "Çanakçı",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      38.95,
+      40.85
+     ],
+     "summary": "Kuşköy’de, dağın bir yamacından diğerine ıslıkla anlaşma geleneği; 2017’de UNESCO’nun acil koruma listesine alındı.",
+     "didYouKnow": "Islıklı Türkçe, kilometrelerce öteden anlaşılabilir.",
+     "wiki": "Kuş dili"
+    },
+    {
+     "id": "giresun-adasi",
+     "name": "Giresun Adası",
+     "district": "Merkez",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      38.43,
+      40.93
+     ],
+     "summary": "Karadeniz’in en büyük adası; antik kaynaklarda Aretias olarak geçer, kalıntıları ve Aksu Şenlikleri ile bilinir.",
+     "didYouKnow": "Mayıs’ta Aksu Şenliği’nde, dilekler adanın etrafında tur atılarak dilenir.",
+     "wiki": "Giresun Adası"
+    }
+   ]
+  },
+  {
+   "id": "gumushane",
+   "name": "Gümüşhane",
+   "plate": 29,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    39.4133,
+    40.3318
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Gümüşhane (29), ortalama 1.500 m rakımlı bir ildir. Öne çıkan miras: Santa Harabeleri.",
+   "sites": [
+    {
+     "id": "santa",
+     "name": "Santa Harabeleri",
+     "district": null,
+     "category": "kultur-peyzaji",
+     "categoryLabel": "Kültürel Peyzaj",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      39.69,
+      40.4747
+     ],
+     "summary": "Dağ yamaçlarına dağılmış, 19. yüzyıldan kalma terk edilmiş taş köy mahalleleri.",
+     "didYouKnow": "Yedi mahalleden oluşan yerleşimin her mahallesinin kendi kilisesi ve okulu vardı.",
+     "wiki": "Santa Harabeleri"
+    }
+   ]
+  },
+  {
+   "id": "hakkari",
+   "name": "Hakkâri",
+   "plate": 30,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    44.1095,
+    37.4356
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Hakkâri (30), ortalama 2.200 m rakımlı bir ildir. Öne çıkan miras: Meydan Medresesi.",
+   "sites": [
+    {
+     "id": "hakkari-medrese",
+     "name": "Meydan Medresesi",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      43.74,
+      37.576
+     ],
+     "summary": "Hakkari’nin merkezinde, 18. yüzyıla tarihlenen ve restore edilen taş medrese.",
+     "didYouKnow": "Medresenin renkli taş süslemeleri, bölgenin beylik mimarisinin izlerini taşır.",
+     "wiki": "Meydan Medresesi"
+    }
+   ]
+  },
+  {
+   "id": "hatay",
+   "name": "Hatay",
+   "plate": 31,
+   "region": "akdeniz",
+   "regionName": "Akdeniz",
+   "center": [
+    36.2558,
+    36.4408
+   ],
+   "summary": "Akdeniz Bölgesi’nde yer alan Hatay (31), ortalama 300 m rakımlı bir ildir. Öne çıkan miras: Hatay Arkeoloji Müzesi, St. Pierre Kilisesi, Habib-i Neccar Camii.",
+   "sites": [
+    {
+     "id": "hatay-muze",
+     "name": "Hatay Arkeoloji Müzesi",
+     "district": "Antakya",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      36.159,
+      36.209
+     ],
+     "summary": "Antakya mozaiklerinin dünyanın en zengin koleksiyonlarından birine sahip müze; 2023 depreminden sonra koleksiyon koruma altına alındı.",
+     "didYouKnow": "“Mutlu İskelet” mozaiği, “neşeli ol ve hayatın tadını çıkar” yazısıyla ünlüdür.",
+     "wiki": "Hatay Arkeoloji Müzesi"
+    },
+    {
+     "id": "st-pierre",
+     "name": "St. Pierre Kilisesi",
+     "district": "Antakya",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      36.176,
+      36.214
+     ],
+     "summary": "Habib-i Neccar Dağı yamacındaki kaya kilisesi, Hristiyanlığın en erken ibadet yerlerinden biri sayılır.",
+     "didYouKnow": "Dağın içinden geçen bir tünelin, baskı dönemlerinde kaçış yolu olarak kullanıldığı anlatılır.",
+     "wiki": "Sen Piyer Kilisesi"
+    },
+    {
+     "id": "habib-neccar",
+     "name": "Habib-i Neccar Camii",
+     "district": "Antakya",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      36.163,
+      36.205
+     ],
+     "summary": "Anadolu’nun en eski cami yerlerinden biri; 2023 depremlerinde büyük hasar gördü ve yeniden inşa sürecindedir.",
+     "didYouKnow": "Bugünkü yapı Osmanlı döneminde yeniden yapılmıştı; yerinde daha önce tapınak ve kilise bulunuyordu.",
+     "wiki": "Habib-i Neccar Camii"
+    },
+    {
+     "id": "titus",
+     "name": "Titus Tüneli",
+     "district": "Samandağ",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      35.93,
+      36.125
+     ],
+     "summary": "Seleukeia Pieria limanını sel sularından korumak için kayaya oyulan Roma dönemi derivasyon tüneli.",
+     "didYouKnow": "Tünelin çevresindeki kaya mezarlarına Beşikli Mağara denir.",
+     "wiki": "Titus Tüneli"
+    }
+   ]
+  },
+  {
+   "id": "igdir",
+   "name": "Iğdır",
+   "plate": 76,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    43.965,
+    39.9042
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Iğdır (76), ortalama 1.000 m rakımlı bir ildir. Öne çıkan miras: Tuzluca Tuz Mağaraları.",
+   "sites": [
+    {
+     "id": "tuzluca",
+     "name": "Tuzluca Tuz Mağaraları",
+     "district": "Tuzluca",
+     "category": "kultur-peyzaji",
+     "categoryLabel": "Kültürel Peyzaj",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      43.66,
+      40.045
+     ],
+     "summary": "Yüzyıllardır işletilen kaya tuzu galerileri; bugün haloterapi için de ziyaret ediliyor.",
+     "didYouKnow": "Ağrı Dağı’nın gölgesindeki Iğdır Ovası, Türkiye’nin en alçak ve sıcak ovalarındandır.",
+     "wiki": "Tuzluca"
+    }
+   ]
+  },
+  {
+   "id": "isparta",
+   "name": "Isparta",
+   "plate": 32,
+   "region": "akdeniz",
+   "regionName": "Akdeniz",
+   "center": [
+    30.9528,
+    37.9223
+   ],
+   "summary": "Akdeniz Bölgesi’nde yer alan Isparta (32), ortalama 1.100 m rakımlı bir ildir. Öne çıkan miras: Adada Antik Kenti, Isparta Gül Hasadı.",
+   "sites": [
+    {
+     "id": "adada",
+     "name": "Adada Antik Kenti",
+     "district": "Sütçüler",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      30.99,
+      37.58
+     ],
+     "summary": "Toros eteklerinde, Kral Yolu güzergâhında az bilinen ama çok iyi korunmuş bir Pisidya kenti.",
+     "didYouKnow": "Kente çıkan antik yolun taşları hâlâ yerindedir; ziyaretçiler Roma yolunda yürüyebilir.",
+     "wiki": "Adada"
+    },
+    {
+     "id": "isparta-gul",
+     "name": "Isparta Gül Hasadı",
+     "district": "Merkez",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      30.55,
+      37.76
+     ],
+     "summary": "Mayıs-haziranda şafakta yapılan gül toplama ve gülyağı damıtma geleneği.",
+     "didYouKnow": "Bir kilogram gülyağı için yaklaşık 3–4 ton gül yaprağı gerekir.",
+     "wiki": "Isparta gülü"
+    }
+   ]
+  },
+  {
+   "id": "istanbul",
+   "name": "İstanbul",
+   "plate": 34,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    28.8479,
+    41.1495
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan İstanbul (34), ortalama 100 m rakımlı bir ildir. Öne çıkan miras: Ayasofya, Yerebatan Sarnıcı, Kariye (Khora); 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "ayasofya",
+     "name": "Ayasofya",
+     "district": "Fatih",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      28.9802,
+      41.0086
+     ],
+     "summary": "I. Justinianus döneminde 537’de tamamlanan yapı, yaklaşık bin yıl boyunca dünyanın en büyük kubbeli mekânlarından biri oldu. İstanbul Tarihî Alanları kapsamında UNESCO listesindedir.",
+     "didYouKnow": "Kubbenin tabanını çevreleyen 40 pencere, ışığın kubbeyi “havada asılıymış” gibi göstermesi için tasarlandı.",
+     "wiki": "Ayasofya"
+    },
+    {
+     "id": "yerebatan",
+     "name": "Yerebatan Sarnıcı",
+     "district": "Fatih",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      28.9779,
+      41.0084
+     ],
+     "summary": "VI. yüzyılda kente su sağlamak için inşa edilen dev yer altı sarnıcı; yüzlerce sütun tavanı taşır.",
+     "didYouKnow": "İki sütunun kaidesinde, başka bir yapıdan devşirilmiş Medusa başları bulunur — biri yan, biri ters yerleştirilmiştir.",
+     "wiki": "Yerebatan Sarnıcı"
+    },
+    {
+     "id": "kariye",
+     "name": "Kariye (Khora)",
+     "district": "Fatih",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      28.9388,
+      41.0312
+     ],
+     "summary": "Geç Bizans dönemine ait mozaik ve freskleriyle tanınan, Edirnekapı yakınındaki manastır kilisesi.",
+     "didYouKnow": "Freskleri 14. yüzyılın başında Theodoros Metokhites’in himayesinde yapıldı; Paleologos Rönesansı’nın en parlak örnekleri sayılır.",
+     "wiki": "Kariye Camii"
+    },
+    {
+     "id": "topkapi",
+     "name": "Topkapı Sarayı",
+     "district": "Fatih",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      28.9834,
+      41.0115
+     ],
+     "summary": "Fatih Sultan Mehmed’in yaptırdığı saray, yaklaşık 400 yıl Osmanlı yönetiminin merkeziydi; 1924’ten beri müzedir.",
+     "didYouKnow": "Sarayın mutfakları yüzlerce aşçının çalıştığı ayrı bir yerleşkeydi; bugün Çin porseleni koleksiyonuna ev sahipliği yapar.",
+     "wiki": "Topkapı Sarayı"
+    },
+    {
+     "id": "turk-kahvesi",
+     "name": "Türk Kahvesi Kültürü",
+     "district": "Fatih",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      28.97,
+      41.017
+     ],
+     "summary": "Pişirme tekniği, sunumu ve sohbet kültürüyle birlikte 2013’te UNESCO İnsanlığın Somut Olmayan Kültürel Mirası listesine girdi.",
+     "didYouKnow": "“Bir fincan kahvenin kırk yıl hatırı vardır” sözü, kahvenin bir misafirperverlik dili olduğunu anlatır.",
+     "wiki": "Türk kahvesi"
+    },
+    {
+     "id": "yenikapi",
+     "name": "Yenikapı Kazıları (Theodosius Limanı)",
+     "district": "Fatih",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      28.9505,
+      41.0045
+     ],
+     "summary": "Marmaray inşaatı sırasında ortaya çıkan Bizans limanı; onlarca batık gemi ve Neolitik izlerle kentin tarihini binlerce yıl geriye taşıdı.",
+     "didYouKnow": "Kazıda yaklaşık 8.000 yıllık ayak izleri ve mezarlar bulundu — İstanbul’un ilk yerleşimcilerine ait.",
+     "wiki": "Yenikapı kazıları"
+    },
+    {
+     "id": "galata",
+     "name": "Galata Kulesi",
+     "district": "Beyoğlu",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      28.9742,
+      41.0256
+     ],
+     "summary": "1348’de Cenevizliler tarafından Galata surlarının bir parçası olarak yapılan kule; Osmanlı döneminde yangın gözetleme kulesi oldu.",
+     "didYouKnow": "Evliya Çelebi’ye göre Hezârfen Ahmed Çelebi 17. yüzyılda bu kuleden Üsküdar’a uçmuştur.",
+     "wiki": "Galata Kulesi"
+    },
+    {
+     "id": "kiz-kulesi",
+     "name": "Kız Kulesi",
+     "district": "Üsküdar",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      29.0041,
+      41.0211
+     ],
+     "summary": "Üsküdar açıklarında küçük bir adacık üzerindeki kule; tarih boyunca gözetleme, fener ve karantina yeri olarak kullanıldı.",
+     "didYouKnow": "Bugünkü yapının büyük bölümü 18. yüzyıldaki yangından sonra yeniden inşa edilmiştir; 2023’te restorasyon sonrası yeniden açıldı.",
+     "wiki": "Kız Kulesi"
+    }
+   ]
+  },
+  {
+   "id": "izmir",
+   "name": "İzmir",
+   "plate": 35,
+   "region": "ege",
+   "regionName": "Ege",
+   "center": [
+    27.3139,
+    38.4827
+   ],
+   "summary": "Ege Bölgesi’nde yer alan İzmir (35), ortalama 300 m rakımlı bir ildir. Öne çıkan miras: Efes Antik Kenti, Bergama (Pergamon), Kızlarağası Hanı; 2 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "efes",
+     "name": "Efes Antik Kenti",
+     "district": "Selçuk",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      27.3417,
+      37.9395
+     ],
+     "summary": "Roma döneminde Asya eyaletinin en büyük kentlerinden; Celsus Kütüphanesi ve büyük tiyatrosuyla 2015’ten beri UNESCO listesinde.",
+     "didYouKnow": "Celsus Kütüphanesi’nin cephesi, gerçekte olduğundan daha büyük görünmesi için kenarlara doğru küçülen sütunlarla tasarlandı.",
+     "wiki": "Efes"
+    },
+    {
+     "id": "bergama",
+     "name": "Bergama (Pergamon)",
+     "district": "Bergama",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      27.184,
+      39.131
+     ],
+     "summary": "Helenistik Pergamon Krallığı’nın başkenti; dik yamaçtaki tiyatrosu ve Asklepion’uyla çok katmanlı bir kültürel peyzaj.",
+     "didYouKnow": "“Parşömen” kelimesi, Pergamon’da geliştirilen yazı malzemesinden (charta pergamena) gelir.",
+     "wiki": "Pergamon"
+    },
+    {
+     "id": "kizlaragasi",
+     "name": "Kızlarağası Hanı",
+     "district": "Konak",
+     "category": "han",
+     "categoryLabel": "Han & Kervansaray",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      27.131,
+      38.419
+     ],
+     "summary": "1744’te yapılan han, Kemeraltı Çarşısı’nın kalbinde bugün de el sanatları ve kahve ile canlıdır.",
+     "didYouKnow": "İzmir’de günümüze sağlam ulaşabilen tek klasik Osmanlı hanıdır.",
+     "wiki": "Kızlarağası Hanı"
+    },
+    {
+     "id": "yesilova",
+     "name": "Yeşilova Höyüğü",
+     "district": "Bornova",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      27.216,
+      38.465
+     ],
+     "summary": "Bornova Ovası’ndaki höyük, İzmir’in yaklaşık 8.500 yıllık ilk yerleşim yeridir.",
+     "didYouKnow": "Höyük, şehrin ortasında, apartmanların arasında kalan bir “zaman adası”dır.",
+     "wiki": "Yeşilova Höyüğü"
+    },
+    {
+     "id": "izmir-saat-kulesi",
+     "name": "İzmir Saat Kulesi",
+     "district": "Konak",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      27.1287,
+      38.4189
+     ],
+     "summary": "Konak Meydanı’ndaki 25 metrelik kule, 1901’de II. Abdülhamid’in tahta çıkışının 25. yılı anısına yapıldı.",
+     "didYouKnow": "Kulenin saati, Alman İmparatoru II. Wilhelm’in hediyesidir.",
+     "wiki": "İzmir Saat Kulesi"
+    },
+    {
+     "id": "izmir-agora",
+     "name": "İzmir Agorası",
+     "district": "Konak",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      27.1393,
+      38.4185
+     ],
+     "summary": "Antik Smyrna’nın kent meydanı; MS 178 depreminden sonra İmparator Marcus Aurelius döneminde yeniden inşa edildi.",
+     "didYouKnow": "Bazilikanın bodrum katındaki duvarlarda antik dönemden kalma yazı ve çizimler (grafitiler) korunmuştur.",
+     "wiki": "İzmir Agorası"
+    }
+   ]
+  },
+  {
+   "id": "kahramanmaras",
+   "name": "Kahramanmaraş",
+   "plate": 46,
+   "region": "akdeniz",
+   "regionName": "Akdeniz",
+   "center": [
+    36.9851,
+    37.9198
+   ],
+   "summary": "Akdeniz Bölgesi’nde yer alan Kahramanmaraş (46), ortalama 800 m rakımlı bir ildir. Öne çıkan miras: Germanicia Mozaikleri.",
+   "sites": [
+    {
+     "id": "germanicia",
+     "name": "Germanicia Mozaikleri",
+     "district": "Dulkadiroğlu",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      36.924,
+      37.577
+     ],
+     "summary": "Kent merkezinde, evlerin altında ortaya çıkan Roma villası mozaikleri.",
+     "didYouKnow": "Antik kentin büyük kısmı hâlâ modern mahallelerin altında uyuyor.",
+     "wiki": "Germanicia"
+    }
+   ]
+  },
+  {
+   "id": "karabuk",
+   "name": "Karabük",
+   "plate": 78,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    32.6322,
+    41.166
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Karabük (78), ortalama 600 m rakımlı bir ildir. Öne çıkan miras: Safranbolu, Cinci Hanı; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "safranbolu",
+     "name": "Safranbolu",
+     "district": "Safranbolu",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      32.69,
+      41.243
+     ],
+     "summary": "Ahşap-kerpiç Osmanlı evleri, çarşısı ve hanlarıyla 1994’ten beri UNESCO listesinde.",
+     "didYouKnow": "Evler birbirinin manzarasını kapatmayacak şekilde yerleştirilmiştir: “komşu hakkı” mimarisi.",
+     "wiki": "Safranbolu"
+    },
+    {
+     "id": "cinci-han",
+     "name": "Cinci Hanı",
+     "district": "Safranbolu",
+     "category": "han",
+     "categoryLabel": "Han & Kervansaray",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      32.694,
+      41.24
+     ],
+     "summary": "1640’larda yapılan, 60’ı aşkın odalı kesme taş han; bugün otel olarak yaşıyor.",
+     "didYouKnow": "Damına çıkıldığında Safranbolu çarşısının tamamı kuşbakışı görülür.",
+     "wiki": "Cinci Hanı"
+    }
+   ]
+  },
+  {
+   "id": "karaman",
+   "name": "Karaman",
+   "plate": 70,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    33.1913,
+    37.0426
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Karaman (70), ortalama 1.100 m rakımlı bir ildir. Öne çıkan miras: Binbir Kilise, Hatuniye Medresesi.",
+   "sites": [
+    {
+     "id": "binbirkilise",
+     "name": "Binbir Kilise",
+     "district": "Merkez",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      33.15,
+      37.4
+     ],
+     "summary": "Karadağ’ın sönmüş volkan yamaçlarına dağılmış Bizans kiliseleri ve manastır kalıntıları.",
+     "didYouKnow": "Gertrude Bell 1907’de bölgede araştırma yaparak kiliseleri belgeledi.",
+     "wiki": "Binbir Kilise"
+    },
+    {
+     "id": "hatuniye",
+     "name": "Hatuniye Medresesi",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      33.222,
+      37.183
+     ],
+     "summary": "1382’de Karamanoğlu Alâeddin Bey’in eşi Nefise Sultan adına yapılan medrese.",
+     "didYouKnow": "Mermer taç kapısı, beylikler dönemi taş süslemesinin en zarif örneklerindendir.",
+     "wiki": "Hatuniye Medresesi (Karaman)"
+    }
+   ]
+  },
+  {
+   "id": "kars",
+   "name": "Kars",
+   "plate": 36,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    43.0645,
+    40.4732
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Kars (36), ortalama 1.800 m rakımlı bir ildir. Öne çıkan miras: Ani Ören Yeri, Kars Kalesi; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "ani",
+     "name": "Ani Ören Yeri",
+     "district": "Merkez",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      43.573,
+      40.507
+     ],
+     "summary": "Arpaçay kıyısında “bin bir kilise şehri” olarak anılan Ortaçağ başkenti; 2016’dan beri UNESCO listesinde.",
+     "didYouKnow": "Kentte Anadolu’da Türklerin inşa ettiği ilk camilerden biri olan Ebul Menuçehr Camii bulunur.",
+     "wiki": "Ani"
+    },
+    {
+     "id": "kars-kalesi",
+     "name": "Kars Kalesi",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      43.096,
+      40.611
+     ],
+     "summary": "Saltuklular döneminde kurulan, 16. yüzyılda Osmanlılarca yeniden yapılan kale; bazalt taşlı kente tepeden bakar.",
+     "didYouKnow": "Kalenin eteğindeki Taşköprü, Kars Çayı’nın iki yakasını yüzyıllardır birbirine bağlar.",
+     "wiki": "Kars Kalesi"
+    }
+   ]
+  },
+  {
+   "id": "kastamonu",
+   "name": "Kastamonu",
+   "plate": 37,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    33.6699,
+    41.4905
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Kastamonu (37), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Mahmut Bey Camii, Pompeiopolis; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "mahmutbey",
+     "name": "Mahmut Bey Camii",
+     "district": "Merkez",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      33.7183,
+      41.4539
+     ],
+     "summary": "Kasaba Köyü’ndeki 1366 tarihli Candaroğulları camisi; çivisiz ahşap işçiliği ve boyalı tavanıyla 2023’te UNESCO listesine girdi.",
+     "didYouKnow": "Tavandaki kalem işi bezemeler bitkisel boyalarla yapılmıştır.",
+     "wiki": "Mahmut Bey Camii"
+    },
+    {
+     "id": "pompeiopolis",
+     "name": "Pompeiopolis",
+     "district": "Taşköprü",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      34.2272,
+      41.5144
+     ],
+     "summary": "Taşköprü’deki Paflagonya’nın Roma başkenti; mozaikli villaları kazılarla ortaya çıkıyor.",
+     "didYouKnow": "Kenti, Pontus seferi sonrasında Romalı komutan Pompeius kurdurdu.",
+     "wiki": "Pompeiopolis (Paflagonya)"
+    }
+   ]
+  },
+  {
+   "id": "kayseri",
+   "name": "Kayseri",
+   "plate": 38,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    35.8551,
+    38.6787
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Kayseri (38), ortalama 1.200 m rakımlı bir ildir. Öne çıkan miras: Kültepe-Kaniş, Sultan Han (Tuzhisar), Gevher Nesibe Şifahanesi.",
+   "sites": [
+    {
+     "id": "kultepe",
+     "name": "Kültepe-Kaniş",
+     "district": "Kocasinan",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "tunc",
+     "periodLabel": "Tunç Çağı & Hitit",
+     "coord": [
+      35.635,
+      38.85
+     ],
+     "summary": "Asurlu tüccarların ticaret kolonisi Kaniş-Karum; Anadolu’da yazının kullanıldığı ilk merkezlerden.",
+     "didYouKnow": "Burada bulunan binlerce kil tablet, dünyanın en eski ticari yazışmalarındandır.",
+     "wiki": "Kültepe"
+    },
+    {
+     "id": "sultanhan-kayseri",
+     "name": "Sultan Han (Tuzhisar)",
+     "district": "Kocasinan",
+     "category": "han",
+     "categoryLabel": "Han & Kervansaray",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      36.03,
+      38.74
+     ],
+     "summary": "Kayseri–Sivas yolundaki 1230’lara ait Selçuklu sultan hanı.",
+     "didYouKnow": "Kapalı bölümün ortasındaki kubbe, ışığın yalnızca tepeden süzülmesine izin verir.",
+     "wiki": "Sultan Han (Kayseri)"
+    },
+    {
+     "id": "gevher-nesibe",
+     "name": "Gevher Nesibe Şifahanesi",
+     "district": "Melikgazi",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      35.484,
+      38.7265
+     ],
+     "summary": "1206’da açılan tıp okulu ve hastane; bugün Selçuklu Uygarlığı Müzesi’dir.",
+     "didYouKnow": "Anadolu’da tıp eğitimi verilen ilk kurumlardan biri olarak kabul edilir.",
+     "wiki": "Gevher Nesibe Şifahanesi"
+    }
+   ]
+  },
+  {
+   "id": "kirikkale",
+   "name": "Kırıkkale",
+   "plate": 71,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    33.6972,
+    39.7786
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Kırıkkale (71), ortalama 800 m rakımlı bir ildir. Öne çıkan miras: Çeşnigir Köprüsü.",
+   "sites": [
+    {
+     "id": "cesnigir",
+     "name": "Çeşnigir Köprüsü",
+     "district": null,
+     "category": "kopru",
+     "categoryLabel": "Tarihî Köprü",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      33.6,
+      39.86
+     ],
+     "summary": "Kızılırmak üzerinde, 13. yüzyıla tarihlenen Selçuklu köprüsü; az bilinen bir kervan yolu durağı.",
+     "didYouKnow": "Adının, köprüyü yaptıran ve sultanın sofrasından sorumlu “çeşnigir” unvanlı bir görevliden geldiği düşünülür.",
+     "wiki": "Çeşnigir Köprüsü"
+    }
+   ]
+  },
+  {
+   "id": "kirklareli",
+   "name": "Kırklareli",
+   "plate": 39,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    27.4442,
+    41.6815
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Kırklareli (39), ortalama 250 m rakımlı bir ildir. Öne çıkan miras: Vize Küçük Ayasofya, Aşağıpınar Höyüğü.",
+   "sites": [
+    {
+     "id": "vize-ayasofya",
+     "name": "Vize Küçük Ayasofya",
+     "district": "Vize",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      27.7653,
+      41.5728
+     ],
+     "summary": "Vize’deki Bizans kilisesi, Trakya’nın en iyi korunmuş Orta Bizans yapılarındandır; Osmanlı döneminde camiye çevrildi.",
+     "didYouKnow": "Yapı, kentin antik çağdaki adı Bizye’nin izlerini taşıyan bir tepeye yaslanır.",
+     "wiki": "Vize Ayasofya Camii"
+    },
+    {
+     "id": "asagipinar",
+     "name": "Aşağıpınar Höyüğü",
+     "district": "Merkez",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      27.23,
+      41.733
+     ],
+     "summary": "Neolitik çiftçiliğin Anadolu’dan Avrupa’ya geçişini belgeleyen önemli bir yerleşim.",
+     "didYouKnow": "Buradaki buluntular, tarımın Balkanlara hangi yolla taşındığı sorusuna kanıt sunar.",
+     "wiki": "Aşağı Pınar"
+    }
+   ]
+  },
+  {
+   "id": "kirsehir",
+   "name": "Kırşehir",
+   "plate": 40,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    34.1686,
+    39.3152
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Kırşehir (40), ortalama 1.000 m rakımlı bir ildir. Öne çıkan miras: Cacabey Medresesi.",
+   "sites": [
+    {
+     "id": "cacabey",
+     "name": "Cacabey Medresesi",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      34.16,
+      39.146
+     ],
+     "summary": "1272’de astronomi eğitimi için yapılan medrese; kubbesindeki açıklıktan gökyüzü gözlemlenirdi.",
+     "didYouKnow": "Kubbenin altındaki havuzun, gökyüzünü yansıtarak gözlem yapmaya yardım ettiği düşünülür.",
+     "wiki": "Cacabey Medresesi"
+    }
+   ]
+  },
+  {
+   "id": "kilis",
+   "name": "Kilis",
+   "plate": 79,
+   "region": "guneydogu",
+   "regionName": "Güneydoğu Anadolu",
+   "center": [
+    37.1449,
+    36.8071
+   ],
+   "summary": "Güneydoğu Anadolu Bölgesi’nde yer alan Kilis (79), ortalama 600 m rakımlı bir ildir. Öne çıkan miras: Oylum Höyük.",
+   "sites": [
+    {
+     "id": "oylum",
+     "name": "Oylum Höyük",
+     "district": "Merkez",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "tunc",
+     "periodLabel": "Tunç Çağı & Hitit",
+     "coord": [
+      37.027,
+      36.7286
+     ],
+     "summary": "Güneydoğu’nun en büyük höyüklerinden; Tunç Çağı’nda kuzey Suriye ile Anadolu arasında bir köprü.",
+     "didYouKnow": "Höyükte bulunan mühürler, bölgenin uzak ticaret ağlarına bağlı olduğunu gösterir.",
+     "wiki": "Oylum Höyük"
+    }
+   ]
+  },
+  {
+   "id": "kocaeli",
+   "name": "Kocaeli",
+   "plate": 41,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    29.8948,
+    40.8586
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Kocaeli (41), ortalama 200 m rakımlı bir ildir. Öne çıkan miras: SEKA Kâğıt Müzesi.",
+   "sites": [
+    {
+     "id": "seka",
+     "name": "SEKA Kâğıt Müzesi",
+     "district": "İzmit",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "cumhuriyet",
+     "periodLabel": "Cumhuriyet",
+     "coord": [
+      29.937,
+      40.765
+     ],
+     "summary": "Cumhuriyetin ilk kâğıt fabrikası, endüstriyel miras müzesine dönüştürüldü.",
+     "didYouKnow": "Fabrikanın makineleri yerinde korunarak kâğıdın hamurdan rulolara yolculuğu sergileniyor.",
+     "wiki": "SEKA Kâğıt Müzesi"
+    }
+   ]
+  },
+  {
+   "id": "konya",
+   "name": "Konya",
+   "plate": 42,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    32.6416,
+    38.0363
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Konya (42), ortalama 1.100 m rakımlı bir ildir. Öne çıkan miras: Çatalhöyük, Mevlana Müzesi, Mevlevi Sema Töreni; 2 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "catalhoyuk",
+     "name": "Çatalhöyük",
+     "district": "Çumra",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      32.828,
+      37.667
+     ],
+     "summary": "Yaklaşık 9.000 yıllık Neolitik kent; sokaksız, damdan girilen bitişik evleriyle UNESCO listesinde.",
+     "didYouKnow": "Evlerin duvarındaki bir resim, bilinen en eski “harita/kent planı” olarak yorumlanır.",
+     "wiki": "Çatalhöyük"
+    },
+    {
+     "id": "mevlana",
+     "name": "Mevlana Müzesi",
+     "district": "Karatay",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      32.5048,
+      37.8705
+     ],
+     "summary": "Mevlana Celaleddin Rumi’nin türbesi ve Mevlevi dergâhı; turkuaz çinili Kubbe-i Hadra ile tanınır.",
+     "didYouKnow": "Yeşil kubbe ilk kez 14. yüzyılda yapıldı; çinileri yüzyıllar içinde yenilendi.",
+     "wiki": "Mevlana Müzesi"
+    },
+    {
+     "id": "sema",
+     "name": "Mevlevi Sema Töreni",
+     "district": "Karatay",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      32.511,
+      37.866
+     ],
+     "summary": "2008’de UNESCO listesine giren Mevlevi ayini; müzik, şiir ve dönüşün birleştiği bir tefekkür biçimi.",
+     "didYouKnow": "Semazenin bir eli göğe, bir eli yere dönüktür: alınanın halka verilmesini simgeler.",
+     "wiki": "Sema (tasavvuf)"
+    },
+    {
+     "id": "ince-minare",
+     "name": "İnce Minareli Medrese",
+     "district": "Selçuklu",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      32.489,
+      37.873
+     ],
+     "summary": "1260’lardaki Selçuklu medresesi, bugün Taş ve Ahşap Eserler Müzesi’dir.",
+     "didYouKnow": "Taç kapısındaki yazı kuşakları birbirine düğümlenerek taş üzerinde bir örgü etkisi yaratır.",
+     "wiki": "İnce Minareli Medrese"
+    },
+    {
+     "id": "esrefoglu",
+     "name": "Eşrefoğlu Camii",
+     "district": "Beyşehir",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      31.725,
+      37.683
+     ],
+     "summary": "Beyşehir’deki 1299 tarihli ahşap direkli beylik camisi; 2023’te UNESCO listesine girdi.",
+     "didYouKnow": "Kışın caminin içinde, ahşabın nemini korumak için kar biriktirilen bir “karlık” bulunur.",
+     "wiki": "Eşrefoğlu Camii"
+    },
+    {
+     "id": "zazadin",
+     "name": "Zazadin Hanı",
+     "district": "Selçuklu",
+     "category": "han",
+     "categoryLabel": "Han & Kervansaray",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      32.7317,
+      37.9233
+     ],
+     "summary": "Konya–Aksaray yolu üzerinde, 1236 tarihli, Roma devşirme taşlarıyla örülü Selçuklu hanı.",
+     "didYouKnow": "Duvarlarda Roma döneminden kalma yazıtlı taşlar ters ya da yan yerleştirilmiş hâlde görülebilir.",
+     "wiki": "Zazadin Hanı"
+    }
+   ]
+  },
+  {
+   "id": "kutahya",
+   "name": "Kütahya",
+   "plate": 43,
+   "region": "ege",
+   "regionName": "Ege",
+   "center": [
+    29.5877,
+    39.2723
+   ],
+   "summary": "Ege Bölgesi’nde yer alan Kütahya (43), ortalama 1.000 m rakımlı bir ildir. Öne çıkan miras: Aizanoi (Zeus Tapınağı), Kütahya Çini Müzesi.",
+   "sites": [
+    {
+     "id": "aizanoi",
+     "name": "Aizanoi (Zeus Tapınağı)",
+     "district": "Çavdarhisar",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      29.61,
+      39.2
+     ],
+     "summary": "Çavdarhisar’daki antik kent; Anadolu’nun en iyi korunmuş Zeus tapınaklarından birine sahiptir.",
+     "didYouKnow": "Kentin bir binasında, antik dünyanın “fiyat listesi” sayılan Diocletianus’un azami fiyat fermanı yazılıdır.",
+     "wiki": "Aizanoi"
+    },
+    {
+     "id": "kutahya-cini",
+     "name": "Kütahya Çini Müzesi",
+     "district": "Merkez",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      29.987,
+      39.419
+     ],
+     "summary": "Germiyanoğlu döneminden kalma imaret binasında, Kütahya’nın yüzyıllık çini ve seramik geleneğini anlatır.",
+     "didYouKnow": "Kütahya’da çinicilik hiç kesintiye uğramadan bugüne kadar sürmüş bir zanaattır.",
+     "wiki": "Kütahya Çini Müzesi"
+    }
+   ]
+  },
+  {
+   "id": "malatya",
+   "name": "Malatya",
+   "plate": 44,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    38.1167,
+    38.5117
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Malatya (44), ortalama 1.100 m rakımlı bir ildir. Öne çıkan miras: Arslantepe Höyüğü, Battalgazi Ulu Camii; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "arslantepe",
+     "name": "Arslantepe Höyüğü",
+     "district": "Battalgazi",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "tunc",
+     "periodLabel": "Tunç Çağı & Hitit",
+     "coord": [
+      38.361,
+      38.382
+     ],
+     "summary": "Devletin ve bürokrasinin ortaya çıkışını belgeleyen höyük; 2021’de UNESCO listesine girdi.",
+     "didYouKnow": "Saray kompleksinde binlerce kil mühür baskısı bulundu: erzak dağıtımının kaydını tutan ilk “bürokratların” izleri.",
+     "wiki": "Arslantepe"
+    },
+    {
+     "id": "battalgazi-ulu",
+     "name": "Battalgazi Ulu Camii",
+     "district": "Battalgazi",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      38.363,
+      38.407
+     ],
+     "summary": "13. yüzyıl Selçuklu camisi; çinili kubbesi ve eyvanıyla. 2023 depremlerinde hasar gördü.",
+     "didYouKnow": "Caminin eyvan kemerindeki çini mozaikler Selçuklu çini sanatının başyapıtlarındandır.",
+     "wiki": "Battalgazi Ulu Camii"
+    }
+   ]
+  },
+  {
+   "id": "manisa",
+   "name": "Manisa",
+   "plate": 45,
+   "region": "ege",
+   "regionName": "Ege",
+   "center": [
+    28.1489,
+    38.7651
+   ],
+   "summary": "Ege Bölgesi’nde yer alan Manisa (45), ortalama 400 m rakımlı bir ildir. Öne çıkan miras: Sardes, Mesir Macunu Festivali, Muradiye Camii.",
+   "sites": [
+    {
+     "id": "sardes",
+     "name": "Sardes",
+     "district": "Salihli",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      28.04,
+      38.488
+     ],
+     "summary": "Lidya Krallığı’nın başkenti; Artemis Tapınağı, gymnasium ve sinagog kalıntıları görülebilir.",
+     "didYouKnow": "Altın-gümüş alaşımı elektrondan basılan ilk sikkeler Lidya’ya atfedilir.",
+     "wiki": "Sardes"
+    },
+    {
+     "id": "mesir",
+     "name": "Mesir Macunu Festivali",
+     "district": "Şehzadeler",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      27.432,
+      38.611
+     ],
+     "summary": "Sultan Camii’nin kubbesinden halka mesir macunu saçılan, 2012’de UNESCO listesine giren bahar şenliği.",
+     "didYouKnow": "Geleneksel tarife göre macunda 41 farklı baharat ve bitki bulunur.",
+     "wiki": "Mesir Macunu Festivali"
+    },
+    {
+     "id": "muradiye-manisa",
+     "name": "Muradiye Camii",
+     "district": "Şehzadeler",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      27.427,
+      38.614
+     ],
+     "summary": "Mimar Sinan’ın tasarlayıp 1586’da tamamlanan cami; zengin İznik çinileriyle bilinir.",
+     "didYouKnow": "Şehzadelerin sancağa çıktığı Manisa’ya “şehzadeler şehri” denir; III. Murad da burada bulunmuştu.",
+     "wiki": "Muradiye Camii (Manisa)"
+    }
+   ]
+  },
+  {
+   "id": "mardin",
+   "name": "Mardin",
+   "plate": 47,
+   "region": "guneydogu",
+   "regionName": "Güneydoğu Anadolu",
+   "center": [
+    40.8986,
+    37.367
+   ],
+   "summary": "Güneydoğu Anadolu Bölgesi’nde yer alan Mardin (47), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Dara Antik Kenti, Zinciriye Medresesi, Deyrulzafaran Manastırı.",
+   "sites": [
+    {
+     "id": "dara",
+     "name": "Dara Antik Kenti",
+     "district": "Artuklu",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      40.948,
+      37.176
+     ],
+     "summary": "6. yüzyıl Doğu Roma sınır kenti; kayaya oyulmuş nekropolü ve dev sarnıçlarıyla.",
+     "didYouKnow": "Kentin yer altı sarnıçları o kadar büyüktür ki ziyaretçiler içinde gezebilir.",
+     "wiki": "Dara (Mezopotamya)"
+    },
+    {
+     "id": "zinciriye",
+     "name": "Zinciriye Medresesi",
+     "district": "Artuklu",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      40.735,
+      37.312
+     ],
+     "summary": "1385’te Artuklular döneminde yapılan medrese; teras çatısından Mezopotamya ovası görünür.",
+     "didYouKnow": "Mardin’in taş evleri, birinin damı diğerinin avlusu olacak şekilde yamaca kademelenir.",
+     "wiki": "Zinciriye Medresesi"
+    },
+    {
+     "id": "deyrulzafaran",
+     "name": "Deyrulzafaran Manastırı",
+     "district": "Artuklu",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      40.788,
+      37.297
+     ],
+     "summary": "Süryani Ortodoks geleneğinin tarihî merkezlerinden, bugün de yaşayan manastır.",
+     "didYouKnow": "Adı “Safran Manastırı” anlamına gelir; taşlarının sarımsı rengine bağlanır.",
+     "wiki": "Deyrulzafaran Manastırı"
+    }
+   ]
+  },
+  {
+   "id": "mersin",
+   "name": "Mersin",
+   "plate": 33,
+   "region": "akdeniz",
+   "regionName": "Akdeniz",
+   "center": [
+    33.8239,
+    36.6916
+   ],
+   "summary": "Akdeniz Bölgesi’nde yer alan Mersin (33), ortalama 700 m rakımlı bir ildir. Öne çıkan miras: Kızkalesi, Uzuncaburç (Diokaisareia), Yumuktepe Höyüğü.",
+   "sites": [
+    {
+     "id": "kizkalesi",
+     "name": "Kızkalesi",
+     "district": "Erdemli",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      34.148,
+      36.456
+     ],
+     "summary": "Kıyıdan birkaç yüz metre açıktaki adacığa kurulmuş Ortaçağ kalesi; karşı kıyıdaki Korykos Kalesi’nin ikizidir.",
+     "didYouKnow": "Rivayete göre iki kale arasında deniz altından bir yol vardı.",
+     "wiki": "Kızkalesi"
+    },
+    {
+     "id": "uzuncaburc",
+     "name": "Uzuncaburç (Diokaisareia)",
+     "district": "Silifke",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      33.93,
+      36.58
+     ],
+     "summary": "Olbia Zeus Tapınağı ve beş katlı kulesiyle Toros yaylalarında saklı bir kent.",
+     "didYouKnow": "Zeus Tapınağı, Anadolu’daki en erken Korint düzeni tapınaklarından biri kabul edilir.",
+     "wiki": "Diokaisareia"
+    },
+    {
+     "id": "yumuktepe",
+     "name": "Yumuktepe Höyüğü",
+     "district": "Yenişehir",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      34.605,
+      36.815
+     ],
+     "summary": "Yaklaşık 9.000 yıllık iskân geçmişi olan, kent içinde kalmış önemli bir höyük.",
+     "didYouKnow": "Kalkolitik katmanlarda bilinen en erken sur sistemlerinden biri tespit edilmiştir.",
+     "wiki": "Yumuktepe"
+    }
+   ]
+  },
+  {
+   "id": "mugla",
+   "name": "Muğla",
+   "plate": 48,
+   "region": "ege",
+   "regionName": "Ege",
+   "center": [
+    28.471,
+    37.0277
+   ],
+   "summary": "Ege Bölgesi’nde yer alan Muğla (48), ortalama 600 m rakımlı bir ildir. Öne çıkan miras: Bodrum Kalesi ve Sualtı Arkeoloji Müzesi, Kaunos Kral Mezarları, Stratonikeia.",
+   "sites": [
+    {
+     "id": "bodrum-kalesi",
+     "name": "Bodrum Kalesi ve Sualtı Arkeoloji Müzesi",
+     "district": "Bodrum",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      27.429,
+      37.032
+     ],
+     "summary": "15. yüzyılda Rodos Şövalyeleri’nin yaptığı kale, bugün dünyanın önde gelen sualtı arkeoloji müzelerinden birine ev sahipliği yapar.",
+     "didYouKnow": "Kale inşa edilirken antik Mausoleion’un taşları da kullanıldı.",
+     "wiki": "Bodrum Kalesi"
+    },
+    {
+     "id": "kaunos",
+     "name": "Kaunos Kral Mezarları",
+     "district": "Ortaca",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      28.622,
+      36.827
+     ],
+     "summary": "Dalyan Çayı kıyısında kayaya oyulmuş tapınak cepheli Karia mezarları.",
+     "didYouKnow": "Mezarlar, ölülerin denizcilere yukarıdan bakması için kıyıya dönük oyuldu.",
+     "wiki": "Kaunos"
+    },
+    {
+     "id": "stratonikeia",
+     "name": "Stratonikeia",
+     "district": "Yatağan",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      28.064,
+      37.315
+     ],
+     "summary": "Antik çağdan Osmanlı’ya kesintisiz yaşamış bir kent; Roma kalıntıları ile Osmanlı evleri yan yanadır.",
+     "didYouKnow": "“Gladyatörlerin kenti” olarak da anılır; ancak bugün en çok çok katmanlı mahalleleriyle dikkat çeker.",
+     "wiki": "Stratonikeia"
+    }
+   ]
+  },
+  {
+   "id": "mus",
+   "name": "Muş",
+   "plate": 49,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    41.8815,
+    39.014
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Muş (49), ortalama 1.500 m rakımlı bir ildir. Öne çıkan miras: Alaeddin Bey Külliyesi.",
+   "sites": [
+    {
+     "id": "mus-alaeddin",
+     "name": "Alaeddin Bey Külliyesi",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      41.495,
+      38.746
+     ],
+     "summary": "Muş’un merkezindeki cami, hamam ve çarşıdan oluşan 18. yüzyıl külliyesi.",
+     "didYouKnow": "Muş Ovası, ilkbaharda Muş lalesiyle (Tulipa sintenisii) kırmızıya boyanır.",
+     "wiki": "Alaeddin Bey Camii"
+    }
+   ]
+  },
+  {
+   "id": "nevsehir",
+   "name": "Nevşehir",
+   "plate": 50,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    34.6908,
+    38.8108
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Nevşehir (50), ortalama 1.200 m rakımlı bir ildir. Öne çıkan miras: Göreme Açık Hava Müzesi, Derinkuyu Yeraltı Şehri, Avanos Çömlekçiliği; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "goreme",
+     "name": "Göreme Açık Hava Müzesi",
+     "district": "Merkez",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      34.845,
+      38.64
+     ],
+     "summary": "Peribacaları arasındaki freskli kaya kiliseleri; Göreme Millî Parkı ve Kapadokya UNESCO alanının kalbi.",
+     "didYouKnow": "Karanlık Kilise’nin freskleri, az ışık aldığı için renklerini yüzyıllarca korudu.",
+     "wiki": "Göreme Açık Hava Müzesi"
+    },
+    {
+     "id": "derinkuyu",
+     "name": "Derinkuyu Yeraltı Şehri",
+     "district": "Derinkuyu",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      34.735,
+      38.388
+     ],
+     "summary": "Yumuşak tüfe oyulmuş, birçok katlı yeraltı yerleşimi; havalandırma bacaları ve sürgü taş kapıları vardır.",
+     "didYouKnow": "Yuvarlak sürgü taşlar içeriden yuvarlanarak kapatılırdı; dışarıdan açılmaları neredeyse imkânsızdı.",
+     "wiki": "Derinkuyu Yeraltı Şehri"
+    },
+    {
+     "id": "avanos",
+     "name": "Avanos Çömlekçiliği",
+     "district": "Avanos",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      34.847,
+      38.715
+     ],
+     "summary": "Kızılırmak’ın kırmızı kilinden ayakla döndürülen tezgâhlarda şekillendirilen çömlekler.",
+     "didYouKnow": "Usta-çırak ilişkisiyle süren bu zanaatın kökleri Hitit dönemine kadar uzanır.",
+     "wiki": "Avanos"
+    },
+    {
+     "id": "sarihan",
+     "name": "Sarıhan",
+     "district": "Avanos",
+     "category": "han",
+     "categoryLabel": "Han & Kervansaray",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      34.893,
+      38.738
+     ],
+     "summary": "Avanos yakınlarında 1249 tarihli Selçuklu kervansarayı; sarı-pembe tüf taşından adını alır.",
+     "didYouKnow": "Bugün akşamları sema gösterilerine ev sahipliği yapar.",
+     "wiki": "Sarıhan"
+    }
+   ]
+  },
+  {
+   "id": "nigde",
+   "name": "Niğde",
+   "plate": 51,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    34.7366,
+    37.9532
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Niğde (51), ortalama 1.300 m rakımlı bir ildir. Öne çıkan miras: Gümüşler Manastırı, Tyana Roma Su Kemeri.",
+   "sites": [
+    {
+     "id": "gumusler",
+     "name": "Gümüşler Manastırı",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      34.735,
+      38.011
+     ],
+     "summary": "Kayaya oyulmuş Bizans manastırı; Kapadokya’nın en iyi korunmuş fresklerinden bazılarına sahiptir.",
+     "didYouKnow": "Freskler arasında gülümseyen bir Meryem tasviri dikkat çeker — Bizans sanatında oldukça nadirdir.",
+     "wiki": "Gümüşler Manastırı"
+    },
+    {
+     "id": "tyana-kemer",
+     "name": "Tyana Roma Su Kemeri",
+     "district": "Bor",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      34.61,
+      37.84
+     ],
+     "summary": "Kemerhisar’da, antik Tyana kentine su taşıyan Roma kemerlerinin kalıntıları.",
+     "didYouKnow": "Tyana, antik filozof Apollonios’un memleketi olarak da bilinir.",
+     "wiki": "Tyana"
+    }
+   ]
+  },
+  {
+   "id": "ordu",
+   "name": "Ordu",
+   "plate": 52,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    37.5374,
+    40.7875
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Ordu (52), ortalama 700 m rakımlı bir ildir. Öne çıkan miras: Yason Burnu Kilisesi.",
+   "sites": [
+    {
+     "id": "yason",
+     "name": "Yason Burnu Kilisesi",
+     "district": "Perşembe",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      37.693,
+      41.108
+     ],
+     "summary": "Efsanevi Argonotların uğradığı söylenen burunda 1868’de yapılmış küçük taş kilise.",
+     "didYouKnow": "Burun adını, Altın Post efsanesinin kahramanı Iason’dan alır.",
+     "wiki": "Yason Burnu"
+    }
+   ]
+  },
+  {
+   "id": "osmaniye",
+   "name": "Osmaniye",
+   "plate": 80,
+   "region": "akdeniz",
+   "regionName": "Akdeniz",
+   "center": [
+    36.2454,
+    37.2651
+   ],
+   "summary": "Akdeniz Bölgesi’nde yer alan Osmaniye (80), ortalama 400 m rakımlı bir ildir. Öne çıkan miras: Karatepe-Aslantaş.",
+   "sites": [
+    {
+     "id": "karatepe",
+     "name": "Karatepe-Aslantaş",
+     "district": "Kadirli",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      36.253,
+      37.295
+     ],
+     "summary": "Geç Hitit beyi Azatiwada’nın kalesi; kapılarındaki kabartmalar açık hava müzesinde yerinde sergilenir.",
+     "didYouKnow": "Burada bulunan iki dilli (Fenike-Luvice) yazıtlar Anadolu hiyerogliflerinin çözülmesini sağladı.",
+     "wiki": "Karatepe-Aslantaş"
+    }
+   ]
+  },
+  {
+   "id": "rize",
+   "name": "Rize",
+   "plate": 53,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    40.869,
+    40.9322
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Rize (53), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Zilkale, Rize Çay Kültürü, Rize Kalesi.",
+   "sites": [
+    {
+     "id": "zilkale",
+     "name": "Zilkale",
+     "district": "Çamlıhemşin",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      41.0667,
+      40.9581
+     ],
+     "summary": "Fırtına Vadisi’nde, ormanla kaplı bir kayalığın üzerindeki Ortaçağ kalesi.",
+     "didYouKnow": "Kale, yaklaşık 750 m yükseklikte, sisin içinde “bulutlara gömülü” görünür.",
+     "wiki": "Zilkale"
+    },
+    {
+     "id": "rize-cay",
+     "name": "Rize Çay Kültürü",
+     "district": "Merkez",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      40.52,
+      41.02
+     ],
+     "summary": "Yamaç bahçelerinde elle toplanan çay ve bununla şekillenen gündelik yaşam, imece ve sohbet kültürü.",
+     "didYouKnow": "Çay tarımı Rize’de Cumhuriyet’in ilk yıllarında Zihni Derin’in çabalarıyla yaygınlaştı.",
+     "wiki": "Türk çayı"
+    },
+    {
+     "id": "rize-kalesi",
+     "name": "Rize Kalesi",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      40.518,
+      41.0216
+     ],
+     "summary": "Kentin güneyindeki tepeye kurulan iç kale ile limana inen aşağı kaleden oluşan Ortaçağ kalesi.",
+     "didYouKnow": "Kalenin bulunduğu tepe bugün çay bahçeleriyle çevrili bir seyir noktasıdır.",
+     "wiki": "Rize Kalesi"
+    },
+    {
+     "id": "senyuva-koprusu",
+     "name": "Şenyuva Köprüsü",
+     "district": "Çamlıhemşin",
+     "category": "kopru",
+     "categoryLabel": "Tarihî Köprü",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      41.01,
+      41.025
+     ],
+     "summary": "Fırtına Deresi üzerinde 1696’da yapılmış tek kemerli taş köprü; vadinin simgelerinden.",
+     "didYouKnow": "Köprü harç kullanmadan, taşların birbirine kilitlenmesiyle yükselen zarif bir kemere sahiptir.",
+     "wiki": "Şenyuva Köprüsü"
+    }
+   ]
+  },
+  {
+   "id": "sakarya",
+   "name": "Sakarya",
+   "plate": 54,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    30.5398,
+    40.741
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Sakarya (54), ortalama 200 m rakımlı bir ildir. Öne çıkan miras: Justinianus (Beşköprü) Köprüsü.",
+   "sites": [
+    {
+     "id": "justinianus",
+     "name": "Justinianus (Beşköprü) Köprüsü",
+     "district": "Adapazarı",
+     "category": "kopru",
+     "categoryLabel": "Tarihî Köprü",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      30.375,
+      40.7414
+     ],
+     "summary": "6. yüzyılda Sakarya (Sangarios) Nehri üzerine yapılan, yaklaşık 430 m uzunluğundaki taş köprü.",
+     "didYouKnow": "Nehir zamanla yatağını değiştirdiği için köprünün altından bugün neredeyse su geçmez.",
+     "wiki": "Justinianus Köprüsü"
+    }
+   ]
+  },
+  {
+   "id": "samsun",
+   "name": "Samsun",
+   "plate": 55,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    36.0185,
+    41.2135
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Samsun (55), ortalama 400 m rakımlı bir ildir. Öne çıkan miras: İkiztepe, Amisos Tepesi, Bandırma Vapuru Müzesi.",
+   "sites": [
+    {
+     "id": "ikiztepe",
+     "name": "İkiztepe",
+     "district": "Bafra",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "tunc",
+     "periodLabel": "Tunç Çağı & Hitit",
+     "coord": [
+      35.82,
+      41.6
+     ],
+     "summary": "Kızılırmak deltasında Tunç Çağı yerleşimi; Karadeniz kıyısının en önemli kazı alanlarından.",
+     "didYouKnow": "Burada bulunan erken metal eserler, Anadolu’da madenciliğin ne kadar eskiye gittiğini gösterir.",
+     "wiki": "İkiztepe"
+    },
+    {
+     "id": "amisos",
+     "name": "Amisos Tepesi",
+     "district": "Atakum",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      36.33,
+      41.3
+     ],
+     "summary": "Antik Amisos kentinin tümülüsleri; Helenistik dönem mezar odaları gezilebilir.",
+     "didYouKnow": "Tümülüslerden çıkan altın takılar Samsun Müzesi’nde sergilenir.",
+     "wiki": "Amisos"
+    },
+    {
+     "id": "bandirma-vapuru",
+     "name": "Bandırma Vapuru Müzesi",
+     "district": "İlkadım",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "cumhuriyet",
+     "periodLabel": "Cumhuriyet",
+     "coord": [
+      36.355,
+      41.268
+     ],
+     "summary": "Mustafa Kemal’in 19 Mayıs 1919’da Samsun’a gelirken bindiği vapurun replikası.",
+     "didYouKnow": "Orijinal vapur 1925’te sökülmüş; müzedeki gemi özgün çizimlere göre yeniden yapılmıştır.",
+     "wiki": "Bandırma Vapuru"
+    }
+   ]
+  },
+  {
+   "id": "siirt",
+   "name": "Siirt",
+   "plate": 56,
+   "region": "guneydogu",
+   "regionName": "Güneydoğu Anadolu",
+   "center": [
+    42.1852,
+    37.9486
+   ],
+   "summary": "Güneydoğu Anadolu Bölgesi’nde yer alan Siirt (56), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Tillo (Aydınlar) ve Fakirullah Türbesi, Siirt Battaniyesi (Tiftik Dokuma).",
+   "sites": [
+    {
+     "id": "tillo",
+     "name": "Tillo (Aydınlar) ve Fakirullah Türbesi",
+     "district": "Tillo",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      42.01,
+      37.92
+     ],
+     "summary": "İbrahim Hakkı Erzurumi’nin hocası İsmail Fakirullah’ın türbesi; bilimle bezenmiş bir ilim kasabası.",
+     "didYouKnow": "Yılda iki kez güneş ışığı, tepeye yerleştirilmiş bir düzenekle türbedeki mezarın üzerine düşer.",
+     "wiki": "Aydınlar, Siirt"
+    },
+    {
+     "id": "siirt-battaniye",
+     "name": "Siirt Battaniyesi (Tiftik Dokuma)",
+     "district": "Merkez",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      41.94,
+      37.93
+     ],
+     "summary": "Tiftik keçisi yününden el tezgâhlarında dokunan battaniyeler ve şal-şapik giysisi.",
+     "didYouKnow": "Siirt battaniyesi coğrafi işaretle korunan ürünlerdendir.",
+     "wiki": "Siirt battaniyesi"
+    }
+   ]
+  },
+  {
+   "id": "sinop",
+   "name": "Sinop",
+   "plate": 57,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    34.884,
+    41.623
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Sinop (57), ortalama 400 m rakımlı bir ildir. Öne çıkan miras: Balatlar Kilisesi.",
+   "sites": [
+    {
+     "id": "balatlar",
+     "name": "Balatlar Kilisesi",
+     "district": "Merkez",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      35.14,
+      42.02
+     ],
+     "summary": "Roma hamamı üzerine kurulmuş Bizans kilisesi; kazılarda fresk parçaları ve mezarlar bulundu.",
+     "didYouKnow": "Sinop, Karadeniz kıyısının en eski liman kentlerinden biridir; Diyojen’in doğduğu yer olarak da bilinir.",
+     "wiki": "Balatlar Kilisesi"
+    }
+   ]
+  },
+  {
+   "id": "sivas",
+   "name": "Sivas",
+   "plate": 58,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    37.3146,
+    39.5672
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Sivas (58), ortalama 1.400 m rakımlı bir ildir. Öne çıkan miras: Divriği Ulu Camii ve Darüşşifası, Sivas Gök Medrese, Âşıklık Geleneği; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "divrigi",
+     "name": "Divriği Ulu Camii ve Darüşşifası",
+     "district": "Divriği",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      38.121,
+      39.371
+     ],
+     "summary": "1228’de Mengücekliler döneminde yapılan külliye; taş işçiliğiyle 1985’ten beri UNESCO listesinde.",
+     "didYouKnow": "Batı taç kapısında, günün belli saatlerinde güneşin oluşturduğu namaz kılan insan gölgesi görülür.",
+     "wiki": "Divriği Ulu Camii ve Darüşşifası"
+    },
+    {
+     "id": "gok-medrese-sivas",
+     "name": "Sivas Gök Medrese",
+     "district": "Merkez",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      37.017,
+      39.747
+     ],
+     "summary": "1271’de yapılan medrese, mavi-firuze çinileri ve çifte minareli taç kapısıyla tanınır.",
+     "didYouKnow": "Adındaki “gök”, çinilerin gök mavisi renginden gelir.",
+     "wiki": "Gök Medrese (Sivas)"
+    },
+    {
+     "id": "asiklik",
+     "name": "Âşıklık Geleneği",
+     "district": "Merkez",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      37.03,
+      39.755
+     ],
+     "summary": "Saz eşliğinde doğaçlama şiir söyleme geleneği; 2009’da UNESCO listesine girdi. Sivas, “âşıklar diyarı” olarak anılır.",
+     "didYouKnow": "Âşık Veysel, Pir Sultan Abdal ve Âşık Ruhsati gibi ozanlar Sivas’ın yetiştirdiği isimlerdendir.",
+     "wiki": "Âşıklık geleneği"
+    }
+   ]
+  },
+  {
+   "id": "sanliurfa",
+   "name": "Şanlıurfa",
+   "plate": 63,
+   "region": "guneydogu",
+   "regionName": "Güneydoğu Anadolu",
+   "center": [
+    39.1031,
+    37.2505
+   ],
+   "summary": "Güneydoğu Anadolu Bölgesi’nde yer alan Şanlıurfa (63), ortalama 600 m rakımlı bir ildir. Öne çıkan miras: Göbeklitepe, Karahantepe, Balıklıgöl ve Rızvaniye Külliyesi; 1 UNESCO Dünya Mirası alanı.",
+   "sites": [
+    {
+     "id": "gobeklitepe",
+     "name": "Göbeklitepe",
+     "district": "Haliliye",
+     "category": "unesco",
+     "categoryLabel": "UNESCO Dünya Mirası",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      38.9224,
+      37.2232
+     ],
+     "summary": "Yaklaşık 11.600 yıllık anıtsal T biçimli dikilitaşlar; çiftçilikten önce inşa edilmiş bilinen en eski toplu yapılar.",
+     "didYouKnow": "Bazı dikilitaşlarda kollar ve eller işlenmiştir: taşlar aslında stilize insan figürleridir.",
+     "wiki": "Göbekli Tepe"
+    },
+    {
+     "id": "karahantepe",
+     "name": "Karahantepe",
+     "district": "Haliliye",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "prehistorik",
+     "periodLabel": "Tarih Öncesi",
+     "coord": [
+      39.42,
+      37.37
+     ],
+     "summary": "“Taş Tepeler” projesi kapsamında kazılan, kayaya oyulmuş mekânları ve insan başı heykeliyle Göbeklitepe’nin çağdaşı.",
+     "didYouKnow": "Bölgede aynı döneme ait onu aşkın yerleşim bulunduğu belirlendi.",
+     "wiki": "Karahan Tepe"
+    },
+    {
+     "id": "balikligol",
+     "name": "Balıklıgöl ve Rızvaniye Külliyesi",
+     "district": "Eyyübiye",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      38.786,
+      37.146
+     ],
+     "summary": "Hz. İbrahim anlatısıyla bağlantılı kutsal göl ve kıyısındaki 18. yüzyıl Osmanlı külliyesi.",
+     "didYouKnow": "Göldeki sazan balıkları kutsal sayılır; avlanmaları geleneksel olarak yasaktır.",
+     "wiki": "Balıklıgöl"
+    },
+    {
+     "id": "harran",
+     "name": "Harran Kümbet Evleri",
+     "district": "Harran",
+     "category": "kultur-peyzaji",
+     "categoryLabel": "Kültürel Peyzaj",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      39.031,
+      36.864
+     ],
+     "summary": "Ağaç azlığı nedeniyle tuğladan, konik kubbeli inşa edilen evler; sıcak iklime uyumlu bir mimari çözüm.",
+     "didYouKnow": "Harran’da Ortaçağ’ın önemli bilim merkezlerinden biri olan bir üniversitenin kalıntıları bulunur.",
+     "wiki": "Harran"
+    },
+    {
+     "id": "halfeti",
+     "name": "Halfeti",
+     "district": "Halfeti",
+     "category": "kultur-peyzaji",
+     "categoryLabel": "Kültürel Peyzaj",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      37.8686,
+      37.2453
+     ],
+     "summary": "Fırat kıyısındaki tarihî ilçe; Birecik Barajı’nın suları eski yerleşimin bir bölümünü 2000 yılında örttü.",
+     "didYouKnow": "Halfeti, yalnızca bu bölgede yetişen koyu renkli “siyah gül”üyle ünlüdür.",
+     "wiki": "Halfeti"
+    }
+   ]
+  },
+  {
+   "id": "sirnak",
+   "name": "Şırnak",
+   "plate": 73,
+   "region": "guneydogu",
+   "regionName": "Güneydoğu Anadolu",
+   "center": [
+    42.6151,
+    37.5074
+   ],
+   "summary": "Güneydoğu Anadolu Bölgesi’nde yer alan Şırnak (73), ortalama 1.200 m rakımlı bir ildir. Öne çıkan miras: Cizre Kırmızı Medrese.",
+   "sites": [
+    {
+     "id": "cizre-kirmizi",
+     "name": "Cizre Kırmızı Medrese",
+     "district": "Cizre",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      42.19,
+      37.33
+     ],
+     "summary": "Dicle kıyısındaki Cizre’de, Bohtan Beyliği dönemine ait, adını kırmızı boyalı süslemelerinden alan medrese.",
+     "didYouKnow": "Kentte, Kürt edebiyatının klasiği Mem û Zîn ile anılan bir türbe de bulunur.",
+     "wiki": "Kırmızı Medrese"
+    }
+   ]
+  },
+  {
+   "id": "tekirdag",
+   "name": "Tekirdağ",
+   "plate": 59,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    27.4438,
+    41.112
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Tekirdağ (59), ortalama 150 m rakımlı bir ildir. Öne çıkan miras: Rákóczi Müzesi.",
+   "sites": [
+    {
+     "id": "rakoczi",
+     "name": "Rákóczi Müzesi",
+     "district": "Süleymanpaşa",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      27.511,
+      40.977
+     ],
+     "summary": "Macar Prensi II. Ferenc Rákóczi’nin sürgün yıllarını geçirdiği ahşap ev, bugün Macar-Türk dostluğunu anlatan bir müzedir.",
+     "didYouKnow": "Evin bazı odaları, Macaristan’daki Kassa’da bulunan orijinal evinin birebir kopyasıdır.",
+     "wiki": "Rakoczi Müzesi"
+    }
+   ]
+  },
+  {
+   "id": "tokat",
+   "name": "Tokat",
+   "plate": 60,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    36.6057,
+    40.3662
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Tokat (60), ortalama 800 m rakımlı bir ildir. Öne çıkan miras: Tokat Gök Medrese, Hıdırlık Köprüsü, Tokat Yazmacılığı.",
+   "sites": [
+    {
+     "id": "tokat-gok",
+     "name": "Tokat Gök Medrese",
+     "district": "Merkez",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      36.552,
+      40.315
+     ],
+     "summary": "1270’lerde yapılan Selçuklu medresesi; firuze çinileri ve müze koleksiyonuyla.",
+     "didYouKnow": "Avlu cephesindeki çiniler yapıya adını veren mavi parıltıyı taşır.",
+     "wiki": "Gök Medrese (Tokat)"
+    },
+    {
+     "id": "hidirlik",
+     "name": "Hıdırlık Köprüsü",
+     "district": "Merkez",
+     "category": "kopru",
+     "categoryLabel": "Tarihî Köprü",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      36.56,
+      40.326
+     ],
+     "summary": "Yeşilırmak üzerindeki 1250 tarihli Selçuklu köprüsü; bugün de kullanılıyor.",
+     "didYouKnow": "Kitabesi, yapının bir Selçuklu kadın hamisi tarafından yaptırıldığını anlatır.",
+     "wiki": "Hıdırlık Köprüsü"
+    },
+    {
+     "id": "tokat-yazma",
+     "name": "Tokat Yazmacılığı",
+     "district": "Merkez",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      36.545,
+      40.308
+     ],
+     "summary": "Oyma ahşap kalıplarla kumaşa elle desen basma sanatı.",
+     "didYouKnow": "Bir yazmada her renk için ayrı bir kalıp kullanılır.",
+     "wiki": "Tokat yazması"
+    }
+   ]
+  },
+  {
+   "id": "trabzon",
+   "name": "Trabzon",
+   "plate": 61,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    39.8191,
+    40.7977
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Trabzon (61), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Sümela Manastırı, Trabzon Ayasofya, Trabzon Atatürk Köşkü.",
+   "sites": [
+    {
+     "id": "sumela",
+     "name": "Sümela Manastırı",
+     "district": "Maçka",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      39.658,
+      40.69
+     ],
+     "summary": "Altındere Vadisi’nde sarp bir kaya yüzüne kurulmuş Meryem Ana Manastırı.",
+     "didYouKnow": "Manastır yerden yaklaşık 300 m yükseklikteki bir kaya oyuğuna yerleştirilmiştir.",
+     "wiki": "Sümela Manastırı"
+    },
+    {
+     "id": "trabzon-ayasofya",
+     "name": "Trabzon Ayasofya",
+     "district": "Ortahisar",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      39.699,
+      41.005
+     ],
+     "summary": "Trabzon İmparatorluğu döneminde 13. yüzyılda yapılan kilise; freskleri ve kabartmalı frizleriyle tanınır.",
+     "didYouKnow": "Güney cephesindeki frizde Âdem ile Havva’nın hikâyesi taş üzerine anlatılır.",
+     "wiki": "Trabzon Ayasofya Camii"
+    },
+    {
+     "id": "trabzon-kosk",
+     "name": "Trabzon Atatürk Köşkü",
+     "district": "Ortahisar",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "cumhuriyet",
+     "periodLabel": "Cumhuriyet",
+     "coord": [
+      39.689,
+      40.995
+     ],
+     "summary": "Soğuksu’daki Karadeniz tipi köşk, Atatürk’e armağan edilmiş ve müzeye dönüştürülmüştür.",
+     "didYouKnow": "Köşk, Avrupa mimari üsluplarının yerel ustalıkla birleştiği nadir örneklerdendir.",
+     "wiki": "Atatürk Köşkü (Trabzon)"
+    },
+    {
+     "id": "kemence",
+     "name": "Karadeniz Kemençesi",
+     "district": "Ortahisar",
+     "category": "somut-olmayan",
+     "categoryLabel": "Somut Olmayan Miras",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      39.73,
+      41
+     ],
+     "summary": "Üç telli, dizde çalınan yay; horon ve atma türkülerinin vazgeçilmezi.",
+     "didYouKnow": "Usta kemençeciler aynı anda iki teli birden basarak çok sesli bir doku yaratır.",
+     "wiki": "Karadeniz kemençesi"
+    }
+   ]
+  },
+  {
+   "id": "tunceli",
+   "name": "Tunceli",
+   "plate": 62,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    39.5108,
+    39.1887
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Tunceli (62), ortalama 1.300 m rakımlı bir ildir. Öne çıkan miras: Munzur Gözeleri.",
+   "sites": [
+    {
+     "id": "munzur",
+     "name": "Munzur Gözeleri",
+     "district": "Ovacık",
+     "category": "kultur-peyzaji",
+     "categoryLabel": "Kültürel Peyzaj",
+     "period": "yasayan",
+     "periodLabel": "Yaşayan Miras",
+     "coord": [
+      39.24,
+      39.35
+     ],
+     "summary": "Dağın içinden fışkıran kaynaklar; yerel inanç ve ritüellerde kutsal kabul edilen bir doğa-kültür alanı.",
+     "didYouKnow": "Ziyaretçiler kaynakların başında mum yakar, dilek tutar ve suyu kirletmemeye özen gösterir.",
+     "wiki": "Munzur Gözeleri"
+    }
+   ]
+  },
+  {
+   "id": "usak",
+   "name": "Uşak",
+   "plate": 64,
+   "region": "ege",
+   "regionName": "Ege",
+   "center": [
+    29.3598,
+    38.5346
+   ],
+   "summary": "Ege Bölgesi’nde yer alan Uşak (64), ortalama 900 m rakımlı bir ildir. Öne çıkan miras: Uşak Müzesi – Karun Hazinesi.",
+   "sites": [
+    {
+     "id": "karun",
+     "name": "Uşak Müzesi – Karun Hazinesi",
+     "district": "Merkez",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      29.405,
+      38.674
+     ],
+     "summary": "Lidya dönemine ait altın ve gümüş eserler; yurt dışına kaçırıldıktan sonra uzun bir hukuk mücadelesiyle geri getirildi.",
+     "didYouKnow": "Hazinenin simgesi olan kanatlı denizatı broşu müzeden çalınmış, yıllar sonra Almanya’da bulunarak iade edilmişti.",
+     "wiki": "Karun Hazinesi"
+    }
+   ]
+  },
+  {
+   "id": "van",
+   "name": "Van",
+   "plate": 65,
+   "region": "doguanadolu",
+   "regionName": "Doğu Anadolu",
+   "center": [
+    43.6381,
+    38.4737
+   ],
+   "summary": "Doğu Anadolu Bölgesi’nde yer alan Van (65), ortalama 1.800 m rakımlı bir ildir. Öne çıkan miras: Van Kalesi (Tuşpa), Akdamar Kilisesi, Hoşap Kalesi.",
+   "sites": [
+    {
+     "id": "van-kalesi",
+     "name": "Van Kalesi (Tuşpa)",
+     "district": "Tuşba",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      43.342,
+      38.502
+     ],
+     "summary": "Urartu Krallığı’nın başkenti Tuşpa; gölün kıyısında yükselen kayalık üzerinde kral mezarları ve yazıtlar.",
+     "didYouKnow": "Kayalıktaki çivi yazılı yazıtlardan biri Pers kralı Kserkses’e aittir.",
+     "wiki": "Van Kalesi"
+    },
+    {
+     "id": "akdamar",
+     "name": "Akdamar Kilisesi",
+     "district": "Gevaş",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "bizans",
+     "periodLabel": "Bizans & Ortaçağ",
+     "coord": [
+      43.036,
+      38.341
+     ],
+     "summary": "Van Gölü’ndeki adada 10. yüzyılda yapılan kilise; dış cephedeki kabartmalarıyla ünlü.",
+     "didYouKnow": "Cephede Hz. Nuh, Yunus ve balık gibi hikâyeler ile üzüm toplayan figürler yan yana işlenmiştir.",
+     "wiki": "Akdamar Kilisesi"
+    },
+    {
+     "id": "hosap",
+     "name": "Hoşap Kalesi",
+     "district": "Gürpınar",
+     "category": "mimari",
+     "categoryLabel": "Mimari Yapı",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      43.796,
+      38.32
+     ],
+     "summary": "1643’te Mahmudi Beyi Sarı Süleyman’ın yaptırdığı, Hoşap Çayı’na bakan kale.",
+     "didYouKnow": "Taç kapıdaki aslan kabartmaları kalenin en dikkat çekici süslemesidir.",
+     "wiki": "Hoşap Kalesi"
+    }
+   ]
+  },
+  {
+   "id": "yalova",
+   "name": "Yalova",
+   "plate": 77,
+   "region": "marmara",
+   "regionName": "Marmara",
+   "center": [
+    29.1234,
+    40.587
+   ],
+   "summary": "Marmara Bölgesi’nde yer alan Yalova (77), ortalama 200 m rakımlı bir ildir. Öne çıkan miras: Yalova Atatürk Köşkü.",
+   "sites": [
+    {
+     "id": "yalova-kosk",
+     "name": "Yalova Atatürk Köşkü",
+     "district": "Merkez",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "cumhuriyet",
+     "periodLabel": "Cumhuriyet",
+     "coord": [
+      29.277,
+      40.6555
+     ],
+     "summary": "1929’da inşa edilen köşk, “Yürüyen Köşk” olarak bilinir.",
+     "didYouKnow": "Bir çınarın dalları binaya zarar vermesin diye köşk raylar üzerinde birkaç metre kaydırıldı.",
+     "wiki": "Yalova Atatürk Köşkü"
+    }
+   ]
+  },
+  {
+   "id": "yozgat",
+   "name": "Yozgat",
+   "plate": 66,
+   "region": "icanadolu",
+   "regionName": "İç Anadolu",
+   "center": [
+    35.251,
+    39.6627
+   ],
+   "summary": "İç Anadolu Bölgesi’nde yer alan Yozgat (66), ortalama 1.100 m rakımlı bir ildir. Öne çıkan miras: Kerkenes Dağı, Sarıkaya Roma Hamamı (Basilica Therma).",
+   "sites": [
+    {
+     "id": "kerkenes",
+     "name": "Kerkenes Dağı",
+     "district": "Sorgun",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "demir",
+     "periodLabel": "Demir Çağı Krallıkları",
+     "coord": [
+      34.61,
+      39.75
+     ],
+     "summary": "Demir Çağı’nda tepeye kurulmuş, 7 km’lik surlarla çevrili büyük bir Frig kenti.",
+     "didYouKnow": "Kent kısa bir süre yaşadıktan sonra yandı; bu yüzden plan hâlinde “dondurulmuş” gibidir.",
+     "wiki": "Kerkenes"
+    },
+    {
+     "id": "sarikaya-hamam",
+     "name": "Sarıkaya Roma Hamamı (Basilica Therma)",
+     "district": "Sarıkaya",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      35.38,
+      39.49
+     ],
+     "summary": "Roma döneminden beri kullanılan termal hamam; “Kral Kızı” hamamı olarak da bilinir.",
+     "didYouKnow": "Sıcak su yaklaşık iki bin yıldır aynı havuzdan kaynamaktadır.",
+     "wiki": "Basilica Therma"
+    }
+   ]
+  },
+  {
+   "id": "zonguldak",
+   "name": "Zonguldak",
+   "plate": 67,
+   "region": "karadeniz",
+   "regionName": "Karadeniz",
+   "center": [
+    31.841,
+    41.2522
+   ],
+   "summary": "Karadeniz Bölgesi’nde yer alan Zonguldak (67), ortalama 400 m rakımlı bir ildir. Öne çıkan miras: Tios (Filyos) Antik Kenti.",
+   "sites": [
+    {
+     "id": "tios",
+     "name": "Tios (Filyos) Antik Kenti",
+     "district": "Çaycuma",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Klasik & Roma",
+     "coord": [
+      32.0283,
+      41.5733
+     ],
+     "summary": "Filyos Çayı’nın denize döküldüğü yerde Helenistik-Roma liman kenti.",
+     "didYouKnow": "Kazılarda antik dönem kumsalının hemen üzerinde bir tiyatro ve liman yapıları bulundu.",
+     "wiki": "Tios"
+    }
+   ]
+  }
+ ]
+}

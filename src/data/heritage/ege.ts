@@ -131,5 +131,17 @@ const sites: HeritageSite[] = [
     summary: 'Lidya dönemine ait altın ve gümüş eserler; yurt dışına kaçırıldıktan sonra uzun bir hukuk mücadelesiyle geri getirildi.',
     didYouKnow: 'Hazinenin simgesi olan kanatlı denizatı broşu müzeden çalınmış, yıllar sonra Almanya’da bulunarak iade edilmişti.',
   },
+  {
+    id: 'izmir-saat-kulesi', name: 'İzmir Saat Kulesi', province: 'İzmir', category: 'mimari', period: 'osmanli',
+    coord: [27.1287, 38.4189], wiki: 'İzmir Saat Kulesi',
+    summary: 'Konak Meydanı’ndaki 25 metrelik kule, 1901’de II. Abdülhamid’in tahta çıkışının 25. yılı anısına yapıldı.',
+    didYouKnow: 'Kulenin saati, Alman İmparatoru II. Wilhelm’in hediyesidir.',
+  },
+  {
+    id: 'izmir-agora', name: 'İzmir Agorası', province: 'İzmir', category: 'arkeoloji', period: 'antik',
+    coord: [27.1393, 38.4185], wiki: 'İzmir Agorası',
+    summary: 'Antik Smyrna’nın kent meydanı; MS 178 depreminden sonra İmparator Marcus Aurelius döneminde yeniden inşa edildi.',
+    didYouKnow: 'Bazilikanın bodrum katındaki duvarlarda antik dönemden kalma yazı ve çizimler (grafitiler) korunmuştur.',
+  },
 ];
 export default sites;

@@ -37,6 +37,8 @@ export interface HeritageSite {
   period: Period;
   /** [boylam, enlem] WGS84 */
   coord: [number, number];
+  /** İlçe (biliniyorsa) */
+  district?: string;
   /** tr.wikipedia.org başlığı — fotoğraf çalışma anında Wikipedia REST API'den çekilir */
   wiki?: string;
   summary: string;

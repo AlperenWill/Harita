@@ -132,5 +132,23 @@ const sites: HeritageSite[] = [
     summary: 'Kent merkezinde, evlerin altında ortaya çıkan Roma villası mozaikleri.',
     didYouKnow: 'Antik kentin büyük kısmı hâlâ modern mahallelerin altında uyuyor.',
   },
+  {
+    id: 'hadrian-kapisi', name: 'Hadrian Kapısı', province: 'Antalya', category: 'mimari', period: 'antik',
+    coord: [30.7083, 36.8853], wiki: 'Hadrian Kapısı',
+    summary: 'İmparator Hadrianus’un MS 130’daki ziyareti onuruna yapılan üç kemerli mermer tören kapısı.',
+    didYouKnow: 'Kapının altından geçen antik yolda arabaların bıraktığı tekerlek izleri hâlâ görülebilir.',
+  },
+  {
+    id: 'perge', name: 'Perge Antik Kenti', province: 'Antalya', category: 'arkeoloji', period: 'antik',
+    coord: [30.8540, 36.9612], wiki: 'Perge',
+    summary: 'Pamfilya’nın önemli kentlerinden; Helenistik kapı kuleleri, sütunlu caddesi ve stadyumuyla tanınır.',
+    didYouKnow: 'Antalya Müzesi’ndeki heykellerin büyük bölümü Perge kazılarından çıkmıştır.',
+  },
+  {
+    id: 'termessos', name: 'Termessos', province: 'Antalya', category: 'arkeoloji', period: 'antik',
+    coord: [30.4642, 36.9839], wiki: 'Termessos',
+    summary: 'Güllük Dağı’nda yaklaşık 1.000 m yükseklikte kurulmuş Pisidya kenti; tiyatrosu dağların arasında bir balkon gibidir.',
+    didYouKnow: 'Büyük İskender MÖ 333’te kenti kuşattı ancak alamadan ayrıldı.',
+  },
 ];
 export default sites;

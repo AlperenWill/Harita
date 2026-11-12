@@ -203,5 +203,17 @@ const sites: HeritageSite[] = [
     summary: 'Dede Korkut destanları, anlatıları ve müziği; 2018’de çok uluslu dosyayla UNESCO listesine girdi. Bayburt’ta her yıl Dede Korkut Şöleni yapılır.',
     didYouKnow: 'Masat Köyü’ndeki geleneğe göre Dede Korkut’un mezarı Bayburt’tadır.',
   },
+  {
+    id: 'rize-kalesi', name: 'Rize Kalesi', province: 'Rize', category: 'mimari', period: 'bizans',
+    coord: [40.5180, 41.0216], wiki: 'Rize Kalesi',
+    summary: 'Kentin güneyindeki tepeye kurulan iç kale ile limana inen aşağı kaleden oluşan Ortaçağ kalesi.',
+    didYouKnow: 'Kalenin bulunduğu tepe bugün çay bahçeleriyle çevrili bir seyir noktasıdır.',
+  },
+  {
+    id: 'senyuva-koprusu', name: 'Şenyuva Köprüsü', province: 'Rize', category: 'kopru', period: 'osmanli',
+    coord: [41.0100, 41.0250], wiki: 'Şenyuva Köprüsü',
+    summary: 'Fırtına Deresi üzerinde 1696’da yapılmış tek kemerli taş köprü; vadinin simgelerinden.',
+    didYouKnow: 'Köprü harç kullanmadan, taşların birbirine kilitlenmesiyle yükselen zarif bir kemere sahiptir.',
+  },
 ];
 export default sites;

@@ -1,4 +1,42 @@
-# Anadolu Mirası — İnteraktif 3D Kültürel Keşif Platformu
+# Türkiye'yi Keşfet
+
+Türkiye'nin 81 ilini, tarihi yerlerini ve bilgi oyunlarını bir araya getiren web uygulaması.
+
+```bash
+npm install
+npm run dev        # http://localhost:5173  (ana uygulama)  ·  /3d/  (3D Anadolu Mirası haritası)
+npm test           # veri, oyun üretici ve asistan testleri
+npm run build      # tip kontrolü + üretim paketi
+npm run data       # src/data → src/app/data/turkiye.json (şehirler + tarihi noktalar)
+```
+
+## Sayfalar
+| Yol | İçerik |
+|---|---|
+| `/` | Anasayfa: “Türkiye’yi Keşfet”, Haritayı Aç, Oyun Hakkında |
+| `/harita` | Tam ekran Leaflet haritası: 81 il sınırı + işaretçiler, popup’ta şehir bilgisi ve **🎮 Oyna** |
+| `/oyunlar` | 81 il (alfabetik) akordiyon listesi; `?il=<şehir>` ile doğrudan açılır |
+| `/oyun/:id` | Tarihi nokta oyunu: 5 soru, 4 seçenek, geri bildirim, puan, ilerleme çubuğu, Tekrar Oyna |
+| `/test` | 20 soruluk genel Türkiye testi |
+| `/kaynakca`, `/ayarlar` | Kaynaklar; animasyon azaltma, ilerleme ve sohbet sıfırlama |
+
+Sağ alttaki **AI asistan** her sayfada açılır. Varsayılan olarak yerel bilgi tabanından (81 il + tarihi noktalar)
+yanıt verir. Gerçek bir dil modeline bağlamak için `.env` dosyasına
+`VITE_ASSISTANT_API_URL=https://sunucunuz/assistant` ekleyin: istek `POST { messages }`, beklenen yanıt `{ reply }`
+(`src/app/lib/assistant.ts`).
+
+## Yapı
+- `src/app/` — yeni uygulama (React + TypeScript + Tailwind + React Router + Leaflet + Lucide)
+  - `data/turkiye.json` — 81 il, 192 tarihi nokta (ilçe, dönem, tür, açıklama, “Biliyor muydunuz?”)
+  - `lib/quiz.ts` — her nokta için veriden otomatik soru üretimi · `lib/generalQuiz.ts` — 20 soruluk test
+  - `lib/progress.ts` — skorlar (localStorage) · `lib/assistant.ts` — asistan ve API entegrasyon noktası
+- `src/data/` — doğrulanmış miras veri seti (her koordinat, testte il sınırına karşı kontrol edilir)
+- `3d/` + `src/main3d.tsx`, `src/scene/` … — 3D Anadolu Mirası haritası (aşağıda)
+- `public/sanliurfa-oyun/`, `public/izmir-efes/` — Oyunlar sayfasından açılan 3D macera oyunları
+
+---
+
+## Anadolu Mirası — İnteraktif 3D Kültürel Keşif Platformu (/3d/)
 
 Türkiye'nin 81 ilini **gerçek sınır verisiyle** 3D olarak çizen; 7 bölge → il → miras noktası hiyerarşisinde
 sinematik kamera geçişleriyle gezilen, şiddetsiz keşif mekanikleriyle (Keşif Günlüğü, mühür koleksiyonu,
