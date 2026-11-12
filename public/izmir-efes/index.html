@@ -4,158 +4,194 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#3E2723">
-<title>Efes'in Gezgini — İzmir</title>
+<title>Efes'in Gezgini 3D — İzmir</title>
 <style>
-  :root { --bej:#F5E6D3; --altin:#D4AF37; --kahve:#3E2723; --mermer:#FAF8F2; --kahve2:#5D4037; --kirmizi:#B23A2E; --yesil:#4E7D3A; }
+  :root { --bej:#F5E6D3; --altin:#D4AF37; --kahve:#3E2723; --kahve2:#5D4037; --mermer:#FAF8F2; --yesil:#4E7D3A; --kirmizi:#B23A2E; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { margin:0; height:100%; overflow:hidden; background:var(--kahve); color:var(--kahve);
-    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif; touch-action:manipulation; user-select:none; }
-  canvas { position:fixed; inset:0; width:100%; height:100%; display:block; cursor:default; }
-  .hud { position:fixed; top:0; left:0; right:0; display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-    padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left)); pointer-events:none; }
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif; user-select:none; -webkit-user-select:none; touch-action:none; }
+  #game canvas { position:fixed; inset:0; display:block; }
+  .hidden { display:none !important; }
+
+  /* HUD */
+  .hud { position:fixed; top:0; left:0; right:0; display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; pointer-events:none;
+    padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 0 max(10px,env(safe-area-inset-left)); z-index:5; }
   .hud > * { pointer-events:auto; }
-  .tag { background:rgba(62,39,35,.88); color:var(--bej); border:2px solid var(--altin); border-radius:10px; padding:6px 10px; font-weight:700; font-size:14px; }
+  .tag { background:rgba(62,39,35,.86); color:var(--bej); border:2px solid var(--altin); border-radius:10px; padding:6px 10px; font-weight:700; font-size:14px; }
   .tag b { color:var(--altin); }
+  #questBox { max-width:320px; font-weight:600; font-size:13px; line-height:1.35; }
+  #questBox strong { color:var(--altin); display:block; font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
   .spacer { flex:1; }
   .btn { font:inherit; font-weight:700; cursor:pointer; border:2px solid var(--kahve); border-radius:10px; padding:9px 16px;
     background:var(--altin); color:var(--kahve); box-shadow:0 3px 0 var(--kahve); }
   .btn:active { transform:translateY(2px); box-shadow:0 1px 0 var(--kahve); }
-  .btn:focus-visible { outline:3px solid var(--mermer); outline-offset:2px; }
+  .btn:focus-visible { outline:3px solid #fff; outline-offset:2px; }
   .btn.ghost { background:var(--bej); }
-  .btn:disabled { opacity:.45; cursor:default; }
   .iconbtn { padding:6px 10px; }
 
-  /* Görsel roman tarzı diyalog kutusu */
-  #dialog { position:fixed; left:50%; transform:translateX(-50%); bottom:max(10px,env(safe-area-inset-bottom));
+  #crosshair { position:fixed; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:#fff; box-shadow:0 0 0 2px rgba(62,39,35,.6); z-index:4; pointer-events:none; }
+  #hint { position:fixed; left:50%; bottom:28%; transform:translateX(-50%); background:rgba(62,39,35,.9); color:var(--bej); border:2px solid var(--altin);
+    border-radius:10px; padding:8px 14px; font-weight:700; z-index:5; pointer-events:none; white-space:nowrap; }
+  #lockHint { position:fixed; left:50%; top:58%; transform:translateX(-50%); color:#fff; font-weight:700; text-shadow:0 2px 6px #000; z-index:4; pointer-events:none; }
+
+  /* Mobil kontroller */
+  #joy { position:fixed; left:max(22px,env(safe-area-inset-left)); bottom:max(22px,env(safe-area-inset-bottom)); width:124px; height:124px; border-radius:50%;
+    background:rgba(245,230,211,.28); border:2px solid rgba(212,175,55,.8); z-index:6; touch-action:none; }
+  #joy i { position:absolute; left:50%; top:50%; width:54px; height:54px; margin:-27px 0 0 -27px; border-radius:50%; background:rgba(212,175,55,.9); border:2px solid var(--kahve); }
+  #actBtn { position:fixed; right:max(24px,env(safe-area-inset-right)); bottom:max(30px,env(safe-area-inset-bottom)); width:76px; height:76px; border-radius:50%;
+    font:800 24px inherit; font-family:inherit; background:var(--altin); color:var(--kahve); border:3px solid var(--kahve); z-index:6; box-shadow:0 4px 0 var(--kahve); }
+  #actBtn:disabled { opacity:.4; }
+
+  /* Diyalog (görsel roman tarzı alt kutu) */
+  #dialog { position:fixed; left:50%; transform:translateX(-50%); bottom:max(10px,env(safe-area-inset-bottom)); z-index:10;
     width:min(820px, calc(100% - 20px)); background:var(--mermer); border:3px solid var(--kahve); border-radius:14px;
-    box-shadow:0 6px 0 var(--kahve2), 0 18px 40px rgba(0,0,0,.35); padding:12px 14px 14px; display:none; }
-  #dialog.on { display:block; animation:up .25s ease-out; }
-  @keyframes up { from { transform:translate(-50%,20px); opacity:0; } }
+    box-shadow:0 6px 0 var(--kahve2), 0 18px 40px rgba(0,0,0,.35); padding:12px 14px 14px; }
   .who { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
-  .who .face { font-size:34px; line-height:1; width:46px; height:46px; display:grid; place-items:center; background:var(--bej); border:2px solid var(--altin); border-radius:10px; }
-  .who .face.angry { animation:shake .35s; background:#f3c4bc; }
+  .face { font-size:30px; width:46px; height:46px; display:grid; place-items:center; background:var(--bej); border:2px solid var(--altin); border-radius:10px; }
+  .face.angry { animation:shake .35s; background:#f3c4bc; }
   @keyframes shake { 25% { transform:translateX(-4px); } 75% { transform:translateX(4px); } }
   .who strong { display:block; font-size:16px; }
-  .trust { height:8px; width:150px; background:#e5d6c1; border:1px solid var(--kahve); border-radius:4px; overflow:hidden; margin-top:3px; }
+  .trust { height:8px; width:160px; background:#e5d6c1; border:1px solid var(--kahve); border-radius:4px; overflow:hidden; margin-top:3px; }
   .trust i { display:block; height:100%; background:linear-gradient(90deg,var(--altin),var(--yesil)); transition:width .4s; }
-  #text { font-size:16px; line-height:1.45; margin:6px 0 10px; min-height:44px; }
-  #choices { display:grid; gap:8px; }
+  #dText { font-size:16px; line-height:1.45; margin:6px 0 10px; white-space:pre-line; }
+  #dChoices { display:grid; gap:8px; }
   .choice { text-align:left; font:inherit; font-size:15px; cursor:pointer; padding:10px 12px; border-radius:10px; border:2px solid var(--kahve2); background:var(--bej); color:var(--kahve); }
   .choice:hover { background:#efd9b8; }
   .choice.ok { background:#cfe3c1; border-color:var(--yesil); }
   .choice.bad { background:#f3c4bc; border-color:var(--kirmizi); }
-  .row { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+  .row { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:8px; }
 
-  /* Modallar: görev, envanter, final */
-  .modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(30,18,14,.6); padding:14px; }
-  .modal.on { display:flex; }
-  .sheet { width:min(560px,100%); max-height:92vh; overflow:auto; background:var(--mermer); border:3px solid var(--kahve); border-radius:14px; padding:16px; box-shadow:0 6px 0 var(--kahve2); }
-  .sheet h2 { margin:0 0 4px; font-size:21px; }
+  /* Modallar */
+  .modal { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(30,18,14,.55); padding:14px; z-index:20; }
+  .sheet { width:min(560px,100%); max-height:92vh; overflow:auto; background:var(--mermer); border:3px solid var(--kahve); border-radius:14px; padding:18px; box-shadow:0 6px 0 var(--kahve2); }
+  .sheet h1, .sheet h2 { margin:0 0 6px; }
   .sheet p { margin:6px 0; line-height:1.45; }
-  .hint { font-size:13px; opacity:.8; }
-  .grid { display:grid; gap:8px; margin:10px 0; }
-  .two { grid-template-columns:1fr 1fr; }
-  .tile { font:inherit; font-size:14px; padding:10px; border-radius:10px; border:2px solid var(--kahve2); background:var(--bej); color:var(--kahve); cursor:pointer; text-align:left; min-height:44px; }
-  .tile.sel { border-color:var(--altin); box-shadow:0 0 0 3px var(--altin) inset; }
-  .tile.done { background:#cfe3c1; border-color:var(--yesil); cursor:default; }
-  .tile.bad { animation:shake .35s; background:#f3c4bc; }
-  .order { display:flex; flex-wrap:wrap; gap:6px; min-height:42px; padding:6px; border:2px dashed var(--kahve2); border-radius:10px; margin:6px 0; }
-  .order span { background:var(--altin); padding:5px 8px; border-radius:8px; font-size:13px; font-weight:700; }
+  .small { font-size:13px; opacity:.85; }
+  .facts { background:var(--bej); border-left:4px solid var(--altin); padding:8px 10px; border-radius:0 10px 10px 0; margin:8px 0; font-size:14px; }
   .inv { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin-top:10px; }
   .item { background:var(--bej); border:2px solid var(--altin); border-radius:10px; padding:10px; }
   .item .e { font-size:28px; }
-  .item.empty { opacity:.4; border-style:dashed; border-color:var(--kahve2); }
-  .item small { display:block; font-size:12px; opacity:.85; margin-top:3px; }
-  .facts { background:var(--bej); border-left:4px solid var(--altin); padding:8px 10px; border-radius:0 10px 10px 0; margin:8px 0; font-size:14px; }
-  #toast { position:fixed; top:58px; left:50%; transform:translate(-50%,-10px); opacity:0; transition:.3s; background:var(--kahve); color:var(--bej); border:2px solid var(--altin); border-radius:10px; padding:8px 14px; font-weight:700; pointer-events:none; text-align:center; max-width:90vw; }
+  .item.empty { opacity:.45; border-style:dashed; border-color:var(--kahve2); }
+  .item small { display:block; font-size:12px; margin-top:3px; }
+  #toast { position:fixed; top:64px; left:50%; transform:translate(-50%,-10px); opacity:0; transition:.3s; background:var(--kahve); color:var(--bej);
+    border:2px solid var(--altin); border-radius:10px; padding:8px 14px; font-weight:700; pointer-events:none; text-align:center; max-width:90vw; z-index:30; }
   #toast.on { opacity:1; transform:translate(-50%,0); }
+
   @media (max-height:500px) {
     #dialog { padding:8px 10px 10px; }
-    #text { font-size:13.5px; min-height:0; margin:2px 0 6px; white-space:normal !important; }
-    #choices { grid-template-columns:repeat(3,1fr); gap:6px; }
+    #dText { font-size:13.5px; margin:2px 0 6px; white-space:normal; }
+    #dChoices { grid-template-columns:repeat(3,1fr); gap:6px; }
     .choice { padding:6px 8px; font-size:13px; }
-    .who { margin-bottom:2px; } .who .face { width:34px; height:34px; font-size:22px; }
+    .face { width:34px; height:34px; font-size:22px; }
     .who strong { font-size:14px; } .trust { width:110px; }
     .btn { padding:6px 12px; }
+    #questBox { max-width:220px; font-size:12px; }
+    #joy { width:104px; height:104px; } #actBtn { width:64px; height:64px; }
   }
 </style>
 </head>
 <body>
-<canvas id="c" aria-label="Efes antik kenti sahnesi. NPC'lere dokunarak konuş."></canvas>
+<main id="game" aria-label="Efes antik kenti 3D sahnesi"></main>
 
 <div class="hud">
-  <div class="tag">🏛️ Efes · Skor <b id="score">0</b></div>
-  <div class="tag">📜 Görev <b id="qcount">0</b>/3</div>
+  <div class="tag">🏛️ Skor <b id="score">0</b></div>
+  <div class="tag" id="questBox"><strong>Görev</strong><span id="questText">Kentte gezin ve bilgelerle konuş.</span></div>
   <div class="spacer"></div>
   <button class="btn ghost iconbtn" id="soundBtn" aria-label="Sesi aç veya kapat">🔊</button>
   <button class="btn ghost" id="invBtn">🎒 Envanter</button>
+  <button class="btn ghost iconbtn" id="menuBtn" aria-label="Menü">☰</button>
 </div>
+<div id="crosshair" class="hidden"></div>
+<div id="hint" class="hidden"></div>
+<div id="lockHint" class="hidden">Oynamak için ekrana tıkla</div>
+<div id="joy" class="hidden" aria-label="Hareket joystick'i"><i></i></div>
+<button id="actBtn" class="hidden" aria-label="Etkileşim">E</button>
 
-<section id="dialog" role="dialog" aria-live="polite">
+<section id="dialog" class="hidden" role="dialog" aria-live="polite">
   <div class="who">
-    <div class="face" id="face">📚</div>
-    <div><strong id="npcName">—</strong><div class="trust" title="Güven"><i id="trustBar" style="width:0%"></i></div><small id="trustTxt">Güven %0</small></div>
+    <div class="face" id="dFace">📚</div>
+    <div><strong id="dName">—</strong><div class="trust"><i id="dTrust" style="width:0%"></i></div><small id="dTrustTxt">Güven %0</small></div>
   </div>
-  <p id="text"></p>
-  <div id="choices"></div>
-  <div class="row" id="dlgRow"></div>
+  <p id="dText"></p>
+  <div id="dChoices"></div>
+  <div class="row" id="dRow"></div>
 </section>
 
-<section class="modal" id="questModal" role="dialog" aria-modal="true"><div class="sheet" id="questSheet"></div></section>
-<section class="modal" id="invModal" role="dialog" aria-modal="true">
-  <div class="sheet">
-    <h2>🎒 Envanter</h2>
-    <p class="hint">Görevleri tamamladıkça Efes'ten hatıralar topla.</p>
-    <div class="inv" id="invList"></div>
-    <div class="row" style="margin-top:12px"><button class="btn" id="invClose">Kapat</button></div>
-  </div>
-</section>
 <section class="modal" id="startModal" role="dialog" aria-modal="true">
   <div class="sheet">
-    <h2>🏛️ Efes'in Gezgini</h2>
-    <p>Ege kıyısındaki antik Efes'e yeni geldin. Kentin üç bilgesi seni henüz tanımıyor.</p>
-    <p><b>Kütüphaneci</b>, <b>Artemis Rahibi</b> ve <b>Tüccar</b> ile konuş. Doğru cevaplarla güvenlerini <b>%100</b>'e çıkar, görevlerini tamamla ve Büyük Tiyatro'nun kapısını arala.</p>
-    <p class="hint">Karaktere dokun ya da tıkla. Yanlış cevap güveni azaltır. Zaman sınırı yok, rahatça oyna. İlerlemen otomatik kaydedilir.</p>
-    <div class="row"><button class="btn ghost" id="resetBtn2">Sıfırdan başla</button><button class="btn" id="startBtn">Keşfe başla</button></div>
+    <h1>🏛️ Efes'in Gezgini</h1>
+    <p>Antik Efes'e yeni geldin. Kentin üç bilgesi seni henüz tanımıyor. Onlarla konuş, bilgini göster, güvenlerini kazan ve görevlerini tamamla.</p>
+    <div class="facts">
+      <b>Bilgisayar:</b> WASD yürü · fare bak · <b>E</b> konuş/etkileş · Esc fareyi bırak<br>
+      <b>Telefon:</b> sol joystick yürü · sağ tarafı sürükle bak · <b>E</b> düğmesi
+    </div>
+    <p class="small">Zaman sınırı yok. İlerlemen otomatik kaydedilir.</p>
+    <div class="row"><button class="btn ghost" id="newGameBtn">Sıfırdan başla</button><button class="btn" id="startBtn">Keşfe başla</button></div>
   </div>
 </section>
-<section class="modal" id="endModal" role="dialog" aria-modal="true">
+<section class="modal hidden" id="invModal" role="dialog" aria-modal="true">
   <div class="sheet">
-    <h2>🎭 Büyük Tiyatro seni bekliyor!</h2>
-    <p>Üç bilgenin de güvenini kazandın. Liman Caddesi'nden yürüyüp Panayır Dağı'nın yamacındaki tiyatroya ulaştın.</p>
-    <div class="facts">Efes Büyük Tiyatrosu yaklaşık <b>25.000</b> seyirci alır; Anadolu'nun en büyük antik tiyatrolarındandır. Helenistik dönemde yapıldı, Roma döneminde genişletildi. Efes, 2015'te <b>UNESCO Dünya Mirası</b> listesine girdi.</div>
-    <p style="font-size:20px;text-align:center">Skor: <b id="endScore">300</b></p>
-    <div class="row"><button class="btn ghost" id="endClose">Kentte gezin</button><button class="btn" id="replayBtn">Yeniden Oyna</button></div>
+    <h2>🎒 Envanter</h2>
+    <div class="inv" id="invList"></div>
+    <div class="row"><button class="btn" id="invClose">Kapat</button></div>
   </div>
 </section>
+<section class="modal hidden" id="endModal" role="dialog" aria-modal="true">
+  <div class="sheet">
+    <h2>🎭 Efes seni bağrına bastı!</h2>
+    <p>Üç bilgenin de görevini tamamladın. Bayraklar Büyük Tiyatro'da dalgalanıyor.</p>
+    <div class="facts">Efes, 2015'te <b>UNESCO Dünya Mirası</b> listesine girdi. Celsus Kütüphanesi yaklaşık <b>12.000</b> parşömen barındırırdı; Artemis Tapınağı Antik Dünyanın Yedi Harikası'ndan biriydi; Büyük Tiyatro yaklaşık <b>25.000</b> kişi alır.</div>
+    <p style="font-size:20px;text-align:center">Skor: <b id="endScore">300</b></p>
+    <div class="row"><button class="btn ghost" id="endClose">Gezmeye devam</button><button class="btn" id="replayBtn">Yeniden Oyna</button></div>
+  </div>
+</section>
+<section class="modal hidden" id="errorModal"><div class="sheet"><h2>Oyun açılamadı</h2><p id="errorMsg"></p><div class="row"><button class="btn" onclick="location.reload()">Yeniden dene</button></div></div></section>
 <div id="toast" role="status"></div>
 
 <script>
-'use strict';
+// Three.js r128'i CDN'den yükle (yedek adresle); yüklenince oyunu başlat.
 (() => {
+  const urls = ['https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'];
+  const fail = msg => { document.getElementById('errorMsg').textContent = msg; document.getElementById('errorModal').classList.remove('hidden'); document.getElementById('startModal').classList.add('hidden'); };
+  const load = i => {
+    if (i >= urls.length) return fail('3D kütüphanesi yüklenemedi. İnternet bağlantını kontrol edip sayfayı yenile.');
+    const s = document.createElement('script'); s.src = urls[i];
+    s.onload = () => { try { window.__startEfes(); } catch (e) { console.error(e); fail('Oyun başlatılamadı: ' + e.message); } };
+    s.onerror = () => load(i + 1);
+    document.head.appendChild(s);
+  };
+  window.addEventListener('DOMContentLoaded', () => load(0));
+})();
+</script>
+<script>
+'use strict';
+window.__startEfes = function () {
+const $ = id => document.getElementById(id);
+
 /* =========================================================
-   VERİ: NPC diyalog ağaçları, görevler, eşyalar
-   Bilgiler UNESCO ve arkeolojik kaynaklardaki genel kabul görmüş verilere dayanır.
+   VERİ: NPC diyalogları ve görevler (UNESCO / arkeolojik kaynaklar)
    ========================================================= */
 const NPC_DATA = [
   {
-    id: 'kutuphaneci', name: 'Celsus Kütüphanecisi', emoji: '👴🏻', angry: '😠', fx: .22, place: 'Celsus Kütüphanesi',
-    greet: 'Hoş geldin gezgin. Kütüphaneme girmek isteyen önce bilgisini göstermeli.',
+    id: 'kutuphaneci', name: 'Kütüphaneci', face: '📚', toga: 0x3b5fa8, pos: [-21, -11],
+    greet: 'Hoş geldin gezgin. Ben Celsus Kütüphanesi\'nin bekçisiyim. Önce sana kütüphanemizi anlatayım.',
     rounds: [
       { info: 'Bu kütüphaneyi Gaius Julius Aquila, babası Celsus Polemaeanus\'un anısına yaptırdı; MS 117 civarında tamamlandı.',
-        q: 'Peki kütüphane kimin anısına yapıldı?', a: ['Babası Celsus\'un anısına', 'İmparator Neron\'un anısına', 'Tanrıça Athena\'nın anısına'], ok: 0 },
+        q: 'Kütüphane kimin anısına yapıldı?', a: ['Babası Celsus\'un anısına', 'İmparator Neron\'un anısına', 'Tanrıça Athena\'nın anısına'], ok: 0 },
       { info: 'Raflarımızda yaklaşık 12.000 parşömen tomarı bulunurdu. Antik dünyanın en büyük kütüphanelerinden biriydi.',
         q: 'Kaç parşömen tomarı barındırıyorduk?', a: ['Yaklaşık 1.200', 'Yaklaşık 12.000', 'Yaklaşık 120.000'], ok: 1 },
-      { info: 'Cephe iki katlıdır; içeride ise rafların bulunduğu üç seviyeli galeriler vardır. Cephedeki dört heykel bilgelik, bilgi, düşünce ve erdemi simgeler.',
+      { info: 'Cephemiz iki katlıdır; içeride raflar üç seviyeli galerilere dizilmiştir. Cephedeki dört heykel bilgelik, bilgi, düşünce ve erdemi simgeler.',
         q: 'Cephedeki dört heykel neyi simgeler?', a: ['Dört mevsimi', 'Dört imparatoru', 'Bilgelik, bilgi, düşünce ve erdemi'], ok: 2 },
-      { info: 'Celsus\'un lahdi hâlâ kütüphanenin altındaki mezar odasındadır. Bir kütüphanenin içine gömülmek o çağda büyük bir onurdu.',
+      { info: 'Celsus\'un lahdi hâlâ kütüphanenin altındaki mezar odasındadır. Bir kütüphaneye gömülmek o çağda büyük bir onurdu.',
         q: 'Celsus\'un lahdi nerededir?', a: ['Kütüphanenin altındaki mezar odasında', 'Artemis Tapınağı\'nda', 'Roma\'da'], ok: 0 },
     ],
-    quest: 'scrolls', reward: { id: 'parsomen', e: '📜', name: 'Celsus Parşömeni', d: 'Kütüphaneci kronolojiyi doğru dizdiğin için bir parşömen hediye etti.' },
+    quest: { kind: 'scroll', target: 3, title: 'Kayıp Parşömenler',
+      give: 'Sana güveniyorum. Rüzgâr arşivimizden 3 parşömeni kente savurdu. Onları bulup bana getirir misin?',
+      task: '3 kayıp parşömeni bul (parıldayan tomarlar)', reward: { e: '📜', name: 'Celsus Parşömeni', d: 'Kütüphanecinin hediyesi: bilginin anahtarı.' } },
   },
   {
-    id: 'rahip', name: 'Artemis Rahibi', emoji: '🧙🏽', angry: '😤', fx: .52, place: 'Artemis Tapınağı',
-    greet: 'Artemis\'in kutsal alanına adım atan yabancı... Tapınağımızı ne kadar tanıyorsun?',
+    id: 'rahip', name: 'Artemis Rahibi', face: '🕯️', toga: 0xf4f1ea, pos: [21, -9],
+    greet: 'Artemis\'in kutsal alanına hoş geldin yabancı. Tapınağımızın hikâyesini dinle.',
     rounds: [
       { info: 'Artemis Tapınağı, Antik Dünyanın Yedi Harikası\'ndan biridir.',
         q: 'Tapınağımız hangi listede yer alır?', a: ['Antik Dünyanın Yedi Harikası', 'Roma\'nın Yedi Tepesi', 'Yedi Bilge'], ok: 0 },
@@ -166,11 +202,13 @@ const NPC_DATA = [
       { info: 'Tapınak İyon düzenindeydi ve 120\'den fazla mermer sütunu vardı. Bugün yerinde yalnızca tek bir sütun ayakta.',
         q: 'Bugün tapınaktan kaç sütun ayakta?', a: ['Tek bir sütun', 'Yirmi sütun', 'Hepsi ayakta'], ok: 0 },
     ],
-    quest: 'columns', reward: { id: 'mermer', e: '🏺', name: 'Artemis Mermer Parçası', d: 'Rahip, sütun düzenlerini bildiğin için kutsal bir mermer parçası verdi.' },
+    quest: { kind: 'column', target: 12, title: 'Sütunları Uyandır',
+      give: 'Tapınak 120 yılda yükseldi; sen onu bir anda uyandırabilirsin. Kutsal alandaki 12 sütuna dokunup ışıklarını yak.',
+      task: 'Tapınaktaki 12 sütunu aktive et', reward: { e: '🏺', name: 'Artemis Mermer Parçası', d: 'Rahibin kutsadığı İyon başlığı parçası.' } },
   },
   {
-    id: 'tuccar', name: 'Efes Tüccarı', emoji: '👳🏻‍♂️', angry: '😒', fx: .8, place: 'Liman Agorası',
-    greet: 'Selam yolcu! Ben vakit nakittir derim. Bakalım ticaretten anlıyor musun?',
+    id: 'tuccar', name: 'Tüccar', face: '⚖️', toga: 0x7a4b2a, pos: [9, -36],
+    greet: 'Selam yolcu! Limandan yeni geldim. Ticaret ve tiyatro hakkında biraz konuşalım.',
     rounds: [
       { info: 'Efes bir liman kentiydi; Akdeniz\'in mallarıyla Anadolu içlerine giden yollar burada buluşurdu.',
         q: 'Efes\'i zenginleştiren neydi?', a: ['Altın madenleri', 'Limanı ve ticaret yolları', 'Pamuk tarlaları'], ok: 1 },
@@ -181,84 +219,35 @@ const NPC_DATA = [
       { info: 'Büyük Tiyatro yaklaşık 25.000 kişi alır. Panayır Dağı\'nın yamacına oyulmuştur.',
         q: 'Büyük Tiyatro yaklaşık kaç kişi alır?', a: ['2.500', '25.000', '250.000'], ok: 1 },
     ],
-    quest: 'goods', reward: { id: 'muhur', e: '🪙', name: 'Tüccar Mührü', d: 'Tüccar, mal-köken eşleştirmesini bildiğin için mührünü emanet etti. Tiyatronun kapısı açılır!' },
+    quest: { kind: 'flag', target: 5, title: 'Festival Bayrakları',
+      give: '25.000 kişilik tiyatro yarın şenlikle dolacak! Sahnenin önündeki 5 direğe bayrakları asar mısın?',
+      task: 'Tiyatroda 5 bayrağı as', reward: { e: '🪙', name: 'Tüccar Mührü', d: 'Efes limanında her kapıyı açan mühür.' } },
   },
 ];
 
-const QUESTS = {
-  scrolls: {
-    title: '📜 Parşömenleri Sırala',
-    intro: 'Kütüphanenin arşivi karıştı! Olayları en eskiden en yeniye doğru sıraya koy.',
-    items: [
-      'Artemis Tapınağı\'nın büyük yapımı başlar (MÖ 6. yy)',
-      'Herostratos tapınağı yakar (MÖ 356)',
-      'Celsus Kütüphanesi tamamlanır (MS ~117)',
-      'Kütüphanenin içi yangınla yok olur (MS 262)',
-      'Efes UNESCO Dünya Mirası olur (2015)',
-    ],
-  },
-  columns: {
-    title: '🏛️ Sütunları Eşleştir',
-    intro: 'Her sütun başlığını doğru tanımıyla eşleştir. Önce soldan bir sütun, sonra sağdan tanımı seç.',
-    pairs: [
-      ['Dor', 'Sade, yastık biçimli başlık'],
-      ['İyon', 'Sarmal (volüt) başlık: Artemis Tapınağı\'nın düzeni'],
-      ['Korint', 'Akantus yapraklı, süslü başlık'],
-    ],
-  },
-  goods: {
-    title: '⚖️ Malları Kökenleriyle Eşleştir',
-    intro: 'Limana gemiler yanaştı! Her malı geldiği yerle eşleştir.',
-    pairs: [
-      ['📄 Papirüs', 'Mısır (İskenderiye)'],
-      ['🪨 Beyaz mermer', 'Prokonnesos (Marmara Adası)'],
-      ['🍷 Şarap', 'Ege adaları (Sakız)'],
-      ['🧵 İpek', 'Doğu\'dan gelen kervan yolları'],
-    ],
-  },
-};
-
 /* =========================================================
-   OYUN DURUMU + KAYIT
+   OYUN DURUMU + KAYIT (localStorage)
    ========================================================= */
-const SAVE_KEY = 'efes-gezgini-v1';
-class NPC {
-  constructor(d) { Object.assign(this, d); this.trust = 0; this.round = 0; this.questDone = false; this.mood = 0; this.hover = false; }
-  get unlocked() { return this.trust >= 100; }
-  toJSON() { return { trust: this.trust, round: this.round, questDone: this.questDone }; }
-}
-const state = { npcs: NPC_DATA.map(d => new NPC(d)), inventory: [], active: null, muted: false, finaleSeen: false };
-const score = () => state.npcs.filter(n => n.questDone).length * 100;
-
+const SAVE_KEY = 'efes-gezgini-3d-v1';
+const state = {
+  npc: Object.fromEntries(NPC_DATA.map(n => [n.id, { trust: 0, round: 0, quest: 'none' }])), // quest: none|active|ready|done
+  found: { scroll: [], column: [], flag: [] },
+  inventory: [], muted: false, player: null, finaleSeen: false,
+};
+const score = () => NPC_DATA.filter(n => state.npc[n.id].quest === 'done').length * 100;
 function save() {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({
-      npcs: Object.fromEntries(state.npcs.map(n => [n.id, n.toJSON()])),
-      inventory: state.inventory, muted: state.muted, finaleSeen: state.finaleSeen,
-    }));
-  } catch (e) { /* gizli sekme vb. */ }
+  state.player = { x: player.pos.x, z: player.pos.z, yaw: player.yaw };
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
 }
 function load() {
-  try {
-    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-    if (!s) return false;
-    for (const n of state.npcs) Object.assign(n, s.npcs?.[n.id] || {});
-    state.inventory = s.inventory || []; state.muted = !!s.muted; state.finaleSeen = !!s.finaleSeen;
-    return true;
-  } catch (e) { return false; }
-}
-function resetGame() {
-  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
-  for (const n of state.npcs) { n.trust = 0; n.round = 0; n.questDone = false; n.mood = 0; }
-  state.inventory = []; state.finaleSeen = false; state.active = null;
-  closeDialog(); hideModal('endModal'); updateHud(); save();
+  try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (!s) return false; Object.assign(state, s); return true; } catch (e) { return false; }
 }
 
 /* =========================================================
-   SES (Web Audio, opsiyonel)
+   SES (Web Audio)
    ========================================================= */
 let actx = null;
-function beep(freqs, dur = .09, type = 'square', vol = .05) {
+function beep(freqs, dur = .09, type = 'triangle', vol = .06) {
   if (state.muted) return;
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
@@ -271,334 +260,515 @@ function beep(freqs, dur = .09, type = 'square', vol = .05) {
     }
   } catch (e) {}
 }
-const sfx = { click: () => beep([660], .05), ok: () => beep([523, 659, 784], .09, 'triangle', .06),
-  bad: () => beep([220, 165], .14, 'sawtooth', .04), win: () => beep([523, 659, 784, 1047, 1319], .12, 'triangle', .07) };
+const sfx = { click: () => beep([660], .05, 'square', .04), ok: () => beep([523, 659, 784]), bad: () => beep([220, 165], .14, 'sawtooth', .04),
+  pick: () => beep([784, 1047], .08), win: () => beep([523, 659, 784, 1047, 1319], .12, 'triangle', .07) };
 
 /* =========================================================
-   ÇİZİM: düşük çözünürlüklü piksel sahne + ölçekli emoji karakterler
+   SAHNE KURULUMU (kamera, ışık, renderer)
    ========================================================= */
-const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-const PX_W = 240, PX_H = 135;                 // piksel sanat çözünürlüğü (16:9)
-const off = document.createElement('canvas'); off.width = PX_W; off.height = PX_H;
-const px = off.getContext('2d');
-let W = 0, H = 0, dpr = 1, view = { x: 0, y: 0, s: 1 };
+const mobile = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+const renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.5));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = false; // performans için gölge kapalı
+$('game').appendChild(renderer.domElement);
 
-function resize() {
-  dpr = Math.min(window.devicePixelRatio || 1, 2);
-  W = innerWidth; H = innerHeight;
-  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-  // Sahne ekranı kaplar (cover), dikeyde ortalanır
-  const s = Math.max(W / PX_W, H / PX_H);
-  view = { s, x: (W - PX_W * s) / 2, y: (H - PX_H * s) / 2 };
-  drawStatic();
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 400);
+scene.fog = new THREE.Fog(0xf3e2c4, 70, 190);
+
+// Gökyüzü: dikey gradient (gündüz)
+(() => {
+  const c = document.createElement('canvas'); c.width = 2; c.height = 256;
+  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, '#8fbfe0'); gr.addColorStop(.55, '#cfe2ea'); gr.addColorStop(1, '#f5e6d3');
+  g.fillStyle = gr; g.fillRect(0, 0, 2, 256);
+  const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding;
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(300, 24, 12), new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false }));
+  scene.add(sky);
+})();
+
+scene.add(new THREE.AmbientLight(0xfff1dc, 0.62));
+const sun = new THREE.DirectionalLight(0xffe2b0, 0.95); sun.position.set(-40, 80, 30); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xbcd3e6, 0.3); fill.position.set(40, 30, -40); scene.add(fill);
+
+/* Prosedürel dokular */
+function canvasTex(w, h, draw, repeat) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+  if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat, repeat); }
+  return t;
 }
-
-const C = { bej: '#F5E6D3', altin: '#D4AF37', kahve: '#3E2723', kahve2: '#5D4037', mermer: '#FAF8F2', golge: '#D9C4A5', gok1: '#F7D9A8', gok2: '#F5E6D3', tepe: '#C9A97E', tepe2: '#B08F63', deniz: '#8FB3B0' };
-const R = (x, y, w, h, c) => { px.fillStyle = c; px.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
-
-function drawStatic() {
-  // Gökyüzü: kademeli bantlar (piksel sanatı geçişi)
-  const bands = ['#F2C98F', '#F4D3A0', '#F5DCB2', '#F5E2C2', '#F5E6D3'];
-  bands.forEach((c, i) => R(0, i * 14, PX_W, 14, c));
-  R(0, 70, PX_W, 65, C.bej);
-  // Güneş
-  px.fillStyle = '#F9E7A6'; px.beginPath(); px.arc(200, 26, 11, 0, 7); px.fill();
-  // Uzak deniz şeridi ve tepeler (Panayır ve Bülbül dağları)
-  R(0, 66, PX_W, 4, C.deniz);
-  px.fillStyle = C.tepe; px.beginPath(); px.moveTo(0, 74);
-  for (let x = 0; x <= PX_W; x += 8) px.lineTo(x, 60 + Math.round(Math.sin(x * .03) * 6 + Math.sin(x * .011) * 5));
-  px.lineTo(PX_W, 80); px.lineTo(0, 80); px.fill();
-
-  // --- Büyük Tiyatro (sağ arka, yamaca oyulmuş yarım daire) ---
-  const tx = 168, ty = 76;
-  for (let r = 0; r < 7; r++) {
-    px.fillStyle = r % 2 ? C.golge : C.mermer;
-    px.beginPath(); px.ellipse(tx, ty, 44 - r * 5, 20 - r * 2.6, 0, Math.PI, 0); px.fill();
+const stoneTex = canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = '#d8c3a0'; g.fillRect(0, 0, w, h);
+  for (let y = 0; y < h; y += 32) for (let x = (y / 32) % 2 * 24; x < w + 48; x += 48) {
+    const v = 190 + Math.random() * 40;
+    g.fillStyle = `rgb(${v},${v * .92},${v * .78})`; g.fillRect(x - 46, y + 2, 44, 28);
   }
-  R(tx - 30, ty - 2, 60, 5, C.kahve2); // sahne binası
-  for (let i = 0; i < 8; i++) R(tx - 28 + i * 8, ty - 7, 2, 5, C.mermer);
+  for (let i = 0; i < 1500; i++) { g.fillStyle = `rgba(80,55,30,${Math.random() * .12})`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+}, 40);
+const marbleTex = canvasTex(128, 128, (g, w, h) => {
+  g.fillStyle = '#f6f2e8'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = 'rgba(150,140,125,.25)'; g.lineWidth = 1;
+  for (let i = 0; i < 8; i++) { g.beginPath(); let x = Math.random() * w; g.moveTo(x, 0); for (let y = 0; y < h; y += 8) { x += (Math.random() - .5) * 10; g.lineTo(x, y); } g.stroke(); }
+});
 
-  // --- Artemis Tapınağı: tek ayakta kalan sütun + yıkık kaide (orta) ---
-  const ax = 118;
-  R(ax - 22, 92, 44, 4, C.golge); R(ax - 18, 89, 36, 3, C.mermer);
-  for (let i = 0; i < 6; i++) R(ax - 16 + i * 6.5, 86 - (i % 3), 4, 3 + (i % 3), C.golge); // kırık sütun dipleri
-  R(ax - 2, 44, 5, 45, C.mermer); R(ax - 1, 44, 1, 45, C.golge); R(ax + 2, 44, 1, 45, '#EDE3D1');
-  R(ax - 4, 42, 9, 3, C.mermer); R(ax - 5, 41, 2, 2, C.golge); R(ax + 4, 41, 2, 2, C.golge); // İyon volütleri
-  // Leylek yuvası (bugünkü sütunun simgesi)
-  R(ax - 4, 38, 9, 3, C.kahve2);
+const M = {
+  ground: new THREE.MeshLambertMaterial({ map: stoneTex }),
+  marble: new THREE.MeshLambertMaterial({ map: marbleTex, color: 0xffffff }),
+  bej: new THREE.MeshLambertMaterial({ color: 0xe9d6b8 }),
+  shade: new THREE.MeshLambertMaterial({ color: 0xc8b08a }),
+  dark: new THREE.MeshLambertMaterial({ color: 0x3e2723 }),
+  wood: new THREE.MeshLambertMaterial({ color: 0x6d4c33 }),
+  gold: new THREE.MeshLambertMaterial({ color: 0xd4af37, emissive: 0x3a2a00 }),
+  hill: new THREE.MeshLambertMaterial({ color: 0xb79a6e, flatShading: true }),
+  hill2: new THREE.MeshLambertMaterial({ color: 0x8f8a5a, flatShading: true }),
+  skin: new THREE.MeshLambertMaterial({ color: 0xd9a77c }),
+};
 
-  // --- Celsus Kütüphanesi (sol, iki katlı cephe) ---
-  const cx = 52, base = 100;
-  R(cx - 34, base - 4, 68, 4, C.golge);           // basamaklar
-  R(cx - 36, base, 72, 3, C.kahve2);
-  R(cx - 30, base - 60, 60, 56, C.bej);           // arka duvar
-  // Alt kat: 8 sütun çift çift, 3 kapı
+/* =========================================================
+   ÇARPIŞMA (AABB) — kutular + tiyatro için özel yay çarpıştırıcısı
+   ========================================================= */
+const colliders = [];
+const addBox = (cx, cz, w, d) => colliders.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2 });
+const WORLD = 70;
+const THEATRE = { x: 0, z: -58, rIn: 10, rOut: 26 };
+
+function mesh(geo, mat, x, y, z, parent = scene) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m; }
+const box = (w, h, d, mat, x, y, z, p) => mesh(new THREE.BoxGeometry(w, h, d), mat, x, y + h / 2, z, p);
+const cyl = (rt, rb, h, mat, x, y, z, seg = 10, p) => mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat, x, y + h / 2, z, p);
+
+/* Zemin, yollar, çevre tepeler */
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), M.ground);
+ground.rotation.x = -Math.PI / 2; scene.add(ground);
+box(6, .05, 70, M.marble, 0, 0, -10);                   // Kuretler Caddesi benzeri mermer yol
+box(56, .05, 5, M.marble, 0, 0, -16);                   // çapraz yol
+for (let i = 0; i < 14; i++) {                          // çevre tepeler (Panayır ve Bülbül dağları)
+  const a = (i / 14) * Math.PI * 2, r = 120 + (i % 3) * 18;
+  const h = 28 + (i * 37) % 30;
+  const m = mesh(new THREE.ConeGeometry(30 + (i % 4) * 8, h, 6), i % 2 ? M.hill : M.hill2, Math.cos(a) * r, h / 2 - 2, Math.sin(a) * r);
+  m.rotation.y = i;
+}
+// Sütunlu cadde: yol boyunca küçük sütunlar
+for (let z = 10; z >= -34; z -= 6) for (const x of [-4, 4]) { if (Math.abs(z + 16) < 4) continue; cyl(.3, .32, 3.4, M.marble, x, 0, z, 8); addBox(x, z, .7, .7); }
+// Devrik sütunlar ve taşlar (atmosfer)
+[[-8, 8, .3], [12, 2, 1.2], [-14, -40, .7], [26, 4, 2]].forEach(([x, z, r]) => { const m = cyl(.45, .45, 3, M.marble, x, 0, z, 8); m.rotation.set(Math.PI / 2, 0, r); m.position.y = .45; });
+
+/* ---------- CELSUS KÜTÜPHANESİ (iki katlı cephe) ---------- */
+(() => {
+  const C = { x: -30, z: -26 }, g = new THREE.Group(); g.position.set(C.x, 0, C.z); scene.add(g);
+  box(24, .5, 4, M.shade, 0, 0, 7.2, g);                 // basamaklar
+  box(24, .5, 3, M.bej, 0, .5, 6.6, g);
+  box(22, 15, 10, M.bej, 0, 0, 0, g);                   // ana gövde
+  // alt kat: 4 çift sütun (8 sütun), 3 kapı
   for (let i = 0; i < 4; i++) {
-    const x = cx - 28 + i * 16;
-    R(x, base - 30, 3, 26, C.mermer); R(x + 6, base - 30, 3, 26, C.mermer);
-    R(x - 1, base - 32, 11, 3, C.golge);
+    const x = -8.4 + i * 5.6;
+    for (const dx of [-.9, .9]) cyl(.42, .45, 6.2, M.marble, x + dx, 1, 5.8, 12, g);
+    box(3, .8, 1.6, M.marble, x, 7.2, 5.8, g);            // çift sütun başlığı
   }
-  [[-15, 9], [0, 11], [13, 9]].forEach(([dx, h]) => R(cx + dx - 3, base - 4 - h, 6, h, C.kahve));
-  R(cx - 32, base - 35, 64, 3, C.mermer);         // ara korniş
-  // Üst kat: 6 sütun, alınlıklar
+  [[-5.6, 3.6], [0, 4.6], [5.6, 3.6]].forEach(([x, h]) => box(2, h, .3, M.dark, x, 1, 5.05, g));
+  // erdem heykelleri nişlerde
+  [-11, -2.8, 2.8, 11].forEach(x => { box(1.4, 3, .2, M.shade, x * .78, 1.5, 5.06, g); cyl(.3, .35, 2.2, M.marble, x * .78, 1.5, 5.3, 8, g); mesh(new THREE.SphereGeometry(.28, 8, 6), M.marble, x * .78, 3.95, 5.3, g); });
+  box(23, .6, 2, M.marble, 0, 8, 5.4, g);                // ara korniş
+  // üst kat: 3 çift sütun + alınlıklar
   for (let i = 0; i < 3; i++) {
-    const x = cx - 22 + i * 18;
-    R(x, base - 56, 3, 20, C.mermer); R(x + 7, base - 56, 3, 20, C.mermer);
-    px.fillStyle = C.golge; px.beginPath(); px.moveTo(x - 2, base - 57); px.lineTo(x + 5, base - 63); px.lineTo(x + 12, base - 57); px.fill();
+    const x = -5.6 + i * 5.6;
+    for (const dx of [-.8, .8]) cyl(.36, .38, 4.6, M.marble, x + dx, 8.6, 5.4, 12, g);
+    const ped = mesh(new THREE.CylinderGeometry(1.8, 1.8, 1.2, 3), M.marble, x, 14.1, 5.4, g);
+    ped.rotation.set(Math.PI / 2, 0, Math.PI / 2); ped.scale.set(1, 1, .45);
   }
-  R(cx - 32, base - 58, 64, 2, C.mermer);
-  // Erdem heykeli nişleri
-  [-21, -6, 6, 21].forEach(dx => R(cx + dx - 2, base - 18, 4, 7, C.golge));
+  box(23, .5, 1.8, M.marble, 0, 13.2, 5.4, g);
+  addBox(C.x, C.z, 23, 13);
+})();
 
-  // Ön plan: mermer yol (Kuretler/Arkadiane), taşlar
-  R(0, 104, PX_W, 31, '#E8D6BC');
-  for (let y = 106; y < PX_H; y += 6) for (let x = (y / 6 % 2) * 6; x < PX_W; x += 12) R(x, y, 10, 1, '#DCC7A8');
-  // Devrik sütun parçaları
-  R(84, 110, 18, 4, C.mermer); R(84, 110, 18, 1, '#fff'); R(200, 116, 14, 4, C.mermer);
-  R(10, 118, 6, 6, C.golge); R(226, 106, 8, 5, C.golge);
+/* ---------- ARTEMİS TAPINAĞI (12 sütun, mermer zemin) ---------- */
+const columns = [];
+(() => {
+  const A = { x: 30, z: -24 };
+  box(30, .3, 16, M.marble, A.x, 0, A.z);               // mermer stilobat
+  box(32, .15, 18, M.shade, A.x, 0, A.z);
+  box(3, 1.4, 2, M.marble, A.x, .3, A.z);               // sunak
+  mesh(new THREE.SphereGeometry(.4, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffb347 }), A.x, 1.95, A.z);
+  addBox(A.x, A.z, 3, 2);
+  let i = 0;
+  for (const z of [A.z - 5, A.z + 5]) for (let k = 0; k < 6; k++) {
+    const x = A.x - 12.5 + k * 5, g = new THREE.Group(); g.position.set(x, .3, z); scene.add(g);
+    cyl(.55, .62, 8, M.marble, 0, .3, 0, 14, g);
+    box(1.6, .3, 1.6, M.marble, 0, 0, 0, g);               // kaide
+    const cap = box(1.9, .4, 1.1, M.marble, 0, 8.3, 0, g); // İyon başlığı
+    [-1, 1].forEach(s => { const v = mesh(new THREE.CylinderGeometry(.3, .3, 1.15, 10), M.marble, s * .95, 8.45, 0, g); v.rotation.x = Math.PI / 2; });
+    const ring = mesh(new THREE.TorusGeometry(.72, .09, 6, 18), new THREE.MeshBasicMaterial({ color: 0x8a7a60 }), 0, 1.6, 0, g);
+    ring.rotation.x = Math.PI / 2;
+    columns.push({ id: 'c' + i++, group: g, ring, x, z, kind: 'column' });
+    addBox(x, z, 1.4, 1.4);
+    void cap;
+  }
+  // bugün ayakta kalan tek sütunu hatırlatan yükseltilmiş sütun
+  cyl(.5, .55, 13, M.marble, A.x + 17, 0, A.z + 9, 12); addBox(A.x + 17, A.z + 9, 1.3, 1.3);
+  box(1.6, .6, 1.6, M.wood, A.x + 17, 13, A.z + 9); // leylek yuvası
+})();
+
+/* ---------- BÜYÜK TİYATRO (yarım daire basamaklar + sahne) ---------- */
+const flags = [];
+(() => {
+  const T = THEATRE, steps = 12;
+  for (let i = 0; i < steps; i++) {
+    const r = T.rIn + (i / steps) * (T.rOut - T.rIn) + 1.3, h = .6 + i * .55;
+    const seg = new THREE.CylinderGeometry(r, r, h, 40, 1, false, Math.PI / 2, Math.PI);
+    const m = new THREE.Mesh(seg, i % 2 ? M.marble : M.bej);
+    m.position.set(T.x, h / 2, T.z); scene.add(m);
+  }
+  // orkestra zemini
+  const orch = new THREE.Mesh(new THREE.CircleGeometry(T.rIn, 32), M.marble); orch.rotation.x = -Math.PI / 2; orch.position.set(T.x, .03, T.z); scene.add(orch);
+  // sahne binası (alçak, yanlardan orkestraya girilebilir)
+  box(14, 1.4, 3, M.shade, T.x, 0, T.z + 9);
+  for (let k = 0; k < 6; k++) cyl(.3, .32, 4, M.marble, T.x - 6 + k * 2.4, 1.4, T.z + 9.6, 8);
+  box(14.5, .5, 1.4, M.marble, T.x, 5.4, T.z + 9.6);
+  addBox(T.x, T.z + 9, 14, 3);
+  // 5 bayrak direği (sahnenin önünde)
+  for (let k = 0; k < 5; k++) {
+    const x = T.x - 10 + k * 5, z = T.z + 14;
+    cyl(.1, .12, 6, M.wood, x, 0, z, 6);
+    const cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.1), new THREE.MeshLambertMaterial({ color: [0xb23a2e, 0xd4af37, 0x3b5fa8, 0x4e7d3a, 0x7a4b2a][k], side: THREE.DoubleSide }));
+    cloth.position.set(x + .95, 1.2, z); scene.add(cloth);
+    flags.push({ id: 'f' + k, cloth, x, z, kind: 'flag' });
+    addBox(x, z, .4, .4);
+  }
+})();
+function theatreBlocks(x, z) {
+  const dx = x - THEATRE.x, dz = z - THEATRE.z, d = Math.hypot(dx, dz);
+  return dz < .5 && d > THEATRE.rIn - .3 && d < THEATRE.rOut + 2;   // basamaklı oturma alanı (kuzey yarım daire)
 }
 
-// Karakter konumları (sahne koordinatında)
-const npcPos = n => ({ x: n.fx * PX_W, y: 118 });
-function toScreen(x, y) { return { x: view.x + x * view.s, y: view.y + y * view.s }; }
-
-let t0 = performance.now(), particles = [];
-function frame(now) {
-  const t = (now - t0) / 1000;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-  ctx.fillStyle = C.kahve; ctx.fillRect(0, 0, W, H);
-  ctx.drawImage(off, view.x, view.y, PX_W * view.s, PX_H * view.s);
-
-  // Toz zerrecikleri (piksel)
-  if (particles.length < 40) particles.push({ x: Math.random() * PX_W, y: 70 + Math.random() * 60, v: .5 + Math.random(), a: Math.random() * 6 });
-  ctx.fillStyle = 'rgba(255,248,230,.75)';
-  for (const p of particles) {
-    p.x += p.v * .15; p.a += .02; if (p.x > PX_W) p.x = 0;
-    const s = toScreen(p.x, p.y + Math.sin(p.a) * 2);
-    ctx.fillRect(Math.round(s.x), Math.round(s.y), Math.ceil(view.s * .8), Math.ceil(view.s * .8));
-  }
-
-  // NPC'ler: kaide + emoji + güven çubuğu + etiket
-  const fs = Math.max(28, Math.min(64, view.s * 13));
-  for (const n of state.npcs) {
-    const p = npcPos(n), s = toScreen(p.x, p.y);
-    const bob = Math.sin(t * 2 + n.fx * 10) * 3 + (n.hover ? -4 : 0);
-    // gölge + taş kaide
-    ctx.fillStyle = 'rgba(62,39,35,.25)'; ctx.beginPath(); ctx.ellipse(s.x, s.y + fs * .45, fs * .55, fs * .14, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = n.questDone ? C.altin : C.mermer; ctx.strokeStyle = C.kahve; ctx.lineWidth = 2;
-    ctx.fillRect(s.x - fs * .45, s.y + fs * .3, fs * .9, fs * .16); ctx.strokeRect(s.x - fs * .45, s.y + fs * .3, fs * .9, fs * .16);
-    // hover/aktif hale
-    if (n.hover || state.active === n) { ctx.fillStyle = 'rgba(212,175,55,.35)'; ctx.beginPath(); ctx.arc(s.x, s.y - fs * .1 + bob, fs * .62, 0, 7); ctx.fill(); }
-    ctx.font = `${fs}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const face = n.mood > 0 ? n.angry : n.emoji;
-    ctx.fillText(face, s.x + (n.mood > 0 ? Math.sin(t * 40) * 3 : 0), s.y - fs * .1 + bob);
-    if (n.mood > 0) n.mood -= 1 / 60;
-    // durum rozeti
-    ctx.font = `${fs * .42}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-    ctx.fillText(n.questDone ? '✅' : n.unlocked ? '❗' : '💬', s.x + fs * .48, s.y - fs * .62 + bob);
-    // güven çubuğu
-    const bw = fs * 1.1, bx = s.x - bw / 2, by = s.y - fs * .85 + bob;
-    ctx.fillStyle = C.kahve; ctx.fillRect(bx - 2, by - 2, bw + 4, 9);
-    ctx.fillStyle = '#E5D6C1'; ctx.fillRect(bx, by, bw, 5);
-    ctx.fillStyle = n.trust >= 100 ? '#4E7D3A' : C.altin; ctx.fillRect(bx, by, bw * n.trust / 100, 5);
-    // isim etiketi
-    ctx.font = `700 ${Math.max(11, fs * .26)}px "Trebuchet MS",sans-serif`;
-    const label = n.name, tw = ctx.measureText(label).width + 12;
-    ctx.fillStyle = 'rgba(62,39,35,.88)'; ctx.fillRect(s.x - tw / 2, s.y + fs * .55, tw, fs * .34);
-    ctx.fillStyle = C.bej; ctx.fillText(label, s.x, s.y + fs * .72);
-  }
-  requestAnimationFrame(frame);
-}
-
-function hitNpc(cx, cy) {
-  const fs = Math.max(28, Math.min(64, view.s * 13));
-  return state.npcs.find(n => { const s = toScreen(npcPos(n).x, npcPos(n).y); return Math.hypot(cx - s.x, cy - (s.y - fs * .1)) < fs * .75; });
-}
-cv.addEventListener('pointermove', e => {
-  const h = hitNpc(e.clientX, e.clientY);
-  for (const n of state.npcs) n.hover = n === h;
-  cv.style.cursor = h ? 'pointer' : 'default';
-});
-cv.addEventListener('pointerdown', e => {
-  const h = hitNpc(e.clientX, e.clientY);
-  if (h && !anyModalOpen()) { sfx.click(); openNpc(h); }
+/* ---------- KAYIP PARŞÖMENLER (görev objeleri) ---------- */
+const scrolls = [[-38, -10], [-14, 6], [-15, -55]].map(([x, z], i) => {
+  const g = new THREE.Group(); g.position.set(x, .9, z); scene.add(g);
+  const roll = mesh(new THREE.CylinderGeometry(.22, .22, 1.1, 10), new THREE.MeshLambertMaterial({ color: 0xf1e2bf, emissive: 0x4a3a10 }), 0, 0, 0, g);
+  roll.rotation.z = Math.PI / 2;
+  [-.6, .6].forEach(s => { const k = mesh(new THREE.CylinderGeometry(.08, .08, .3, 6), M.wood, s, 0, 0, g); k.rotation.z = Math.PI / 2; });
+  const halo = mesh(new THREE.SphereGeometry(.9, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffd76a, transparent: true, opacity: .18, depthWrite: false }), 0, 0, 0, g);
+  void halo; g.visible = false;
+  return { id: 's' + i, group: g, x, z, kind: 'scroll' };
 });
 
 /* =========================================================
-   DİYALOG SİSTEMİ
+   NPC SINIFI (basit humanoid + isim etiketi sprite + diyalog ağacı + güven)
    ========================================================= */
-const $ = id => document.getElementById(id);
-function setTrustUI(n) { $('trustBar').style.width = n.trust + '%'; $('trustTxt').textContent = `Güven %${n.trust} · ${n.place}`; }
-
-function openNpc(n) {
-  state.active = n;
-  $('dialog').classList.add('on');
-  $('face').textContent = n.emoji; $('face').classList.remove('angry');
-  $('npcName').textContent = n.name; setTrustUI(n);
-  if (n.questDone) return say(n, `Teşekkürler gezgin, ${n.reward.name} artık senin. Efes'te her zaman hoş karşılanırsın.`, [btn('Kapat', closeDialog, 'ghost')]);
-  if (n.unlocked) return say(n, 'Artık sana güveniyorum. Senin için bir görevim var.', [btn('Görevi başlat', () => openQuest(n)), btn('Sonra', closeDialog, 'ghost')]);
-  say(n, n.round === 0 && n.trust === 0 ? n.greet : 'Kaldığımız yerden devam edelim.', [btn('Dinliyorum', () => askRound(n)), btn('Sonra', closeDialog, 'ghost')]);
+function labelTexture(text, icon) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = 'rgba(62,39,35,.9)'; g.strokeStyle = '#D4AF37'; g.lineWidth = 8;
+  const w = 470; g.beginPath(); if (g.roundRect) g.roundRect(21, 14, w, 100, 24); else g.rect(21, 14, w, 100); g.fill(); g.stroke();
+  g.fillStyle = '#F5E6D3'; g.font = 'bold 52px Trebuchet MS, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(`${icon} ${text}`, 256, 66);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
 }
-function closeDialog() { $('dialog').classList.remove('on'); state.active = null; }
-function btn(label, fn, cls = '') { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; b.onclick = () => { sfx.click(); fn(); }; return b; }
-function say(n, text, buttons = [], choices = []) {
-  $('text').textContent = text;
-  $('choices').replaceChildren(...choices);
-  $('dlgRow').replaceChildren(...buttons);
-  (choices[0] || buttons[0])?.focus({ preventScroll: true });
-}
-function askRound(n) {
-  const r = n.rounds[n.round % n.rounds.length];
-  const choices = r.a.map((txt, i) => {
-    const b = document.createElement('button'); b.className = 'choice'; b.textContent = txt;
-    b.onclick = () => answer(n, r, i, b, choices);
-    return b;
-  });
-  say(n, `${r.info}\n\n${r.q}`, [], choices);
-  $('text').style.whiteSpace = 'pre-line';
-}
-function answer(n, r, i, b, all) {
-  all.forEach(x => (x.disabled = true));
-  if (i === r.ok) {
-    b.classList.add('ok'); sfx.ok();
-    n.trust = Math.min(100, n.trust + 25); n.round++;
-    setTrustUI(n); save();
-    setTimeout(() => {
-      if (n.unlocked) say(n, '✨ Doğru! Bilgine güvenim tam. Senin için bir görevim var.', [btn('Görevi başlat', () => openQuest(n)), btn('Sonra', closeDialog, 'ghost')]);
-      else say(n, 'Doğru! Devam edelim.', [btn('Devam', () => askRound(n))]);
-    }, 550);
-  } else {
-    b.classList.add('bad'); all[r.ok].classList.add('ok'); sfx.bad();
-    n.trust = Math.max(0, n.trust - 15); n.mood = 1.2; n.round++;   // sıradaki soruya geçer; bu soru turda tekrar gelir
-    $('face').textContent = n.angry; $('face').classList.add('angry');
-    setTrustUI(n); save();
-    setTimeout(() => {
-      $('face').textContent = n.emoji; $('face').classList.remove('angry');
-      say(n, 'Hmm... Bu yanlıştı. Doğru cevabı aklında tut, bir daha soracağım.', [btn('Tekrar dene', () => askRound(n)), btn('Sonra', closeDialog, 'ghost')]);
-    }, 900);
+class NPC {
+  constructor(d) {
+    Object.assign(this, d);
+    this.s = state.npc[d.id];
+    const g = this.group = new THREE.Group(); g.position.set(d.pos[0], 0, d.pos[1]); scene.add(g);
+    const toga = new THREE.MeshLambertMaterial({ color: d.toga });
+    cyl(.38, .55, 1.25, toga, 0, 0, 0, 10, g);              // etek/toga
+    cyl(.34, .4, .65, toga, 0, 1.25, 0, 10, g);              // gövde
+    const sash = box(.12, 1.1, .82, new THREE.MeshLambertMaterial({ color: 0xd4af37 }), .05, 1, 0, g); sash.rotation.z = .5;
+    mesh(new THREE.SphereGeometry(.27, 12, 10), M.skin, 0, 2.2, 0, g);   // baş
+    mesh(new THREE.SphereGeometry(.28, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2.2), d.id === 'tuccar' ? new THREE.MeshLambertMaterial({ color: 0xb23a2e }) : M.dark, 0, 2.24, 0, g); // saç/başlık
+    this.armL = box(.16, .75, .16, toga, -.45, 1.15, 0, g);
+    this.armR = box(.16, .75, .16, toga, .45, 1.15, 0, g);
+    this.label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(d.name, '💬'), depthTest: false }));
+    this.label.scale.set(2.6, .65, 1); this.label.position.y = 3.05; g.add(this.label);
+    this.refreshLabel();
+    addBox(d.pos[0], d.pos[1], 1, 1);
+  }
+  icon() { return { none: this.s.trust >= 100 ? '❗' : '💬', active: '⏳', ready: '❗', done: '✅' }[this.s.quest]; }
+  refreshLabel() { this.label.material.map.dispose(); this.label.material.map = labelTexture(this.name, this.icon()); this.label.material.needsUpdate = true; }
+  update(t, dt) {
+    const g = this.group;
+    g.position.y = Math.sin(t * 2 + this.pos[0]) * .03;
+    const near = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z) < 9;
+    if (near) { const target = Math.atan2(player.pos.x - g.position.x, player.pos.z - g.position.z); g.rotation.y += (wrap(target - g.rotation.y)) * Math.min(1, dt * 4); }
+    this.armR.rotation.x = this === dialog.npc ? Math.sin(t * 6) * .5 - .4 : Math.sin(t * 1.5) * .1;
+    this.armL.rotation.x = -Math.sin(t * 1.5) * .1;
   }
 }
+const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+const npcs = NPC_DATA.map(d => new NPC(d));
 
 /* =========================================================
    GÖREV SİSTEMİ
    ========================================================= */
-const modalIds = ['questModal', 'invModal', 'startModal', 'endModal'];
-const anyModalOpen = () => modalIds.some(id => $(id).classList.contains('on'));
-const showModal = id => $(id).classList.add('on');
-const hideModal = id => $(id).classList.remove('on');
-const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(v => v[1]);
-
-function openQuest(n) {
-  closeDialog();
-  const q = QUESTS[n.quest];
-  const sheet = $('questSheet');
-  sheet.innerHTML = `<h2>${q.title}</h2><p>${q.intro}</p>`;
-  if (q.items) sortQuest(n, q, sheet); else matchQuest(n, q, sheet);
-  const row = document.createElement('div'); row.className = 'row';
-  row.append(btn('Vazgeç', () => hideModal('questModal'), 'ghost'));
-  sheet.append(row);
-  showModal('questModal');
+const questObjects = { scroll: scrolls, column: columns, flag: flags };
+function questProgress(n) { return state.found[n.quest.kind].length; }
+function applyWorldState() {
+  for (const o of scrolls) o.group.visible = state.npc.kutuphaneci.quest === 'active' && !state.found.scroll.includes(o.id);
+  for (const c of columns) { const on = state.found.column.includes(c.id); c.ring.material.color.set(on ? 0xffc93c : 0x8a7a60); }
+  for (const f of flags) f.cloth.position.y = state.found.flag.includes(f.id) ? 5.2 : 1.2;
+  npcs.forEach(n => n.refreshLabel());
+  updateHud();
 }
-function sortQuest(n, q, sheet) {
-  const picked = [];
-  const order = document.createElement('div'); order.className = 'order'; order.setAttribute('aria-label', 'Senin sıralaman');
-  const grid = document.createElement('div'); grid.className = 'grid';
-  const info = document.createElement('p'); info.className = 'hint'; info.textContent = 'Parşömenlere sırayla dokun. Yanlışta sıralama sıfırlanır.';
-  shuffle(q.items).forEach(txt => {
-    const b = document.createElement('button'); b.className = 'tile'; b.textContent = '📜 ' + txt;
-    b.onclick = () => {
-      if (b.classList.contains('done')) return;
-      if (txt === q.items[picked.length]) {
-        picked.push(txt); b.classList.add('done'); sfx.click();
-        const s = document.createElement('span'); s.textContent = picked.length + '. ' + txt.split(' (')[0]; order.append(s);
-        if (picked.length === q.items.length) completeQuest(n);
-      } else {
-        sfx.bad(); b.classList.add('bad'); setTimeout(() => b.classList.remove('bad'), 400);
-        picked.length = 0; order.replaceChildren(); grid.querySelectorAll('.tile').forEach(x => x.classList.remove('done'));
-      }
-    };
-    grid.append(b);
-  });
-  sheet.append(info, order, grid);
-}
-function matchQuest(n, q, sheet) {
-  const grid = document.createElement('div'); grid.className = 'grid two';
-  const left = document.createElement('div'); left.className = 'grid';
-  const right = document.createElement('div'); right.className = 'grid';
-  let sel = null, done = 0;
-  q.pairs.forEach(([k]) => {
-    const b = document.createElement('button'); b.className = 'tile'; b.textContent = k; b.dataset.k = k;
-    b.onclick = () => { if (b.classList.contains('done')) return; left.querySelectorAll('.tile').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); sel = k; sfx.click(); };
-    left.append(b);
-  });
-  shuffle(q.pairs).forEach(([k, v]) => {
-    const b = document.createElement('button'); b.className = 'tile'; b.textContent = v;
-    b.onclick = () => {
-      if (b.classList.contains('done') || !sel) return;
-      const lb = left.querySelector(`[data-k="${CSS.escape(sel)}"]`);
-      if (sel === k) {
-        b.classList.add('done'); lb.classList.remove('sel'); lb.classList.add('done'); sel = null; done++; sfx.ok();
-        if (done === q.pairs.length) completeQuest(n);
-      } else { sfx.bad(); b.classList.add('bad'); setTimeout(() => b.classList.remove('bad'), 400); }
-    };
-    right.append(b);
-  });
-  grid.append(left, right);
-  sheet.append(grid);
+function interactObject(o) {
+  const owner = npcs.find(n => n.quest.kind === o.kind);
+  const list = state.found[o.kind];
+  if (owner.s.quest !== 'active' || list.includes(o.id)) return;
+  list.push(o.id);
+  if (o.kind === 'scroll') { o.group.visible = false; sfx.pick(); toast(`📜 Parşömen bulundu (${list.length}/3)`); }
+  if (o.kind === 'column') { o.ring.material.color.set(0xffc93c); sfx.pick(); toast(`🏛️ Sütun uyandı (${list.length}/12)`); }
+  if (o.kind === 'flag') { o.raise = true; sfx.pick(); toast(`🚩 Bayrak asıldı (${list.length}/5)`); }
+  if (list.length >= owner.quest.target) { owner.s.quest = 'ready'; owner.refreshLabel(); sfx.ok(); toast(`✨ Görev tamam! ${owner.name}'a geri dön.`); }
+  updateHud(); save();
 }
 function completeQuest(n) {
-  n.questDone = true;
-  if (!state.inventory.includes(n.reward.id)) state.inventory.push(n.reward.id);
-  save(); updateHud(); sfx.win();
-  setTimeout(() => {
-    hideModal('questModal');
-    toast(`${n.reward.e} ${n.reward.name} envanterine eklendi! +100`);
-    if (state.npcs.every(x => x.questDone)) setTimeout(showFinale, 1200);
-  }, 600);
+  n.s.quest = 'done'; n.refreshLabel();
+  if (!state.inventory.includes(n.id)) state.inventory.push(n.id);
+  sfx.win(); toast(`${n.quest.reward.e} ${n.quest.reward.name} envanterine eklendi! +100`);
+  updateHud(); save();
+  if (npcs.every(x => x.s.quest === 'done')) setTimeout(showFinale, 1400);
 }
-function showFinale() { state.finaleSeen = true; save(); $('endScore').textContent = score(); showModal('endModal'); $('replayBtn').focus(); }
 
 /* =========================================================
-   ENVANTER + HUD
+   OYUNCU KONTROLÜ (hareket + bakış + çarpışma)
    ========================================================= */
-function renderInventory() {
-  $('invList').replaceChildren(...state.npcs.map(n => {
-    const has = state.inventory.includes(n.reward.id);
-    const d = document.createElement('div'); d.className = 'item' + (has ? '' : ' empty');
-    d.innerHTML = `<div class="e">${has ? n.reward.e : '❔'}</div><b>${has ? n.reward.name : 'Bilinmeyen eşya'}</b><small>${has ? n.reward.d : n.name + ' görevini tamamla.'}</small>`;
-    return d;
-  }));
+const player = { pos: new THREE.Vector3(0, 1.7, 26), yaw: 0, pitch: -0.05, radius: .45, speed: 7.5 };
+const keys = {};
+const joy = { x: 0, y: 0 };
+function collide(nx, nz) {
+  const r = player.radius;
+  if (Math.abs(nx) > WORLD || Math.abs(nz + 15) > WORLD) return true;
+  if (theatreBlocks(nx, nz)) return true;
+  return colliders.some(b => nx > b.minX - r && nx < b.maxX + r && nz > b.minZ - r && nz < b.maxZ + r);
+}
+function movePlayer(dt) {
+  let f = 0, s = 0;
+  if (keys.KeyW || keys.ArrowUp) f += 1; if (keys.KeyS || keys.ArrowDown) f -= 1;
+  if (keys.KeyD || keys.ArrowRight) s += 1; if (keys.KeyA || keys.ArrowLeft) s -= 1;
+  f += -joy.y; s += joy.x;
+  const len = Math.hypot(f, s); if (len < .05) return 0;
+  if (len > 1) { f /= len; s /= len; }
+  const sp = player.speed * dt * (keys.ShiftLeft ? 1.6 : 1);
+  const dx = (-Math.sin(player.yaw) * f + Math.cos(player.yaw) * s) * sp;
+  const dz = (-Math.cos(player.yaw) * f - Math.sin(player.yaw) * s) * sp;
+  // eksen eksen çöz: duvar boyunca kayarak ilerleme
+  if (!collide(player.pos.x + dx, player.pos.z)) player.pos.x += dx;
+  if (!collide(player.pos.x, player.pos.z + dz)) player.pos.z += dz;
+  return Math.min(len, 1);
+}
+function look(dx, dy, k) {
+  player.yaw -= dx * k; player.pitch = Math.max(-1.3, Math.min(1.2, player.pitch - dy * k));
+}
+
+/* Masaüstü: Pointer Lock ile fare bakışı */
+const canvas = renderer.domElement;
+let locked = false;
+canvas.addEventListener('click', () => { if (!mobile && !uiBlocking()) canvas.requestPointerLock && canvas.requestPointerLock(); });
+document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; updateHintVisibility(); });
+document.addEventListener('mousemove', e => { if (locked) look(e.movementX, e.movementY, .0024); });
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'KeyE' && !e.repeat) { if (!dialog.npc && !uiBlocking()) tryInteract(); }
+  if (e.code === 'Escape') { if (!$('invModal').classList.contains('hidden')) hide('invModal'); }
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+/* Mobil: sanal joystick (sol) + sağ alanda sürükleyerek bakış */
+if (mobile) {
+  $('joy').classList.remove('hidden'); $('actBtn').classList.remove('hidden');
+  const joyEl = $('joy'), knob = joyEl.querySelector('i');
+  let joyId = null;
+  const setKnob = (x, y) => { knob.style.transform = `translate(${x * 36}px, ${y * 36}px)`; };
+  const joyMove = t => {
+    const r = joyEl.getBoundingClientRect();
+    let x = (t.clientX - (r.left + r.width / 2)) / (r.width / 2), y = (t.clientY - (r.top + r.height / 2)) / (r.height / 2);
+    const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; }
+    joy.x = x; joy.y = y; setKnob(x, y);
+  };
+  joyEl.addEventListener('touchstart', e => { e.preventDefault(); const t = e.changedTouches[0]; joyId = t.identifier; joyMove(t); }, { passive: false });
+  addEventListener('touchmove', e => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === joyId) joyMove(t);
+      else if (t.identifier === lookId) { look(t.clientX - lookX, t.clientY - lookY, .006); lookX = t.clientX; lookY = t.clientY; }
+    }
+  }, { passive: true });
+  const endTouch = e => { for (const t of e.changedTouches) { if (t.identifier === joyId) { joyId = null; joy.x = joy.y = 0; setKnob(0, 0); } if (t.identifier === lookId) lookId = null; } };
+  addEventListener('touchend', endTouch); addEventListener('touchcancel', endTouch);
+  let lookId = null, lookX = 0, lookY = 0;
+  canvas.addEventListener('touchstart', e => { const t = e.changedTouches[0]; if (lookId === null && t.clientX > innerWidth * .35) { lookId = t.identifier; lookX = t.clientX; lookY = t.clientY; } }, { passive: true });
+  $('actBtn').addEventListener('click', () => { if (!dialog.npc && !uiBlocking()) tryInteract(); });
+}
+
+/* En yakın etkileşilebilir nesne */
+const INTERACT_R = 3.6;
+function nearest() {
+  let best = null, bd = INTERACT_R;
+  for (const n of npcs) { const d = Math.hypot(player.pos.x - n.group.position.x, player.pos.z - n.group.position.z); if (d < bd) { bd = d; best = { type: 'npc', n }; } }
+  for (const kind of ['scroll', 'column', 'flag']) {
+    const owner = npcs.find(n => n.quest.kind === kind);
+    if (owner.s.quest !== 'active') continue;
+    for (const o of questObjects[kind]) {
+      if (state.found[kind].includes(o.id)) continue;
+      const d = Math.hypot(player.pos.x - o.x, player.pos.z - o.z);
+      if (d < bd) { bd = d; best = { type: 'obj', o }; }
+    }
+  }
+  return best;
+}
+function hintFor(t) {
+  if (!t) return '';
+  if (t.type === 'npc') return `${mobile ? 'E' : 'E'} — ${t.n.name} ile konuş`;
+  return { scroll: 'E — Parşömeni al', column: 'E — Sütunu uyandır', flag: 'E — Bayrağı as' }[t.o.kind];
+}
+function tryInteract() {
+  const t = nearest(); if (!t) return;
+  if (t.type === 'npc') openDialog(t.n); else interactObject(t.o);
+}
+
+/* =========================================================
+   DİYALOG UI (HTML overlay)
+   ========================================================= */
+const dialog = { npc: null };
+function setTrust(n) { $('dTrust').style.width = n.s.trust + '%'; $('dTrustTxt').textContent = `Güven %${n.s.trust}`; }
+function btn(label, fn, cls = '') { const b = document.createElement('button'); b.className = 'btn ' + cls; b.textContent = label; b.onclick = () => { sfx.click(); fn(); }; return b; }
+function say(text, buttons = [], choices = []) {
+  $('dText').textContent = text; $('dChoices').replaceChildren(...choices); $('dRow').replaceChildren(...buttons);
+  (choices[0] || buttons[0])?.focus({ preventScroll: true });
+}
+function openDialog(n) {
+  dialog.npc = n; if (document.exitPointerLock) document.exitPointerLock();
+  $('dialog').classList.remove('hidden'); $('dFace').textContent = n.face; $('dFace').classList.remove('angry');
+  $('dName').textContent = n.name; setTrust(n); updateHintVisibility();
+  const s = n.s, close = btn('Hoşça kal', closeDialog, 'ghost');
+  if (s.quest === 'done') return say(`Teşekkürler gezgin. ${n.quest.reward.name} artık senin. Efes'te her zaman hoş karşılanırsın.`, [close]);
+  if (s.quest === 'ready') return say(`Başardın! Tam istediğim gibi. Bu hediyeyi kabul et.`, [btn('Ödülü al', () => { completeQuest(n); openDialog(n); })]);
+  if (s.quest === 'active') return say(`Görevin: ${n.quest.task}. İlerleme: ${questProgress(n)}/${n.quest.target}.`, [close]);
+  if (s.trust >= 100) return offerQuest(n);
+  say(s.round === 0 && s.trust === 0 ? n.greet : 'Sohbetimize kaldığımız yerden devam edelim.', [btn('Dinliyorum', () => askRound(n)), close]);
+}
+function closeDialog() { dialog.npc = null; $('dialog').classList.add('hidden'); updateHintVisibility(); save(); }
+function offerQuest(n) {
+  // Önce bilgi, sonra görev: güven %100 olmadan görev verilmez
+  say(n.quest.give, [btn('Kabul ediyorum', () => {
+    n.s.quest = 'active'; applyWorldState(); save(); sfx.ok();
+    say(`Harika! Görevin: ${n.quest.task}. Hazır olduğunda yanıma dön.`, [btn('Yola çık', closeDialog)]);
+  }), btn('Sonra', closeDialog, 'ghost')]);
+}
+function askRound(n) {
+  const r = n.rounds[n.s.round % n.rounds.length];
+  say(r.info, [btn('Anladım', () => {
+    const choices = r.a.map((txt, i) => { const b = document.createElement('button'); b.className = 'choice'; b.textContent = txt; b.onclick = () => answer(n, r, i, b, choices); return b; });
+    say(r.q, [], choices);
+  })]);
+}
+function answer(n, r, i, b, all) {
+  all.forEach(x => (x.disabled = true));
+  n.s.round++;
+  if (i === r.ok) {
+    b.classList.add('ok'); sfx.ok();
+    n.s.trust = Math.min(100, n.s.trust + 25); setTrust(n); n.refreshLabel(); save();
+    setTimeout(() => n.s.trust >= 100
+      ? say('✨ Doğru! Artık sana tamamen güveniyorum.', [btn('Devam', () => offerQuest(n))])
+      : say('Doğru! Bilgini sevdim.', [btn('Devam', () => askRound(n)), btn('Sonra', closeDialog, 'ghost')]), 550);
+  } else {
+    b.classList.add('bad'); all[r.ok].classList.add('ok'); sfx.bad();
+    n.s.trust = Math.max(0, n.s.trust - 15); setTrust(n); save();
+    $('dFace').textContent = '😠'; $('dFace').classList.add('angry');
+    setTimeout(() => { $('dFace').textContent = n.face; $('dFace').classList.remove('angry');
+      say('Hmm... Bu yanlıştı, biraz kırıldım. Doğru cevabı aklında tut; bu soruyu yine soracağım.', [btn('Devam', () => askRound(n)), btn('Sonra', closeDialog, 'ghost')]); }, 900);
+  }
+}
+
+/* =========================================================
+   HUD, ENVANTER, MODALLAR
+   ========================================================= */
+const show = id => $(id).classList.remove('hidden');
+const hide = id => { $(id).classList.add('hidden'); updateHintVisibility(); };
+const uiBlocking = () => ['startModal', 'invModal', 'endModal', 'errorModal'].some(id => !$(id).classList.contains('hidden'));
+function updateHintVisibility() {
+  const playing = !uiBlocking() && !dialog.npc;
+  $('crosshair').classList.toggle('hidden', !playing || mobile);
+  $('lockHint').classList.toggle('hidden', !playing || mobile || locked);
+  $('joy').classList.toggle('hidden', !mobile || !playing);
+  $('actBtn').classList.toggle('hidden', !mobile || !playing);
 }
 function updateHud() {
   $('score').textContent = score();
-  $('qcount').textContent = state.npcs.filter(n => n.questDone).length;
   $('soundBtn').textContent = state.muted ? '🔇' : '🔊';
+  const active = npcs.find(n => n.s.quest === 'active') || npcs.find(n => n.s.quest === 'ready');
+  let txt;
+  if (active) txt = active.s.quest === 'ready' ? `${active.name}'a geri dön ve ödülünü al.` : `${active.quest.title}: ${questProgress(active)}/${active.quest.target}`;
+  else if (npcs.every(n => n.s.quest === 'done')) txt = 'Tüm görevler tamam! 🎭';
+  else { const next = npcs.find(n => n.s.quest === 'none'); txt = `${next.name} ile konuş (Güven %${next.s.trust}).`; }
+  $('questText').textContent = txt;
 }
 let toastT;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+function renderInventory() {
+  $('invList').replaceChildren(...npcs.map(n => {
+    const has = state.inventory.includes(n.id), r = n.quest.reward;
+    const d = document.createElement('div'); d.className = 'item' + (has ? '' : ' empty');
+    d.innerHTML = `<div class="e">${has ? r.e : '❔'}</div><b>${has ? r.name : 'Bilinmeyen eşya'}</b><small>${has ? r.d : n.name + ' görevini tamamla.'}</small>`;
+    return d;
+  }), ...(state.found.scroll.length && state.npc.kutuphaneci.quest !== 'done' ? [Object.assign(document.createElement('div'), { className: 'item', innerHTML: `<div class="e">📜</div><b>Kayıp parşömenler</b><small>${state.found.scroll.length}/3 toplandı</small>` })] : []));
+}
+function showFinale() { state.finaleSeen = true; save(); $('endScore').textContent = score(); if (document.exitPointerLock) document.exitPointerLock(); show('endModal'); updateHintVisibility(); }
+function resetGame() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  for (const id in state.npc) state.npc[id] = { trust: 0, round: 0, quest: 'none' };
+  state.found = { scroll: [], column: [], flag: [] }; state.inventory = []; state.finaleSeen = false;
+  player.pos.set(0, 1.7, 26); player.yaw = 0; player.pitch = -.05;
+  if (dialog.npc) closeDialog();
+  applyWorldState(); save();
+}
 
-$('invBtn').onclick = () => { sfx.click(); renderInventory(); showModal('invModal'); };
-$('invClose').onclick = () => hideModal('invModal');
+$('startBtn').onclick = () => { hide('startModal'); sfx.ok(); if (!mobile && canvas.requestPointerLock) canvas.requestPointerLock(); };
+$('newGameBtn').onclick = () => { resetGame(); hide('startModal'); toast('Yeni bir yolculuk başladı!'); };
+$('replayBtn').onclick = () => { resetGame(); hide('endModal'); toast('Yeniden hoş geldin, gezgin!'); };
+$('endClose').onclick = () => hide('endModal');
+$('invBtn').onclick = () => { sfx.click(); if (document.exitPointerLock) document.exitPointerLock(); renderInventory(); show('invModal'); updateHintVisibility(); };
+$('invClose').onclick = () => hide('invModal');
+$('menuBtn').onclick = () => { if (document.exitPointerLock) document.exitPointerLock(); $('newGameBtn').classList.remove('hidden'); show('startModal'); updateHintVisibility(); };
 $('soundBtn').onclick = () => { state.muted = !state.muted; updateHud(); save(); sfx.click(); };
-$('startBtn').onclick = () => { hideModal('startModal'); sfx.ok(); };
-$('resetBtn2').onclick = () => { resetGame(); hideModal('startModal'); toast('Yeni bir yolculuk başladı!'); };
-$('replayBtn').onclick = () => { resetGame(); toast('Yeniden hoş geldin, gezgin!'); };
-$('endClose').onclick = () => hideModal('endModal');
-addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return;
-  if (anyModalOpen()) modalIds.forEach(hideModal); else closeDialog();
-});
-for (const id of modalIds) $(id).addEventListener('pointerdown', e => { if (e.target === $(id) && id !== 'startModal') hideModal(id); });
 
-addEventListener('resize', resize);
-addEventListener('orientationchange', resize);
+/* =========================================================
+   ANA DÖNGÜ (60 FPS hedefli requestAnimationFrame)
+   ========================================================= */
+const clock = new THREE.Clock();
+let bobT = 0, saveT = 0, lastHint = '';
+function frame() {
+  const dt = Math.min(clock.getDelta(), .05), t = clock.elapsedTime;
+  const playing = !uiBlocking() && !dialog.npc;
+  if (playing) { const moving = movePlayer(dt); bobT += dt * moving * 9; }
+  camera.position.set(player.pos.x, 1.7 + Math.sin(bobT) * .05, player.pos.z);
+  camera.rotation.set(player.pitch, player.yaw, 0, 'YXZ');
+  for (const n of npcs) n.update(t, dt);
+  for (const s of scrolls) if (s.group.visible) { s.group.rotation.y += dt * 1.5; s.group.position.y = .9 + Math.sin(t * 2 + s.x) * .15; }
+  for (const f of flags) {
+    const up = state.found.flag.includes(f.id);
+    f.cloth.position.y += ((up ? 5.2 : 1.2) - f.cloth.position.y) * Math.min(1, dt * 3);
+    f.cloth.rotation.y = up ? Math.sin(t * 3 + f.x) * .25 : 0;
+  }
+  for (const c of columns) if (state.found.column.includes(c.id)) c.ring.rotation.z += dt;
+  // etkileşim ipucu
+  const h = playing ? hintFor(nearest()) : '';
+  if (h !== lastHint) { lastHint = h; $('hint').textContent = h; $('hint').classList.toggle('hidden', !h); if (mobile) $('actBtn').disabled = !h; }
+  saveT += dt; if (saveT > 5 && playing) { saveT = 0; save(); }
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+
+/* Başlat: kayıt varsa yükle */
 const hadSave = load();
-if (!hadSave) $('resetBtn2').style.display = 'none';
-resize(); updateHud(); showModal('startModal');
+if (state.player) { player.pos.x = state.player.x; player.pos.z = state.player.z; player.yaw = state.player.yaw; }
+npcs.forEach(n => (n.s = state.npc[n.id]));
+if (!hadSave) $('newGameBtn').classList.add('hidden');
+else $('startBtn').textContent = 'Devam et';
+applyWorldState(); updateHintVisibility();
+window.__efes = { state, player, npcs, tryInteract, openDialog };   // test/hata ayıklama kancası
 requestAnimationFrame(frame);
-})();
+};
 </script>
 </body>
 </html>
