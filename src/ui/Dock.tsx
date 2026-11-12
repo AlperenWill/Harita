@@ -3,6 +3,7 @@ import { useStore } from '../state/store';
 import { CATEGORY_LABEL, PERIOD_BY_ID, REGIONS, REGION_BY_ID, displayProvince } from '../data/regions';
 import { useRegionSites } from '../state/useRegionSites';
 import { loadRegionSites } from '../data/heritage';
+import { PlayButton } from './PlayButton';
 
 /**
  * Bağlama duyarlı alt panel: ülke → bölge çipleri, bölge → il çipleri, il → miras noktası listesi.
@@ -83,7 +84,7 @@ export function Dock() {
         <span>{title}</span>
         <span aria-hidden="true">{open ? '▾' : '▴'}</span>
       </button>
-      {open && <div className="dock-body">{body}</div>}
+      {open && <div className="dock-body">{body}{level === 'province' && province === 'Şanlıurfa' && <PlayButton className="dock-play" />}</div>}
     </section>
   );
 }
