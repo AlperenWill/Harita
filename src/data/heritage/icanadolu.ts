@@ -228,5 +228,11 @@ const sites: HeritageSite[] = [
     summary: '1235 tarihli Selçuklu darüşşifası; kent içinde az bilinen bir sağlık mirası.',
     didYouKnow: 'Yapı zamanla mescit olarak kullanıldığı için adı “Taş Mescit”e dönüştü.',
   },
+  {
+    id: 'ankara-kalesi', name: 'Ankara Kalesi', province: 'Ankara', category: 'mimari', period: 'bizans',
+    coord: [32.8644, 39.9410], wiki: 'Ankara Kalesi',
+    summary: 'Kentin en eski bölümüne hâkim tepedeki kale; bugünkü surların önemli kısmı Bizans döneminden kalır.',
+    didYouKnow: 'Kale duvarlarında Roma dönemine ait devşirme yazıtlı taşlar ve sütun parçaları görülebilir.',
+  },
 ];
 export default sites;

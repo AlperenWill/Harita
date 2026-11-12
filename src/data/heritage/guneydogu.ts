@@ -139,5 +139,11 @@ const sites: HeritageSite[] = [
     summary: 'Güneydoğu’nun en büyük höyüklerinden; Tunç Çağı’nda kuzey Suriye ile Anadolu arasında bir köprü.',
     didYouKnow: 'Höyükte bulunan mühürler, bölgenin uzak ticaret ağlarına bağlı olduğunu gösterir.',
   },
+  {
+    id: 'halfeti', name: 'Halfeti', province: 'Şanlıurfa', category: 'kultur-peyzaji', period: 'yasayan',
+    coord: [37.8686, 37.2453], wiki: 'Halfeti',
+    summary: 'Fırat kıyısındaki tarihî ilçe; Birecik Barajı’nın suları eski yerleşimin bir bölümünü 2000 yılında örttü.',
+    didYouKnow: 'Halfeti, yalnızca bu bölgede yetişen koyu renkli “siyah gül”üyle ünlüdür.',
+  },
 ];
 export default sites;

@@ -54,7 +54,7 @@ export const REGION_OF_PROVINCE: Record<string, RegionId> = Object.fromEntries(
 );
 
 /** Görünen ad (GeoJSON'daki kısaltmalar düzeltilir) */
-export const PROVINCE_DISPLAY: Record<string, string> = { Afyon: 'Afyonkarahisar' };
+export const PROVINCE_DISPLAY: Record<string, string> = { Afyon: 'Afyonkarahisar', Hakkari: 'Hakkâri' };
 export const displayProvince = (p: string) => PROVINCE_DISPLAY[p] ?? p;
 
 /**
