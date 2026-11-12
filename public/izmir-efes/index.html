@@ -511,6 +511,7 @@ paved(26, 12, -30, -12.5, .045);  // kütüphane avlusu
 (() => {
   const C = { x: -30, z: -29 }, g = grp(C.x, 0, C.z), W = 21, FZ = 4.5, PY = 2;   // FZ: cephe duvarı, PY: podyum yüksekliği
   for (let i = 0; i < 8; i++) { const d = 6 - i * .5; block(W + 1.4, .25, d, M.marble, 0, i * .25, FZ + d / 2, g, 2.4); }   // 8 basamak
+  block(W, PY, 9, M.ashlar, 0, 0, 0, g);                                    // podyum (gövdenin altı)
   block(W, 15.4, 9, M.ashlar, 0, PY, 0, g);                                 // ana gövde
   block(W + .5, .5, 9.5, M.marble, 0, PY + 15.4, 0, g);                     // çatı kornişi
   // --- ALT KAT ---
