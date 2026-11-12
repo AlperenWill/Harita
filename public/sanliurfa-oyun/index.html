@@ -1,241 +1,67 @@
 <!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#7a1410">
-<title>Urfa Biberi Yakala</title>
-<style>
-  :root { --red:#c8281e; --dark:#5c0f0b; --orange:#f08a1c; --gold:#f6c343; --cream:#fff3d6; }
-  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { margin:0; height:100%; overflow:hidden; background:var(--dark); color:var(--cream);
-    font-family:'Segoe UI',system-ui,-apple-system,sans-serif; touch-action:none; user-select:none; }
-  canvas { position:fixed; inset:0; width:100%; height:100%; display:block; }
-  .hud { position:fixed; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center;
-    padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 10px max(14px,env(safe-area-inset-left));
-    pointer-events:none; font-weight:700; text-shadow:0 2px 6px rgba(0,0,0,.45); }
-  .hud b { color:var(--gold); font-size:1.3em; font-variant-numeric:tabular-nums; }
-  .hud small { opacity:.8; font-weight:600; margin-right:4px; }
-  .panel { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:20px;
-    background:radial-gradient(circle at 50% 40%, rgba(200,40,30,.55), rgba(60,10,8,.92)); }
-  .panel.hidden { display:none; }
-  .card { max-width:380px; width:100%; text-align:center; padding:26px 22px; border-radius:22px;
-    background:rgba(40,8,6,.7); border:2px solid var(--gold); box-shadow:0 14px 40px rgba(0,0,0,.45); }
-  .card h1 { margin:0 0 6px; font-size:1.9rem; color:var(--gold); }
-  .card p { margin:8px 0; line-height:1.45; }
-  .big { font-size:3rem; font-weight:800; color:var(--gold); margin:4px 0; }
-  button { margin-top:14px; padding:13px 30px; font:700 1.05rem inherit; font-family:inherit; border:0; border-radius:999px; cursor:pointer;
-    color:#4a0c08; background:linear-gradient(180deg,var(--gold),var(--orange)); box-shadow:0 4px 0 #a64f0b; }
-  button:active { transform:translateY(2px); box-shadow:0 2px 0 #a64f0b; }
-  button:focus-visible { outline:3px solid #fff; outline-offset:3px; }
-  .hint { font-size:.85rem; opacity:.8; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#d9c193">
+  <meta name="description" content="Şanlıurfa mimarisinden ilham alan hayalî bir su bahçesinde çocuklar için 3D keşif macerası.">
+  <title>Urfa'nın Minik Kaşifleri — Göl Bahçesi</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<canvas id="c" aria-label="Urfa biberi yakalama oyunu"></canvas>
-<div class="hud" aria-live="polite">
-  <div><small>Skor</small><b id="score">0</b></div>
-  <div id="lives" aria-label="Can">❤❤❤</div>
-  <div><small>En iyi</small><b id="best">0</b></div>
-</div>
-
-<section id="start" class="panel">
-  <div class="card">
-    <h1>🌶️ Urfa Biberi Yakala</h1>
-    <p>Şanlıurfa’nın meşhur isot biberleri sepetine yağıyor! Düşen biberleri yakala, yere düşmelerine izin verme.</p>
-    <p class="hint">🌶️ +1 &nbsp; ✨ Altın biber +5 &nbsp; 🍂 Kuru yaprak: yakalama, can gider</p>
-    <p class="hint">Sepeti sürükle (dokun / fare) ya da ← → tuşlarını kullan.</p>
-    <button id="play">Başla</button>
-  </div>
-</section>
-
-<section id="over" class="panel hidden" role="dialog" aria-live="assertive">
-  <div class="card">
-    <h1>Oyun bitti</h1>
-    <div class="big" id="final">0</div>
-    <p id="msg"></p>
-    <button id="again">Yeniden Oyna</button>
-  </div>
-</section>
-
-<script>
-'use strict';
-(() => {
-  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-  const $ = id => document.getElementById(id);
-  let W = 0, H = 0, dpr = 1;
-  function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = innerWidth; H = innerHeight;
-    cv.width = W * dpr; cv.height = H * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    basket.y = H - Math.max(70, H * .13);
-    basket.w = Math.max(90, Math.min(150, W * .22));
-    basket.x = Math.min(Math.max(basket.x, basket.w / 2), W - basket.w / 2);
-  }
-
-  const basket = { x: 0, y: 0, w: 120, h: 44, target: null };
-  let items = [], sparks = [], score = 0, lives = 3, best = 0, running = false;
-  let spawnT = 0, elapsed = 0, last = 0, keys = {};
-  try { best = +localStorage.getItem('urfa-biber-best') || 0; } catch (e) {}
-  $('best').textContent = best;
-
-  function reset() {
-    items = []; sparks = []; score = 0; lives = 3; spawnT = 0; elapsed = 0;
-    basket.x = W / 2; basket.target = null;
-    hud();
-  }
-  function hud() {
-    $('score').textContent = score;
-    $('lives').textContent = '❤'.repeat(Math.max(lives, 0)) + '🖤'.repeat(3 - Math.max(lives, 0));
-  }
-
-  function spawn() {
-    const r = Math.random();
-    const type = r < .12 ? 'gold' : r < .24 ? 'leaf' : 'pepper';
-    const size = type === 'gold' ? 26 : 30;
-    items.push({
-      type, size, x: size + Math.random() * (W - size * 2), y: -size,
-      vy: (110 + Math.random() * 70) * (1 + Math.min(elapsed / 90, 1.1)),
-      rot: Math.random() * 6, vr: (Math.random() - .5) * 3,
-    });
-  }
-
-  function burst(x, y, color) {
-    for (let i = 0; i < 10; i++) sparks.push({ x, y, vx: (Math.random() - .5) * 220, vy: -Math.random() * 200, life: .5, color });
-  }
-
-  function update(dt) {
-    elapsed += dt;
-    const speed = 560;
-    if (keys.ArrowLeft || keys.a) basket.x -= speed * dt;
-    if (keys.ArrowRight || keys.d) basket.x += speed * dt;
-    if (basket.target !== null) basket.x += (basket.target - basket.x) * Math.min(1, dt * 18);
-    basket.x = Math.min(Math.max(basket.x, basket.w / 2), W - basket.w / 2);
-
-    spawnT -= dt;
-    if (spawnT <= 0) { spawn(); spawnT = Math.max(.35, .95 - elapsed * .008); }
-
-    for (const it of items) {
-      it.y += it.vy * dt; it.rot += it.vr * dt;
-      const caught = it.y + it.size * .5 > basket.y && it.y < basket.y + basket.h &&
-                     Math.abs(it.x - basket.x) < basket.w / 2 + it.size * .3;
-      if (caught) {
-        it.dead = true;
-        if (it.type === 'leaf') { lives--; burst(it.x, basket.y, '#8a5a2b'); }
-        else { score += it.type === 'gold' ? 5 : 1; burst(it.x, basket.y, it.type === 'gold' ? '#f6c343' : '#e03a2a'); }
-        hud();
-      } else if (it.y > H + it.size) {
-        it.dead = true;
-        if (it.type !== 'leaf') { lives--; hud(); }
-      }
-    }
-    items = items.filter(i => !i.dead);
-    for (const s of sparks) { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 500 * dt; s.life -= dt; }
-    sparks = sparks.filter(s => s.life > 0);
-    if (lives <= 0) end();
-  }
-
-  function pepper(x, y, s, rot, gold) {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
-    const g = ctx.createLinearGradient(-s * .4, -s, s * .4, s);
-    if (gold) { g.addColorStop(0, '#ffe58a'); g.addColorStop(1, '#e09a10'); }
-    else { g.addColorStop(0, '#ff5a3c'); g.addColorStop(1, '#a3150f'); }
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(0, -s * .7);
-    ctx.bezierCurveTo(s * .55, -s * .6, s * .5, s * .5, s * .08, s);
-    ctx.bezierCurveTo(-s * .1, s * .6, -s * .6, s * .4, -s * .45, -s * .35);
-    ctx.bezierCurveTo(-s * .4, -s * .6, -s * .2, -s * .7, 0, -s * .7);
-    ctx.fill();
-    ctx.fillStyle = '#2f7a2a';
-    ctx.fillRect(-s * .08, -s * 1.0, s * .16, s * .38);
-    ctx.beginPath(); ctx.ellipse(0, -s * .66, s * .28, s * .12, 0, 0, 6.3); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.35)';
-    ctx.beginPath(); ctx.ellipse(-s * .2, -s * .1, s * .08, s * .3, .2, 0, 6.3); ctx.fill();
-    if (gold) { ctx.strokeStyle = '#fff6c4'; ctx.lineWidth = 2; ctx.stroke(); }
-    ctx.restore();
-  }
-  function leaf(x, y, s, rot) {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
-    ctx.fillStyle = '#8a5a2b';
-    ctx.beginPath(); ctx.ellipse(0, 0, s * .45, s * .8, 0, 0, 6.3); ctx.fill();
-    ctx.strokeStyle = '#4a2c10'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(0, -s * .8); ctx.lineTo(0, s * .8); ctx.stroke();
-    ctx.restore();
-  }
-
-  function draw() {
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, '#7a1410'); bg.addColorStop(.55, '#c8481a'); bg.addColorStop(1, '#f08a1c');
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-    // Güneş ve Urfa silueti
-    ctx.fillStyle = 'rgba(246,195,67,.35)';
-    ctx.beginPath(); ctx.arc(W * .8, H * .22, Math.min(W, H) * .12, 0, 6.3); ctx.fill();
-    ctx.fillStyle = 'rgba(70,12,8,.55)';
-    const base = H * .86;
-    ctx.beginPath(); ctx.moveTo(0, H);
-    for (let i = 0; i <= 12; i++) {
-      const x = (W / 12) * i, h = 26 + ((i * 53) % 40);
-      ctx.lineTo(x, base - h); ctx.lineTo(x + W / 24, base - h - (i % 3 === 0 ? 24 : 6));
-    }
-    ctx.lineTo(W, H); ctx.fill();
-
-    for (const it of items) it.type === 'leaf' ? leaf(it.x, it.y, it.size, it.rot) : pepper(it.x, it.y, it.size, it.rot, it.type === 'gold');
-    for (const s of sparks) { ctx.globalAlpha = Math.max(s.life * 2, 0); ctx.fillStyle = s.color; ctx.fillRect(s.x, s.y, 5, 5); }
-    ctx.globalAlpha = 1;
-
-    // Sepet
-    const { x, y, w, h } = basket;
-    ctx.fillStyle = '#6b3a14';
-    ctx.beginPath(); ctx.moveTo(x - w / 2, y); ctx.lineTo(x + w / 2, y);
-    ctx.lineTo(x + w * .4, y + h); ctx.lineTo(x - w * .4, y + h); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#f6c343'; ctx.lineWidth = 3;
-    for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(x - w / 2 + i * w / 4, y + 4); ctx.lineTo(x - w * .4 + i * w * .8 / 4, y + h - 3); ctx.stroke(); }
-    ctx.fillStyle = '#f6c343'; ctx.fillRect(x - w / 2 - 4, y - 5, w + 8, 8);
-  }
-
-  function frame(t) {
-    const dt = Math.min((t - last) / 1000, .05); last = t;
-    if (running) update(dt);
-    draw();
-    requestAnimationFrame(frame);
-  }
-
-  function msgFor(s) {
-    return s >= 60 ? 'Usta isotçu! Urfa sofraları seninle şenlenir. 🌶️'
-         : s >= 25 ? 'Harika yakaladın, isot kavanozu dolmak üzere!'
-         : 'İlk deneme sıcaktır. Bir daha dene, biberler seni bekliyor!';
-  }
-  function end() {
-    running = false;
-    if (score > best) { best = score; try { localStorage.setItem('urfa-biber-best', best); } catch (e) {} $('best').textContent = best; }
-    $('final').textContent = score;
-    $('msg').textContent = msgFor(score) + (score && score === best ? ' (Yeni rekor!)' : '');
-    $('over').classList.remove('hidden');
-    $('again').focus();
-  }
-  function begin() {
-    $('start').classList.add('hidden'); $('over').classList.add('hidden');
-    reset(); running = true;
-  }
-
-  $('play').addEventListener('click', begin);
-  $('again').addEventListener('click', begin);
-  addEventListener('keydown', e => {
-    keys[e.key] = true;
-    if ((e.key === 'Enter' || e.key === ' ') && !running && document.activeElement.tagName !== 'BUTTON') begin();
-  });
-  addEventListener('keyup', e => { keys[e.key] = false; });
-  const pointer = e => { if (running) basket.target = e.clientX; };
-  cv.addEventListener('pointerdown', pointer);
-  cv.addEventListener('pointermove', pointer);
-  addEventListener('resize', resize);
-  addEventListener('orientationchange', resize);
-
-  resize(); basket.x = W / 2;
-  requestAnimationFrame(frame);
-})();
-</script>
+  <main id="game" aria-label="Urfa esintili 3D keşif oyunu"></main>
+  <section id="welcome" class="overlay">
+    <div class="welcome-card">
+      <div class="eyebrow">ŞANLIURFA · 3D KEŞİF</div>
+      <h1>Urfa’nın Minik<br><span>Kaşifleri</span></h1>
+      <p>Göl Bahçesi’nde hatıraları ara, ardından Usta Avlusu’ndaki atölyeleri keşfet.</p>
+      <div class="controls-note"><span>⌨️</span> WASD ile yürü <i>·</i><span>🖱️</span> Fare ile bak<br><span>📱</span> Joystick ile yürü, ekrana dokunup sürükleyerek bak</div>
+      <button id="start" class="primary">Bölüm seç <span aria-hidden="true">→</span></button>
+      <small>Bu oyun gerçek bir tarihî mekânın birebir kopyası değildir; Urfa'dan esinlenen hayalî bir yerdir.</small>
+    </div>
+  </section>
+  <section id="level-select" class="overlay hidden" aria-labelledby="level-title">
+    <div class="level-card">
+      <div class="eyebrow">KAŞİF HARİTASI</div>
+      <h2 id="level-title">Bölüm seç</h2>
+      <p id="level-message" aria-live="polite">Keşfetmek istediğin bölümü seç.</p>
+      <div id="level-options" class="level-options"></div>
+      <button id="level-back" class="level-back" type="button">← Ana menü</button>
+    </div>
+  </section>
+  <header id="hud" class="hidden">
+    <div class="quest"><span>🧭</span><div><small id="level-name">Göl Bahçesi</small><b id="quest-text">Rehber Zeynep'i bul</b></div></div>
+    <div class="collect"><span>✨</span><b id="collect-count">0</b><small id="collect-total">/ 3</small></div>
+    <button id="sound" class="hud-button" aria-label="Sesi aç veya kapat">🔊</button>
+    <button id="home" class="hud-button" aria-label="Bölüm seçimi" title="Bölüm seçimi">⌂</button>
+  </header>
+  <div id="crosshair" class="hidden"><i></i></div>
+  <div id="interaction-hint" class="hint hidden">E — konuş / keşfet</div>
+  <div id="joystick" class="joystick hidden" aria-label="Hareket joystick'i"><i></i></div>
+  <button id="touch-action" class="touch-action hidden" aria-label="Konuş veya keşfet">✋</button>
+  <div id="look-hint" class="look-hint hidden">Ekranı sürükle: kamerayı çevir</div>
+  <section id="dialog" class="dialog hidden" role="dialog" aria-modal="true">
+    <div id="dialog-card" class="dialog-card"><div class="dialog-heading"><div id="speaker-icon" class="speaker-icon">🧕🏻</div><div><div class="dialog-kicker">KÜÇÜK BİR URFA HİKÂYESİ</div><div id="speaker-name" class="speaker-name">Rehber Zeynep</div></div></div><div class="dialog-progress-track"><i id="dialog-progress-bar"></i></div><div class="dialog-bubble"><span class="bubble-tail"></span><div id="dialog-cue" class="dialog-cue">Birlikte keşfedelim!</div><p id="dialog-text"></p></div><div class="dialog-footer"><small id="dialog-progress"></small><button id="dialog-next" class="primary small">Devam <span>→</span></button></div><div id="dialog-tip" class="dialog-tip">İpucu: Hikâyeyi kendi hızında okumak için Devam’a dokun.</div></div>
+  </section>
+  <div id="toast" class="toast hidden" role="status"></div>
+  <section id="error" class="error hidden"><div><h2>Oyun açılamadı</h2><p id="error-message">3D sahne başlatılamadı.</p><button onclick="location.reload()" class="primary small">Yeniden dene</button></div></section>
+  <script>
+    (() => {
+      const urls = [
+        'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+        'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'
+      ];
+      const load = i => {
+        if (i >= urls.length) {
+          document.querySelector('#error-message').textContent = '3D oyun kütüphanesi yüklenemedi. İnternet bağlantını kontrol edip sayfayı yenile.';
+          document.querySelector('#error').classList.remove('hidden'); return;
+        }
+        const s = document.createElement('script'); s.src = urls[i];
+        s.onload = () => { const g = document.createElement('script'); g.src = 'game.js'; g.onerror = () => { document.querySelector('#error-message').textContent = 'Oyun dosyası yüklenemedi. Klasörde index.html, game.js ve style.css dosyalarının birlikte olduğuna bak.'; document.querySelector('#error').classList.remove('hidden'); }; document.body.appendChild(g); };
+        s.onerror = () => load(i + 1); document.head.appendChild(s);
+      };
+      load(0);
+    })();
+  </script>
 </body>
 </html>
