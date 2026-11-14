@@ -15,6 +15,7 @@ npm run data       # src/data → src/app/data/turkiye.json (şehirler + tarihi 
 |---|---|
 | `/` | Anasayfa: Miras. logosu, Haritayı Aç, Oyun Hakkında |
 | `/harita` | **Miras. Haritası** — 3D harita (aşağıdaki proje), sayfaya gömülü |
+| `/istanbul`, `/istanbul/:id` | **İstanbul Katmanları** — UNESCO mirası haritası ve Sultanahmet deneyimi: [docs/istanbul.md](docs/istanbul.md) |
 | `/anit/ankara-anitkabir` | **Anıtkabir 3D sahnesi** — ayrıntılar: [docs/anitkabir.md](docs/anitkabir.md) |
 | `/kaynakca`, `/ayarlar` | Kaynaklar; animasyon azaltma ve sohbet geçmişi temizleme |
 
