@@ -55,7 +55,10 @@ export function Layout() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   const fullBleed = pathname === '/harita' || pathname.startsWith('/anit/');   // 3D harita içerik alanının tamamını kaplar
+  // bağımsız oyunlar tüm ekranı kullanır: menü, üst bar ve asistan gizlenir (çıkış oyunun kendi düğmesinde)
+  const immersive = pathname.startsWith('/oyun/');
   useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [pathname]);
+  if (immersive) return <Suspense fallback={null}><Outlet /></Suspense>;
 
   return (
     <div className="min-h-screen">
