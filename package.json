@@ -13,6 +13,7 @@
     "data": "tsx scripts/build-data.ts"
   },
   "dependencies": {
+    "@react-spring/web": "^9.6.1",
     "@react-three/drei": "^9.114.0",
     "@react-three/fiber": "^8.17.10",
     "camera-controls": "^2.10.1",
