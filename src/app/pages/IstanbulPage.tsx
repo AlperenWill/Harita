@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { BookOpenCheck, Map as MapIcon, MapPin, X } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { JournalPanel } from '../istanbul/Journal';
-import { LandscapeGate } from '../istanbul/LandscapeGate';
-import { detectTier } from '../istanbul/quality';
-import { SITE_BY_ID } from '../istanbul/sites';
-import { useJournal } from '../istanbul/store';
-import type { IstanbulSite } from '../istanbul/types';
+import { LandscapeGate } from '../../games/core/LandscapeGate';
+import { detectTier } from '../../games/core/device';
+import { GAME_BY_ID } from '../../games/core/registry';
+import { useProgress } from '../../games/core/progress';
+import type { GameDefinition as IstanbulSite } from '../../games/core/types';
 import type { MapCamApi } from '../istanbul/IstanbulMap';
 
 const MapScene = lazy(() => import('../istanbul/IstanbulMap'));
@@ -17,12 +17,12 @@ export default function IstanbulPage() {
   const navigate = useNavigate();
   const tier = useMemo(() => detectTier(), []);
   const api = useRef<MapCamApi | null>(null);
-  const lastSite = useJournal((s) => s.lastSite);
+  const lastSite = useProgress((s) => s.lastGame);
   const [fade, setFade] = useState(false);
   const [journal, setJournal] = useState(() => window.innerWidth >= 1024);
   const busy = useRef(false);
 
-  // Harita → mikro-deneyim: önce kamera yapıya alçalır, sonra ekran kararır ve deneyim açılır
+  // Harita yalnızca giriş kapısıdır: kamera yapıya alçalır, ekran kararır ve o yapının bağımsız oyunu yüklenir
   const pick = async (s: IstanbulSite) => {
     if (busy.current) return; busy.current = true;
     await api.current?.flyTo(s);
@@ -40,7 +40,7 @@ export default function IstanbulPage() {
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-wrap items-start gap-2 p-3">
         <div className="pointer-events-auto rounded-xl bg-ink px-4 py-2 shadow-card">
           <p className="text-lg leading-tight"><Logo suffix="İstanbul" /></p>
-          <p className="text-[11px] text-white/70">UNESCO · İstanbul Tarihi Alanları</p>
+          <p className="text-[11px] text-white/70">UNESCO · Her yapı bir oyun</p>
         </div>
         <div className="pointer-events-auto flex gap-2">
           <button onClick={() => api.current?.overview()} className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-white/90 px-3 text-sm font-medium shadow-card backdrop-blur hover:bg-white"><MapIcon size={16} /> Tüm İstanbul</button>
@@ -58,7 +58,7 @@ export default function IstanbulPage() {
             <h2 className="font-bold">Keşif Günlüğü</h2>
             <button onClick={() => setJournal(false)} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-slate-100" aria-label="Kapat"><X size={16} /></button>
           </div>
-          <JournalPanel onPick={(id) => pick(SITE_BY_ID[id])} />
+          <JournalPanel onPick={(id) => pick(GAME_BY_ID[id])} />
           <p className="mt-4 text-[11px] leading-relaxed text-ink-muted">İlçe sınırları: ozanyerli/istanbul-districts-geojson. Bilgiler her yapının kaynak listesine dayanır.</p>
         </aside>
       )}

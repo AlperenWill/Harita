@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { walkInput } from '../monuments/walkInput';
+import { walkInput } from './walkInput';
 
 /** Dokunmatik sanal joystick (masaüstünde gizli). Değerler walkInput'a yazılır, React durumu tetiklenmez. */
 export function Joystick({ className = '' }: { className?: string }) {

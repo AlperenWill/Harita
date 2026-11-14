@@ -1,0 +1,85 @@
+{
+  "id": "yerebatan-sarnici",
+  "unescoId": "356bis",
+  "name": "Yerebatan Sarnıcı",
+  "kind": "sarnic",
+  "district": "Fatih",
+  "coordinates": [
+    28.9779,
+    41.0084
+  ],
+  "status": "research",
+  "unesco": {
+    "property": "Historic Areas of Istanbul (İstanbul Tarihi Alanları)",
+    "inscribed": 1985,
+    "component": "Sultanahmet Urban Archaeological Component Area"
+  },
+  "summary": "I. Justinianus döneminde, MS 532’de kente su sağlamak için yapılan dev yer altı sarnıcı. 28 × 12 düzende 336 sütun tavanı taşır; iki sütunun kaidesinde Medusa başları bulunur.",
+  "research": {
+    "constructionPeriod": "532",
+    "architect": "Bilinmiyor",
+    "patron": "İmparator I. Justinianus",
+    "uniqueFeatures": [
+      "28 × 12 düzende 336 sütun; birçoğu başka yapılardan devşirme",
+      "İki Medusa başı: biri ters, biri yan yerleştirilmiş (kökenleri ve yerleştirilme nedeni tartışmalı)"
+    ],
+    "restorationHistory": [
+      "1985–1987: İBB’nin kapsamlı temizlik ve onarımı; Medusa başlarının ortaya çıkması",
+      "Temmuz 2022: restorasyon sonrası yeniden ziyarete açıldı"
+    ]
+  },
+  "transformation": {
+    "uniqueFeature": "Suyun içinde yükselen sütun ormanı ve Medusa başları",
+    "mechanic": "Karanlıkta suyun altında kaybolan sütunları ışık kaynağıyla tek tek aydınlatarak sarnıcın haritasını çıkar ve iki Medusa başını bul",
+    "mechanicType": "illumination-reveal",
+    "winCondition": "Sarnıcın sütun düzeni aydınlatılıp iki Medusa başı bulununca tamamlanır",
+    "camera": {
+      "preset": "underwater-drift",
+      "notes": "Su yüzeyine yakın, yavaş süzülen kamera; yalnızca ışığın yönü değiştirilir"
+    },
+    "gestures": [
+      "drag",
+      "hold"
+    ],
+    "targetEmotion": "Sakin merak ve gizem",
+    "avoidElements": [
+      "savaş",
+      "rekabet",
+      "şiddet"
+    ]
+  },
+  "budget": {
+    "maxAssetMB": 8,
+    "targetFps": 45
+  },
+  "atmosphere": {
+    "light": "#ffb35c",
+    "ambient": "cistern-drips"
+  },
+  "fallback": {
+    "wikiTitle": "Yerebatan Sarnıcı",
+    "narration": "Yerebatan Sarnıcı, Birinci Justinianus döneminde, 532 yılında yapıldı. Tavanını taşıyan 336 sütunun ikisinin kaidesinde Medusa başları bulunur."
+  },
+  "sources": [
+    {
+      "title": "UNESCO World Heritage Centre — Historic Areas of Istanbul",
+      "url": "https://whc.unesco.org/en/list/356",
+      "type": "resmî"
+    },
+    {
+      "title": "İBB Atatürk Kitaplığı — Yerebatan Sarnıcı Müzesi",
+      "url": "https://ataturkkitapligi.ibb.gov.tr/en/Kitaplik/Muzelerimiz/Yerebatan-Cistern-Museum/11",
+      "type": "resmî (İBB)"
+    },
+    {
+      "title": "Archnet — Yerebatan Sarnıcı",
+      "url": "https://archnet.org/sites/8249",
+      "type": "akademik arşiv"
+    },
+    {
+      "title": "The National — Basilica Cistern reopens after restoration (2022)",
+      "url": "https://www.thenationalnews.com/mena/2022/07/25/basilica-cistern-reopens-after-restoration-in-pictures-2",
+      "type": "restorasyon haberi"
+    }
+  ]
+}
