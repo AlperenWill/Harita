@@ -191,7 +191,8 @@ function Player({ s, onTarget, onAutoInspect, card, onLeave }: { s: Shared; onTa
   const tmpPos = useMemo(() => new THREE.Vector3(), []), q = useMemo(() => new THREE.Quaternion(), []), q2 = useMemo(() => new THREE.Quaternion(), []);
   const mtx = useMemo(() => new THREE.Matrix4(), []);
   useFrame((_, raw) => {
-    const dt = Math.min(raw, 0.05), fp = s.fp, insp = s.inspecting.current;
+    // düşük kare hızında da hız düşmesin diye kare süresi 0,1 sn'ye kadar kabul edilir
+    const dt = Math.min(raw, 0.1), fp = s.fp, insp = s.inspecting.current;
     // bakış
     const L = s.lookAcc.current; if (s.active.current && !insp) fp.current = look(fp.current, L.dyaw, L.dpitch); L.dyaw = L.dpitch = 0;
     // yürüme (incelemede durur)
