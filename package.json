@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "data": "tsx scripts/build-data.ts"
+    "data": "tsx scripts/build-data.ts",
+    "istanbul": "node scripts/build-istanbul.mjs",
+    "unesco": "tsx scripts/fetch-unesco.ts"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",
