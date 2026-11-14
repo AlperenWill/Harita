@@ -15,6 +15,7 @@ npm run data       # src/data → src/app/data/turkiye.json (şehirler + tarihi 
 |---|---|
 | `/` | Anasayfa: Miras. logosu, Haritayı Aç, Oyun Hakkında |
 | `/harita` | **Miras. Haritası** — 3D harita (aşağıdaki proje), sayfaya gömülü |
+| `/oyun/kiz-kulesi` | **Kız Kulesi: Vapur Yolculuğu & Ada Keşfi** — NPC (Can) odaklı bağımsız 3D oyun: [src/app/games/kiz-kulesi/README.md](src/app/games/kiz-kulesi/README.md) |
 | `/oyun/galata-kulesi` | **Galata Kulesi: Zamanın Nefesi** — bağımsız 3D oyun (zindan, merdiven ritmi, sergi, teras panoraması): [src/app/games/galata/README.md](src/app/games/galata/README.md) |
 | `/anit/ankara-anitkabir` | **Anıtkabir 3D sahnesi** — ayrıntılar: [docs/anitkabir.md](docs/anitkabir.md) |
 | `/kaynakca`, `/ayarlar` | Kaynaklar; animasyon azaltma ve sohbet geçmişi temizleme |

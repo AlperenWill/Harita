@@ -1,0 +1,47 @@
+{
+  "$comment": "Kız Kulesi diyalogları. Yeni replik eklemek için bir nesneye satır eklemek yeterli. trigger.type: enter (bölüme girince), random (havuzdan rastgele sırayla), reach (bir noktaya varınca), interact (etkileşim düğmesi). anim: talk | point. lookAt: tower | stone | view | player | ferry.",
+  "character": { "id": "can", "name": "Can", "role": "Üsküdarlı rehber" },
+  "dialogues": [
+    { "id": "vapur-giris", "scene": "vapur", "trigger": { "type": "enter" }, "lines": [
+      { "speaker": "can", "anim": "talk", "lookAt": "player", "text": "Hoş geldin! Ben Can. Güverte senin, istediğin gibi dolaş. Ben hep yanında olacağım." },
+      { "speaker": "can", "anim": "point", "lookAt": "tower", "text": "Önümüzdeki küçük adayı görüyor musun? İşte Kız Kulesi." }
+    ]},
+    { "id": "vapur-ufuk", "scene": "vapur", "trigger": { "type": "random", "pool": "vapur" }, "lines": [
+      { "speaker": "can", "anim": "point", "lookAt": "tower", "text": "Bak, ufukta beliriyor! Bizans döneminden beri burada: 1110’da İmparator I. Aleksios Komnenos buraya bir kule yaptırmış." }
+    ]},
+    { "id": "vapur-efsane", "scene": "vapur", "trigger": { "type": "random", "pool": "vapur" }, "lines": [
+      { "speaker": "can", "anim": "talk", "lookAt": "player", "text": "Efsaneye göre bir imparator, kızını yılanlardan korumak için onu buraya kapatmış." },
+      { "speaker": "can", "anim": "talk", "lookAt": "player", "text": "Ama bir üzüm sepetinin içinde saklanan yılan yine de kıza ulaşmış. Kulenin adı bu hikâyeden geliyor." }
+    ]},
+    { "id": "vapur-islevler", "scene": "vapur", "trigger": { "type": "random", "pool": "vapur" }, "lines": [
+      { "speaker": "can", "anim": "talk", "lookAt": "player", "text": "Önce bir gözetleme kulesiydi. 18. yüzyılda Damat İbrahim Paşa gemilere yol göstersin diye fener ekletti." },
+      { "speaker": "can", "anim": "point", "lookAt": "tower", "text": "Sonra kolera salgınında karantina istasyonu oldu, yıllar sonra kafe ve restoran. Rivayete göre zindan olarak da kullanılmış, ama bunun kaydı zayıf." }
+    ]},
+    { "id": "yanasma", "scene": "yanasma", "trigger": { "type": "enter" }, "lines": [
+      { "speaker": "can", "anim": "point", "lookAt": "tower", "text": "Yanaştık! İskele indi. Beni takip et, kapı şu tarafta." }
+    ]},
+    { "id": "kule-giris", "scene": "kule", "trigger": { "type": "enter" }, "lines": [
+      { "speaker": "can", "anim": "talk", "lookAt": "player", "text": "Merdivenler dar, sen önden çık. Ben arkandayım; taşlara bakarken seni durduracağım." }
+    ]},
+    { "id": "tas-bizans", "scene": "kule", "trigger": { "type": "reach", "spot": "tas-1" }, "lines": [
+      { "speaker": "can", "anim": "point", "lookAt": "stone", "text": "Şu iri, düzgün kesilmiş taşlara bak. Kule yüzyıllar içinde defalarca yıkılıp yeniden yapıldı; her onarım duvarda bir iz bıraktı." }
+    ]},
+    { "id": "tas-fener", "scene": "kule", "trigger": { "type": "reach", "spot": "tas-2" }, "lines": [
+      { "speaker": "can", "anim": "point", "lookAt": "stone", "text": "Bugünkü taş yapı büyük ölçüde 18. yüzyıldan. Kulenin kuzey köşesindeki fener o zamandan beri gemilere işaret veriyor." }
+    ]},
+    { "id": "tas-restorasyon", "scene": "kule", "trigger": { "type": "reach", "spot": "tas-3" }, "lines": [
+      { "speaker": "can", "anim": "point", "lookAt": "stone", "text": "2021’de başlayan restorasyonda sonradan eklenen beton parçalar söküldü, zayıflayan taş duvarlar içten güçlendirildi. Kule Mayıs 2023’te müze olarak yeniden açıldı." }
+    ]},
+    { "id": "teras", "scene": "teras", "trigger": { "type": "enter" }, "lines": [
+      { "speaker": "can", "anim": "point", "lookAt": "view", "text": "Buradan Boğaz’ın iki yakasını aynı anda görebilirsin!" },
+      { "speaker": "can", "anim": "point", "lookAt": "view", "text": "Batıda Tarihi Yarımada: Sarayburnu, Topkapı, Ayasofya’nın kubbesi. Doğuda hemen arkamızda Salacak ve Üsküdar." }
+    ]},
+    { "id": "teras-ek", "scene": "teras", "trigger": { "type": "interact" }, "lines": [
+      { "speaker": "can", "anim": "talk", "lookAt": "player", "text": "Bir de Leandros Kulesi adı var. O ad, Çanakkale Boğazı’nda geçen Hero ile Leandros efsanesinden geliyor; hikâye aslında buraya ait değil." }
+    ]},
+    { "id": "donus", "scene": "donus", "trigger": { "type": "enter" }, "lines": [
+      { "speaker": "can", "anim": "point", "lookAt": "ferry", "text": "Vapurun kalkmak üzere. Ben adada kalıyorum, akşam bir grup daha gelecek." },
+      { "speaker": "can", "anim": "talk", "lookAt": "player", "text": "Bir dahaki sefere gün batımında gelmeliyiz!" }
+    ]}
+  ]
+}
