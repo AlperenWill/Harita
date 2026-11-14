@@ -7,6 +7,7 @@ export const GAMES: Record<string, { path: string; label: string }> = {
 /** Miras noktası → ana uygulamadaki ayrıntılı 3D anıt sahnesi */
 export const MONUMENT_SCENES: Record<string, { path: string; label: string }> = {
   anitkabir: { path: 'anit/ankara-anitkabir', label: '🏛️ 3D Anıtkabir’i Keşfet' },
+  galata: { path: 'oyun/galata-kulesi', label: '🏰 Galata Kulesi: Zamanın Nefesi' },
 };
 
 /** Anıt sahnesini açar. 3D harita ana uygulamada iframe içinde çalıştığından üst pencere yönlendirilir. */
