@@ -9,17 +9,6 @@ export const MONUMENT_SCENES: Record<string, { path: string; label: string }> = 
   anitkabir: { path: 'anit/ankara-anitkabir', label: '🏛️ 3D Anıtkabir’i Keşfet' },
 };
 
-/** İl → ana uygulamadaki il deneyimi (ör. İstanbul Katmanları) */
-export const PROVINCE_SCENES: Record<string, { path: string; label: string }> = {
-  İstanbul: { path: 'istanbul', label: '🕌 İstanbul Katmanları’nı Aç' },
-};
-export function ProvinceSceneButton({ province, className = '' }: { province: string; className?: string }) {
-  const scene = PROVINCE_SCENES[province];
-  if (!scene) return null;
-  const open = () => { const url = `${import.meta.env.BASE_URL}${scene.path}`; try { (window.top ?? window).location.href = url; } catch { window.location.href = url; } };
-  return <button type="button" className={`pill-btn primary play-btn ${className}`} onClick={open}>{scene.label}</button>;
-}
-
 /** Anıt sahnesini açar. 3D harita ana uygulamada iframe içinde çalıştığından üst pencere yönlendirilir. */
 export function MonumentButton({ siteId }: { siteId: string }) {
   const scene = MONUMENT_SCENES[siteId];
