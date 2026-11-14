@@ -10,9 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "data": "tsx scripts/build-data.ts",
-    "istanbul": "node scripts/build-istanbul.mjs",
-    "unesco": "tsx scripts/fetch-unesco.ts"
+    "data": "tsx scripts/build-data.ts"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",
@@ -36,7 +34,6 @@
     "@types/topojson-client": "^3.1.5",
     "@types/topojson-specification": "^1.0.5",
     "@vitejs/plugin-react": "^4.3.3",
-    "ajv": "^8.17.1",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",

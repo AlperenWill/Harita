@@ -54,11 +54,8 @@ function SidebarContent({ onNavigate, drawer }: { onNavigate?: () => void; drawe
 export function Layout() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
-  const fullBleed = pathname === '/harita' || pathname.startsWith('/anit/') || pathname.startsWith('/istanbul');   // 3D harita içerik alanının tamamını kaplar
-  // Oyun ekranı: menü, üst bar ve asistan gizlenir; oyun tüm ekranı kullanır (çıkış oyunun kendi düğmesindedir)
-  const immersive = /^\/istanbul\/[^/]+/.test(pathname);
+  const fullBleed = pathname === '/harita' || pathname.startsWith('/anit/');   // 3D harita içerik alanının tamamını kaplar
   useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [pathname]);
-  if (immersive) return <Suspense fallback={null}><Outlet /></Suspense>;
 
   return (
     <div className="min-h-screen">

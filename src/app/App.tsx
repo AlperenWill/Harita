@@ -8,8 +8,6 @@ import NotFound from './pages/NotFound';
 
 const MapPage = lazy(() => import('./pages/MapPage'));
 const MonumentPage = lazy(() => import('./pages/MonumentPage'));
-const IstanbulPage = lazy(() => import('./pages/IstanbulPage'));
-const IstanbulSitePage = lazy(() => import('./pages/IstanbulSitePage'));
 
 const Loading = () => (
   <div className="grid min-h-[50vh] place-items-center text-ink-muted" role="status">
@@ -25,8 +23,6 @@ export default function App() {
           <Route index element={<Home />} />
           <Route path="harita" element={<MapPage />} />
           <Route path="anit/:id" element={<MonumentPage />} />
-          <Route path="istanbul" element={<IstanbulPage />} />
-          <Route path="istanbul/:id" element={<IstanbulSitePage />} />
           <Route path="kaynakca" element={<SourcesPage />} />
           <Route path="ayarlar" element={<SettingsPage />} />
           <Route path="*" element={<NotFound />} />

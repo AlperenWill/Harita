@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   // Yalnızca yeni uygulama taranır; 3D harita kendi CSS'iyle bağımsız kalır.
-  content: ['./index.html', './src/app/**/*.{ts,tsx}', './src/games/**/*.{ts,tsx}'],
+  content: ['./index.html', './src/app/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
