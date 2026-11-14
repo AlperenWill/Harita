@@ -44,7 +44,7 @@ describe('Yerebatan: birinci şahıs denetleyicisi', () => {
     expect(Math.abs(touchDelta(1, 0, 390).dyaw)).toBeLessThan(Math.abs(mouseDelta(1, 0).dyaw) * 3);
     expect(Math.abs(touchDelta(100, 0, 1000).dyaw)).toBeLessThan(Math.abs(mouseDelta(100, 0).dyaw));
   });
-  it('koşma yok: hız 1,1 m/sn sınırını aşmaz; platform dışına çıkılmaz; adım olayı üretilir', () => {
+  it('koşma yok: hız MAX_SPEED (2 m/sn) sınırını aşmaz; platform dışına çıkılmaz; adım olayı üretilir', () => {
     let s = createFP(START.x, START.z, 0), steps = 0, maxV = 0;
     for (let i = 0; i < 600; i++) { const r = walk(s, 1, 0.3, 1 / 60); s = r.state; if (r.step) steps++; maxV = Math.max(maxV, Math.hypot(s.vx, s.vz)); expect(onWalkway(s.x, s.z)).toBe(true); }
     expect(maxV).toBeLessThanOrEqual(MAX_SPEED + 1e-9); expect(steps).toBeGreaterThan(3); expect(s.dist / STEP_LEN).toBeGreaterThan(steps - 1);
