@@ -9,6 +9,7 @@ export const MONUMENT_SCENES: Record<string, { path: string; label: string }> = 
   anitkabir: { path: 'anit/ankara-anitkabir', label: '🏛️ 3D Anıtkabir’i Keşfet' },
   galata: { path: 'oyun/galata-kulesi', label: '🏰 Galata Kulesi: Zamanın Nefesi' },
   'kiz-kulesi': { path: 'oyun/kiz-kulesi', label: '🚢 Kız Kulesi: Vapur Yolculuğu' },
+  yerebatan: { path: 'oyun/yerebatan', label: '🕯️ Yerebatan: Suyun Altındaki Işık' },
 };
 
 /** Anıt sahnesini açar. 3D harita ana uygulamada iframe içinde çalıştığından üst pencere yönlendirilir. */
