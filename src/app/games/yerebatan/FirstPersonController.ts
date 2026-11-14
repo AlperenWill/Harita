@@ -3,7 +3,7 @@
  *
  * Neden bu mekanik: Sarnıcın etkisi ölçek ve karanlıktır; bunu en iyi, ziyaretçinin kendi gözünden ve kendi
  * hızında yürümesi verir. Bu yüzden:
- *   - koşma yok, en yüksek hız 2,0 m/sn (rahat yürüyüş), ivmelenme ve yavaşlama yumuşak;
+ *   - ayrı koşma tuşu yok; tek hız, en çok 3,5 m/sn (çevik yürüyüş), ivmelenme ve yavaşlama yumuşak;
  *   - yukarı/aşağı bakış ±45° ile sınırlı (gerçekçi boyun hareketi; tavanı ve suyu görmek için yeter, takla atmak yok);
  *   - baş sallanma: adım uzunluğuna bağlı dikey ve yanal salınım, her adımda ayak sesi olayı;
  *   - yürüme yalnızca platformlarda (sütun aralığındaki ahşap yollar) — suya ya da sütuna girilmez.
@@ -16,7 +16,7 @@ import { useEffect, useRef } from 'react';
 import { walkable } from './cistern';
 
 export const PITCH_LIMIT = Math.PI / 4;          // ±45°
-export const MAX_SPEED = 2.0, ACCEL = 4.5, DAMP = 7;
+export const MAX_SPEED = 3.5, ACCEL = 6, DAMP = 8;
 export const STEP_LEN = 0.72;                    // m / adım
 export const BOB = { y: 0.028, x: 0.012 } as const;
 export const MOUSE_SENS = 0.0022;
