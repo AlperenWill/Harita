@@ -1,0 +1,84 @@
+{
+  "id": "suleymaniye",
+  "unescoId": "356bis",
+  "name": "Süleymaniye Külliyesi",
+  "kind": "cami",
+  "district": "Fatih",
+  "coordinates": [
+    28.964,
+    41.0162
+  ],
+  "status": "research",
+  "unesco": {
+    "property": "Historic Areas of Istanbul (İstanbul Tarihi Alanları)",
+    "inscribed": 1985,
+    "component": "Süleymaniye Mosque and its Associated Component Area"
+  },
+  "summary": "Kanuni Sultan Süleyman için Mimar Sinan’ın yaptığı külliye; cami çevresinde medreseler, darüşşifa, imaret ve hamamdan oluşur. Kubbedeki seramik küplerin akustiğe etkisi bugün de araştırılmaktadır.",
+  "research": {
+    "constructionPeriod": "1550–1557",
+    "architect": "Mimar Sinan",
+    "patron": "Kanuni Sultan Süleyman",
+    "uniqueFeatures": [
+      "Kubbeye yerleştirilmiş 64 seramik küp (rezonatör olduğu yorumu bilimsel olarak tartışmalıdır)",
+      "Medreseler, darüşşifa, imaret ve hamamla tam bir külliye"
+    ],
+    "restorationHistory": [
+      "2007–2010 restorasyonu; kullanılan malzemelerin akustiği bozduğu iddiası tartışmalıdır"
+    ]
+  },
+  "transformation": {
+    "uniqueFeature": "Kubbe akustiği ve kubbeye yerleştirilmiş seramik küpler",
+    "mechanic": "Ses dalgalarını görselleştir; kubbedeki küplerin frekansını sesin frekansıyla eşleştirerek yankıyı dengele",
+    "mechanicType": "frequency-matching",
+    "winCondition": "Bütün küpler eşleşince mekân dengeli bir yankıyla tek bir ses gibi tınlar",
+    "camera": {
+      "preset": "static-wide-pan",
+      "notes": "Sabit geniş açı; aktif ses kaynağına doğru yavaşça kayar"
+    },
+    "gestures": [
+      "swipe",
+      "hold"
+    ],
+    "targetEmotion": "Dinginlik ve dikkatle dinleme",
+    "avoidElements": [
+      "savaş",
+      "rekabet",
+      "şiddet"
+    ]
+  },
+  "budget": {
+    "maxAssetMB": 8,
+    "targetFps": 45
+  },
+  "atmosphere": {
+    "light": "#f6e6c8",
+    "ambient": "dome-hum"
+  },
+  "fallback": {
+    "wikiTitle": "Süleymaniye Camii",
+    "narration": "Süleymaniye Külliyesi’ni Kanuni Sultan Süleyman için Mimar Sinan yaptı. Kubbeye yerleştirilen seramik küplerin akustiğe etkisi bugün de araştırılıyor."
+  },
+  "sources": [
+    {
+      "title": "UNESCO World Heritage Centre — Historic Areas of Istanbul",
+      "url": "https://whc.unesco.org/en/list/356",
+      "type": "resmî"
+    },
+    {
+      "title": "Bilkent Üniversitesi — Acoustical characterization of clay pots in Ottoman architecture",
+      "url": "https://repository.bilkent.edu.tr/items/c6801d01-8aaa-49c6-8165-e699273f20bc/full",
+      "type": "akademik"
+    },
+    {
+      "title": "Hürriyet Daily News — Restoration reveals architectural secrets of Istanbul’s Süleymaniye Mosque",
+      "url": "https://www.hurriyetdailynews.com/restoration-reveals-architectural-secrets-of-istanbuls-suleymaniye-mosque-228238",
+      "type": "restorasyon haberi"
+    },
+    {
+      "title": "Muslim Heritage — Sinan’s acoustical technology",
+      "url": "https://muslimheritage.com/sinans-acoustical-tech/",
+      "type": "makale"
+    }
+  ]
+}

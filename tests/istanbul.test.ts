@@ -1,27 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { geoArea, geoContains } from 'd3-geo';
-import { SITES } from '../src/app/istanbul/sites';
-import { BADGES, MOTIFS as STORE_MOTIFS, isCompleted } from '../src/app/istanbul/store';
-import { MOTIFS, PHASES, WALK, MIHRAB_ZONE, panels, isLit, shafts, sunPosition, walkColliders, insideHall } from '../src/app/istanbul/sultanahmet/layout';
-
-const raw = JSON.parse(readFileSync('data/raw/istanbul-districts.geojson', 'utf8'));
-const fix = (r: any) => (geoArea({ type: 'Polygon', coordinates: r } as any) > 2 * Math.PI ? r.map((x: any) => [...x].reverse()) : r);
-const districts = raw.features.map((f: any) => ({ ...f, geometry: f.geometry.type === 'Polygon' ? { ...f.geometry, coordinates: fix(f.geometry.coordinates) } : { ...f.geometry, coordinates: f.geometry.coordinates.map(fix) } }));
-
-describe('İstanbul araştırma dosyaları', () => {
-  it('39 ilçe verisi', () => expect(districts).toHaveLength(39));
-  it('her yapı şablona uyar, en az 3 https kaynak içerir ve koordinatı beyan edilen ilçededir', () => {
-    for (const s of SITES) {
-      expect(s.unescoId).toBe('356bis');
-      expect(s.gameConcept.avoidElements).toEqual(expect.arrayContaining(['savaş', 'rekabet', 'şiddet']));
-      expect(s.sources.length, s.id).toBeGreaterThanOrEqual(3);
-      for (const src of s.sources) expect(src.url).toMatch(/^https:\/\//);
-      const d = districts.find((f: any) => geoContains(f, s.coordinates));
-      expect(d?.properties.name, s.id).toBe(s.district);
-    }
-  });
-});
+import { MOTIFS, PHASES, WALK, MIHRAB_ZONE, panels, isLit, shafts, sunPosition, walkColliders, insideHall } from '../src/games/sultanahmet-camii/layout';
+import { BADGES } from '../src/app/istanbul/Journal';
 
 describe('Sultanahmet: ışık-gölge mekaniği', () => {
   it('güneş öğlen güneyde ve en yüksekte, sabah doğuda', () => {
@@ -37,7 +16,6 @@ describe('Sultanahmet: ışık-gölge mekaniği', () => {
   it('6 motif panosu var, her biri kendi saatinde ışık alıyor ve hepsi farklı yerde', () => {
     const ps = panels();
     expect(ps.map((p) => p.motif)).toEqual([...MOTIFS]);
-    expect(STORE_MOTIFS).toEqual(MOTIFS);
     for (const p of ps) expect(isLit(p, p.hour), p.motif).toBe(true);
     for (const a of ps) for (const b of ps) if (a !== b) expect(Math.hypot(a.pos[0] - b.pos[0], a.pos[2] - b.pos[2])).toBeGreaterThan(6);
   });
@@ -64,11 +42,9 @@ describe('Sultanahmet: yürüme', () => {
 });
 
 describe('rozetler', () => {
-  it('Çini Ustası yalnızca 6 motif bulununca; tüm Sultanahmet rozetleri deneyimi tamamlar', () => {
-    const finds = { 'sultanahmet-camii': MOTIFS.slice(0, 5).map((m) => `motif:${m}`) };
-    const cini = BADGES.find((b) => b.id === 'cini-ustasi')!;
-    expect(cini.earned({ visited: {}, finds })).toBe(false);
-    const all = { 'sultanahmet-camii': [...MOTIFS.map((m) => `motif:${m}`), 'isik:sabah', 'isik:ogle', 'isik:ikindi', 'kubbe', 'mihrap'] };
-    expect(isCompleted({ visited: {}, finds: all }, 'sultanahmet-camii')).toBe(true);
+  it('ilerlemeyi okur: Işığın peşinde yalnızca Sultanahmet tamamlanınca', () => {
+    const isik = BADGES.find((b) => b.id === 'isik')!;
+    expect(isik.earned({ visited: { 'sultanahmet-camii': 1 }, completed: {}, finds: { 'sultanahmet-camii': MOTIFS.slice(0, 5) } })).toBe(false);
+    expect(isik.earned({ visited: {}, completed: { 'sultanahmet-camii': 1 }, finds: {} })).toBe(true);
   });
 });

@@ -17,7 +17,7 @@ export function LandscapeGate() {
     <div className="fixed inset-0 z-[1200] hidden flex-col items-center justify-center gap-5 bg-ink/95 p-8 text-center text-white [@media(pointer:coarse)_and_(orientation:portrait)]:flex" role="alert">
       <RotateCw size={56} className="animate-spin text-brand [animation-duration:3s]" />
       <p className="text-lg font-semibold">Lütfen telefonu yan çevirin</p>
-      <p className="max-w-xs text-sm text-white/70">İstanbul Katmanları yatay ekranda deneyimlenmek üzere tasarlandı.</p>
+      <p className="max-w-xs text-sm text-white/70">Bu oyun yatay ekranda oynanmak üzere tasarlandı.</p>
       {canLock && <button onClick={lock} className="btn-primary h-12 px-6">Tam ekran ve yatay</button>}
     </div>
   );

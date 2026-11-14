@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://miras.app/schema/game-definition.json",
+  "title": "UNESCO yapısı → oyun tanımı",
+  "description": "Her yapı için ayrı dosya (src/games/<id>/game.json). Araştırma bölümü UNESCO ve diğer kaynaklardan gelir; dönüşüm bölümü yapının en özgün özelliğini oynanabilir bir mekaniğe çevirir.",
+  "type": "object",
+  "required": ["id", "unescoId", "name", "kind", "district", "coordinates", "status", "unesco", "summary", "research", "transformation", "budget", "atmosphere", "fallback", "sources"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "unescoId": { "type": "string", "description": "UNESCO mülk referansı (İstanbul Tarihi Alanları: 356bis)" },
+    "name": { "type": "string" },
+    "kind": { "enum": ["cami", "saray", "muze", "sarnic"], "description": "Harita ikonu" },
+    "district": { "type": "string" },
+    "coordinates": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2, "description": "[boylam, enlem]" },
+    "status": { "enum": ["playable", "research"], "description": "playable: oyun kodu hazır · research: araştırma ve dönüşüm tasarımı hazır" },
+    "unesco": {
+      "type": "object", "required": ["property", "inscribed", "component"], "additionalProperties": false,
+      "properties": { "property": { "type": "string" }, "inscribed": { "type": "integer" }, "component": { "type": "string" } }
+    },
+    "summary": { "type": "string" },
+    "research": {
+      "type": "object", "required": ["constructionPeriod", "architect", "uniqueFeatures", "restorationHistory"], "additionalProperties": false,
+      "properties": {
+        "constructionPeriod": { "type": "string" },
+        "architect": { "type": "string" },
+        "patron": { "type": "string" },
+        "uniqueFeatures": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "restorationHistory": { "type": "array", "items": { "type": "string" } },
+        "unverified": { "type": "array", "items": { "type": "string" }, "description": "Doğrulanamayan, oyunda yaklaşık gösterilen bilgiler" }
+      }
+    },
+    "transformation": {
+      "type": "object", "required": ["uniqueFeature", "mechanic", "mechanicType", "winCondition", "camera", "gestures", "targetEmotion", "avoidElements"], "additionalProperties": false,
+      "properties": {
+        "uniqueFeature": { "type": "string", "description": "Araştırmadan çıkan en özgün özellik" },
+        "mechanic": { "type": "string", "description": "Bu özelliğin oynanabilir karşılığı" },
+        "mechanicType": { "enum": ["light-tracking", "timeline-ordering", "object-collection", "frequency-matching", "illumination-reveal"] },
+        "winCondition": { "type": "string" },
+        "camera": {
+          "type": "object", "required": ["preset", "notes"], "additionalProperties": false,
+          "properties": {
+            "preset": { "enum": ["cinematic-path", "locked-orbit", "first-person-walkthrough", "static-wide-pan", "third-person-tracking", "underwater-drift"] },
+            "notes": { "type": "string" }
+          }
+        },
+        "gestures": { "type": "array", "items": { "enum": ["tap", "double-tap", "hold", "swipe", "pinch", "joystick", "drag"] }, "minItems": 1 },
+        "targetEmotion": { "type": "string" },
+        "avoidElements": { "type": "array", "items": { "type": "string" }, "contains": { "const": "şiddet" } }
+      }
+    },
+    "budget": {
+      "type": "object", "required": ["maxAssetMB", "targetFps"], "additionalProperties": false,
+      "properties": { "maxAssetMB": { "type": "number", "maximum": 8 }, "targetFps": { "type": "number", "minimum": 45 }, "assetMB": { "type": "number" } }
+    },
+    "atmosphere": {
+      "type": "object", "required": ["light", "ambient"], "additionalProperties": false,
+      "properties": { "light": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" }, "ambient": { "enum": ["courtyard-water", "dome-hum", "garden-birds", "cistern-drips"] } }
+    },
+    "fallback": {
+      "type": "object", "required": ["wikiTitle", "narration"], "additionalProperties": false,
+      "description": "WebGL yoksa: Vikipedi'den çalışma anında çekilen fotoğraf + tarayıcının Türkçe sesli okuması",
+      "properties": { "wikiTitle": { "type": "string" }, "narration": { "type": "string" } }
+    },
+    "sources": {
+      "type": "array", "minItems": 3,
+      "items": {
+        "type": "object", "required": ["title", "url", "type"], "additionalProperties": false,
+        "properties": { "title": { "type": "string" }, "url": { "type": "string", "pattern": "^https://" }, "type": { "type": "string" } }
+      }
+    }
+  }
+}

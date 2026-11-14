@@ -1,0 +1,97 @@
+{
+  "id": "sultanahmet-camii",
+  "unescoId": "356bis",
+  "name": "Sultanahmet Camii",
+  "kind": "cami",
+  "district": "Fatih",
+  "coordinates": [
+    28.9768,
+    41.0054
+  ],
+  "status": "playable",
+  "unesco": {
+    "property": "Historic Areas of Istanbul (İstanbul Tarihi Alanları)",
+    "inscribed": 1985,
+    "component": "Sultanahmet Urban Archaeological Component Area"
+  },
+  "summary": "Sultan I. Ahmed’in yaptırdığı, Mimar Sinan’ın öğrencisi Sedefkâr Mehmed Ağa’nın eseri olan cami. İç mekânını kaplayan mavi tonlu İznik çinileri nedeniyle dünyada “Mavi Cami” olarak bilinir.",
+  "research": {
+    "constructionPeriod": "1609–1617",
+    "architect": "Sedefkâr Mehmed Ağa",
+    "patron": "Sultan I. Ahmed",
+    "uniqueFeatures": [
+      "6 minare",
+      "20.000’i aşkın İznik çinisi (bir kaynak 21.043 adet verir)",
+      "50’yi aşkın farklı lale deseni",
+      "Klasik dönem İznik çinisinin kullanıldığı son büyük yapılardan biri"
+    ],
+    "restorationHistory": [
+      "2017/2018–2023: Vakıflar Genel Müdürlüğü kapsamlı koruma ve restorasyon projesi (başlangıç tarihi kaynaklara göre 2017 ya da 2018)",
+      "Nisan 2023: Ramazan Bayramı’nın ilk günü yeniden ibadete açıldı"
+    ],
+    "unverified": [
+      "Pencere sayısı (sıkça 260 denir)",
+      "Ana kubbe çapı ve yüksekliği"
+    ]
+  },
+  "transformation": {
+    "uniqueFeature": "Çini pencerelerden süzülen ışığın gün boyu yer değiştirmesi",
+    "mechanic": "Işık huzmelerini takip et: güneşin hareketiyle kayan ışık havuzunun içinde dur, ışığın düştüğü duvardaki gizli çini desenini aç",
+    "mechanicType": "light-tracking",
+    "winCondition": "Altı çini motifinin (lale, karanfil, sümbül, servi, hatayi, rumi) hepsini aç",
+    "camera": {
+      "preset": "third-person-tracking",
+      "notes": "Açılışta avludan harime sinematik yol; ardından karakteri sabit açıdan izleyen, bakışı hedef ışık havuzuna kayan kamera. Oyuncu kamerayı döndüremez."
+    },
+    "gestures": [
+      "joystick",
+      "tap"
+    ],
+    "targetEmotion": "Maneviyat ve huzur",
+    "avoidElements": [
+      "savaş",
+      "rekabet",
+      "şiddet"
+    ]
+  },
+  "budget": {
+    "maxAssetMB": 8,
+    "targetFps": 45,
+    "assetMB": 0
+  },
+  "atmosphere": {
+    "light": "#ffe7c2",
+    "ambient": "courtyard-water"
+  },
+  "fallback": {
+    "wikiTitle": "Sultanahmet Camii",
+    "narration": "Sultanahmet Camii, Sultan Birinci Ahmed için Sedefkâr Mehmed Ağa tarafından 1609 ile 1617 yılları arasında yapıldı. İç mekânını kaplayan yirmi binden fazla İznik çinisi nedeniyle dünyada Mavi Cami olarak bilinir."
+  },
+  "sources": [
+    {
+      "title": "UNESCO World Heritage Centre — Historic Areas of Istanbul",
+      "url": "https://whc.unesco.org/en/list/356",
+      "type": "resmî"
+    },
+    {
+      "title": "Ozge Yildiz, doktora tezi (Harvard University, 2024) — Sultan Ahmed Camii iç mekân bezemesi",
+      "url": "https://dash.harvard.edu/entities/publication/5b0988ad-8804-4571-b3eb-f4cbc2bc7330",
+      "type": "akademik"
+    },
+    {
+      "title": "Hürriyet Daily News — Iconic Blue Mosque goes through extensive restoration",
+      "url": "https://hurriyetdailynews.com/iconic-blue-mosque-goes-through-extensive-restoration-143563",
+      "type": "restorasyon haberi"
+    },
+    {
+      "title": "TRT Haber — Sultanahmet Camii yüzyıllardır ihtişamını koruyor",
+      "url": "https://www.trthaber.com/haber/turkiye/sultanahmet-camii-yuzyillardir-ihtisamini-koruyor-909897.html",
+      "type": "haber"
+    },
+    {
+      "title": "Türkiye Gazetesi — 2018’den beri restorasyondaydı: Sultanahmet Camii ibadete açılacak",
+      "url": "https://www.turkiyegazetesi.com.tr/yasam/2018den-beri-restorasyondaydi-sultanahmet-camii-ramazan-bayraminin-ilk-gunu-ibadete-acilacak-960151",
+      "type": "haber"
+    }
+  ]
+}

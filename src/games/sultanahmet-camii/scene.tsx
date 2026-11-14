@@ -1,38 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+/**
+ * Sultanahmet — sahne (R3F). Yapı geometrisi prosedüreldir; dosya varlığı yoktur (bkz. assets/).
+ * Işık huzmeleri ve havuzlar tek bir InstancedMesh'tir: saat değiştikçe yalnızca matrisler güncellenir,
+ * huzme sayısı ne olursa olsun 2 çizim çağrısı.
+ */
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
-import { CameraControls } from '@react-three/drei';
-import CameraControlsImpl from 'camera-controls';
-import { walkInput } from '../../monuments/walkInput';
-import { useJournal } from '../store';
-import { TIER, type Tier } from '../quality';
-import { ambience } from './audio';
-import { motifTexture, wallTileTexture } from './motifs';
-import {
-  COURT, DOME, DOOR, HALL, MIHRAB_X, MIHRAB_ZONE, WALK, arcadeColumns, insideHall, isLit, minarets, panels, phaseOf,
-  shafts, sunVector, underDome, walkColliders, windows, type MotifId, type Panel, type V3,
-} from './layout';
-
-const SITE = 'sultanahmet-camii';
-export type Mode = 'orbit' | 'walk';
-export interface SceneProps {
-  tier: Tier;
-  hour: number;
-  mode: Mode;
-  /** Pano seçildiğinde (dokunma): ışık alıyorsa keşfedilir */
-  onPanel: (m: MotifId, lit: boolean) => void;
-  /** Çift dokunma ile yakınlaşılan pano */
-  zoomPanel: MotifId | null;
-  setZoomPanel: (m: MotifId | null) => void;
-  /** Bölge değişince (ses karışımı ve arayüz için) */
-  onZone: (z: 'outside' | 'court' | 'hall') => void;
-}
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import type { Tier } from '../core/device';
+import { motifTexture, wallTileTexture } from './assets/motifs';
+import { COURT, DOME, DOOR, HALL, MIHRAB_X, arcadeColumns, minarets, sunVector, windows, shafts, type MotifId, type V3 } from './layout';
+import { POOL_R, STAGES } from './mechanics';
 
 /* ---------- ortak geometriler ve malzemeler ---------- */
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const HEMI = (seg: number) => new THREE.SphereGeometry(1, seg, Math.max(6, seg / 2), 0, Math.PI * 2, 0, Math.PI / 2);
 const _o = new THREE.Object3D();
-function Instances({ geo = BOX, mat, items, cast = false }: { geo?: THREE.BufferGeometry; mat: THREE.Material; items: { pos: V3; scale?: V3; rot?: V3 }[]; cast?: boolean }) {
+export function Instances({ geo = BOX, mat, items, cast = false }: { geo?: THREE.BufferGeometry; mat: THREE.Material; items: { pos: V3; scale?: V3; rot?: V3 }[]; cast?: boolean }) {
   const mesh = useMemo(() => {
     const m = new THREE.InstancedMesh(geo, mat, items.length);
     items.forEach((it, i) => { _o.position.set(...it.pos); _o.rotation.set(...(it.rot ?? [0, 0, 0])); _o.scale.set(...(it.scale ?? [1, 1, 1])); _o.updateMatrix(); m.setMatrixAt(i, _o.matrix); });
@@ -62,7 +45,7 @@ function domeTexture() {
   _dome = new THREE.CanvasTexture(c); _dome.colorSpace = THREE.SRGBColorSpace; return _dome;
 }
 
-function useMats() {
+export function useMats() {
   return useMemo(() => {
     const tile = wallTileTexture().clone(); tile.needsUpdate = true; tile.repeat.set(24, 3);
     return {
@@ -111,7 +94,7 @@ function Minaret({ pos, h, balconies, m, seg }: { pos: V3; h: number; balconies:
   );
 }
 
-function Exterior({ m, tier }: { m: Mats; tier: Tier }) {
+export function Exterior({ m, tier }: { m: Mats; tier: Tier }) {
   const seg = tier === 'low' ? 12 : tier === 'medium' ? 20 : 32;
   const hemi = useMemo(() => HEMI(seg), [seg]);
   const hx = HALL.len / 2, hz = HALL.wid / 2, H = HALL.wallH, t = HALL.wall, d2 = DOOR.w / 2;
@@ -178,80 +161,64 @@ function Exterior({ m, tier }: { m: Mats; tier: Tier }) {
   );
 }
 
+
 /* =========================================================
-   İÇ MEKÂN: fil ayakları, halı, çini kuşak, mihrap, minber, kandiller, panolar
+   İÇ MEKÂN: fil ayakları, halı, çini kuşak, kubbe içi, mihrap, minber, kandiller, gizli desen panoları
    ========================================================= */
-function Interior({ m, tier, hour, onPanel, setZoomPanel }: { m: Mats; tier: Tier; hour: number; onPanel: SceneProps['onPanel']; setZoomPanel: SceneProps['setZoomPanel'] }) {
+export function Interior({ m, tier, revealed, current }: { m: Mats; tier: Tier; revealed: MotifId[]; current: MotifId | null }) {
   const hx = HALL.len / 2 - HALL.wall, hz = HALL.wid / 2 - HALL.wall, seg = tier === 'low' ? 16 : 32;
   const hemi = useMemo(() => HEMI(seg), [seg]);
-  const finds = useJournal((s) => s.finds[SITE] ?? []);
-  const ps = useMemo(() => panels(), []);
   const lamps = useMemo(() => { const out: { pos: V3; scale: V3 }[] = []; for (let i = 0; i < 48; i++) { const a = (i / 48) * Math.PI * 2; out.push({ pos: [Math.cos(a) * 13, 4.6, Math.sin(a) * 13], scale: [0.22, 0.22, 0.22] }); } return out; }, []);
   return (
     <group>
       <Block p={[0, 0.03, 0]} s={[hx * 2, 0.06, hz * 2]} m={m.carpet} />
-      {/* fil ayakları: dört kalın yivli paye */}
       {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => (
         <mesh key={`${sx}${sz}`} material={m.stoneWarm} position={[sx * DOME.piers, HALL.wallH / 2, sz * DOME.piers]} castShadow receiveShadow>
           <cylinderGeometry args={[DOME.pierR, DOME.pierR + 0.2, HALL.wallH, 16]} />
         </mesh>
       )))}
-      {/* çini kuşağı (duvarların alt kısmı) */}
       {([[0, -hz + 0.06, HALL.len - 4, 0], [0, hz - 0.06, HALL.len - 4, Math.PI], [hx - 0.06, 0, HALL.wid - 4, -Math.PI / 2], [-hx + 0.06, 0, HALL.wid - 4, Math.PI / 2]] as const).map(([x, z, w, r], i) => (
         <mesh key={i} material={m.wallTile} position={[x, 4.2, z]} rotation={[0, r, 0]}><planeGeometry args={[w, 5.6]} /></mesh>
       ))}
-      {/* üst duvarlar ve kubbe içi */}
       <mesh geometry={hemi} material={m.domeIn} position={[0, DOME.drumY + 0.8, 0]} scale={[DOME.r, DOME.r * 0.95, DOME.r]} />
-      <Instances geo={hemi} mat={m.domeIn} items={[-1, 1].flatMap((sx) => [-1, 1].map((sz) => ({ pos: [sx * 17.5, HALL.wallH - 0.2, sz * 17.5] as V3, scale: [5.6, 4.6, 5.6] as V3 })))} />
-      {/* mihrap ve minber */}
       <Block p={[hx - 0.2, 4, 0]} s={[0.4, 8, 4]} m={m.marble} />
       <Block p={[hx - 0.25, 3.6, 0]} s={[0.3, 6, 2.6]} m={m.gold} />
       <group position={[MIHRAB_X - 1.5, 0, 6.2]}>
         <Block p={[0, 2.5, 0]} s={[3, 5, 2]} m={m.marble} cast />
         <mesh material={m.gold} position={[0, 7, 0]}><coneGeometry args={[0.9, 3, 8]} /></mesh>
       </group>
-      {/* kandil halkası: alçak asılı kandiller */}
       <mesh material={m.bronze} position={[0, 4.75, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[13, 0.08, 6, 64]} /></mesh>
       <Instances geo={hemi} mat={m.lamp} items={lamps} />
-      {/* çini panoları: ışık alanlar parlar; dokun = keşfet, çift dokun = yakınlaş */}
-      {ps.map((p) => <TilePanel key={p.motif} p={p} found={finds.includes(`motif:${p.motif}`)} lit={isLit(p, hour)} onPanel={onPanel} setZoom={setZoomPanel} />)}
+      {STAGES.map((s) => <HiddenPanel key={s.motif} motif={s.motif} pos={s.panel.pos} n={s.panel.wall.n} along={s.panel.wall.along} open={revealed.includes(s.motif)} active={current === s.motif} />)}
       <pointLight position={[0, 10, 0]} color="#ffdcae" intensity={tier === 'low' ? 320 : 420} distance={60} decay={2} />
     </group>
   );
 }
 
 const FRAME = new THREE.MeshStandardMaterial({ color: '#1d4e9e' });
-function TilePanel({ p, found, lit, onPanel, setZoom }: { p: Panel; found: boolean; lit: boolean; onPanel: SceneProps['onPanel']; setZoom: SceneProps['setZoomPanel'] }) {
-  const mat = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.3 }), []);
-  const glow = useRef<THREE.Mesh>(null!);
-  // ışık motifi ortaya çıkarır: aydınlanan ya da keşfedilmiş pano tam renkli, diğerleri silik
-  useEffect(() => { mat.map = motifTexture(p.motif, found || lit); mat.needsUpdate = true; }, [mat, p.motif, found, lit]);
+/** Gizli desen panosu: açılana kadar boş kalır (yalnızca silik çerçeve); açılınca motif belirir ve kısa süre parlar */
+function HiddenPanel({ motif, pos, n, along, open, active }: { motif: MotifId; pos: V3; n: [number, number]; along: 'x' | 'z'; open: boolean; active: boolean }) {
+  const mat = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.3, transparent: true }), []);
+  const born = useRef<number | null>(null);
+  useEffect(() => { mat.map = motifTexture(motif, open); mat.needsUpdate = true; if (open) born.current = null; }, [mat, motif, open]);
   useFrame(({ clock }) => {
-    const target = lit ? 0.12 + Math.sin(clock.elapsedTime * 2.2) * 0.05 : 0;
-    mat.emissive.set('#ffe2a6'); mat.emissiveIntensity += (target - mat.emissiveIntensity) * 0.12;
-    (glow.current.material as THREE.MeshBasicMaterial).opacity = mat.emissiveIntensity * 4;
+    if (open && born.current === null) born.current = clock.elapsedTime;
+    const since = born.current === null ? 99 : clock.elapsedTime - born.current;
+    mat.emissive.set('#ffe2a6');
+    mat.emissiveIntensity = open ? Math.max(0, 0.6 - since * 0.25) : active ? 0.06 + Math.sin(clock.elapsedTime * 2) * 0.04 : 0;
+    mat.opacity = open ? 1 : active ? 0.75 : 0.45;
   });
-  const rotY = p.wall.along === 'z' ? (p.wall.n[0] > 0 ? -Math.PI / 2 : Math.PI / 2) : p.wall.n[1] > 0 ? Math.PI : 0;
-  const click = (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); if (e.delta < 8) onPanel(p.motif, lit); };
+  const rotY = along === 'z' ? (n[0] > 0 ? -Math.PI / 2 : Math.PI / 2) : n[1] > 0 ? Math.PI : 0;
   return (
-    <group position={p.pos} rotation={[0, rotY, 0]}>
-      <mesh material={mat} onClick={click} onDoubleClick={(e) => { e.stopPropagation(); setZoom(p.motif); }}
-        onPointerOver={() => (document.body.style.cursor = 'pointer')} onPointerOut={() => (document.body.style.cursor = '')}>
-        <planeGeometry args={[3.2, 3.2]} />
-      </mesh>
-      {/* hale panonun arkasında: motifi örtmeden kenarlardan parlar */}
-      <mesh ref={glow} position={[0, 0, -0.05]}>
-        <planeGeometry args={[4.4, 4.4]} />
-        <meshBasicMaterial color="#ffd98a" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
-      {/* çerçeve */}
+    <group position={pos} rotation={[0, rotY, 0]}>
+      <mesh material={mat}><planeGeometry args={[3.2, 3.2]} /></mesh>
       <mesh material={FRAME} position={[0, 0, -0.03]}><planeGeometry args={[3.6, 3.6]} /></mesh>
     </group>
   );
 }
 
 /* =========================================================
-   IŞIK HUZMELERİ — güneşin saatine göre pencerelerden içeri
+   IŞIK HUZMELERİ (InstancedMesh) ve HAVUZLAR
    ========================================================= */
 let _fade: THREE.CanvasTexture | null = null;
 const fadeTex = () => {
@@ -260,45 +227,114 @@ const fadeTex = () => {
   gr.addColorStop(0, 'rgba(255,255,255,.95)'); gr.addColorStop(0.75, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
   g.fillStyle = gr; g.fillRect(0, 0, 4, 64); return (_fade = new THREE.CanvasTexture(c));
 };
-function Shafts({ hour, particles }: { hour: number; particles: boolean }) {
-  const list = useMemo(() => shafts(hour), [hour]);
-  const mat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#fff1cf', alphaMap: fadeTex(), transparent: true, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }), []);
-  const pool = useMemo(() => new THREE.MeshBasicMaterial({ color: '#ffe7b3', transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending }), []);
-  const items = useMemo(() => list.map(({ from, to }) => {
-    const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to), len = a.distanceTo(b), mid = a.clone().add(b).multiplyScalar(0.5);
-    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), a.clone().sub(b).normalize());
-    return { mid, len, q, to: b };
-  }), [list]);
-  const dust = useMemo(() => {
-    if (!particles || !items.length) return null;
-    const n = 400, arr = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { const s = items[i % items.length], t = Math.random(), off = () => (Math.random() - 0.5) * 1.6;
-      const p = s.mid.clone().add(new THREE.Vector3(0, 1, 0).applyQuaternion(s.q).multiplyScalar((t - 0.5) * s.len)); arr.set([p.x + off(), p.y + off(), p.z + off()], i * 3); }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(arr, 3)); return g;
-  }, [items, particles]);
-  const dustRef = useRef<THREE.Points>(null);
-  useFrame(({ clock }) => { if (dustRef.current) dustRef.current.position.y = Math.sin(clock.elapsedTime * 0.4) * 0.3; });
+const MAX_SHAFTS = 32;
+const UP = new THREE.Vector3(0, 1, 0), _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _a = new THREE.Vector3(), _b = new THREE.Vector3();
+export function LightShafts({ hour, target, particles }: { hour: number; target: React.MutableRefObject<THREE.Vector3 | null>; particles: boolean }) {
+  const beams = useMemo(() => {
+    const g = new THREE.CylinderGeometry(0.7, 0.95, 1, 8, 1, true);
+    const mat = new THREE.MeshBasicMaterial({ color: '#fff1cf', alphaMap: fadeTex(), transparent: true, opacity: 0.1, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+    const m = new THREE.InstancedMesh(g, mat, MAX_SHAFTS); m.frustumCulled = false; return m;
+  }, []);
+  const pools = useMemo(() => {
+    const g = new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2);
+    const mat = new THREE.MeshBasicMaterial({ color: '#ffe7b3', transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending });
+    const m = new THREE.InstancedMesh(g, mat, MAX_SHAFTS); m.frustumCulled = false; return m;
+  }, []);
+  useEffect(() => {
+    const list = shafts(hour).slice(0, MAX_SHAFTS);
+    let np = 0;
+    list.forEach((s, i) => {
+      _a.set(...s.from); _b.set(...s.to);
+      _p.copy(_a).add(_b).multiplyScalar(0.5); _q.setFromUnitVectors(UP, _s.copy(_a).sub(_b).normalize()); _s.set(1, _a.distanceTo(_b), 1);
+      beams.setMatrixAt(i, _m.compose(_p, _q, _s));
+      if (s.to[1] < 0.5) pools.setMatrixAt(np++, _m.compose(_p.set(s.to[0], 0.09, s.to[2]), _q.identity(), _s.set(1.6, 1, 1.6)));
+    });
+    beams.count = list.length; pools.count = np;
+    beams.instanceMatrix.needsUpdate = true; pools.instanceMatrix.needsUpdate = true;
+  }, [hour, beams, pools]);
+  useEffect(() => () => { beams.geometry.dispose(); pools.geometry.dispose(); }, [beams, pools]);
   return (
     <group>
-      {items.map((s, i) => (
-        <group key={i}>
-          <mesh material={mat} position={s.mid} quaternion={s.q}><cylinderGeometry args={[0.7, 0.95, s.len, 8, 1, true]} /></mesh>
-          {s.to.y < 0.5 && <mesh material={pool} position={[s.to.x, 0.09, s.to.z]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[1.6, 16]} /></mesh>}
-        </group>
-      ))}
-      {dust && <points ref={dustRef} geometry={dust}><pointsMaterial color="#fff4d6" size={0.08} transparent opacity={0.7} depthWrite={false} /></points>}
+      <primitive object={beams} />
+      <primitive object={pools} />
+      <TargetPool target={target} />
+      {particles && <Motes target={target} />}
     </group>
   );
 }
 
+/** Hedef havuz: oyuncunun takip etmesi gereken ışık (nefes alan altın halka) */
+function TargetPool({ target }: { target: React.MutableRefObject<THREE.Vector3 | null> }) {
+  const g = useRef<THREE.Group>(null!), ring = useRef<THREE.Mesh>(null!);
+  useFrame(({ clock }) => {
+    const t = target.current; g.current.visible = !!t; if (!t) return;
+    g.current.position.lerp(_p.set(t.x, 0.1, t.z), 0.2);
+    const s = 1 + Math.sin(clock.elapsedTime * 2.4) * 0.06; ring.current.scale.set(s, s, s);
+  });
+  return (
+    <group ref={g}>
+      <mesh ref={ring} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[POOL_R - 0.25, POOL_R, 48]} /><meshBasicMaterial color="#ffd36b" transparent opacity={0.95} depthWrite={false} toneMapped={false} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}><circleGeometry args={[POOL_R, 32]} /><meshBasicMaterial color="#fff0c8" transparent opacity={0.28} depthWrite={false} blending={THREE.AdditiveBlending} /></mesh>
+    </group>
+  );
+}
+/** Hedef huzmenin içinde süzülen toz (yalnızca orta/yüksek kademede) */
+function Motes({ target }: { target: React.MutableRefObject<THREE.Vector3 | null> }) {
+  const ref = useRef<THREE.Points>(null!);
+  const geo = useMemo(() => { const a = new Float32Array(160 * 3); for (let i = 0; i < 160; i++) a.set([(Math.random() - 0.5) * 3, Math.random() * 7, (Math.random() - 0.5) * 3], i * 3); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(a, 3)); return g; }, []);
+  useFrame(({ clock }) => { const t = target.current; ref.current.visible = !!t; if (t) ref.current.position.set(t.x, Math.sin(clock.elapsedTime * 0.5) * 0.3, t.z); ref.current.rotation.y = clock.elapsedTime * 0.05; });
+  return <points ref={ref} geometry={geo}><pointsMaterial color="#fff4d6" size={0.07} transparent opacity={0.8} depthWrite={false} /></points>;
+}
+
 /* =========================================================
-   ÇEVRE: Sultanahmet Meydanı yeşili, ağaçlar, gökyüzü ve güneş
+   KARAKTER: sade bir ziyaretçi figürü
    ========================================================= */
-function Surroundings({ m, hour, tier }: { m: Mats; hour: number; tier: Tier }) {
+export function Avatar({ pos, charge, target }: { pos: React.MutableRefObject<{ x: number; z: number }>; charge: React.MutableRefObject<number>; target: React.MutableRefObject<THREE.Vector3 | null> }) {
+  const g = useRef<THREE.Group>(null!), halo = useRef<THREE.Mesh>(null!), arrow = useRef<THREE.Group>(null!);
+  const arrowGeo = useMemo(() => { const sh = new THREE.Shape(); sh.moveTo(0, 1.9); sh.lineTo(0.55, 1.1); sh.lineTo(0.2, 1.1); sh.lineTo(0.2, 0.75); sh.lineTo(-0.2, 0.75); sh.lineTo(-0.2, 1.1); sh.lineTo(-0.55, 1.1); sh.closePath(); return new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2).rotateY(Math.PI); }, []);
+  const last = useRef({ x: 0, z: 0 });
+  useFrame((_, dt) => {
+    const p = pos.current, dx = p.x - last.current.x, dz = p.z - last.current.z;
+    g.current.position.set(p.x, 0, p.z);
+    if (Math.hypot(dx, dz) > 0.002) g.current.rotation.y = THREE.MathUtils.lerp(g.current.rotation.y, Math.atan2(dx, dz), 1 - Math.exp(-dt * 10));
+    last.current = { ...p };
+    const c = charge.current; (halo.current.material as THREE.MeshBasicMaterial).opacity = c * 0.7; halo.current.scale.setScalar(0.6 + c * 0.8);
+    // yön oku: havuz uzaktaysa karakterin ayağında hedefi gösterir
+    const t = target.current, d = t ? Math.hypot(t.x - p.x, t.z - p.z) : 0;
+    arrow.current.visible = !!t && d > POOL_R + 1.5;
+    if (t) { arrow.current.position.set(p.x, 0.1, p.z); arrow.current.rotation.y = Math.atan2(t.x - p.x, t.z - p.z); }
+  });
+  return (
+    <>
+    <group ref={arrow}><mesh geometry={arrowGeo}><meshBasicMaterial color="#ffd36b" transparent opacity={0.9} depthWrite={false} toneMapped={false} /></mesh></group>
+    <group ref={g}>
+      <mesh position={[0, 0.75, 0]} castShadow><cylinderGeometry args={[0.28, 0.42, 1.5, 12]} /><meshStandardMaterial color="#F04448" roughness={0.8} /></mesh>
+      <mesh position={[0, 1.72, 0]} castShadow><sphereGeometry args={[0.24, 16, 12]} /><meshStandardMaterial color="#e9c39b" roughness={0.9} /></mesh>
+      <mesh position={[0, 1.78, -0.05]}><sphereGeometry args={[0.26, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color="#f4f1ea" roughness={0.9} /></mesh>
+      <mesh ref={halo} position={[0, 0.06, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.6, 0.9, 32]} /><meshBasicMaterial color="#ffd27a" transparent opacity={0} depthWrite={false} /></mesh>
+    </group>
+    </>
+  );
+}
+
+/** Dokunarak hedef seçme: harim zemininde bir noktaya dokunmak karakteri oraya yürütür */
+export function FloorPicker({ onPick }: { onPick: (x: number, z: number) => void }) {
+  const hx = HALL.len / 2 - HALL.wall, hz = HALL.wid / 2 - HALL.wall;
+  return (
+    <mesh position={[0, 0.07, 0]} rotation={[-Math.PI / 2, 0, 0]} onClick={(e: ThreeEvent<MouseEvent>) => { if (e.delta < 8) onPick(e.point.x, e.point.z); }}>
+      <planeGeometry args={[hx * 2, hz * 2]} /><meshBasicMaterial visible={false} />
+    </mesh>
+  );
+}
+
+/* =========================================================
+   ÇEVRE
+   ========================================================= */
+export function Surroundings({ m, hour, tier, fog, shadows }: { m: Mats; hour: number; tier: Tier; fog: boolean; shadows: boolean }) {
   const { scene } = useThree();
   const sun = sunVector(hour), el = Math.max(sun[1], 0);
   const sky = useMemo(() => new THREE.Color().setHSL(0.58, 0.45, 0.55 + el * 0.25).lerp(new THREE.Color('#f2b27a'), Math.max(0, 0.35 - el)), [el]);
-  useEffect(() => { scene.background = sky; scene.fog = TIER[tier].fog ? new THREE.Fog(sky, 140, 420) : null; }, [scene, sky, tier]);
+  useEffect(() => { scene.background = sky; scene.fog = fog ? new THREE.Fog(sky, 140, 420) : null; }, [scene, sky, fog]);
   const trees = useMemo(() => { const out: { pos: V3; scale: V3 }[] = []; let s = 7; const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
     while (out.length < (tier === 'low' ? 30 : 80)) { const x = -180 + r() * 300, z = -120 + r() * 240; if (Math.abs(z) < 40 && x > -110 && x < 40) continue; const h = 6 + r() * 6; out.push({ pos: [x, h / 2, z], scale: [h * 0.35, h * 0.5, h * 0.35] }); } return out; }, [tier]);
   const light = useRef<THREE.DirectionalLight>(null!);
@@ -313,112 +349,8 @@ function Surroundings({ m, hour, tier }: { m: Mats; hour: number; tier: Tier }) 
       <Instances geo={useMemo(() => new THREE.IcosahedronGeometry(1, 0), [])} mat={m.tree} items={trees} cast={tier !== 'low'} />
       <hemisphereLight args={['#e6eef8', '#a39272', 1.0 + el * 0.6]} />
       <directionalLight ref={light} position={[sun[0] * 200 - 20, Math.max(sun[1], 0.05) * 200, sun[2] * 200]} intensity={1.2 + el * 2.6}
-        color={el < 0.3 ? '#ffc58a' : '#fff4e2'} castShadow={TIER[tier].shadows} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0005} />
+        color={el < 0.3 ? '#ffc58a' : '#fff4e2'} castShadow={shadows} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0005} />
     </group>
   );
 }
 
-/* =========================================================
-   KAMERALAR
-   ========================================================= */
-const ACTION = CameraControlsImpl.ACTION;
-function OrbitCam({ active, zoomPanel }: { active: boolean; zoomPanel: MotifId | null }) {
-  const ref = useRef<CameraControlsImpl>(null!);
-  const portrait = useThree((s) => s.size.height > s.size.width);
-  useEffect(() => {
-    const c = ref.current;
-    c.touches.one = ACTION.TOUCH_ROTATE; c.touches.two = ACTION.TOUCH_DOLLY_TRUCK; c.mouseButtons.right = ACTION.TRUCK; c.dollyToCursor = true;
-    c.minDistance = 25; c.maxDistance = 320; c.maxPolarAngle = 1.45; c.smoothTime = 0.6;
-    c.setBoundary(new THREE.Box3(new THREE.Vector3(-140, 0, -90), new THREE.Vector3(60, 60, 90)));
-    // açılış: yükseklerden sinematik alçalma (haritadan gelen geçişin devamı)
-    c.setLookAt(-60, 260, 240, -20, 10, 0, false);
-    c.setLookAt(-150, 70 * (portrait ? 1.4 : 1), 105 * (portrait ? 1.4 : 1), -18, 14, 0, true);
-  }, [portrait]);
-  useEffect(() => { ref.current.enabled = active; }, [active]);
-  useEffect(() => { if (active && zoomPanel === null) ref.current.smoothTime = 0.6; }, [active, zoomPanel]);
-  return <CameraControls ref={ref} makeDefault={active} />;
-}
-
-const COLLIDERS = walkColliders();
-const blocked = (x: number, z: number) => {
-  const [bx0, bz0, bx1, bz1] = WALK.bound, r = WALK.radius;
-  if (x < bx0 || x > bx1 || z < bz0 || z > bz1) return true;
-  return COLLIDERS.some(([x0, z0, x1, z1]) => x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r);
-};
-function Walker({ onZone, zoomPanel }: { onZone: SceneProps['onZone']; zoomPanel: MotifId | null }) {
-  const { camera, gl } = useThree();
-  const st = useRef({ x: WALK.spawn.x, z: WALK.spawn.z, yaw: WALK.spawn.yaw, pitch: 0, bob: 0, zone: '' });
-  const keys = useRef<Record<string, boolean>>({});
-  const find = useJournal((s) => s.find);
-  const ps = useMemo(() => panels(), []);
-  useEffect(() => {
-    const cam = camera as THREE.PerspectiveCamera, prev = { fov: cam.fov, near: cam.near };
-    cam.fov = 66; cam.near = 0.2; cam.updateProjectionMatrix();
-    const el = gl.domElement; let drag: { id: number; x: number; y: number } | null = null;
-    const down = (e: PointerEvent) => { drag = { id: e.pointerId, x: e.clientX, y: e.clientY }; };
-    const move = (e: PointerEvent) => { if (!drag || e.pointerId !== drag.id) return; const k = e.pointerType === 'touch' ? 0.006 : 0.004;
-      st.current.yaw -= (e.clientX - drag.x) * k; st.current.pitch = THREE.MathUtils.clamp(st.current.pitch - (e.clientY - drag.y) * k, -1.2, 1.35); drag.x = e.clientX; drag.y = e.clientY; };
-    const up = () => { drag = null; };
-    const kd = (e: KeyboardEvent) => { keys.current[e.code] = true; }, ku = (e: KeyboardEvent) => { keys.current[e.code] = false; };
-    el.addEventListener('pointerdown', down); window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
-    window.addEventListener('keydown', kd); window.addEventListener('keyup', ku);
-    return () => { el.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
-      window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); cam.fov = prev.fov; cam.near = prev.near; cam.updateProjectionMatrix(); walkInput.x = walkInput.y = 0; };
-  }, [camera, gl]);
-  // çift dokunulan panoya yakınlaş: önüne yürüt ve ona çevir
-  useEffect(() => {
-    if (!zoomPanel) return; const p = ps.find((x) => x.motif === zoomPanel)!;
-    const s = st.current; s.x = p.pos[0] - p.wall.n[0] * 4.5; s.z = p.pos[2] - p.wall.n[1] * 4.5; s.yaw = Math.atan2(-(p.pos[0] - s.x), -(p.pos[2] - s.z)); s.pitch = 0.18;
-  }, [zoomPanel, ps]);
-  // otomatik testler için kanca (oyun mantığını değiştirmez)
-  useEffect(() => { (window as unknown as { __walker?: unknown }).__walker = st.current; }, []);
-  useFrame((_, raw) => {
-    const dt = Math.min(raw, 0.05), s = st.current, k = keys.current;
-    let f = -walkInput.y, r = walkInput.x;
-    if (k.KeyW || k.ArrowUp) f += 1; if (k.KeyS || k.ArrowDown) f -= 1; if (k.KeyD || k.ArrowRight) r += 1; if (k.KeyA || k.ArrowLeft) r -= 1;
-    const len = Math.hypot(f, r);
-    if (len > 0.05) {
-      if (len > 1) { f /= len; r /= len; }
-      // meditatif yürüyüş: yavaş tempo (Shift ile biraz hızlanır)
-      const sp = (k.ShiftLeft || k.ShiftRight ? 7 : 3.6) * dt;
-      const dx = (-Math.sin(s.yaw) * f + Math.cos(s.yaw) * r) * sp, dz = (-Math.cos(s.yaw) * f - Math.sin(s.yaw) * r) * sp;
-      if (!blocked(s.x + dx, s.z)) s.x += dx; if (!blocked(s.x, s.z + dz)) s.z += dz;
-      s.bob += dt * 6 * Math.min(len, 1);
-    }
-    camera.position.set(s.x, WALK.eye + Math.sin(s.bob) * 0.03, s.z);
-    camera.rotation.set(s.pitch, s.yaw, 0, 'YXZ');
-    const zone = insideHall(s.x, s.z) ? 'hall' : Math.abs(s.x - COURT.x) < COURT.len / 2 && Math.abs(s.z) < COURT.wid / 2 ? 'court' : 'outside';
-    if (zone !== s.zone) { s.zone = zone; onZone(zone); }
-    if (zone === 'hall') {
-      if (underDome(s.x, s.z) && s.pitch > 0.95) find(SITE, 'kubbe');
-      if (s.x > MIHRAB_ZONE.x && Math.abs(s.z) < MIHRAB_ZONE.r) find(SITE, 'mihrap');
-    }
-  });
-  return null;
-}
-
-/* =========================================================
-   SAHNE
-   ========================================================= */
-export default function SultanahmetScene(props: SceneProps) {
-  const { tier, hour, mode, onPanel, zoomPanel, setZoomPanel, onZone } = props;
-  const t = TIER[tier];
-  const m = useMats();
-  const find = useJournal((s) => s.find);
-  const walking = mode === 'walk';
-  // ışık dönemleri: cami içinde, ilgili saatte bulunulunca işlenir
-  const [inside, setInside] = useState(false);
-  useEffect(() => { const p = phaseOf(hour); if (p && walking && inside) find(SITE, `isik:${p}`); }, [hour, walking, inside, find]);
-  useEffect(() => () => Object.values(m).forEach((x) => x.dispose()), [m]);
-  return (
-    <Canvas shadows={t.shadows} dpr={t.dpr} gl={{ antialias: t.antialias, powerPreference: 'high-performance' }} camera={{ fov: 45, near: 0.5, far: 1200, position: [-60, 260, 240] }}>
-      <Surroundings m={m} hour={hour} tier={tier} />
-      <Exterior m={m} tier={tier} />
-      {/* iç mekân yalnızca yürürken ya da yakındayken çizilir (LOD: uzaktan görünmez, maliyeti yok) */}
-      {walking && <Interior m={m} tier={tier} hour={hour} onPanel={onPanel} setZoomPanel={setZoomPanel} />}
-      {walking && <Shafts hour={hour} particles={t.particles} />}
-      <OrbitCam active={!walking} zoomPanel={zoomPanel} />
-      {walking && <Walker zoomPanel={zoomPanel} onZone={(z) => { setInside(z === 'hall'); onZone(z); ambience.setZone(z); }} />}
-    </Canvas>
-  );
-}

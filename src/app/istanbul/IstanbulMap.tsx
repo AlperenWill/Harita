@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
-import { CameraControls, Html } from '@react-three/drei';
-import CameraControlsImpl from 'camera-controls';
+import { Html } from '@react-three/drei';
 import { feature } from 'topojson-client';
 import type { Feature, MultiPolygon, Polygon } from 'geojson';
 import { geoCentroid } from 'd3-geo';
-import { SITES } from './sites';
-import type { IstanbulSite } from './types';
-import { useJournal } from './store';
+import { GAMES } from '../../games/core/registry';
+import type { GameDefinition } from '../../games/core/types';
+import { useProgress } from '../../games/core/progress';
+import { profileFor, type Tier } from '../../games/core/device';
 import { outline, shapesOf, sideOf, toWorld } from './geo';
-import { TIER, type Tier } from './quality';
+import { SiteIcon } from './SiteIcon';
+
+type IstanbulSite = GameDefinition;
+const SITES = GAMES;
 
 type F = Feature<Polygon | MultiPolygon, { name: string }>;
 // Ortak palet: Anadolu haritasıyla aynı pastel ve sıcak tonlar; vurgu Miras kırmızısı
@@ -44,16 +47,8 @@ function District({ f, hovered, setHovered }: { f: F; hovered: string | null; se
   );
 }
 
-/* ---------------- İkonlar: cami = minare, saray = kubbe, müze = sütun ---------------- */
-export function SiteIcon({ kind, size = 18 }: { kind: IstanbulSite['kind']; size?: number }) {
-  const p = { width: size, height: size, viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': true } as const;
-  if (kind === 'cami') return <svg {...p}><path d="M11 2h2l.6 3H10.4zM10.5 6h3v2h-3zM10 9h4v1.5h-4zM10.5 11h3v11h-3z" /><path d="M3 22v-6a4 4 0 0 1 4-4 4 4 0 0 1 2.5.9V22zM21 22v-6a4 4 0 0 0-4-4 4 4 0 0 0-2.5.9V22z" opacity=".55" /></svg>;
-  if (kind === 'saray') return <svg {...p}><path d="M12 3a7 7 0 0 1 7 7H5a7 7 0 0 1 7-7zM11.5 1h1v2.2h-1zM4 11h16v2H4zM5 13.5h2.5V20H5zM10.75 13.5h2.5V20h-2.5zM16.5 13.5H19V20h-2.5zM3 20.5h18V22H3z" /></svg>;
-  return <svg {...p}><path d="M3 6l9-4 9 4v1.5H3zM4 8.5h16V10H4zM5.5 11H8v8H5.5zM10.75 11h2.5v8h-2.5zM16 11h2.5v8H16zM3 20h18v2H3z" /></svg>;
-}
-
 function Markers({ onPick, near }: { onPick: (s: IstanbulSite) => void; near: boolean }) {
-  const visited = useJournal((s) => s.visited);
+  const visited = useProgress((s) => s.visited);
   const [hover, setHover] = useState<string | null>(null);
   if (!near) return (
     <Html position={[YARIMADA.x, 2.2, YARIMADA.z]} center zIndexRange={[20, 0]}>
@@ -83,7 +78,7 @@ function Markers({ onPick, near }: { onPick: (s: IstanbulSite) => void; near: bo
                 <div className="pointer-events-none absolute bottom-full left-1/2 mb-1 w-56 -translate-x-1/2 rounded-xl bg-white p-3 text-left shadow-xl ring-1 ring-line">
                   <p className="text-sm font-bold text-ink">{s.name}</p>
                   <p className="mt-0.5 line-clamp-3 text-xs text-ink-muted">{s.summary}</p>
-                  <p className="mt-1.5 text-[11px] font-semibold text-brand">{s.status === 'playable' ? '3D deneyim hazır' : 'Araştırma dosyası'}</p>
+                  <p className="mt-1.5 text-[11px] font-semibold text-brand">{s.status === 'playable' ? `Oyun: ${s.transformation.mechanic}` : 'Araştırma dosyası'}</p>
                 </div>
               )}
             </div>
@@ -94,37 +89,41 @@ function Markers({ onPick, near }: { onPick: (s: IstanbulSite) => void; near: bo
   );
 }
 
-/* ---------------- Kamera ---------------- */
-const ACTION = CameraControlsImpl.ACTION;
+/* ---------------- Kamera: yalnızca hazır görünümler ----------------
+ * Harita bir giriş kapısıdır, keşif alanı değil: kullanıcı kamerayı döndüremez/yakınlaştıramaz.
+ * Üç önayar var (tüm İstanbul, Tarihi Yarımada, yapıya alçalış); geçişler yumuşak ve kesintisizdir. */
 export interface MapCamApi { flyTo: (s: IstanbulSite) => Promise<void>; toPeninsula: () => void; overview: () => void }
 function Cam({ apiRef, setNear, startNear }: { apiRef: React.MutableRefObject<MapCamApi | null>; setNear: (b: boolean) => void; startNear: boolean }) {
-  const ref = useRef<CameraControlsImpl>(null!);
+  const { camera } = useThree();
   const portrait = useThree((s) => s.size.height > s.size.width);
+  const want = useRef({ pos: new THREE.Vector3(), look: new THREE.Vector3() });
+  const look = useRef(new THREE.Vector3());
+  const arrive = useRef<(() => void) | null>(null);
   useEffect(() => {
-    const c = ref.current;
-    c.touches.one = ACTION.TOUCH_ROTATE; c.touches.two = ACTION.TOUCH_DOLLY_TRUCK;
-    c.mouseButtons.right = ACTION.TRUCK; c.dollyToCursor = true;
-    c.minDistance = 1.2; c.maxDistance = 150; c.maxPolarAngle = 1.25; c.smoothTime = 0.5;
-    c.setBoundary(new THREE.Box3(new THREE.Vector3(-60, 0, -40), new THREE.Vector3(60, 0, 40)));
     const k = portrait ? 1.6 : 1;
-    const overview = () => void c.setLookAt(4, 70 * k, 52 * k, 4, 0, 0, true);
-    const toPeninsula = () => void c.setLookAt(YARIMADA.x + 0.6, 2.4 * k, YARIMADA.z + 2.2 * k, YARIMADA.x, H, YARIMADA.z, true);
+    const set = (p: [number, number, number], l: [number, number, number]) => { want.current.pos.set(...p); want.current.look.set(...l); };
+    const overview = () => set([4, 70 * k, 52 * k], [4, 0, 0]);
+    const toPeninsula = () => set([YARIMADA.x + 0.6, 2.4 * k, YARIMADA.z + 2.2 * k], [YARIMADA.x, H, YARIMADA.z]);
     apiRef.current = {
       overview, toPeninsula,
-      // Sinematik yaklaşma: önce yarımadaya, sonra yapının hemen üstüne alçalarak
-      flyTo: async (s) => {
+      flyTo: (s) => new Promise<void>((res) => {
         const [x, z] = toWorld(s.coordinates[0], s.coordinates[1]);
-        c.smoothTime = 0.7; await c.setLookAt(x + 0.25, 0.9, z + 0.7, x, H, z, true); c.smoothTime = 0.5;
-      },
+        set([x + 0.25, 0.9, z + 0.7], [x, H, z]); arrive.current = res;
+        setTimeout(() => { arrive.current?.(); arrive.current = null; }, 1600);
+      }),
     };
-    if (startNear) { c.setLookAt(YARIMADA.x + 0.6, 2.4 * k, YARIMADA.z + 2.2 * k, YARIMADA.x, H, YARIMADA.z, false); } else c.setLookAt(4, 70 * k, 52 * k, 4, 0, 0, false);
-  }, [apiRef, portrait, startNear]);
+    if (startNear) toPeninsula(); else overview();
+    camera.position.copy(want.current.pos); look.current.copy(want.current.look); camera.lookAt(look.current);
+  }, [apiRef, portrait, startNear, camera]);
   const last = useRef<boolean | null>(null);
-  useFrame(({ camera }) => {
-    const near = camera.position.distanceTo(YARIMADA) < 14;
+  useFrame((_, dt) => {
+    const k = 1 - Math.exp(-Math.min(dt, 0.05) * 3);
+    camera.position.lerp(want.current.pos, k); look.current.lerp(want.current.look, k); camera.lookAt(look.current);
+    if (arrive.current && camera.position.distanceTo(want.current.pos) < 0.05) { arrive.current(); arrive.current = null; }
+    const near = want.current.pos.distanceTo(YARIMADA) < 14;
     if (near !== last.current) { last.current = near; setNear(near); }
   });
-  return <CameraControls ref={ref} makeDefault />;
+  return null;
 }
 
 /* ---------------- Sahne ---------------- */
@@ -132,7 +131,7 @@ export default function IstanbulMapScene({ tier, apiRef, onPick, startNear }: { 
   const [features, setFeatures] = useState<F[] | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const [near, setNear] = useState(startNear);
-  const t = TIER[tier];
+  const t = useMemo(() => profileFor(tier, false), [tier]);
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/istanbul.topo.json`).then((r) => r.json())
       .then((topo) => setFeatures((feature(topo, topo.objects.districts) as unknown as { features: F[] }).features));

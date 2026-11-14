@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { MotifId } from './layout';
+import type { MotifId } from '../layout';
 
 /**
  * Çini motifleri: tarihî bilgi + prosedürel çizim (doku dosyası yok).
