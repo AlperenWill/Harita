@@ -18,7 +18,7 @@ src/app/pages/YerebatanPage.tsx · tests/yerebatan.test.ts
 ## Neden bu birinci şahıs mekaniği
 - **Ölçek ve karanlık:** sarnıcın etkisi 9 metrelik 336 sütunun arasında, karanlıkta durmaktır. Bunu en iyi ziyaretçinin kendi gözü verir;
   dışarıdan bir kamera bu duyguyu kırar. Bu yüzden kamera her zaman gözdedir (platformun 1,62 m üstü), hiçbir modda gözden ayrılmaz.
-- **Yavaş, ağır adım; koşma yok:** en yüksek hız 1,1 m/sn; ivmelenme ve durma yumuşak (ağır adım hissi). Sarnıçta koşmak hem ruhuna aykırı
+- **Rahat yürüyüş; koşma yok:** en yüksek hız 2,0 m/sn (ilk sürümde 1,1 idi, çok yavaş bulundu); ivmelenme ve durma yumuşak. Sarnıçta koşmak hem ruhuna aykırı
   hem de ışığın ve sesin yavaşça açılmasını bozar.
 - **Bakış ±45°:** tavanı ve suyu görmeye yeter; daha fazlası gerçek bir boyun hareketi değil ve mobilde yönelimi kaybettirir.
 - **Platformda yürüme:** bugünkü sarnıçta olduğu gibi ziyaretçi sudan yükseltilmiş ahşap yollarda yürür. Yollar sütun aralıklarındadır;

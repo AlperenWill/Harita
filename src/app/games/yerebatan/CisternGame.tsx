@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ArrowLeft, Eye, Settings2, Volume2, VolumeX } from 'lucide-react';
 import { DECK_Y, EYE, MEDUSA_IDS, POIS, SIZE, START, lookingAt, type Poi } from './cistern';
-import { createFP, headBob, look, useLookInput, walk, type FPState, type LookInput } from './FirstPersonController';
+import { MAX_SPEED, createFP, headBob, look, useLookInput, walk, type FPState, type LookInput } from './FirstPersonController';
 import { CisternFog, ColumnLights, Columns, HensEyeColumn, Vaults, Walkways, Walls, Water, FOG, type Tier } from './CisternScene';
 import { AUTO_DIST, INSPECT_FOV, InfoPanel, Medusas, NORMAL_FOV, inspectPose } from './MedusaInteraction';
 import { cisternAudio } from './AudioManager';
@@ -198,7 +198,7 @@ function Player({ s, onTarget, onAutoInspect, card, onLeave }: { s: Shared; onTa
     const m = s.active.current && !insp ? s.move.current : { f: 0, r: 0 };
     const r = walk(fp.current, m.f, m.r, dt); fp.current = r.state;
     if (r.step) cisternAudio.footstep();
-    const speed01 = Math.min(1, Math.hypot(fp.current.vx, fp.current.vz) / 1.1), bob = headBob(fp.current, speed01);
+    const speed01 = Math.min(1, Math.hypot(fp.current.vx, fp.current.vz) / MAX_SPEED), bob = headBob(fp.current, speed01);
     // göz
     euler.set(fp.current.pitch, fp.current.yaw, 0);
     const eye = new THREE.Vector3(fp.current.x, DECK_Y + EYE + bob.y, fp.current.z);
