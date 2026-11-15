@@ -15,6 +15,7 @@ npm run data       # src/data → src/app/data/turkiye.json (şehirler + tarihi 
 |---|---|
 | `/` | Anasayfa: Miras. logosu, Haritayı Aç, Oyun Hakkında |
 | `/harita` | **Miras. Haritası** — 3D harita (aşağıdaki proje), sayfaya gömülü |
+| `/oyun/topkapi` | **Topkapı Sarayı: Harem’in Fısıltıları & Hazine’nin Sırrı** — raylı, nesne odaklı keşif; portal ayıklama: [src/app/games/topkapi/README.md](src/app/games/topkapi/README.md) |
 | `/oyun/ayasofya` | **Ayasofya: Işığın ve Taşın Dansı** — raylı kamera, dinamik güneş ve ışık huzmeleri, altın mozaik shader'ı: [src/app/games/ayasofya/README.md](src/app/games/ayasofya/README.md) |
 | `/oyun/yerebatan` | **Yerebatan Sarnıcı: Suyun Altındaki Işık** — birinci şahıs bağımsız 3D oyun: [src/app/games/yerebatan/README.md](src/app/games/yerebatan/README.md) |
 | `/oyun/kiz-kulesi` | **Kız Kulesi: Vapur Yolculuğu & Ada Keşfi** — NPC (Can) odaklı bağımsız 3D oyun: [src/app/games/kiz-kulesi/README.md](src/app/games/kiz-kulesi/README.md) |
