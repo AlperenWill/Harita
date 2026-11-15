@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import { AISLE_Z, APEX_Y, APSE, ARCH_Y, DOME_RISE, GALLERY_Y, MIHRAB, MINBAR, NARTHEX, NAVE_X, PEND_R, PIERS, R, RING_Y, columns, domeWindows, shafts, sunVector, tympanumWindows, type V3 } from './hagia';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PANELS, goldMosaic, lead, marble, panelTextures, plaster, wood } from './materials';
 
 export type Tier = 'low' | 'medium' | 'high';
@@ -30,9 +31,9 @@ const scaleUV = (g: THREE.BufferGeometry, sx: number, sy: number) => { const u =
 export function Shell({ tier, detail }: { tier: Tier; detail: boolean }) {
   const seg = SEG[tier];
   const M = useMemo(() => ({
-    domeGold: goldMosaic({ tess: [640, 150], side: THREE.BackSide, detail, lod: [8, 34] }),
+    domeGold: goldMosaic({ tess: [640, 150], side: THREE.BackSide, detail, lod: [8, 34], pattern: 1 }),
     pendGold: goldMosaic({ tess: [220, 220], side: THREE.DoubleSide, detail, lod: [8, 34], color: '#cf9a36' }),
-    semiGold: goldMosaic({ tess: [320, 160], side: THREE.BackSide, detail, lod: [8, 34], color: '#c9953a' }),
+    semiGold: goldMosaic({ tess: [320, 160], side: THREE.BackSide, detail, lod: [8, 34], color: '#c9953a', pattern: 2 }),
     floor: marble('floor', [10, 8], 0.16), pier: marble('white', [2, 6], 0.28), revet: marble('white', [8, 3], 0.3),
     plaster: plaster('#a8977a'), plasterDark: plaster('#6a5a47'), ochre: plaster('#9c8663'),
   }), [detail]);
@@ -84,7 +85,7 @@ export function Shell({ tier, detail }: { tier: Tier; detail: boolean }) {
         </group>
       ))}
       {/* narteks: karanlık, alçak tavanlı giriş */}
-      <mesh position={[(NARTHEX.x0 + NARTHEX.x1) / 2, NARTHEX.h / 2, 0]}><boxGeometry args={[NARTHEX.x1 - NARTHEX.x0, NARTHEX.h, 56]} /><primitive object={useMemo(() => { const m = plaster('#6e5a42'); m.side = THREE.BackSide; const none = new THREE.MeshBasicMaterial({ visible: false }); return [none, m, m, m, m, m]; }, [])} attach="material" /></mesh>
+      <mesh position={[(NARTHEX.x0 + NARTHEX.x1) / 2, NARTHEX.h / 2, 0]}><boxGeometry args={[NARTHEX.x1 - NARTHEX.x0, NARTHEX.h, 56]} /><primitive object={useMemo(() => { const m = plaster('#6e5a42'); m.side = THREE.BackSide; const none = new THREE.MeshBasicMaterial({ visible: false }); return [none, none, m, m, m, m]; }, [])} attach="material" /></mesh>
       {[-1, 1].map((s) => <mesh key={s} material={M.plasterDark} position={[-32, NARTHEX.h / 2, s * 15.1]}><boxGeometry args={[2.1, NARTHEX.h, 26.2]} /></mesh>)}
       <mesh material={M.plasterDark} position={[-32, 8.35, 0]}><boxGeometry args={[2.1, 2.3, 4]} /></mesh>
     </group>
@@ -229,14 +230,25 @@ export function Furnishings({ tier }: { tier: Tier }) {
   // ölçek figürleri: 1,70 m boyunda ziyaretçiler (tek InstancedMesh)
   const people = useMemo(() => {
     const spots: [number, number][] = [[-22, 3], [-12, -4], [-6, 5], [2, -7], [5, 2.5], [11, -3], [16, 6], [21, -2], [24, 5], [-2, 10], [8, -10], [-15, 9], [0, -1.5], [18, -8]];
-    const g = new THREE.CapsuleGeometry(0.2, 1.05, 3, 8).translate(0, 0.72, 0), m = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({ roughness: 0.9 }), spots.length * 2);
-    const head = new THREE.Matrix4(), tones = ['#3a4a63', '#6b3f3a', '#4d5a44', '#2f2f36', '#7a6a55', '#5a4a6e'];
-    spots.forEach(([x, z], i) => {
-      m.setMatrixAt(i * 2, new THREE.Matrix4().makeTranslation(x, 0, z)); m.setColorAt(i * 2, new THREE.Color(tones[i % tones.length]));
-      m.setMatrixAt(i * 2 + 1, head.compose(new THREE.Vector3(x, 1.38, z), new THREE.Quaternion(), new THREE.Vector3(0.62, 0.2, 0.62))); m.setColorAt(i * 2 + 1, new THREE.Color('#d9b594'));
-    });
-    m.castShadow = true; return m;
+    // gövde (bacaklar, gövde, kollar) tek birleşik geometri; ten (baş, eller) ayrı — 2 InstancedMesh, kişi başı ~330 üçgen
+    const leg = (s: number) => new THREE.CapsuleGeometry(0.075, 0.68, 2, 6).translate(s * 0.1, 0.42, 0), arm = (s: number) => new THREE.CapsuleGeometry(0.055, 0.5, 2, 6).rotateZ(s * 0.12).translate(s * 0.26, 1.12, 0);
+    const body = mergeGeometries([leg(-1), leg(1), new THREE.CapsuleGeometry(0.17, 0.42, 3, 8).scale(1, 1, 0.7).translate(0, 1.15, 0), arm(-1), arm(1)])!;
+    const hand = (s: number) => new THREE.SphereGeometry(0.05, 6, 4).translate(s * 0.3, 0.82, 0);
+    const skin = mergeGeometries([new THREE.SphereGeometry(0.115, 10, 8).translate(0, 1.58, 0), new THREE.CylinderGeometry(0.045, 0.05, 0.1, 6).translate(0, 1.45, 0), hand(-1), hand(1)])!;
+    const b = new THREE.InstancedMesh(body, new THREE.MeshStandardMaterial({ roughness: 0.9 }), spots.length), k = new THREE.InstancedMesh(skin, new THREE.MeshStandardMaterial({ roughness: 0.8 }), spots.length);
+    const tones = ['#3a4a63', '#6b3f3a', '#4d5a44', '#2f2f36', '#7a6a55', '#5a4a6e'], skins = ['#d9b594', '#c99272', '#e6c7a8', '#a9764f'];
+    spots.forEach((_, i) => { b.setColorAt(i, new THREE.Color(tones[i % tones.length])); k.setColorAt(i, new THREE.Color(skins[i % skins.length])); });
+    b.castShadow = true; return { b, k, spots };
   }, []);
+  // bekleme (idle) animasyonu: her figür kendi fazında hafifçe salınır ve ağırlık aktarır
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime, m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
+    people.spots.forEach(([x, z], i) => {
+      e.set(Math.sin(t * 0.9 + i * 1.7) * 0.025, i * 2.4 + Math.sin(t * 0.23 + i) * 0.35, Math.sin(t * 0.6 + i * 0.9) * 0.03); q.setFromEuler(e);
+      m.compose(p.set(x, Math.sin(t * 1.3 + i) * 0.006, z), q, one); people.b.setMatrixAt(i, m); people.k.setMatrixAt(i, m);
+    });
+    people.b.instanceMatrix.needsUpdate = people.k.instanceMatrix.needsUpdate = true;
+  });
   const lamps = useMemo(() => {
     const rings: V3[] = [[-16, 5.2, 0], [0, 5.6, 0], [15, 5.2, 0], [0, 5.2, -9], [0, 5.2, 9]];
     const torus = new THREE.InstancedMesh(new THREE.TorusGeometry(3.2, 0.05, 5, 36).rotateX(Math.PI / 2), M.bronze, rings.length);
@@ -275,7 +287,7 @@ export function Furnishings({ tier }: { tier: Tier }) {
       </group>
       {/* İmparator Kapısı: bronz kaplı kanatlar (açık) */}
       {[-1, 1].map((s) => <mesh key={s} material={M.bronze} position={[-33.3, 3.6, s * 2.9]} rotation={[0, s * 0.5, 0]} castShadow><boxGeometry args={[0.16, 7.2, 2]} /></mesh>)}
-      <primitive object={people} />
+      <primitive object={people.b} /><primitive object={people.k} />
       <primitive object={lamps.torus} /><primitive object={lamps.bulbs} />
       {lamps.rings.slice(0, tier === 'low' ? 1 : 3).map((r, i) => <pointLight key={i} position={[r[0], r[1] - 0.4, r[2]]} color="#ffcf96" intensity={40} distance={22} decay={1.7} />)}
     </group>
@@ -283,7 +295,7 @@ export function Furnishings({ tier }: { tier: Tier }) {
 }
 
 /* ---------- ışık: güneş + gökyüzü dolgusu + ortam haritası ---------- */
-export function Lighting({ hour, shadows, focus }: { hour: number; shadows: boolean; focus: number }) {
+export function Lighting({ hour, shadows, focus, outside }: { hour: number; shadows: boolean; focus: number; outside: boolean }) {
   const sun = useRef<THREE.SpotLight>(null!), mih = useRef<THREE.SpotLight>(null!);
   const s = sunVector(hour), day = Math.max(0, Math.min(1, s[1] * 4)), warm = 1 - Math.min(1, s[1] * 1.6);
   const color = useMemo(() => new THREE.Color().setHSL(0.09 + 0.03 * (1 - warm), 0.55 + 0.3 * warm, 0.62 + 0.18 * (1 - warm)), [warm]);
@@ -303,11 +315,77 @@ export function Lighting({ hour, shadows, focus }: { hour: number; shadows: bool
       </Environment>
       <hemisphereLight args={['#ffeed6', '#3a2c1e', 0.2 + day * 0.4]} />
       <ambientLight intensity={0.1} color="#ffd9a8" />
+      {/* dış mekân güneşi: yalnızca avludayken (gölgesiz olduğu için içeride duvarlardan geçerdi) */}
+      {outside && <directionalLight position={[s[0] * 100, Math.max(20, s[1] * 100), s[2] * 100]} intensity={1.6 + day * 1.6} color={color} />}
       <spotLight ref={sun} angle={0.42} penumbra={0.8} intensity={day * 9000} distance={170} decay={2} color={color}
         castShadow={shadows} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0006} />
       <spotLight ref={mih} position={[MIHRAB[0] - 9, 14, MIHRAB[2] - 1]} angle={0.3} penumbra={0.7} intensity={focus * 900} distance={30} decay={2} color="#ffe0b0" />
       <pointLight position={[-37.5, 6.5, 0]} intensity={14} distance={16} decay={2} color="#ffb877" />
     </group>
   );
+}
+
+/* ---------- dış mekân: avlu, batı cephesi, kurşun kubbe, minareler, ağaçlar, çit, şadırvan ---------- */
+export function Exterior({ tier }: { tier: Tier }) {
+  const M = useMemo(() => ({ wall: plaster('#c98a6a'), stone: marble('floor', [14, 10], 0.6), lead: lead(), white: plaster('#e6dccb'), wood: wood(), leaf: new THREE.MeshStandardMaterial({ color: '#3f6a3a', roughness: 1, flatShading: true }), iron: new THREE.MeshStandardMaterial({ color: '#23201d', roughness: 0.6, metalness: 0.5 }) }), []);
+  const X = NARTHEX.x0 - 0.5;
+  // kutu yüz sırası: +x, −x, +y, −y, +z, −z. İçeriden görünecek yüzler (alt yüz, narteks tarafındaki batı yüzü) çizilmez.
+  const open = useMemo(() => { const none = new THREE.MeshBasicMaterial({ visible: false }); return { main: [M.wall, none, M.wall, none, M.wall, M.wall], upper: [M.wall, M.wall, M.wall, none, M.wall, M.wall] }; }, [M]);
+  const inst = useMemo(() => {
+    const tree = mergeGeometries([new THREE.CylinderGeometry(0.18, 0.26, 2.4, 6).translate(0, 1.2, 0).toNonIndexed(), new THREE.IcosahedronGeometry(1.9, 0).scale(1, 1.25, 1).translate(0, 4.1, 0)])!;
+    let sd = 4; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    const spots: [number, number, number][] = []; while (spots.length < (tier === 'low' ? 12 : 26)) { const x = -100 + r() * 52, z = -46 + r() * 92; if (Math.abs(z) < 7 || (x > -66 && Math.abs(z) < 12)) continue; spots.push([x, z, 0.8 + r() * 0.7]); }
+    const trees = new THREE.InstancedMesh(tree, M.leaf, spots.length);
+    spots.forEach(([x, z, k], i) => trees.setMatrixAt(i, new THREE.Matrix4().compose(new THREE.Vector3(x, 0, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), i), new THREE.Vector3(k, k, k))));
+    // çit: yolun iki yanında dikmeler + iki yatay ray
+    const posts: number[] = []; for (let x = -100; x <= -48; x += 2) posts.push(x);
+    const fence = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 1.1, 0.08).translate(0, 0.55, 0), M.iron, posts.length * 2);
+    posts.forEach((x, i) => { fence.setMatrixAt(i * 2, new THREE.Matrix4().makeTranslation(x, 0, -5.2)); fence.setMatrixAt(i * 2 + 1, new THREE.Matrix4().makeTranslation(x, 0, 5.2)); });
+    return { trees, fence };
+  }, [M, tier]);
+  const seg = SEG[tier];
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-75, -0.02, 0]} material={M.stone}><planeGeometry args={[70, 130]} /></mesh>
+      {[-1, 1].map((s) => <mesh key={s} material={M.iron} position={[-74, 1, s * 5.2]}><boxGeometry args={[52, 0.05, 0.05]} /></mesh>)}
+      {/* batı cephesi: kapı açıklığı (4 × 7,2 m) */}
+      {[-1, 1].map((s) => <mesh key={s} material={M.wall} position={[X, 6, s * 16.3]}><boxGeometry args={[1, 12, 28.6]} /></mesh>)}
+      <mesh material={M.wall} position={[X, 9.6, 0]}><boxGeometry args={[1, 4.8, 4]} /></mesh>
+      <mesh material={M.lead} position={[(NARTHEX.x0 + NARTHEX.x1) / 2 - 0.5, 12.1, 0]}><boxGeometry args={[NARTHEX.x1 - NARTHEX.x0 + 1.4, 0.4, 61.4]} /></mesh>
+      {[-1, 1].map((s) => <mesh key={`k${s}`} material={M.wood} position={[X - 0.7, 3.6, s * 2.6]} rotation={[0, s * 0.55, 0]}><boxGeometry args={[0.14, 7.2, 1.9]} /></mesh>)}
+      {/* ana kütle: dıştan görünen duvarlar (içeriden arka yüzler çizilmez) */}
+      <mesh material={open.main} position={[0, 13, 0]}><boxGeometry args={[66.4, 26, 2 * AISLE_Z + 1.2]} /></mesh>
+      <mesh material={M.wall} position={[-33.2, 19, 0]} rotation={[0, -Math.PI / 2, 0]}><planeGeometry args={[2 * AISLE_Z + 1.2, 14]} /></mesh>
+      {/* gövde kütlesi ve kurşun kaplı kubbeler (dıştan) */}
+      <mesh material={open.upper} position={[0, 33, 0]}><boxGeometry args={[2 * R + 8, 15, 2 * R + 8]} /></mesh>
+      <mesh material={M.lead} position={[0, RING_Y - 0.5, 0]} scale={[1, DOME_RISE / R, 1]}><sphereGeometry args={[R + 0.9, seg, 16, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
+      <mesh material={M.lead} position={[-R, ARCH_Y, 0]}><sphereGeometry args={[R + 0.8, seg, 12, -Math.PI / 2, Math.PI, 0, Math.PI / 2]} /></mesh>
+      {/* dört minare */}
+      {[[-40, -36], [-40, 36], [38, -34], [38, 34]].map(([x, z], i) => (
+        <group key={i} position={[x, 0, z]}>
+          <mesh material={M.white} position={[0, 28, 0]}><cylinderGeometry args={[1.9, 2.5, 56, 12]} /></mesh>
+          <mesh material={M.white} position={[0, 44, 0]}><cylinderGeometry args={[3, 3, 1.2, 12]} /></mesh>
+          <mesh material={M.lead} position={[0, 61, 0]}><coneGeometry args={[2.2, 10, 12]} /></mesh>
+        </group>
+      ))}
+      {/* şadırvan */}
+      <group position={[-58, 0, -15]}>
+        <mesh material={M.white} position={[0, 0.5, 0]}><cylinderGeometry args={[3.2, 3.4, 1, 12]} /></mesh>
+        {Array.from({ length: 8 }, (_, i) => <mesh key={i} material={M.white} position={[Math.cos(i * Math.PI / 4) * 3.6, 2.2, Math.sin(i * Math.PI / 4) * 3.6]}><cylinderGeometry args={[0.14, 0.14, 4.4, 6]} /></mesh>)}
+        <mesh material={M.lead} position={[0, 5.4, 0]}><coneGeometry args={[4.6, 2.2, 8]} /></mesh>
+      </group>
+      <primitive object={inst.trees} /><primitive object={inst.fence} />
+    </group>
+  );
+}
+/** İç–dış geçiş: bölge değişince arka plan ve sis yoğunluğu anında değişir */
+export function Atmosphere({ outside }: { outside: boolean }) {
+  const { scene } = useThree();
+  useEffect(() => {
+    scene.background = new THREE.Color(outside ? '#a9c9e8' : '#0d0906');
+    scene.fog = new THREE.FogExp2(outside ? '#c4d8ea' : '#1a120b', outside ? 0.0045 : 0.0012);
+    return () => { scene.fog = null; };
+  }, [scene, outside]);
+  return null;
 }
 export { APEX_Y };

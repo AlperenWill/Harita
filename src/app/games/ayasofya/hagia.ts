@@ -90,21 +90,22 @@ export function columns(): Column[] {
 export const PIERS: V3[] = [[-R, 0, -18.5], [R, 0, -18.5], [-R, 0, 18.5], [R, 0, 18.5]];
 
 /* ---------- kamera rotası: serbest kamera yok, iki ray ---------- */
-export type Zone = 'narteks' | 'nef' | 'apsis' | 'galeri';
+export type Zone = 'avlu' | 'narteks' | 'nef' | 'apsis' | 'galeri';
 export interface Rail { id: 'zemin' | 'galeri'; name: string; points: V3[] }
 const EYE = 1.68;
 export const RAILS: Rail[] = [
-  { id: 'zemin', name: 'Narteks → Ana nef → Mihrap', points: [[-40.5, EYE, 0], [-36, EYE, 0], [-30, EYE, 0], [-18, EYE, 0], [-4, EYE, 0], [8, EYE, 1.2], [19, EYE, 2.6], [26.5, EYE, 3.2]] },
+  { id: 'zemin', name: 'Avlu → Narteks → Ana nef → Mihrap', points: [[-92, EYE, 0], [-75, EYE, 0], [-58, EYE, 0], [-47, EYE, 0], [-40.5, EYE, 0], [-36, EYE, 0], [-30, EYE, 0], [-18, EYE, 0], [-4, EYE, 0], [8, EYE, 1.2], [19, EYE, 2.6], [26.5, EYE, 3.2]] },
   { id: 'galeri', name: 'Güney galeri', points: [[-27, GALLERY_Y + EYE, 21], [-14, GALLERY_Y + EYE, 21.5], [0, GALLERY_Y + EYE, 19.2], [14, GALLERY_Y + EYE, 21.5], [26.5, GALLERY_Y + EYE, 22.5]] },
 ];
 export function zoneAt(p: V3): Zone {
   if (p[1] > GALLERY_Y) return 'galeri';
+  if (p[0] < NARTHEX.x0 - 0.8) return 'avlu';
   if (p[0] < NARTHEX.x1 + 1.5) return 'narteks';
   if (p[0] > 17) return 'apsis';
   return 'nef';
 }
 /** Gözün uyum sağlayacağı pozlama (ton eşleme çarpanı): karanlık narteks → yüksek, aydınlık nef → düşük */
-export const EXPOSURE: Record<Zone, number> = { narteks: 2.6, nef: 0.95, apsis: 1.05, galeri: 1.25 };
+export const EXPOSURE: Record<Zone, number> = { avlu: 0.8, narteks: 2.6, nef: 0.95, apsis: 1.05, galeri: 1.25 };
 export const ADAPT_SECONDS = 2.2;
 /** Göz uyumu: pozlama hedefe üstel yaklaşır; karanlıktan aydınlığa geçişte ilk an göz kamaşır (pozlama hâlâ yüksek) */
 export const adapt = (current: number, target: number, dt: number) => current + (target - current) * (1 - Math.exp(-dt / (ADAPT_SECONDS / 3)));

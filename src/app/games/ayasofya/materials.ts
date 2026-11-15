@@ -18,10 +18,10 @@ import * as THREE from 'three';
 function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
 const T = Math.PI * 2;
 
-export interface GoldOpts { tess?: [number, number]; tilt?: number; lod?: [number, number]; detail?: boolean; map?: THREE.Texture | null; metalnessMap?: THREE.Texture | null; side?: THREE.Side; color?: string }
+export interface GoldOpts { pattern?: 0 | 1 | 2; tess?: [number, number]; tilt?: number; lod?: [number, number]; detail?: boolean; map?: THREE.Texture | null; metalnessMap?: THREE.Texture | null; side?: THREE.Side; color?: string }
 export function goldMosaic(o: GoldOpts = {}) {
   const m = new THREE.MeshStandardMaterial({ color: o.color ?? '#d9a53a', metalness: 1, roughness: 0.32, map: o.map ?? null, metalnessMap: o.metalnessMap ?? null, emissive: '#2a1a05', emissiveIntensity: 0.6, side: o.side ?? THREE.FrontSide, envMapIntensity: 0.9 });
-  const u = { uTess: { value: new THREE.Vector2(...(o.tess ?? [160, 160])) }, uTilt: { value: o.tilt ?? 0.38 }, uLod: { value: new THREE.Vector2(...(o.lod ?? [6, 30])) }, uDetail: { value: o.detail === false ? 0 : 1 } };
+  const u = { uTess: { value: new THREE.Vector2(...(o.tess ?? [160, 160])) }, uTilt: { value: o.tilt ?? 0.38 }, uLod: { value: new THREE.Vector2(...(o.lod ?? [6, 30])) }, uDetail: { value: o.detail === false ? 0 : 1 }, uPattern: { value: o.detail === false ? 0 : o.pattern ?? 0 } };
   m.userData.uniforms = u;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, u);
@@ -29,18 +29,31 @@ export function goldMosaic(o: GoldOpts = {}) {
       .replace('#include <project_vertex>', '#include <project_vertex>\nvTessUv = uv;\nvCamDist = -mvPosition.z;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        varying vec2 vTessUv; varying float vCamDist; uniform vec2 uTess; uniform float uTilt; uniform vec2 uLod; uniform float uDetail;
+        varying vec2 vTessUv; varying float vCamDist; uniform vec2 uTess; uniform float uTilt; uniform vec2 uLod; uniform float uDetail; uniform float uPattern;
         vec2 tHash(vec2 p) { p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }
-        float gTess = 0.0; float gGrout = 0.0; vec2 gH = vec2(0.5);`)
+        float gTess = 0.0; float gGrout = 0.0; vec2 gH = vec2(0.5); float gPaint = 0.0;
+        // Kubbe/yarım kubbe bezemesi (GPU'da, doku yok). uv.x: çevre, uv.y: 0 etek → 1 tepe. 1 = ana kubbe (40 kaburga), 2 = yarım kubbe.
+        vec4 domePattern(vec2 uv, float kind) {
+          float n = kind < 1.5 ? 40.0 : 14.0;
+          float rib = smoothstep(0.36, 0.47, abs(fract(uv.x * n) - 0.5)) * smoothstep(0.0, 0.1, uv.y) * (1.0 - smoothstep(0.8, 0.9, uv.y));
+          float band = (1.0 - smoothstep(0.012, 0.03, abs(uv.y - 0.14))) + (1.0 - smoothstep(0.008, 0.02, abs(uv.y - 0.83)));
+          float zig = 1.0 - smoothstep(0.0, 0.012, abs(uv.y - 0.045 - 0.03 * abs(fract(uv.x * n * 2.0) - 0.5)));
+          float med = kind < 1.5 ? smoothstep(0.895, 0.905, uv.y) : 0.0;
+          float ring = kind < 1.5 ? (1.0 - smoothstep(0.004, 0.012, abs(uv.y - 0.9))) : 0.0;
+          vec3 c = mix(vec3(0.42, 0.24, 0.08), vec3(0.08, 0.2, 0.17), med);          // kaburga: koyu altın-bronz; madalyon: koyu yeşil
+          float paint = clamp(max(max(rib * 0.75, band * 0.9), max(zig * 0.8, med)) - ring, 0.0, 1.0);
+          return vec4(c, paint);
+        }`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         gTess = uDetail * (1.0 - smoothstep(uLod.x, uLod.y, vCamDist));
         vec2 tc = vTessUv * uTess; vec2 cell = floor(tc); vec2 f = fract(tc); gH = tHash(cell);
         float edge = min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y));
         gGrout = (1.0 - smoothstep(0.02, 0.08, edge)) * gTess * 0.6;
         diffuseColor.rgb *= mix(1.0, 0.82 + 0.36 * gH.x, gTess);       // taştan taşa ton farkı
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.12, 0.08), gGrout);`)
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, mix(0.18, 0.5, gH.y), gTess); roughnessFactor = mix(roughnessFactor, 0.9, gGrout);')
-      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor *= (1.0 - gGrout);')
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.12, 0.08), gGrout);
+        if (uPattern > 0.5) { vec4 dp = domePattern(vTessUv, uPattern); gPaint = dp.a; diffuseColor.rgb = mix(diffuseColor.rgb, dp.rgb, gPaint); }`)
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, mix(0.18, 0.5, gH.y), gTess); roughnessFactor = mix(roughnessFactor, 0.9, gGrout); roughnessFactor = mix(roughnessFactor, 0.7, gPaint);')
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor *= (1.0 - gGrout) * (1.0 - gPaint * 0.85);')
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
         { vec3 q0 = dFdx(vViewPosition), q1 = dFdy(vViewPosition); vec3 tx = normalize(q0 - normal * dot(q0, normal)); vec3 ty = normalize(cross(normal, tx));
           vec2 tl = (gH - 0.5) * uTilt * gTess; normal = normalize(normal + tx * tl.x + ty * tl.y); }`);
@@ -57,7 +70,7 @@ function toNormal(h: Float32Array, n: number, k: number) {
   }
   return out;
 }
-const tex = (d: Uint8ClampedArray, n: number, srgb: boolean) => { const t = new THREE.DataTexture(d, n, n, THREE.RGBAFormat); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.anisotropy = 4; t.needsUpdate = true; return t; };
+const tex = (d: Uint8ClampedArray, n: number, srgb: boolean) => { const t = new THREE.DataTexture(d, n, n, THREE.RGBAFormat); t.wrapS = t.wrapT = THREE.RepeatWrapping; if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter; t.anisotropy = 16; t.needsUpdate = true; return t; };
 const PAL = {
   verd: { base: [34, 74, 58], vein: [176, 205, 186], dark: [12, 30, 24], seed: 3, f: 5 },
   porphyry: { base: [92, 34, 52], vein: [196, 160, 170], dark: [48, 14, 28], seed: 7, f: 9 },
@@ -65,7 +78,10 @@ const PAL = {
   floor: { base: [198, 192, 180], vein: [120, 126, 140], dark: [170, 164, 152], seed: 13, f: 3 },
 } as const;
 const cache = new Map<string, { map: THREE.DataTexture; normal: THREE.DataTexture }>();
-export function marbleTextures(kind: keyof typeof PAL, n = 512) {
+let MARBLE_RES = 512;
+/** Mermer doku çözünürlüğü (kademeye göre 512 / 1024); malzemeler oluşturulmadan önce çağrılır */
+export const setMarbleRes = (n: number) => { MARBLE_RES = n; };
+export function marbleTextures(kind: keyof typeof PAL, n = MARBLE_RES) {
   const key = `${kind}${n}`; if (cache.has(key)) return cache.get(key)!;
   const p = PAL[kind], r = rng(p.seed), col = new Uint8ClampedArray(n * n * 4), hei = new Float32Array(n * n);
   const ph = Array.from({ length: 6 }, () => r() * T);
@@ -129,6 +145,6 @@ export function panelTextures(id: string, res: number) {
     both((ctx, paint) => { ctx.fillStyle = paint ? '#b9a686' : '#000'; ctx.beginPath(); ctx.moveTo(0, Hh * p.lossBelow!); for (let i = 0; i <= 12; i++) ctx.lineTo((i / 12) * W, Hh * (p.lossBelow! + Math.sin(i * 2.1) * 0.05 + (i % 3) * 0.02)); ctx.lineTo(W, Hh); ctx.lineTo(0, Hh); ctx.closePath(); ctx.fill(); });
   }
   g.strokeStyle = '#7a2424'; g.lineWidth = Math.max(2, W / 90); g.strokeRect(g.lineWidth / 2, g.lineWidth / 2, W - g.lineWidth, Hh - g.lineWidth);
-  const map = new THREE.CanvasTexture(c), metal = new THREE.CanvasTexture(mt); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 8;
+  const map = new THREE.CanvasTexture(c), metal = new THREE.CanvasTexture(mt); map.colorSpace = THREE.SRGBColorSpace; for (const t of [map, metal]) { t.anisotropy = 16; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; }
   return { map, metal };
 }
