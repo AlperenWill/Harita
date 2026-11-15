@@ -143,7 +143,7 @@ export const POIS: Poi[] = [
     text: 'Apsis yarım kubbesindeki mozaik, zeminden yaklaşık 30 metre yüksektedir ve figür yaklaşık 4 metre boyundadır. Altın zemin, pencerelerden gelen ışıkla gün boyunca farklı parlar.', source: SRC.live },
   { id: 'mihrap', kind: 'osmanli', rail: 'zemin', name: 'Mihrap', era: 'Osmanlı', pos: [MIHRAB[0] - 0.6, 3, MIHRAB[2]], radius: 2.6,
     text: 'Mihrap apsisin tam ortasında değil, biraz güneye kaydırılmıştır: Bizans yapısının ekseni güneydoğuya, kıble ise Mekke’ye bakar. Aradaki bu küçük açı, iki dönemin aynı mekânda nasıl buluştuğunu gösterir.', source: SRC.unesco },
-  { id: 'minber', kind: 'osmanli', rail: 'zemin', name: 'Minber', era: 'Osmanlı · 16. yüzyıl', pos: [26.5, 5, 8], radius: 2.6,
+  { id: 'minber', kind: 'osmanli', rail: 'zemin', name: 'Minber', era: 'Osmanlı', pos: [26.5, 5, 8], radius: 2.6,
     text: 'Mihrabın sağındaki mermer minber Osmanlı döneminde eklendi. Yüksek ve dar gövdesi, Bizans apsisine yaslanmadan kıbleye doğru çevrilidir.', source: SRC.unesco },
   { id: 'deisis', kind: 'mozaik', rail: 'galeri', name: 'Deisis mozaiği', era: 'Bizans · büyük olasılıkla 1261 sonrası', pos: [-14, GALLERY_Y + 2.7, 29.8], radius: 3,
     text: 'Ortada İsa, iki yanında Meryem ve Vaftizci Yahya. Güney galerideki bu pano 1933’te ortaya çıkarıldı. Çoğu uzmana göre 1261’den sonra yapıldı; tarihlemesi tartışmalıdır. Panonun alt bölümü günümüze ulaşmamıştır.', source: SRC.deesis },

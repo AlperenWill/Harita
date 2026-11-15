@@ -20,7 +20,7 @@ const T = Math.PI * 2;
 
 export interface GoldOpts { tess?: [number, number]; tilt?: number; lod?: [number, number]; detail?: boolean; map?: THREE.Texture | null; metalnessMap?: THREE.Texture | null; side?: THREE.Side; color?: string }
 export function goldMosaic(o: GoldOpts = {}) {
-  const m = new THREE.MeshStandardMaterial({ color: o.color ?? '#d9a53a', metalness: 1, roughness: 0.32, map: o.map ?? null, metalnessMap: o.metalnessMap ?? null, side: o.side ?? THREE.FrontSide, envMapIntensity: 0.9 });
+  const m = new THREE.MeshStandardMaterial({ color: o.color ?? '#d9a53a', metalness: 1, roughness: 0.32, map: o.map ?? null, metalnessMap: o.metalnessMap ?? null, emissive: '#2a1a05', emissiveIntensity: 0.6, side: o.side ?? THREE.FrontSide, envMapIntensity: 0.9 });
   const u = { uTess: { value: new THREE.Vector2(...(o.tess ?? [160, 160])) }, uTilt: { value: o.tilt ?? 0.38 }, uLod: { value: new THREE.Vector2(...(o.lod ?? [6, 30])) }, uDetail: { value: o.detail === false ? 0 : 1 } };
   m.userData.uniforms = u;
   m.onBeforeCompile = (sh) => {
@@ -36,7 +36,7 @@ export function goldMosaic(o: GoldOpts = {}) {
         gTess = uDetail * (1.0 - smoothstep(uLod.x, uLod.y, vCamDist));
         vec2 tc = vTessUv * uTess; vec2 cell = floor(tc); vec2 f = fract(tc); gH = tHash(cell);
         float edge = min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y));
-        gGrout = (1.0 - smoothstep(0.03, 0.11, edge)) * gTess;
+        gGrout = (1.0 - smoothstep(0.02, 0.08, edge)) * gTess * 0.6;
         diffuseColor.rgb *= mix(1.0, 0.82 + 0.36 * gH.x, gTess);       // taştan taşa ton farkı
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.12, 0.08), gGrout);`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, mix(0.18, 0.5, gH.y), gTess); roughnessFactor = mix(roughnessFactor, 0.9, gGrout);')

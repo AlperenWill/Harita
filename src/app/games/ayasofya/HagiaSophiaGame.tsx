@@ -46,7 +46,7 @@ const CURVES = RAILS.map((r) => new THREE.CatmullRomCurve3(r.points.map((p) => n
 const LENGTHS = CURVES.map((c) => c.getLength());
 /** Rota boyunca önceden tanımlı bakış hedefleri (u ∈ 0..1) */
 const GAZE: [number, V3][][] = [
-  [[0, [-31, 4.5, 0]], [0.22, [0, 12, 0]], [0.42, [16, RING_Y - 8, 0]], [0.62, [31, 27, 0]], [0.82, [34, 17, 0.5]], [1, [34.5, 8, 1.2]]],
+  [[0, [-31, 4.5, 0]], [0.22, [0, 12, 0]], [0.42, [16, RING_Y - 8, 0]], [0.62, [31, 24, 0]], [0.82, [34, 12, 0.5]], [1, [34.5, 4.2, 1.4]]],
   [[0, [-14, GALLERY_Y + 2.6, 30]], [0.3, [-14, GALLERY_Y + 2.6, 30]], [0.52, [2, 31, -15.5]], [0.8, [30.8, GALLERY_Y + 2.6, 22.5]], [1, [30.8, GALLERY_Y + 2.6, 22.5]]],
 ];
 function gazeAt(rail: number, u: number, out: THREE.Vector3) {

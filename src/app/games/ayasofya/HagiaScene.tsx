@@ -84,7 +84,7 @@ export function Shell({ tier, detail }: { tier: Tier; detail: boolean }) {
         </group>
       ))}
       {/* narteks: karanlık, alçak tavanlı giriş */}
-      <mesh position={[(NARTHEX.x0 + NARTHEX.x1) / 2, NARTHEX.h / 2, 0]}><boxGeometry args={[NARTHEX.x1 - NARTHEX.x0, NARTHEX.h, 56]} /><primitive object={useMemo(() => { const m = plaster('#6e5a42'); m.side = THREE.BackSide; return m; }, [])} attach="material" /></mesh>
+      <mesh position={[(NARTHEX.x0 + NARTHEX.x1) / 2, NARTHEX.h / 2, 0]}><boxGeometry args={[NARTHEX.x1 - NARTHEX.x0, NARTHEX.h, 56]} /><primitive object={useMemo(() => { const m = plaster('#6e5a42'); m.side = THREE.BackSide; const none = new THREE.MeshBasicMaterial({ visible: false }); return [none, m, m, m, m, m]; }, [])} attach="material" /></mesh>
       {[-1, 1].map((s) => <mesh key={s} material={M.plasterDark} position={[-32, NARTHEX.h / 2, s * 15.1]}><boxGeometry args={[2.1, NARTHEX.h, 26.2]} /></mesh>)}
       <mesh material={M.plasterDark} position={[-32, 8.35, 0]}><boxGeometry args={[2.1, 2.3, 4]} /></mesh>
     </group>
@@ -198,7 +198,7 @@ function Panel({ id, pos, rotY, tilt = 0, detail, hiRes }: { id: string; pos: V3
   const { camera } = useThree();
   const [res, setRes] = useState(256);
   const p = PANELS[id];
-  const mat = useMemo(() => goldMosaic({ tess: [p.w * 70, p.h * 70], tilt: 0.45, lod: [3, 16], detail }), [p, detail]);
+  const mat = useMemo(() => goldMosaic({ tess: [p.w * 70, p.h * 70], tilt: 0.45, lod: [1.5, 7], detail }), [p, detail]);
   useEffect(() => { const t = panelTextures(id, res); mat.map = t.map; mat.metalnessMap = t.metal; mat.color.set('#ffffff'); mat.needsUpdate = true; return () => { t.map.dispose(); t.metal.dispose(); }; }, [id, res, mat]);
   const v = useMemo(() => new THREE.Vector3(...pos), [pos]);
   useFrame(() => { if (res < hiRes && camera.position.distanceTo(v) < 16) setRes(hiRes); });
@@ -295,7 +295,8 @@ export function Lighting({ hour, shadows, focus }: { hour: number; shadows: bool
   return (
     <group>
       <Environment resolution={64} frames={1} key={Math.round(hour * 2)}>
-        <color attach="background" args={['#1a130c']} />
+        <color attach="background" args={['#4a3a28']} />
+        {[0, 1, 2, 3].map((i) => <Lightformer key={i} form="rect" intensity={0.9 + day * 0.8} color="#ffd9a6" position={[Math.cos(i * Math.PI / 2) * 10, 3, Math.sin(i * Math.PI / 2) * 10]} scale={[8, 8, 1]} target={[0, 0, 0]} />)}
         <Lightformer form="ring" intensity={2.2 * day + 0.3} color="#fff1d8" position={[0, 12, 0]} rotation-x={Math.PI / 2} scale={12} />
         <Lightformer form="rect" intensity={3.5 * day} color={color} position={[s[0] * 10, Math.max(2, s[1] * 10), s[2] * 10]} scale={[6, 6, 1]} target={[0, 0, 0]} />
         <Lightformer form="rect" intensity={0.5} color="#ffc98a" position={[0, -6, 0]} rotation-x={-Math.PI / 2} scale={[20, 20, 1]} />
