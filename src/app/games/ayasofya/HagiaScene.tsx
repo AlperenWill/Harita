@@ -26,6 +26,16 @@ function pendentiveGeometry(n: number) {
   }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
 }
+/** Halı: düz turkuaz zemin üzerinde çok hafif saf çizgileri ve hav dokusu (512² canvas, dosya yok) */
+function carpetMaterial() {
+  const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d')!;
+  g.fillStyle = '#2A9D8F'; g.fillRect(0, 0, 512, 512);   // referans rengi
+  let sd = 21; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 9000; i++) { g.fillStyle = r() < 0.5 ? 'rgba(255,255,255,.035)' : 'rgba(0,40,40,.05)'; g.fillRect(r() * 512, r() * 512, 2, 2); }
+  g.fillStyle = 'rgba(15,90,84,.55)'; g.fillRect(0, 0, 512, 5); g.fillStyle = 'rgba(233,196,106,.35)'; g.fillRect(0, 6, 512, 1.5);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(30, 50); t.anisotropy = 16;
+  return new THREE.MeshPhysicalMaterial({ map: t, roughness: 0.6, metalness: 0, sheen: 0.25, sheenColor: new THREE.Color('#2A9D8F'), sheenRoughness: 0.6, envMapIntensity: 0.35 });
+}
 const scaleUV = (g: THREE.BufferGeometry, sx: number, sy: number) => { const u = g.attributes.uv as THREE.BufferAttribute; for (let i = 0; i < u.count; i++) u.setXY(i, u.getX(i) * sx, u.getY(i) * sy); return g; };
 
 export function Shell({ tier, detail }: { tier: Tier; detail: boolean }) {
@@ -34,7 +44,7 @@ export function Shell({ tier, detail }: { tier: Tier; detail: boolean }) {
     domeGold: goldMosaic({ tess: [640, 150], side: THREE.BackSide, detail, lod: [8, 34], pattern: 1 }),
     pendGold: goldMosaic({ tess: [220, 220], side: THREE.DoubleSide, detail, lod: [8, 34], color: '#cf9a36' }),
     semiGold: goldMosaic({ tess: [320, 160], side: THREE.BackSide, detail, lod: [8, 34], color: '#c9953a', pattern: 2 }),
-    floor: marble('floor', [10, 8], 0.16), pier: marble('white', [2, 6], 0.28), revet: marble('white', [8, 3], 0.3),
+    floor: marble('floor', [3, 8], 0.16), carpet: carpetMaterial(), pier: marble('white', [2, 6], 0.28), revet: marble('white', [8, 3], 0.3),
     plaster: plaster('#a8977a'), plasterDark: plaster('#6a5a47'), ochre: plaster('#9c8663'),
   }), [detail]);
   useMemo(() => { M.revet.side = THREE.DoubleSide; M.plaster.side = THREE.DoubleSide; M.ochre.side = THREE.DoubleSide; }, [M]);
@@ -56,7 +66,9 @@ export function Shell({ tier, detail }: { tier: Tier; detail: boolean }) {
   );
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} material={M.floor} receiveShadow><planeGeometry args={[2 * NAVE_X + 26, 2 * AISLE_Z]} /></mesh>
+      {/* zemin: içeride turkuaz halı (#2A9D8F, roughness 0,6); narteks mermer */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[2.5, 0, 0]} material={M.carpet} receiveShadow><planeGeometry args={[2 * NAVE_X + 9, 2 * AISLE_Z]} /></mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-38, 0, 0]} material={M.floor}><planeGeometry args={[10, 2 * AISLE_Z]} /></mesh>
       {/* kubbe, kasnak, pandantifler */}
       <mesh geometry={G.dome} material={M.domeGold} position={[0, RING_Y, 0]} />
       <mesh position={[0, RING_Y, 0]} rotation={[Math.PI / 2, 0, 0]} material={M.pier}><torusGeometry args={[R - 0.1, 0.45, 6, seg]} /></mesh>
@@ -152,7 +164,7 @@ export function Windows({ hour }: { hour: number }) {
     list.forEach((w, i) => {
       const d = Math.max(0, (w.n[0] * s[0] + w.n[1] * s[1] + w.n[2] * s[2]) / Math.hypot(...w.n));
       const k = 0.35 + day * (0.9 + d * 2.6);   // gökyüzü ışığı + doğrudan güneş (bloom eşiğini aşar)
-      mesh.setColorAt(i, c.setRGB(k * 1.0, k * (0.9 + 0.06 * day), k * (0.72 + 0.2 * day)));
+      mesh.setColorAt(i, c.setRGB(k * 0.878, k * 0.969, k * 0.98));   // #E0F7FA
     });
     mesh.instanceColor!.needsUpdate = true;
   }, [hour, list, mesh]);
@@ -166,9 +178,9 @@ const MAX_SHAFTS = 64, UP = new THREE.Vector3(0, 1, 0);
 export function GodRays({ hour, enabled, motes }: { hour: number; enabled: boolean; motes: boolean }) {
   const { beams, pools } = useMemo(() => {
     const b = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.5, 1.25, 1, 8, 1, true),
-      new THREE.MeshBasicMaterial({ color: '#ffe9c4', alphaMap: fadeTex(), transparent: true, opacity: 0.035, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide, toneMapped: false }), MAX_SHAFTS);
+      new THREE.MeshBasicMaterial({ color: '#e0f7fa', alphaMap: fadeTex(), transparent: true, opacity: 0.035, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide, toneMapped: false }), MAX_SHAFTS);
     const p = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2),
-      new THREE.MeshBasicMaterial({ color: '#ffe2ad', transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }), MAX_SHAFTS);
+      new THREE.MeshBasicMaterial({ color: '#d6f3f7', transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }), MAX_SHAFTS);
     b.frustumCulled = p.frustumCulled = false; return { beams: b, pools: p };
   }, []);
   const list = useMemo(() => shafts(hour), [hour]);
@@ -250,11 +262,22 @@ export function Furnishings({ tier }: { tier: Tier }) {
     people.b.instanceMatrix.needsUpdate = people.k.instanceMatrix.needsUpdate = true;
   });
   const lamps = useMemo(() => {
-    const rings: V3[] = [[-16, 5.2, 0], [0, 5.6, 0], [15, 5.2, 0], [0, 5.2, -9], [0, 5.2, 9]];
-    const torus = new THREE.InstancedMesh(new THREE.TorusGeometry(3.2, 0.05, 5, 36).rotateX(Math.PI / 2), M.bronze, rings.length);
-    const n = tier === 'low' ? 12 : 20, bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.11, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffd9a0', toneMapped: false }), rings.length * n);
-    rings.forEach((r, i) => { torus.setMatrixAt(i, new THREE.Matrix4().makeTranslation(...r)); for (let k = 0; k < n; k++) { const a = (k / n) * Math.PI * 2; bulbs.setMatrixAt(i * n + k, new THREE.Matrix4().makeTranslation(r[0] + Math.cos(a) * 3.2, r[1] - 0.15, r[2] + Math.sin(a) * 3.2)); } });
-    return { torus, bulbs, rings };
+    // geniş çaplı, alçak asılı, üç halkalı avizeler; ampuller emissive (ton eşleme dışı, bloom eşiğinin üstünde)
+    const centers: V3[] = [[-17, 4.6, 0], [0, 5, 0], [16, 4.6, 0], [0, 4.6, -9.5], [0, 4.6, 9.5], [-9, 4.4, -8], [-9, 4.4, 8], [9, 4.4, -8], [9, 4.4, 8]];
+    const tiers: [number, number, number][] = [[4.6, 0, tier === 'low' ? 16 : 34], [3.1, 0.5, tier === 'low' ? 10 : 22], [1.6, 1, tier === 'low' ? 6 : 12]];   // yarıçap, yükseklik farkı, ampul
+    const per = tiers.reduce((n, t) => n + t[2], 0);
+    const torus = new THREE.InstancedMesh(new THREE.TorusGeometry(1, 0.012, 5, 48).rotateX(Math.PI / 2), M.bronze, centers.length * tiers.length);
+    const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 1.9, 0.9), toneMapped: false }), centers.length * per);
+    const chains = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.015, 0.015, 1, 4).translate(0, 0.5, 0), M.bronze, centers.length);
+    let bi = 0;
+    centers.forEach((c, i) => {
+      chains.setMatrixAt(i, new THREE.Matrix4().compose(new THREE.Vector3(c[0], c[1] + 1, c[2]), new THREE.Quaternion(), new THREE.Vector3(1, 22, 1)));
+      tiers.forEach(([rad, dy, n], k) => {
+        torus.setMatrixAt(i * tiers.length + k, new THREE.Matrix4().compose(new THREE.Vector3(c[0], c[1] + dy, c[2]), new THREE.Quaternion(), new THREE.Vector3(rad, 4, rad)));
+        for (let j = 0; j < n; j++) { const a = (j / n) * Math.PI * 2 + k; bulbs.setMatrixAt(bi++, new THREE.Matrix4().makeTranslation(c[0] + Math.cos(a) * rad, c[1] + dy - 0.14, c[2] + Math.sin(a) * rad)); }
+      });
+    });
+    return { torus, bulbs, chains, rings: centers };
   }, [M.bronze, tier]);
   return (
     <group>
@@ -288,8 +311,8 @@ export function Furnishings({ tier }: { tier: Tier }) {
       {/* İmparator Kapısı: bronz kaplı kanatlar (açık) */}
       {[-1, 1].map((s) => <mesh key={s} material={M.bronze} position={[-33.3, 3.6, s * 2.9]} rotation={[0, s * 0.5, 0]} castShadow><boxGeometry args={[0.16, 7.2, 2]} /></mesh>)}
       <primitive object={people.b} /><primitive object={people.k} />
-      <primitive object={lamps.torus} /><primitive object={lamps.bulbs} />
-      {lamps.rings.slice(0, tier === 'low' ? 1 : 3).map((r, i) => <pointLight key={i} position={[r[0], r[1] - 0.4, r[2]]} color="#ffcf96" intensity={40} distance={22} decay={1.7} />)}
+      <primitive object={lamps.torus} /><primitive object={lamps.bulbs} /><primitive object={lamps.chains} />
+      {lamps.rings.slice(0, tier === 'low' ? 1 : 5).map((r, i) => <pointLight key={i} position={[r[0], r[1] - 0.4, r[2]]} color="#FFD700" intensity={14} distance={22} decay={1.7} />)}
     </group>
   );
 }
@@ -313,11 +336,11 @@ export function Lighting({ hour, shadows, focus, outside }: { hour: number; shad
         <Lightformer form="rect" intensity={3.5 * day} color={color} position={[s[0] * 10, Math.max(2, s[1] * 10), s[2] * 10]} scale={[6, 6, 1]} target={[0, 0, 0]} />
         <Lightformer form="rect" intensity={0.5} color="#ffc98a" position={[0, -6, 0]} rotation-x={-Math.PI / 2} scale={[20, 20, 1]} />
       </Environment>
-      <hemisphereLight args={['#ffeed6', '#3a2c1e', 0.2 + day * 0.4]} />
-      <ambientLight intensity={0.1} color="#ffd9a8" />
+      <hemisphereLight args={['#E0F7FA', '#5a4a1e', 0.18 + day * 0.4]} />
+      <ambientLight intensity={0.22} color="#FFD700" />
       {/* dış mekân güneşi: yalnızca avludayken (gölgesiz olduğu için içeride duvarlardan geçerdi) */}
       {outside && <directionalLight position={[s[0] * 100, Math.max(20, s[1] * 100), s[2] * 100]} intensity={1.6 + day * 1.6} color={color} />}
-      <spotLight ref={sun} angle={0.42} penumbra={0.8} intensity={day * 9000} distance={170} decay={2} color={color}
+      <spotLight ref={sun} angle={0.42} penumbra={0.8} intensity={day * 3800} distance={170} decay={2} color="#E0F7FA"
         castShadow={shadows} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0006} />
       <spotLight ref={mih} position={[MIHRAB[0] - 9, 14, MIHRAB[2] - 1]} angle={0.3} penumbra={0.7} intensity={focus * 900} distance={30} decay={2} color="#ffe0b0" />
       <pointLight position={[-37.5, 6.5, 0]} intensity={14} distance={16} decay={2} color="#ffb877" />

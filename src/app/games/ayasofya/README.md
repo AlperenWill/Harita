@@ -119,3 +119,10 @@ Doğrulanamayanlar: hat levhalarının çapı ve hattatı, toplam sütun sayıs�
 - **Merdiven:** modelde merdiven yok; galeriye geçiş kararma ile yapılır (gerçek yapıda da galeriye rampa ile çıkılır). Bu madde uygulanmadı.
 - **Kubbe bezemesi:** ana kubbede 40 kaburga, etek ve tepe kuşakları, zikzak bordür, tepe madalyonu; yarım kubbelerde 14 kaburga.
   Desen shader'da üretilir (doku yok); düşük kademede kapalıdır.
+
+## v4: "Turkuaz & Altın" (fotoğraf referansı)
+- Zemin: içeride turkuaz halı (`#2A9D8F`, roughness 0,6, hafif sheen); narteks mermer kalır.
+- Işık: sıcak altın ortam ışığı (`#FFD700`) + pencerelerden ve huzmelerden soğuk gün ışığı (`#E0F7FA`).
+- Avizeler: 9 adet, alçak asılı, üç halkalı (4,6 / 3,1 / 1,6 m), orta-yüksek kademede avize başına 68 ampul; ampuller bloom eşiğinin üstünde.
+- Kubbe bezemesi: altın zemin üzerine koyu lacivert kaburga, kuşak ve madalyon. Hat yazıları üretilmedi (levhalar yazısız).
+- Referansla "birebir" değildir: yapı prosedüreldir; halı referanstakinden biraz daha açık görünür.

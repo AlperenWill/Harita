@@ -40,7 +40,7 @@ export function goldMosaic(o: GoldOpts = {}) {
           float zig = 1.0 - smoothstep(0.0, 0.012, abs(uv.y - 0.045 - 0.03 * abs(fract(uv.x * n * 2.0) - 0.5)));
           float med = kind < 1.5 ? smoothstep(0.895, 0.905, uv.y) : 0.0;
           float ring = kind < 1.5 ? (1.0 - smoothstep(0.004, 0.012, abs(uv.y - 0.9))) : 0.0;
-          vec3 c = mix(vec3(0.42, 0.24, 0.08), vec3(0.08, 0.2, 0.17), med);          // kaburga: koyu altın-bronz; madalyon: koyu yeşil
+          vec3 c = mix(vec3(0.03, 0.05, 0.14), vec3(0.02, 0.03, 0.09), med);          // altın zemin üzerinde koyu lacivert kaburga ve kuşaklar; madalyon lacivert-siyah
           float paint = clamp(max(max(rib * 0.75, band * 0.9), max(zig * 0.8, med)) - ring, 0.0, 1.0);
           return vec4(c, paint);
         }`)
