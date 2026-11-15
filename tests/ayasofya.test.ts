@@ -43,7 +43,7 @@ describe('Ayasofya: güneş ve ışık huzmeleri', () => {
 
 describe('Ayasofya: rota, göz uyumu, inceleme', () => {
   it('bölgeler rotaya göre: narteks → nef → apsis; galeri rayı üst katta', () => {
-    const z = RAILS[0].points.map(zoneAt); expect(z[0]).toBe('narteks'); expect(z).toContain('nef'); expect(z[z.length - 1]).toBe('apsis');
+    const z = RAILS[0].points.map(zoneAt); expect(z[0]).toBe('avlu'); expect(z).toContain('narteks'); expect(z).toContain('nef'); expect(z[z.length - 1]).toBe('apsis');
     for (const p of RAILS[1].points) { expect(zoneAt(p)).toBe('galeri'); expect(p[1]).toBeGreaterThan(GALLERY_Y + 1.5); }
   });
   it('göz uyumu: narteksten nefe girince pozlama önce yüksek (kamaşma), ~2 sn sonra uyum', () => {

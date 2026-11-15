@@ -107,3 +107,15 @@ Geliştirme ortamında yalnızca ekran kartsız tarayıcıda (swiftshader) işle
 - [University of Utah, Marriott Library — South gallery imperial portrait mosaics](https://collections.lib.utah.edu/ark:/87278/s62n8fht)
 
 Doğrulanamayanlar: hat levhalarının çapı ve hattatı, toplam sütun sayısı (107), minberin kesin tarihi. Deisis'in tarihi kaynaklarda tartışmalıdır.
+
+## v3 düzeltmeleri
+- **Kamera:** dikey eksen tersti (aşağı sürükleyince yukarı bakıyordu) ve sınırda birikip takılıyordu; düzeltildi. Hassasiyet 0,8×.
+  İstenen "pitch −45°…−90°" sınırı uygulanmadı: kamerayı yalnızca yere baktırır, kubbe görülemezdi; sınır −40°…+80° kaldı.
+- **Doku netliği:** tüm dokularda anizotropi 16 ve mipmap; mermer orta/yüksek kademede 1024 px. Doku dosyası olmadığı için Blender UV adımı yok.
+- **Dış mekân:** avlu, batı cephesi ve kapı, dıştan kurşun kubbeler, 4 minare, şadırvan, instanced ağaç ve çit. Zemin rayı avludan başlar;
+  avlu ↔ iç geçişinde arka plan ve sis yoğunluğu anında değişir. GLB yok, hepsi prosedürel.
+- **Figürler:** kapsül yerine bacak/gövde/kol/baş/el parçalı figürler (kişi başı ~330 üçgen, 2 InstancedMesh) ve bekleme salınımı.
+  Mixamo modeli indirilemediği için kullanılmadı; yürüme animasyonu yok (figürler yerinde durur).
+- **Merdiven:** modelde merdiven yok; galeriye geçiş kararma ile yapılır (gerçek yapıda da galeriye rampa ile çıkılır). Bu madde uygulanmadı.
+- **Kubbe bezemesi:** ana kubbede 40 kaburga, etek ve tepe kuşakları, zikzak bordür, tepe madalyonu; yarım kubbelerde 14 kaburga.
+  Desen shader'da üretilir (doku yok); düşük kademede kapalıdır.

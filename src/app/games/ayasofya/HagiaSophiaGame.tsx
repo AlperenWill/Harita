@@ -15,7 +15,8 @@ import { Effect, ToneMappingMode } from 'postprocessing';
 import { animated, useTransition } from '@react-spring/web';
 import { ArrowLeft, ChevronDown, ChevronUp, ExternalLink, Eye, Music, Play, Pause, Settings2, Sun, Volume2, VolumeX, X } from 'lucide-react';
 import { EXPOSURE, GALLERY_Y, POIS, RAILS, RING_Y, adapt, inspectEye, inspectFov, lookingAt, zoneAt, type Poi, type V3, type Zone } from './hagia';
-import { Columns, Furnishings, Galleries, GodRays, Lighting, Mosaics, Shell, Windows, type Tier } from './HagiaScene';
+import { Atmosphere, Columns, Exterior, Furnishings, Galleries, GodRays, Lighting, Mosaics, Shell, Windows, type Tier } from './HagiaScene';
+import { setMarbleRes } from './materials';
 import { hagiaAudio } from './AudioManager';
 
 /* ---------- cihaz ve uyarlanabilir kalite ---------- */
@@ -46,7 +47,7 @@ const CURVES = RAILS.map((r) => new THREE.CatmullRomCurve3(r.points.map((p) => n
 const LENGTHS = CURVES.map((c) => c.getLength());
 /** Rota boyunca önceden tanımlı bakış hedefleri (u ∈ 0..1) */
 const GAZE: [number, V3][][] = [
-  [[0, [-31, 4.5, 0]], [0.22, [0, 12, 0]], [0.42, [16, RING_Y - 8, 0]], [0.62, [31, 24, 0]], [0.82, [34, 12, 0.5]], [1, [34.5, 4.2, 1.4]]],
+  [[0, [-33, 24, 0]], [0.3, [-33, 14, 0]], [0.42, [-31, 4.5, 0]], [0.52, [0, 12, 0]], [0.66, [16, RING_Y - 8, 0]], [0.8, [31, 24, 0]], [0.92, [34, 12, 0.5]], [1, [34.5, 4.2, 1.4]]],
   [[0, [-14, GALLERY_Y + 2.6, 30]], [0.3, [-14, GALLERY_Y + 2.6, 30]], [0.52, [2, 31, -15.5]], [0.8, [30.8, GALLERY_Y + 2.6, 22.5]], [1, [30.8, GALLERY_Y + 2.6, 22.5]]],
 ];
 function gazeAt(rail: number, u: number, out: THREE.Vector3) {
@@ -54,6 +55,7 @@ function gazeAt(rail: number, u: number, out: THREE.Vector3) {
   const [u0, a] = g[i], [u1, b] = g[i + 1], k = Math.max(0, Math.min(1, (u - u0) / (u1 - u0))), s = k * k * (3 - 2 * k);
   return out.set(a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s);
 }
+export const LOOK_SENS = 0.8;
 export const SPEED = 3.5, LOOK_YAW = (110 * Math.PI) / 180, PITCH_MIN = (-40 * Math.PI) / 180, PITCH_MAX = (80 * Math.PI) / 180;
 
 interface Shared {
@@ -70,10 +72,11 @@ function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier);
   const [saver, setSaver] = useState(false);
   const prof = useMemo(() => profile(tier, saver), [tier, saver]);
+  useMemo(() => setMarbleRes(prof.tier === 'low' ? 512 : 1024), [prof.tier]);   // mermer dokusu: 512 / 1024 px, anizotropi 16
   const [stage, setStage] = useState(0);            // aşamalı yükleme: 0 kabuk, 1 sütun/galeri, 2 ayrıntı
   const [started, setStarted] = useState(false);
   const [hour, setHour] = useState(10.5);
-  const [zone, setZone] = useState<Zone>('narteks');
+  const [zone, setZone] = useState<Zone>('avlu');
   const [rail, setRail] = useState(0);
   const [atEnd, setAtEnd] = useState(false);
   const [target, setTarget] = useState<Poi | null>(null), [card, setCard] = useState<Poi | null>(null);
@@ -123,8 +126,10 @@ function Game({ onExit }: { onExit: () => void }) {
   const drag = useRef<{ x: number; y: number } | null>(null);
   const onDown = (e: React.PointerEvent) => { hagiaAudio.unlock(); drag.current = { x: e.clientX, y: e.clientY }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); };
   const onMove = (e: React.PointerEvent) => {
-    const d = drag.current; if (!d || card) return; const k = (2.6 / Math.max(360, innerWidth));
-    const l = sh.look.current; l.yaw = Math.max(-LOOK_YAW, Math.min(LOOK_YAW, l.yaw + (e.clientX - d.x) * k)); l.pitch += (e.clientY - d.y) * k;   // sınır Player'da uygulanır
+    const d = drag.current; if (!d || card) return; const k = (2.6 * LOOK_SENS) / Math.max(360, innerWidth);
+    // ikisi de aynı yönde: sağa sürükle → sağa bak, aşağı sürükle → aşağı bak (önceki sürümde dikey eksen tersti)
+    const l = sh.look.current; l.yaw = Math.max(-LOOK_YAW, Math.min(LOOK_YAW, l.yaw + (e.clientX - d.x) * k));
+    l.pitch = Math.max(-1.6, Math.min(1.6, l.pitch - (e.clientY - d.y) * k));   // birikme yok: sınıra dayanınca takılmaz; kesin sınır Player'da
     drag.current = { x: e.clientX, y: e.clientY };
   };
   const onUp = () => { drag.current = null; };
@@ -133,7 +138,7 @@ function Game({ onExit }: { onExit: () => void }) {
   // test/inceleme
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __aya: unknown }).__aya = { go: (r: number, u: number, yaw = 0, pitch = 0) => { sh.rail.current = r; setRail(r); sh.s.current = u * LENGTHS[r]; sh.look.current = { yaw, pitch }; }, open: (id: string) => open(POIS.find((p) => p.id === id)!), hour: setHour }; });
 
-  const enter = () => { hagiaAudio.unlock(); hagiaAudio.setZone('narteks'); setStarted(true); };
+  const enter = () => { hagiaAudio.unlock(); hagiaAudio.setZone('avlu'); setStarted(true); };
   const hold = (v: number) => ({ onPointerDown: (e: React.PointerEvent) => { e.stopPropagation(); btn.current = v; }, onPointerUp: () => { btn.current = 0; }, onPointerLeave: () => { btn.current = 0; }, onPointerCancel: () => { btn.current = 0; } });
   const total = POIS.length, hh = Math.floor(hour), mm = hour % 1 ? '30' : '00';
 
@@ -141,12 +146,13 @@ function Game({ onExit }: { onExit: () => void }) {
     <div className="fixed inset-0 select-none overflow-hidden bg-[#0d0906] text-white" style={{ touchAction: 'none' }}>
       <Canvas shadows={prof.shadows} dpr={prof.dpr} gl={{ antialias: prof.antialias, powerPreference: 'high-performance' }}
         camera={{ fov: 62, near: 0.1, far: 260, position: RAILS[0].points[0] }}
-        onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = EXPOSURE.narteks; }}>
+        onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = EXPOSURE.avlu; }}>
         {/* uyarlanabilir kalite: kare hızı düşerse bir kademe in (adres çubuğunda ?q= ile sabitlenmişse dokunma) */}
         {!pinned && <PerformanceMonitor bounds={() => [30, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
-        <color attach="background" args={['#0d0906']} />
         <Suspense fallback={null}>
-          <Lighting hour={hour} shadows={prof.shadows} focus={zone === 'apsis' ? 1 : 0.15} />
+          <Atmosphere outside={zone === 'avlu'} />
+          <Lighting hour={hour} shadows={prof.shadows} focus={zone === 'apsis' ? 1 : 0.15} outside={zone === 'avlu'} />
+          <Exterior tier={prof.tier} />
           <Shell tier={prof.tier} detail={prof.tesserae} />
           <Windows hour={hour} />
           {stage >= 1 && <><Columns tier={prof.tier} /><Galleries /></>}
@@ -224,13 +230,13 @@ function Game({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
-const ZONE_LABEL: Record<Zone, string> = { narteks: 'Narteks', nef: 'Ana nef', apsis: 'Mihrap önü', galeri: 'Üst galeri' };
+const ZONE_LABEL: Record<Zone, string> = { avlu: 'Avlu', narteks: 'Narteks', nef: 'Ana nef', apsis: 'Mihrap önü', galeri: 'Üst galeri' };
 
 /* ---------- kamera: ray, bakış, inceleme, göz uyumu ---------- */
 function Player({ sh, composer, onZone, onTarget, onEnd, active }: { sh: Shared; composer: boolean; onZone: (z: Zone) => void; onTarget: (p: Poi | null) => void; onEnd: (b: boolean) => void; active: boolean }) {
   const { camera, gl } = useThree();
   const V = useMemo(() => ({ eye: new THREE.Vector3(), gaze: new THREE.Vector3(), dir: new THREE.Vector3(), q: new THREE.Quaternion(), q2: new THREE.Quaternion(), m: new THREE.Matrix4(), e: new THREE.Euler(0, 0, 0, 'YXZ'), up: new THREE.Vector3(0, 1, 0), t: new THREE.Vector3(), ipos: new THREE.Vector3() }), []);
-  const st = useRef({ zone: '' as Zone | '', target: null as string | null, end: false, exp: EXPOSURE.narteks, blend: 0, dist: 0, last: null as Poi | null, fov: 62, baseYaw: 0, basePitch: 0, init: false });
+  const st = useRef({ zone: '' as Zone | '', target: null as string | null, end: false, exp: EXPOSURE.avlu, blend: 0, dist: 0, last: null as Poi | null, fov: 62, baseYaw: 0, basePitch: 0, init: false });
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.1), r = sh.rail.current, L = LENGTHS[r], S = st.current, insp = sh.inspect.current;
     // ray boyunca ilerleme
@@ -300,7 +306,7 @@ function StartCard({ stage, onEnter }: { stage: number; onEnter: () => void }) {
       <div className="w-full max-w-xl rounded-2xl bg-black/70 p-5 backdrop-blur">
         <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">İstanbul · UNESCO Dünya Mirası · 537</p>
         <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Ayasofya: Işığın ve Taşın Dansı</h1>
-        <p className="mt-2 text-sm text-white/80">Karanlık narteksten kubbenin altına, oradan mihraba ve üst galerideki mozaiklere. Kamera önceden belirlenmiş rotada ilerler; sen yürür, başını çevirir ve incelemek istediğin yere bakarsın.</p>
+        <p className="mt-2 text-sm text-white/80">Avludan karanlık nartekse, oradan kubbenin altına, oradan mihraba ve üst galerideki mozaiklere. Kamera önceden belirlenmiş rotada ilerler; sen yürür, başını çevirir ve incelemek istediğin yere bakarsın.</p>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/15" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div className="h-full bg-amber-400 transition-all duration-300" style={{ width: `${pct}%` }} /></div>
         <p className="mt-1 text-xs text-white/55">{['Kubbe ve ana ayaklar…', 'Sütunlar ve galeriler…', 'Mozaikler, ışık huzmeleri…'][Math.min(2, stage)]}{ready ? ' hazır' : ''}</p>
         <button onClick={onEnter} disabled={!ready} className="mt-3 h-12 w-full rounded-xl bg-brand font-semibold disabled:opacity-50">İçeri gir</button>

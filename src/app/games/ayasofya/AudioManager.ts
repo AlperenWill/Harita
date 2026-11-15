@@ -8,7 +8,7 @@
  * Ezan sentezlenmez; dini okuyuşu taklit etmek yerine mihrap önünde yalnızca ışık odaklanır.
  */
 import type { Zone } from './hagia';
-const RT: Record<Zone, number> = { nef: 7, apsis: 4, galeri: 1.8, narteks: 2.6 };
+const RT: Record<Zone, number> = { avlu: 0.5, nef: 7, apsis: 4, galeri: 1.8, narteks: 2.6 };
 
 class HagiaAudio {
   private ctx: AudioContext | null = null; private master: GainNode | null = null;
@@ -52,7 +52,7 @@ class HagiaAudio {
   setZone(z: Zone) {
     this.zone = z; const ctx = this.ctx; if (!ctx) return; const t = ctx.currentTime;
     for (const k of Object.keys(this.verbs) as Zone[]) this.verbs[k].wet.gain.setTargetAtTime(k === z ? 0.6 : 0, t, 0.4);
-    this.water?.gain.setTargetAtTime(z === 'narteks' ? 0.1 : 0.012, t, 0.8);
+    this.water?.gain.setTargetAtTime(z === 'avlu' ? 0.22 : z === 'narteks' ? 0.08 : 0.01, t, 0.8);   // şadırvan avluda
   }
   setMusic(on: boolean) { if (this.ctx && this.music) this.music.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 1.5); }
   setMuted(m: boolean) { this.muted = m; if (m) this.hush(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.2); }
