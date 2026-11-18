@@ -10,6 +10,14 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { PLATEAU_R, TUMULUS, heightAt, scatter } from './terrain';
 
+/** Kırma taş / çakıl dokusu (dünya ölçekli UV: her 3 m'de bir tekrar) */
+function gravelTex() {
+  const n = 256, c = document.createElement('canvas'); c.width = c.height = n; const g = c.getContext('2d')!; g.fillStyle = '#c8c0b2'; g.fillRect(0, 0, n, n);
+  let sd = 3; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 2600; i++) { const v = 150 + r() * 100, x = r() * n, y = r() * n, s = 1 + r() * 4; g.fillStyle = `rgb(${v},${v - 6},${v - 16})`; g.beginPath(); g.ellipse(x, y, s, s * (0.6 + r() * 0.4), r() * 3, 0, Math.PI * 2); g.fill(); g.fillStyle = 'rgba(40,30,20,.18)'; g.fillRect(x + s * 0.6, y + s * 0.5, s * 0.8, 1); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
+}
+
 export type Tier = 'low' | 'medium' | 'high';
 const SIZE = 2600;
 export function Terrain({ tier }: { tier: Tier }) {
@@ -23,14 +31,18 @@ export function Terrain({ tier }: { tier: Tier }) {
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), y = p.getY(i), z = p.getZ(i), r = Math.hypot(x, z), slope = 1 - nrm.getY(i);
       const gravel = r < TUMULUS.r + 2 && y > 0.5;                          // tümülüs: açık renkli kırma kireçtaşı
-      c.set(gravel ? '#b9b0a0' : r < PLATEAU_R ? '#a39680' : '#8b7d68');
+      const path = Math.abs(r - 92) < 3 && !(Math.abs(Math.abs(x) - 92) < 30 && Math.abs(z) < 44);   // ziyaretçi yolu (tümülüsü dolanan iz)
+      c.set(gravel ? '#d8d0c2' : path ? '#b8aa92' : r < PLATEAU_R ? '#9c8e78' : '#857766');
       const shade = 1 - Math.min(0.5, slope * 1.5) - (y < -40 ? Math.min(0.25, -y / 900) : 0);   // statik gölgelendirme: dik yüzler ve vadi tabanları koyu
       const tint = (Math.sin(x * 0.07) * Math.cos(z * 0.05) + 1) * 0.04;
       col[i * 3] = c.r * shade + tint; col[i * 3 + 1] = c.g * shade + tint * 0.8; col[i * 3 + 2] = c.b * shade;
     }
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3)); return g;
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const uv = g.attributes.uv as THREE.BufferAttribute; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i) / 3, p.getZ(i) / 3);
+    return g;
   }, [tier]);
-  return <mesh geometry={geo}><meshLambertMaterial vertexColors /></mesh>;
+  const mat = useMemo(() => new THREE.MeshStandardMaterial({ vertexColors: true, map: gravelTex(), roughness: 1 }), []);
+  return <mesh geometry={geo} material={mat} receiveShadow />;
 }
 
 /** Kaya ve çalılar: GPU instancing (her biri tek çizim çağrısı) */
@@ -40,7 +52,7 @@ export function Scatter({ tier }: { tier: Tier }) {
     const rg = new THREE.IcosahedronGeometry(1, 0), sg = new THREE.IcosahedronGeometry(1, 0).scale(1, 0.6, 1);
     const rm = new THREE.InstancedMesh(rg, new THREE.MeshLambertMaterial({ color: '#9a8f7e', flatShading: true }), nR), sm = new THREE.InstancedMesh(sg, new THREE.MeshLambertMaterial({ color: '#6b6a44', flatShading: true }), nS);
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
-    scatter(nR, 11, TUMULUS.r + 4, 330).forEach((s, i) => { e.set(s.rot, s.rot * 2, s.rot * 0.5); m.compose(new THREE.Vector3(s.x, heightAt(s.x, s.z) + s.s * 0.2, s.z), q.setFromEuler(e), new THREE.Vector3(s.s, s.s * 0.7, s.s * 1.2)); rm.setMatrixAt(i, m); });
+    scatter(nR, 11, TUMULUS.r + 4, 330).forEach((s0, i) => { const s = Math.hypot(s0.x, s0.z) < PLATEAU_R ? { ...s0, s: s0.s * 0.3 } : s0; e.set(s.rot, s.rot * 2, s.rot * 0.5); m.compose(new THREE.Vector3(s.x, heightAt(s.x, s.z) + s.s * 0.2, s.z), q.setFromEuler(e), new THREE.Vector3(s.s, s.s * 0.7, s.s * 1.2)); rm.setMatrixAt(i, m); });
     scatter(nS, 29, TUMULUS.r + 10, 300).forEach((s, i) => { m.compose(new THREE.Vector3(s.x, heightAt(s.x, s.z) + 0.2, s.z), q.identity(), new THREE.Vector3(s.s * 0.6, s.s * 0.5, s.s * 0.6)); sm.setMatrixAt(i, m); });
     return { rocks: rm, shrubs: sm };
   }, [tier]);

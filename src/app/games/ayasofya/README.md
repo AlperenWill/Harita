@@ -18,11 +18,13 @@ projedeki diğer oyunlarla aynı gerçek teknolojiyle yapıldı: **React Three F
 ## Dosya yapısı
 ```
 src/app/games/ayasofya/
-  HagiaSophiaGame.tsx  ana yönetici: raylı kamera, bakış, inceleme, göz uyumu, uyarlanabilir kalite, post-processing, arayüz
+  HagiaSophiaGame.tsx  ana yönetici: serbest yürüyüş, üçüncü şahıs kamera, rehber Elif Hoca, inceleme, göz uyumu, kalite, post-processing, arayüz
+  walk.ts              yürünebilir alan (zemin + güney galeri), rampa, rehber turu, figürler, kamera çarpışması (saf, test edilir)
+  Outside.tsx          dış mekân: avlu, dış narteks revakı, payandalar, pencereli kasnak + kubbe, şerefeli minareler, şadırvan, bahçe
   HagiaScene.tsx       kabuk (kubbe, pandantif, yarım kubbeler, apsis, narteks), galeriler, sütunlar, pencereler, ışık huzmeleri,
                        mozaik panoları (doku akışı), mihrap, minber, omphalion, ölçek figürleri, ışıklar
   materials.ts         altın mozaik shader'ı, prosedürel mermerler (yeşil Tesalya, porfir, beyaz), pano çizimleri
-  hagia.ts             ölçüler, güneş, pencereler, huzme hesabı, raylar, bölgeler, pozlama, ilgi noktaları (saf, test edilir)
+  hagia.ts             ölçüler, güneş, pencereler, huzme hesabı, bölgeler, pozlama, ilgi noktaları (saf, test edilir)
   AudioManager.ts      bölgeye göre yankı (akustik), ortam sesi, adım, isteğe bağlı sentez müzik
 src/app/pages/AyasofyaPage.tsx · tests/ayasofya.test.ts
 ```
@@ -34,14 +36,13 @@ kuzey–güneyde pencereli timpanon duvarları, iki katlı yan nefler ve galeril
 Mihrap apsisin ekseninden güneye kaydırılmış ve kıbleye çevrilidir. Ölçek için zeminde 1,70 m boyunda 14 ziyaretçi figürü durur.
 Modelde 56 sütun var; gerçek yapıda yaygın olarak 107 sütun sayılır (bu sayı bu çalışmada kaynakla doğrulanmadı).
 
-## Oynanış: "Işık peşinde keşif"
-- **İki ray:** zemin (narteks → ana nef → mihrap önü) ve güney galeri (Deisis → Zoe ve Komnenos). Ray sonunda "Üst galeriye çık / Zemine dön".
-- **Hareket:** W/S, tekerlek ya da ekrandaki ileri/geri düğmeleri (3,5 m/sn); **Otomatik tur** kamerayı yavaşça ilerletir.
-- **Bakış:** sürükleyerek baş çevirme, yatay ±110°, dikey −40°…+80°. Dinlenme bakışı rotaya göre önceden tanımlıdır (kubbenin altında yukarı).
-- **İncele:** nişangâh bir ilgi noktasına gelince parlar; E / İncele ile kamera o ayrıntıya yaklaşır ya da (yüksekteyse) görüş açısı
-  dürbün gibi daralır, kaynaklı bilgi kartı açılır ve metin tr-TR okunur. 13 ilgi noktası.
-- **Göz uyumu:** pozlama bölgeye göre hedeflenir (narteks 2,6 → nef 0,95) ve üstel yaklaşır; karanlık narteksten nefe girince ~2 sn göz kamaşır.
-- **Günün saati:** 07:00–18:30 kaydırıcısı. Güneş ekinoks günü için hesaplanır; yapı ekseni ~123° alınır.
+## Oynanış: serbest yürüyüş + rehber (v5)
+- **Serbest yürüyüş:** joystick (mobil) / WASD (masaüstü), Shift ile koşma; hız 3,5 m/sn. Ray sistemi kaldırıldı.
+- **Üçüncü şahıs kamera:** sürükleyerek çevrilir; yukarı sürükleyince bakış yükselir (kubbe görülür). İki parmak / tekerlek ile yakınlaşır. Duvarların, narteks tavanının ve galeri döşemesinin içine girmez.
+- **Rehber Elif Hoca** (kurgusal sanat tarihçisi) on duraklık turu yönetir: avlu → narteks → kubbe altı → ayaklar ve pandantifler → omphalion → sütunlar → mihrap ve minber → rampa → Deisis → Zoe ve Komnenos. Durağa yürür, oyuncu geride kalırsa bekler, yanına gelince anlatır (daktilo yazısı + açılıp kapanabilen sesli okuma). Galeri katına rampa kapısından birlikte geçerler. Oyuncu galeriye önden çıkmışsa rampa durağı atlanır. Yol bulma Topkapı ile ortaktır (`shared/nav.ts`).
+- **İncele:** yakındaki ilgi noktası için düğme çıkar (F). Kamera hedefe döner; uzaktaki hedefte (kubbe, apsis mozaiği) görüş açısı daralır.
+- **Göz uyumu** korunur: narteksten nefe geçince ~2 sn kamaşma.
+- **Figürler:** Kız Kulesi iskeletli karakteri. Avluda, nefte ve galeride ziyaretçiler (bazıları başörtülü), görevliler ve mihrap yakınında bir imam. Duranlar, sohbet edenler ve döngüsel yolda yürüyenler var (`shared/Crowd.tsx`). Eski tek parça ölçek figürleri kaldırıldı.
 
 ## Işık ve malzeme
 - **Huzmeler (god rays):** güneşe bakan her pencereden (40 kubbe + 24 timpanon) güneş yönünde bir huzme; nef sınırında ya da zeminde biter;
@@ -75,9 +76,9 @@ o bölgenin yankısına gider. Ortam: hafif rüzgâr, şehir uğultusu, narteks 
 | | Şanlıurfa | Ayasofya |
 |---|---|---|
 | Bağımsız oyun, şiddetsiz keşif | ✓ | ✓ |
-| Kamera | birinci şahıs, serbest bakış | raylı, sınırlı bakış; serbest kamera yok |
+| Kamera | birinci şahıs, serbest bakış | üçüncü şahıs, serbest yürüyüş (v5) |
 | Görsel | düz renkli low-poly, post-processing yok | PBR, ortam haritası, bloom/AO, dinamik güneş |
-| Etkileşim | E / el düğmesi | nişangâh + E / İncele |
+| Etkileşim | E / el düğmesi | yakınlık düğmesi + F / İncele, rehber diyaloğu |
 | Yükleme | Three.js CDN'den | uygulama içinde, aşamalı |
 Görsel düzey Şanlıurfa'nın üstünde; üslup (stilize figürler, Türkçe arayüz, sakin tempo) aynı ailede kalır.
 
@@ -126,3 +127,9 @@ Doğrulanamayanlar: hat levhalarının çapı ve hattatı, toplam sütun sayıs�
 - Avizeler: 9 adet, alçak asılı, üç halkalı (4,6 / 3,1 / 1,6 m), orta-yüksek kademede avize başına 68 ampul; ampuller bloom eşiğinin üstünde.
 - Kubbe bezemesi: altın zemin üzerine koyu lacivert kaburga, kuşak ve madalyon. Hat yazıları üretilmedi (levhalar yazısız).
 - Referansla "birebir" değildir: yapı prosedüreldir; halı referanstakinden biraz daha açık görünür.
+
+## v5: serbest yürüyüş, rehber ve yeni dış mimari
+- **Dış mimari:** Kutu biçimli kütle yerine sıcak tonlu, kat silmeli sıva (dünya ölçekli UV), iki sıra pencere, kuzey ve güneyde dörder payanda var. Timpanon duvarlarında 7 + 5 pencere, kubbede 40 pencereli ve dişli kasnak, kurşun kubbe ve alem bulunuyor. Batı ve doğu yarım kubbeleri, köşe eksedra kubbeleri, sivri kemerli dış narteks revakı ve şerefeli dört minare (iki balkon, kalem külah) eklendi. Şadırvanın sütunları, şebekesi ve saçağı yenilendi; servi ve çınarlar, lale tarhları ve güvercinler eklendi.
+- **Işık:** Avluda drei `Sky` ve oyuncuyu izleyen gölgeli güneş kullanılıyor. İçeride mevcut ışık sistemi (huzmeler, avizeler, ortam haritası) korunuyor.
+- **İç mekân:** Mermer kaplama, ayak ve narteks zemini daha sık tekrarlanıyor; damarlar artık iri görünmüyor. Yan nef ve galeri duvarlarında gün ışığı alan pencereler, narteksin batı duvarında küçük pencereler var. Galeri döşemesi artık mermer.
+- **Dürüstlük:** Plan ve ölçüler stilizedir. Rampa çizilmez; kat geçişi ekran kararmasıyla yapılır. Yalnızca güney galeri yürünebilir. Kare hızı gerçek telefonlarda ölçülmedi.

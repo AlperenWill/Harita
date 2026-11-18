@@ -24,8 +24,6 @@ export function heightAt(x: number, z: number): number {
   const rough = sstep(PLATEAU_R - 6, PLATEAU_R + 40, r) * (noise(x * 0.05, z * 0.05) - 0.5) * 9;
   return tum + slope + far + rough;
 }
-/** Teraslar düz mü: heykel sırası ve önündeki alan */
-export const onTerrace = (x: number, z: number) => Math.abs(Math.abs(x) - (TERRACE_X + 8)) < 22 && Math.abs(z) < 34;
 
 /** Kaya ve çalı yerleşimi (tohumlu): tümülüs ve heykel sırası dışında, plato ve yamaçlarda */
 export function scatter(count: number, seed: number, rMin: number, rMax: number): { x: number; z: number; s: number; rot: number }[] {
@@ -34,7 +32,7 @@ export function scatter(count: number, seed: number, rMin: number, rMax: number)
   while (out.length < count && guard++ < count * 30) {
     const a = r() * Math.PI * 2, d = rMin + Math.sqrt(r()) * (rMax - rMin), x = Math.cos(a) * d, z = Math.sin(a) * d;
     if (Math.abs(Math.abs(x) - TERRACE_X) < 9 && Math.abs(z) < 30) continue;        // heykel sırası
-    if (Math.abs(x) > TERRACE_X && Math.abs(x) < TERRACE_X + 40 && Math.abs(z) < 12) continue;   // kameranın önü açık
+    if (Math.abs(x) > TERRACE_X && Math.abs(x) < TERRACE_X + 30 && Math.abs(z) < 44) continue;   // teraslar boş
     out.push({ x, z, s: 0.5 + r() * 1.6, rot: r() * 6.28 });
   }
   return out;
@@ -54,18 +52,7 @@ export const STATUE = { spacing: 9.2, seatH: 6.4, headH: 2.6, total: 9 } as cons
 export function statueSpots(side: 1 | -1) {
   return FIGURES.map((f, i) => ({ ...f, x: side * TERRACE_X, z: (i - 2) * STATUE.spacing, face: side }));
 }
-/** Devrilmiş başın bugünkü yeri: heykelin önünde, yerde (deprem ve zamanla düştüler; bulundukları yere dikildiler) */
+/** Devrilmiş başın bugünkü yeri: heykelin önünde, yerde (başlar zamanla düştü; yeniden gövdelere konmadı) */
 export function fallenSpot(side: 1 | -1, i: number): { x: number; z: number; tilt: number } {
-  return { x: side * (TERRACE_X + 9 + ((i * 37) % 5)), z: (i - 2) * STATUE.spacing + (((i * 53) % 7) - 3) * 0.6, tilt: (((i * 29) % 9) - 4) * 0.035 };
+  return { x: side * (TERRACE_X + 8.5 + ((i * 37) % 5) * 0.4), z: (i - 2) * STATUE.spacing + (((i * 53) % 7) - 3) * 0.5, tilt: (((i * 29) % 9) - 4) * 0.035 };
 }
-
-/* ---------- sabit kameralar: asla heykellerin arkasına geçmez ---------- */
-export type View = 'dogu' | 'bati' | 'tumulus';
-export const VIEW_LABEL: Record<View, string> = { dogu: 'Doğu Terası', bati: 'Batı Terası', tumulus: 'Tümülüs' };
-export const CAMERAS: Record<View, { far: [number, number, number]; near: [number, number, number]; look: [number, number, number]; fov: number }> = {
-  dogu: { far: [TERRACE_X + 44, 7.5, 13], near: [TERRACE_X + 19, 4.2, 5], look: [TERRACE_X - 4, 5.6, 0], fov: 46 },
-  bati: { far: [-(TERRACE_X + 44), 7.5, -13], near: [-(TERRACE_X + 19), 4.2, -5], look: [-(TERRACE_X - 4), 5.6, 0], fov: 46 },
-  tumulus: { far: [150, 210, 250], near: [110, 150, 190], look: [0, 18, 0], fov: 42 },
-};
-/** Kamera heykel sırasının önünde mi (arkasına geçmiyor mu) */
-export const inFront = (v: 'dogu' | 'bati', camX: number) => (v === 'dogu' ? camX > TERRACE_X : camX < -TERRACE_X);

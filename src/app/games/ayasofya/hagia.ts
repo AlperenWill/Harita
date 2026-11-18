@@ -1,5 +1,5 @@
 /**
- * Ayasofya — yapı ölçüleri, güneş, pencereler, kamera rotası ve ilgi noktaları (saf; test edilir).
+ * Ayasofya — yapı ölçüleri, güneş, pencereler, bölgeler ve ilgi noktaları (saf; test edilir). Yürüyüş modeli walk.ts'de.
  * Koordinatlar (m, 1 birim = 1 m): +x apsis (doğu ucu), +z güney, y yukarı; kubbenin merkezi (0, ·, 0).
  * Ölçüler yayımlanmış yaklaşık değerlerdir (kubbe çapı ~31–32 m, tepe ~55 m, 40 pencere); lazer tarama verisi DEĞİLDİR.
  */
@@ -89,14 +89,8 @@ export function columns(): Column[] {
 }
 export const PIERS: V3[] = [[-R, 0, -18.5], [R, 0, -18.5], [-R, 0, 18.5], [R, 0, 18.5]];
 
-/* ---------- kamera rotası: serbest kamera yok, iki ray ---------- */
+/* ---------- bölgeler (ses ve göz uyumu için) ---------- */
 export type Zone = 'avlu' | 'narteks' | 'nef' | 'apsis' | 'galeri';
-export interface Rail { id: 'zemin' | 'galeri'; name: string; points: V3[] }
-const EYE = 1.68;
-export const RAILS: Rail[] = [
-  { id: 'zemin', name: 'Avlu → Narteks → Ana nef → Mihrap', points: [[-92, EYE, 0], [-75, EYE, 0], [-58, EYE, 0], [-47, EYE, 0], [-40.5, EYE, 0], [-36, EYE, 0], [-30, EYE, 0], [-18, EYE, 0], [-4, EYE, 0], [8, EYE, 1.2], [19, EYE, 2.6], [26.5, EYE, 3.2]] },
-  { id: 'galeri', name: 'Güney galeri', points: [[-27, GALLERY_Y + EYE, 21], [-14, GALLERY_Y + EYE, 21.5], [0, GALLERY_Y + EYE, 19.2], [14, GALLERY_Y + EYE, 21.5], [26.5, GALLERY_Y + EYE, 22.5]] },
-];
 export function zoneAt(p: V3): Zone {
   if (p[1] > GALLERY_Y) return 'galeri';
   if (p[0] < NARTHEX.x0 - 0.8) return 'avlu';
@@ -112,7 +106,7 @@ export const adapt = (current: number, target: number, dt: number) => current + 
 
 /* ---------- ilgi noktaları ---------- */
 export type PoiKind = 'mozaik' | 'sutun' | 'mimari' | 'osmanli';
-export interface Poi { id: string; kind: PoiKind; rail: Rail['id']; name: string; era: string; pos: V3; radius: number; zoomFrom?: V3; text: string; source: { title: string; url: string } }
+export interface Poi { id: string; kind: PoiKind; rail: 'zemin' | 'galeri'; name: string; era: string; pos: V3; radius: number; zoomFrom?: V3; text: string; source: { title: string; url: string } }
 const SRC = {
   whe: { title: 'World History Encyclopedia — Hagia Sophia', url: 'https://www.worldhistory.org/Hagia_Sophia/' },
   brit: { title: 'Britannica — Hagia Sophia: Architecture', url: 'https://www.britannica.com/topic/Hagia-Sophia/Architecture' },
@@ -154,23 +148,5 @@ export const POIS: Poi[] = [
     text: 'Meryem ve Çocuk İsa, II. İoannes Komnenos ile İmparatoriçe Eirene arasında; yan duvarda oğulları Aleksios. Zoe panosunun hemen yanındadır.', source: SRC.comn },
 ];
 
-/** Nişangâh: ışın–küre testi (kameradan ileri) */
-export function lookingAt(eye: V3, dir: V3, rail: Rail['id'], maxDist = 60): Poi | null {
-  let best: Poi | null = null, bd = Infinity;
-  for (const p of POIS) {
-    if (p.rail !== rail) continue;
-    const o: V3 = [p.pos[0] - eye[0], p.pos[1] - eye[1], p.pos[2] - eye[2]], t = o[0] * dir[0] + o[1] * dir[1] + o[2] * dir[2];
-    if (t < 0 || t > maxDist) continue;
-    const d2 = o[0] * o[0] + o[1] * o[1] + o[2] * o[2] - t * t;
-    if (d2 < p.radius * p.radius && t < bd) { bd = t; best = p; }
-  }
-  return best;
-}
-/** İnceleme bakış noktası: verilmişse o; yoksa hedefe doğru, mesafenin %55'i kadar yaklaşmış göz */
-export function inspectEye(p: Poi, eye: V3): V3 {
-  if (p.zoomFrom) return p.zoomFrom;
-  const k = p.pos[1] > 18 ? 0 : 0.55;   // yüksekteki hedeflere yürünmez: yerinden, yalnızca görüş açısı daralır
-  return [eye[0] + (p.pos[0] - eye[0]) * k, eye[1], eye[2] + (p.pos[2] - eye[2]) * k];
-}
 /** Hedef ne kadar uzaksa görüş açısı o kadar daralır (dürbün etkisi) */
 export const inspectFov = (dist: number, radius: number) => Math.max(9, Math.min(42, (2 * Math.atan((radius * 1.25) / Math.max(1, dist)) * 180) / Math.PI));

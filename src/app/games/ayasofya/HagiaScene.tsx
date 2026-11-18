@@ -8,8 +8,8 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import { AISLE_Z, APEX_Y, APSE, ARCH_Y, DOME_RISE, GALLERY_Y, MIHRAB, MINBAR, NARTHEX, NAVE_X, PEND_R, PIERS, R, RING_Y, columns, domeWindows, shafts, sunVector, tympanumWindows, type V3 } from './hagia';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PANELS, goldMosaic, lead, marble, panelTextures, plaster, wood } from './materials';
+import { pointedWindow } from '../topkapi/kit';
 
 export type Tier = 'low' | 'medium' | 'high';
 const SEG: Record<Tier, number> = { low: 24, medium: 40, high: 64 };
@@ -44,7 +44,7 @@ export function Shell({ tier, detail }: { tier: Tier; detail: boolean }) {
     domeGold: goldMosaic({ tess: [640, 150], side: THREE.BackSide, detail, lod: [8, 34], pattern: 1 }),
     pendGold: goldMosaic({ tess: [220, 220], side: THREE.DoubleSide, detail, lod: [8, 34], color: '#cf9a36' }),
     semiGold: goldMosaic({ tess: [320, 160], side: THREE.BackSide, detail, lod: [8, 34], color: '#c9953a', pattern: 2 }),
-    floor: marble('floor', [3, 8], 0.16), carpet: carpetMaterial(), pier: marble('white', [2, 6], 0.28), revet: marble('white', [8, 3], 0.3),
+    floor: marble('floor', [6, 16], 0.16), carpet: carpetMaterial(), pier: marble('white', [6, 18], 0.28), revet: marble('white', [22, 5], 0.3),
     plaster: plaster('#a8977a'), plasterDark: plaster('#6a5a47'), ochre: plaster('#9c8663'),
   }), [detail]);
   useMemo(() => { M.revet.side = THREE.DoubleSide; M.plaster.side = THREE.DoubleSide; M.ochre.side = THREE.DoubleSide; }, [M]);
@@ -106,8 +106,13 @@ export function Shell({ tier, detail }: { tier: Tier; detail: boolean }) {
 
 /* ---------- galeriler, kirişler ---------- */
 export function Galleries() {
-  const stone = useMemo(() => marble('white', [10, 1], 0.35), []);
-  const slab = useMemo(() => plaster('#a58a63'), []);
+  const stone = useMemo(() => marble('white', [22, 2], 0.35), []);
+  const slab = useMemo(() => marble('floor', [24, 4], 0.3), []);
+  // galeri ve yan nef dış duvarlarında içeriden parlayan pencereler (gün ışığı)
+  const wins = useMemo(() => { const g = pointedWindow(1.6, 3.4), im = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color: new THREE.Color('#fff1d6').multiplyScalar(1.7), toneMapped: false }), 66), M4 = new THREE.Matrix4(), q = new THREE.Quaternion(); let k = 0;
+    for (const s of [-1, 1]) for (const y of [4.2, 16.5]) for (let i = 0; i < 14; i++) im.setMatrixAt(k++, M4.compose(new THREE.Vector3(-30 + ((i + 0.5) / 14) * 60, y, s * (AISLE_Z - 0.03)), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), s > 0 ? Math.PI : 0), new THREE.Vector3(1, 1, 1)));
+    for (let i = 0; i < 12; i++) if (i !== 5 && i !== 6) im.setMatrixAt(k++, M4.compose(new THREE.Vector3(NARTHEX.x0 + 0.03, 4.6, -26 + ((i + 0.5) / 12) * 52), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2), new THREE.Vector3(0.8, 0.8, 0.8)));   // narteks batı duvarı (loş kalsın: küçük)
+    im.count = k; return im; }, []);
   return (
     <group>
       {[-1, 1].map((s) => (
@@ -119,6 +124,7 @@ export function Galleries() {
           <mesh material={stone} position={[0, GALLERY_Y + 0.55, s * (R + 0.45)]}><boxGeometry args={[24, 1.1, 0.25]} /></mesh>
         </group>
       ))}
+      <primitive object={wins} />
     </group>
   );
 }
@@ -239,28 +245,6 @@ export function Furnishings({ tier }: { tier: Tier }) {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const a = 0.78; out.push({ pos: [sx * (R + Math.cos(a) * (R - 0.6)), 21.5, sz * Math.sin(a) * (R - 0.6)], rot: Math.atan2(-sx * Math.cos(a), -sz * Math.sin(a)) }); }
     return out;
   }, []);
-  // ölçek figürleri: 1,70 m boyunda ziyaretçiler (tek InstancedMesh)
-  const people = useMemo(() => {
-    const spots: [number, number][] = [[-22, 3], [-12, -4], [-6, 5], [2, -7], [5, 2.5], [11, -3], [16, 6], [21, -2], [24, 5], [-2, 10], [8, -10], [-15, 9], [0, -1.5], [18, -8]];
-    // gövde (bacaklar, gövde, kollar) tek birleşik geometri; ten (baş, eller) ayrı — 2 InstancedMesh, kişi başı ~330 üçgen
-    const leg = (s: number) => new THREE.CapsuleGeometry(0.075, 0.68, 2, 6).translate(s * 0.1, 0.42, 0), arm = (s: number) => new THREE.CapsuleGeometry(0.055, 0.5, 2, 6).rotateZ(s * 0.12).translate(s * 0.26, 1.12, 0);
-    const body = mergeGeometries([leg(-1), leg(1), new THREE.CapsuleGeometry(0.17, 0.42, 3, 8).scale(1, 1, 0.7).translate(0, 1.15, 0), arm(-1), arm(1)])!;
-    const hand = (s: number) => new THREE.SphereGeometry(0.05, 6, 4).translate(s * 0.3, 0.82, 0);
-    const skin = mergeGeometries([new THREE.SphereGeometry(0.115, 10, 8).translate(0, 1.58, 0), new THREE.CylinderGeometry(0.045, 0.05, 0.1, 6).translate(0, 1.45, 0), hand(-1), hand(1)])!;
-    const b = new THREE.InstancedMesh(body, new THREE.MeshStandardMaterial({ roughness: 0.9 }), spots.length), k = new THREE.InstancedMesh(skin, new THREE.MeshStandardMaterial({ roughness: 0.8 }), spots.length);
-    const tones = ['#3a4a63', '#6b3f3a', '#4d5a44', '#2f2f36', '#7a6a55', '#5a4a6e'], skins = ['#d9b594', '#c99272', '#e6c7a8', '#a9764f'];
-    spots.forEach((_, i) => { b.setColorAt(i, new THREE.Color(tones[i % tones.length])); k.setColorAt(i, new THREE.Color(skins[i % skins.length])); });
-    b.castShadow = true; return { b, k, spots };
-  }, []);
-  // bekleme (idle) animasyonu: her figür kendi fazında hafifçe salınır ve ağırlık aktarır
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime, m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
-    people.spots.forEach(([x, z], i) => {
-      e.set(Math.sin(t * 0.9 + i * 1.7) * 0.025, i * 2.4 + Math.sin(t * 0.23 + i) * 0.35, Math.sin(t * 0.6 + i * 0.9) * 0.03); q.setFromEuler(e);
-      m.compose(p.set(x, Math.sin(t * 1.3 + i) * 0.006, z), q, one); people.b.setMatrixAt(i, m); people.k.setMatrixAt(i, m);
-    });
-    people.b.instanceMatrix.needsUpdate = people.k.instanceMatrix.needsUpdate = true;
-  });
   const lamps = useMemo(() => {
     // geniş çaplı, alçak asılı, üç halkalı avizeler; ampuller emissive (ton eşleme dışı, bloom eşiğinin üstünde)
     const centers: V3[] = [[-17, 4.6, 0], [0, 5, 0], [16, 4.6, 0], [0, 4.6, -9.5], [0, 4.6, 9.5], [-9, 4.4, -8], [-9, 4.4, 8], [9, 4.4, -8], [9, 4.4, 8]];
@@ -310,7 +294,6 @@ export function Furnishings({ tier }: { tier: Tier }) {
       </group>
       {/* İmparator Kapısı: bronz kaplı kanatlar (açık) */}
       {[-1, 1].map((s) => <mesh key={s} material={M.bronze} position={[-33.3, 3.6, s * 2.9]} rotation={[0, s * 0.5, 0]} castShadow><boxGeometry args={[0.16, 7.2, 2]} /></mesh>)}
-      <primitive object={people.b} /><primitive object={people.k} />
       <primitive object={lamps.torus} /><primitive object={lamps.bulbs} /><primitive object={lamps.chains} />
       {lamps.rings.slice(0, tier === 'low' ? 1 : 5).map((r, i) => <pointLight key={i} position={[r[0], r[1] - 0.4, r[2]]} color="#FFD700" intensity={14} distance={22} decay={1.7} />)}
     </group>
@@ -348,59 +331,6 @@ export function Lighting({ hour, shadows, focus, outside }: { hour: number; shad
   );
 }
 
-/* ---------- dış mekân: avlu, batı cephesi, kurşun kubbe, minareler, ağaçlar, çit, şadırvan ---------- */
-export function Exterior({ tier }: { tier: Tier }) {
-  const M = useMemo(() => ({ wall: plaster('#c98a6a'), stone: marble('floor', [14, 10], 0.6), lead: lead(), white: plaster('#e6dccb'), wood: wood(), leaf: new THREE.MeshStandardMaterial({ color: '#3f6a3a', roughness: 1, flatShading: true }), iron: new THREE.MeshStandardMaterial({ color: '#23201d', roughness: 0.6, metalness: 0.5 }) }), []);
-  const X = NARTHEX.x0 - 0.5;
-  // kutu yüz sırası: +x, −x, +y, −y, +z, −z. İçeriden görünecek yüzler (alt yüz, narteks tarafındaki batı yüzü) çizilmez.
-  const open = useMemo(() => { const none = new THREE.MeshBasicMaterial({ visible: false }); return { main: [M.wall, none, M.wall, none, M.wall, M.wall], upper: [M.wall, M.wall, M.wall, none, M.wall, M.wall] }; }, [M]);
-  const inst = useMemo(() => {
-    const tree = mergeGeometries([new THREE.CylinderGeometry(0.18, 0.26, 2.4, 6).translate(0, 1.2, 0).toNonIndexed(), new THREE.IcosahedronGeometry(1.9, 0).scale(1, 1.25, 1).translate(0, 4.1, 0)])!;
-    let sd = 4; const r = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
-    const spots: [number, number, number][] = []; while (spots.length < (tier === 'low' ? 12 : 26)) { const x = -100 + r() * 52, z = -46 + r() * 92; if (Math.abs(z) < 7 || (x > -66 && Math.abs(z) < 12)) continue; spots.push([x, z, 0.8 + r() * 0.7]); }
-    const trees = new THREE.InstancedMesh(tree, M.leaf, spots.length);
-    spots.forEach(([x, z, k], i) => trees.setMatrixAt(i, new THREE.Matrix4().compose(new THREE.Vector3(x, 0, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), i), new THREE.Vector3(k, k, k))));
-    // çit: yolun iki yanında dikmeler + iki yatay ray
-    const posts: number[] = []; for (let x = -100; x <= -48; x += 2) posts.push(x);
-    const fence = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 1.1, 0.08).translate(0, 0.55, 0), M.iron, posts.length * 2);
-    posts.forEach((x, i) => { fence.setMatrixAt(i * 2, new THREE.Matrix4().makeTranslation(x, 0, -5.2)); fence.setMatrixAt(i * 2 + 1, new THREE.Matrix4().makeTranslation(x, 0, 5.2)); });
-    return { trees, fence };
-  }, [M, tier]);
-  const seg = SEG[tier];
-  return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-75, -0.02, 0]} material={M.stone}><planeGeometry args={[70, 130]} /></mesh>
-      {[-1, 1].map((s) => <mesh key={s} material={M.iron} position={[-74, 1, s * 5.2]}><boxGeometry args={[52, 0.05, 0.05]} /></mesh>)}
-      {/* batı cephesi: kapı açıklığı (4 × 7,2 m) */}
-      {[-1, 1].map((s) => <mesh key={s} material={M.wall} position={[X, 6, s * 16.3]}><boxGeometry args={[1, 12, 28.6]} /></mesh>)}
-      <mesh material={M.wall} position={[X, 9.6, 0]}><boxGeometry args={[1, 4.8, 4]} /></mesh>
-      <mesh material={M.lead} position={[(NARTHEX.x0 + NARTHEX.x1) / 2 - 0.5, 12.1, 0]}><boxGeometry args={[NARTHEX.x1 - NARTHEX.x0 + 1.4, 0.4, 61.4]} /></mesh>
-      {[-1, 1].map((s) => <mesh key={`k${s}`} material={M.wood} position={[X - 0.7, 3.6, s * 2.6]} rotation={[0, s * 0.55, 0]}><boxGeometry args={[0.14, 7.2, 1.9]} /></mesh>)}
-      {/* ana kütle: dıştan görünen duvarlar (içeriden arka yüzler çizilmez) */}
-      <mesh material={open.main} position={[0, 13, 0]}><boxGeometry args={[66.4, 26, 2 * AISLE_Z + 1.2]} /></mesh>
-      <mesh material={M.wall} position={[-33.2, 19, 0]} rotation={[0, -Math.PI / 2, 0]}><planeGeometry args={[2 * AISLE_Z + 1.2, 14]} /></mesh>
-      {/* gövde kütlesi ve kurşun kaplı kubbeler (dıştan) */}
-      <mesh material={open.upper} position={[0, 33, 0]}><boxGeometry args={[2 * R + 8, 15, 2 * R + 8]} /></mesh>
-      <mesh material={M.lead} position={[0, RING_Y - 0.5, 0]} scale={[1, DOME_RISE / R, 1]}><sphereGeometry args={[R + 0.9, seg, 16, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
-      <mesh material={M.lead} position={[-R, ARCH_Y, 0]}><sphereGeometry args={[R + 0.8, seg, 12, -Math.PI / 2, Math.PI, 0, Math.PI / 2]} /></mesh>
-      {/* dört minare */}
-      {[[-40, -36], [-40, 36], [38, -34], [38, 34]].map(([x, z], i) => (
-        <group key={i} position={[x, 0, z]}>
-          <mesh material={M.white} position={[0, 28, 0]}><cylinderGeometry args={[1.9, 2.5, 56, 12]} /></mesh>
-          <mesh material={M.white} position={[0, 44, 0]}><cylinderGeometry args={[3, 3, 1.2, 12]} /></mesh>
-          <mesh material={M.lead} position={[0, 61, 0]}><coneGeometry args={[2.2, 10, 12]} /></mesh>
-        </group>
-      ))}
-      {/* şadırvan */}
-      <group position={[-58, 0, -15]}>
-        <mesh material={M.white} position={[0, 0.5, 0]}><cylinderGeometry args={[3.2, 3.4, 1, 12]} /></mesh>
-        {Array.from({ length: 8 }, (_, i) => <mesh key={i} material={M.white} position={[Math.cos(i * Math.PI / 4) * 3.6, 2.2, Math.sin(i * Math.PI / 4) * 3.6]}><cylinderGeometry args={[0.14, 0.14, 4.4, 6]} /></mesh>)}
-        <mesh material={M.lead} position={[0, 5.4, 0]}><coneGeometry args={[4.6, 2.2, 8]} /></mesh>
-      </group>
-      <primitive object={inst.trees} /><primitive object={inst.fence} />
-    </group>
-  );
-}
 /** İç–dış geçiş: bölge değişince arka plan ve sis yoğunluğu anında değişir */
 export function Atmosphere({ outside }: { outside: boolean }) {
   const { scene } = useThree();
