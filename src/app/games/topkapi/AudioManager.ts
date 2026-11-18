@@ -6,12 +6,13 @@
  *  - Koridor: mum çıtırtısı; Valide dairesi: sakin oda; hamam: akan su + damla + yankı; hazine: soğuk, tiz parıltı.
  *  - Anlatım: tarayıcının tr-TR konuşma sentezi (cihazda Türkçe ses yoksa yalnızca yazı).
  */
-import type { V3 } from './palace';
+import type { V3 } from './world';
 export type Mix = 'dis' | 'divan' | 'koridor' | 'valide' | 'hamam' | 'hazine';
 const LEVEL: Record<Mix, Record<string, number>> = {
   dis: { wind: 0.5, birds: 1 }, divan: { council: 0.5, room: 0.3 }, koridor: { room: 0.25, crackle: 1 }, valide: { room: 0.35 }, hamam: { water: 0.8, drips: 1, room: 0.2 }, hazine: { shimmer: 0.6, room: 0.15 },
 };
-const VIZIERS: V3[] = [[4, 1, 4.8], [7, 1, 4.8], [10, 1, 4.8], [5.5, 1, -4.8], [9, 1, -4.8]];
+/** Divan iç mekânındaki vezirlerin konumları (world.ts EXTRAS ile aynı yerler) */
+const VIZIERS: V3[] = [[996.8, 1.6, -3.7], [1000, 1.6, -3.9], [1003.2, 1.6, -3.7], [994.8, 1.6, -0.4], [1005.2, 1.6, -0.4]];
 class TopkapiAudio {
   private ctx: AudioContext | null = null; private master: GainNode | null = null; private verb: ConvolverNode | null = null; private g: Record<string, GainNode> = {};
   private noise: AudioBuffer | null = null; private timers: ReturnType<typeof setInterval>[] = []; private pan: PannerNode[] = []; private mix: Mix = 'dis'; private listen = false; muted = false;
