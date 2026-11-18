@@ -13,7 +13,7 @@ function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147
 function cv(n: number, m = n) { const c = document.createElement('canvas'); c.width = n; c.height = m; return [c, c.getContext('2d')!] as const; }
 function tex(c: HTMLCanvasElement, srgb: boolean) { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 16; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; if (srgb) t.colorSpace = THREE.SRGBColorSpace; return t; }
 /** yükseklik canvas'ından normal haritası */
-function normalFrom(h: HTMLCanvasElement, k: number) {
+export function normalFrom(h: HTMLCanvasElement, k: number) {
   const n = h.width, m = h.height, src = h.getContext('2d')!.getImageData(0, 0, n, m).data, [c, g] = cv(n, m), img = g.createImageData(n, m), H = (x: number, y: number) => src[(((y + m) % m) * n + ((x + n) % n)) * 4] / 255;
   for (let y = 0; y < m; y++) for (let x = 0; x < n; x++) { const dx = (H(x + 1, y) - H(x - 1, y)) * k, dy = (H(x, y + 1) - H(x, y - 1)) * k, l = Math.hypot(dx, dy, 1), i = (y * n + x) * 4; img.data[i] = (-dx / l * 0.5 + 0.5) * 255; img.data[i + 1] = (dy / l * 0.5 + 0.5) * 255; img.data[i + 2] = (1 / l * 0.5 + 0.5) * 255; img.data[i + 3] = 255; }
   g.putImageData(img, 0, 0); return tex(c, false);
