@@ -226,7 +226,7 @@ function Garden({ low }: { low: boolean }) {
     </group>
   );
 }
-function Fountain({ x, z, r }: { x: number; z: number; r: number }) {
+export function Fountain({ x, z, r }: { x: number; z: number; r: number }) {
   const jet = useRef<THREE.Mesh>(null!);
   const G = useMemo(() => ({ rim: new THREE.LatheGeometry([[r - 0.25, 0], [r, 0], [r + 0.08, 0.6], [r - 0.05, 0.72], [r - 0.25, 0.7]].map(([a, b]) => new THREE.Vector2(a, b)), 28) }), [r]);
   const M = useMemo(() => ({ marble: new THREE.MeshStandardMaterial({ color: '#eae4d8', roughness: 0.3 }), water: new THREE.MeshStandardMaterial({ color: '#2d5b6a', roughness: 0.04, metalness: 0.35 }), spray: new THREE.MeshStandardMaterial({ color: '#e8f6ff', transparent: true, opacity: 0.55, emissive: '#9fc8d8', emissiveIntensity: 0.4, depthWrite: false }) }), []);
@@ -243,14 +243,14 @@ function Fountain({ x, z, r }: { x: number; z: number; r: number }) {
 }
 
 /** Güvercin sürüsü: avlunun üstünde geniş daireler çizer (tek InstancedMesh; kanat çırpma = dikey ölçek salınımı) */
-function Birds({ n }: { n: number }) {
+export function Birds({ n, cx = -20, cz = 0, y = 17 }: { n: number; cx?: number; cz?: number; y?: number }) {
   const ref = useRef<THREE.InstancedMesh>(null!);
   const geo = useMemo(() => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -0.18, -0.38, 0.12, 0.05, 0, 0, 0.12, 0, 0, -0.18, 0, 0, 0.12, 0.38, 0.12, 0.05], 3)); g.computeVertexNormals(); return g; }, []);
-  const birds = useMemo(() => Array.from({ length: n }, (_, i) => ({ r: 18 + (i % 5) * 3.5, h: 17 + (i % 4) * 2.2, w: 0.22 + (i % 3) * 0.03, o: i * 0.37, f: 9 + (i % 4) })), [n]);
+  const birds = useMemo(() => Array.from({ length: n }, (_, i) => ({ r: 18 + (i % 5) * 3.5, h: y + (i % 4) * 2.2, w: 0.22 + (i % 3) * 0.03, o: i * 0.37, f: 9 + (i % 4) })), [n, y]);
   const M4 = useMemo(() => new THREE.Matrix4(), []), q = useMemo(() => new THREE.Quaternion(), []), e = useMemo(() => new THREE.Euler(), []);
   useFrame(({ clock }) => {
     const t = clock.elapsedTime, im = ref.current;
-    birds.forEach((b, i) => { const a = t * b.w + b.o, x = -20 + Math.cos(a) * b.r, z = Math.sin(a) * b.r * 0.6, y = b.h + Math.sin(t * 0.5 + i) * 1.5;
+    birds.forEach((b, i) => { const a = t * b.w + b.o, x = cx + Math.cos(a) * b.r, z = cz + Math.sin(a) * b.r * 0.6, y = b.h + Math.sin(t * 0.5 + i) * 1.5;
       q.setFromEuler(e.set(0, -a - Math.PI / 2, Math.sin(t * 0.8 + i) * 0.2)); const fl = 0.25 + Math.abs(Math.sin(t * b.f + i)) * 1.1; im.setMatrixAt(i, M4.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(1.4, fl * 1.4, 1.4))); });
     im.instanceMatrix.needsUpdate = true;
   });

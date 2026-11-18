@@ -7,7 +7,8 @@
  * Ölçüler kısaltılmış ve stilizedir: gerçek saray planının sadeleştirilmiş bir kurgusudur, rölöve değildir.
  * Koordinat: x doğu, z güney (−z kuzey), metre.
  */
-export type V2 = [number, number];
+import { makeNav, type Nav, type V2 } from '../shared/nav';
+export type { V2 };
 export type V3 = [number, number, number];
 export type Zone = 'avlu' | 'divan' | 'harem' | 'hazine';
 export const ZONE_LABEL: Record<Zone, string> = { avlu: 'Avlular', divan: 'Divan-ı Hümâyun', harem: 'Harem', hazine: 'Enderun Hazinesi' };
@@ -185,61 +186,20 @@ export function guideGoal(zone: Zone, i: number): { at: V2; door: Door | null } 
   const d = zone === 'avlu' ? DOORS.find((x) => x.zone === 'avlu' && x.to === st.zone)! : DOORS.find((x) => x.zone === zone && x.to === 'avlu')!;
   return { at: d.wait, door: d };
 }
-interface Grid { x0: number; z0: number; nx: number; nz: number; cell: number; free: Uint8Array }
 const BOUNDS: Record<Zone, { x0: number; x1: number; z0: number; z1: number; cell: number }> = {
   avlu: { x0: OUT.x0, x1: OUT.x1, z0: OUT.z0, z1: OUT.z1, cell: 1 },
   divan: { x0: DIVAN_IN.cx - DIVAN_IN.hx, x1: DIVAN_IN.cx + DIVAN_IN.hx, z0: -DIVAN_IN.hz, z1: DIVAN_IN.hz, cell: 0.5 },
   harem: { x0: HAREM_IN.x0, x1: HAREM_IN.hamamEnd, z0: -HAREM_IN.valideHalf, z1: HAREM_IN.valideHalf, cell: 0.25 },
   hazine: { x0: HAZINE_IN.cx - HAZINE_IN.hx, x1: HAZINE_IN.cx + HAZINE_IN.hx, z0: -HAZINE_IN.hz, z1: HAZINE_IN.hz, cell: 0.5 },
 };
-const grids = new Map<Zone, Grid>(), flows = new Map<string, Float32Array>();
-function grid(zone: Zone): Grid {
-  let g = grids.get(zone); if (g) return g;
-  const b = BOUNDS[zone], nx = Math.round((b.x1 - b.x0) / b.cell) + 1, nz = Math.round((b.z1 - b.z0) / b.cell) + 1, free = new Uint8Array(nx * nz);
-  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const x = b.x0 + i * b.cell, z = b.z0 + j * b.cell, m = Math.min(0.15, b.cell * 0.45); free[j * nx + i] = walkable(zone, x, z) && walkable(zone, x + m, z) && walkable(zone, x - m, z) && walkable(zone, x, z + m) && walkable(zone, x, z - m) ? 1 : 0; }
-  g = { x0: b.x0, z0: b.z0, nx, nz, cell: b.cell, free }; grids.set(zone, g); return g;
-}
-const cellOf = (g: Grid, x: number, z: number) => [Math.max(0, Math.min(g.nx - 1, Math.round((x - g.x0) / g.cell))), Math.max(0, Math.min(g.nz - 1, Math.round((z - g.z0) / g.cell)))] as const;
-/** Hedefe olan yürüme mesafesi (hücre adımı); ulaşılamayan hücre = Infinity */
-function flow(zone: Zone, goal: V2): Float32Array {
-  const key = `${zone}:${goal[0].toFixed(1)},${goal[1].toFixed(1)}`; let f = flows.get(key); if (f) return f;
-  const g = grid(zone); f = new Float32Array(g.nx * g.nz).fill(Infinity);
-  const [gi, gj] = cellOf(g, goal[0], goal[1]), q = new Int32Array(g.nx * g.nz); let h = 0, t = 0; f[gj * g.nx + gi] = 0; q[t++] = gj * g.nx + gi;
-  while (h < t) { const c = q[h++], ci = c % g.nx, cj = (c - ci) / g.nx;
-    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const i = ci + di, j = cj + dj; if (i < 0 || j < 0 || i >= g.nx || j >= g.nz) continue; const k = j * g.nx + i; if (!g.free[k] || f[k] !== Infinity) continue; f[k] = f[c] + 1; q[t++] = k; } }
-  flows.set(key, f); return f;
-}
+const navs = new Map<Zone, Nav>();
+const nav = (zone: Zone) => { let n = navs.get(zone); if (!n) { n = makeNav({ walkable: (x, z) => walkable(zone, x, z), bounds: BOUNDS[zone] }); navs.set(zone, n); } return n; };
 /** İki nokta arası düz yol açık mı */
-export function clearLine(zone: Zone, a: V2, b: V2) {
-  const d = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.ceil(d / 0.3);
-  for (let k = 1; k <= n; k++) if (!walkable(zone, a[0] + (b[0] - a[0]) * (k / n), a[1] + (b[1] - a[1]) * (k / n))) return false;
-  return true;
-}
+export const clearLine = (zone: Zone, a: V2, b: V2) => nav(zone).clearLine(a, b);
 /** Bir sonraki ara hedef: görüş açıksa doğrudan hedef; değilse akış alanında birkaç hücre ileri */
-export function nextWaypoint(zone: Zone, p: V2, goal: V2): V2 {
-  if (clearLine(zone, p, goal)) return goal;
-  const g = grid(zone), f = flow(zone, goal); let [i, j] = cellOf(g, p[0], p[1]);
-  if (f[j * g.nx + i] === Infinity) {   // duvar dibindeyse en yakın erişilebilir komşu hücre
-    let best = Infinity, bi = i, bj = j;
-    for (let dj = -3; dj <= 3; dj++) for (let di = -3; di <= 3; di++) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= g.nx || jj >= g.nz) continue; const v = f[jj * g.nx + ii]; if (v < best) { best = v; bi = ii; bj = jj; } }
-    if (best === Infinity) return goal; i = bi; j = bj;
-  }
-  let wp: V2 = [g.x0 + i * g.cell, g.z0 + j * g.cell];
-  for (let s = 0; s < 12; s++) {   // eğimi izle; görüşü açık kaldıkça daha uzağa bak (yumuşak yol)
-    let bi = i, bj = j, bv = f[j * g.nx + i];
-    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= g.nx || jj >= g.nz) continue; if (f[jj * g.nx + ii] < bv) { bv = f[jj * g.nx + ii]; bi = ii; bj = jj; } }
-    if (bi === i && bj === j) break; i = bi; j = bj;
-    const c: V2 = [g.x0 + i * g.cell, g.z0 + j * g.cell]; if (s > 1 && !clearLine(zone, p, c)) break; wp = c;
-  }
-  return wp;
-}
+export const nextWaypoint = (zone: Zone, p: V2, goal: V2) => nav(zone).nextWaypoint(p, goal);
 /** Rehberin bir adımı (saf): hedefe en fazla speed·dt kadar yürü; varınca null yön */
-export function guideStep(zone: Zone, p: V2, goal: V2, dt: number, speed: number): { p: V2; moved: number; yaw: number | null } {
-  const d = Math.hypot(goal[0] - p[0], goal[1] - p[1]); if (d < 0.35) return { p, moved: 0, yaw: null };
-  const w = nextWaypoint(zone, p, goal), wd = Math.hypot(w[0] - p[0], w[1] - p[1]) || 1, step = Math.min(speed * dt, d);
-  const dx = ((w[0] - p[0]) / wd) * step, dz = ((w[1] - p[1]) / wd) * step, n = slide(zone, p, dx, dz), moved = Math.hypot(n[0] - p[0], n[1] - p[1]);
-  return { p: n, moved, yaw: moved > 1e-4 ? Math.atan2(-(n[0] - p[0]), -(n[1] - p[1])) : null };
-}
+export const guideStep = (zone: Zone, p: V2, goal: V2, dt: number, speed: number) => nav(zone).step(p, goal, dt, speed);
 
 /** Kamera bu noktada durabilir mi (binaların / odanın içine girmesin); ağaç ve sütunlar yok sayılır */
 export function camClear(zone: Zone, x: number, z: number): boolean {

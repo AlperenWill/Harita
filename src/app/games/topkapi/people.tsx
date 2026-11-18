@@ -5,11 +5,10 @@
  * Arka plan figürleri: duranlar (oyuncu yaklaşınca başını çevirir), konuşanlar (dudak + el hareketi) ve döngüsel yolda yürüyenler.
  * Uzaktaki figürler çizilmez (55 m); düşük kademede "minTier" figürleri hiç eklenmez.
  */
-import { useMemo, useRef } from 'react';
-import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
-import { Character, newRig, type Palette } from '../kiz-kulesi/NPCController';
-import { EXTRAS, type Extra, type Role, type Zone } from './world';
+import { useMemo } from 'react';
+import type { Palette } from '../kiz-kulesi/NPCController';
+import { Crowd, type Walker } from '../shared/Crowd';
+import { EXTRAS, type Role, type Zone } from './world';
 
 export const HASAN: Palette = { skin: '#d6a47e', hair: '#2b1f18', top: '#2c5a4a', pants: '#2c2a26', shoes: '#6b3d22', kaftan: '#2c5a4a', sash: '#d8b25a', trim: '#c99a3a', hat: 'kavuk', hatColor: '#f4f0e6', beard: '#3b2b22' };
 export const VISITOR: Palette = { skin: '#c99272', hair: '#151515', top: '#2f8f83', pants: '#3a3a42', shoes: '#e9e6df' };
@@ -29,40 +28,8 @@ const ROLE: Record<Role, Palette[]> = {
   aga: [{ skin: '#6e4a36', hair: '#120c08', top: '#3a2f6b', pants: '#221c40', shoes: '#c9a24a', kaftan: '#3a2f6b', sash: '#d1a645', trim: '#d1a645', hat: 'sarik', hatColor: '#f4efe4' }],
   katip: [{ skin: '#d6a47e', hair: '#2b1f18', top: '#6a4a2a', pants: '#2c2a26', shoes: '#6b3d22', kaftan: '#6a4a2a', sash: '#e6d6a8', hat: 'sarik', hatColor: '#f4f0e6', beard: '#2b1f18' }],
 };
-const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
-
-function Extra({ e, i, player }: { e: Extra; i: number; player: React.MutableRefObject<{ x: number; z: number }> }) {
-  const rig = useRef(newRig(e.at[0], e.at[1], e.yaw)), root = useRef<THREE.Group>(null!);
-  const st = useRef({ k: 1, pause: 0, chat: 2 + i * 1.7 });
-  const pal = ROLE[e.role][i % ROLE[e.role].length];
-  const look = useMemo(() => new THREE.Vector3(), []), pt = useMemo(() => new THREE.Vector3(), []);
-  useFrame(({ camera, clock }, raw) => {
-    const dt = Math.min(raw, 0.05), r = rig.current, s = st.current, t = clock.elapsedTime;
-    root.current.visible = camera.position.distanceTo(new THREE.Vector3(r.x, 1, r.z)) < 55;
-    if (!root.current.visible) return;
-    if (e.path) {
-      if (s.pause > 0) { s.pause -= dt; r.speed = 0; }
-      else {
-        const [tx, tz] = e.path[s.k], dx = tx - r.x, dz = tz - r.z, d = Math.hypot(dx, dz), v = 1.15 + (i % 3) * 0.1;
-        if (d < 0.2) { s.k = (s.k + 1) % e.path.length; if (s.k === 0 || s.k === Math.floor(e.path.length / 2)) s.pause = 1.5 + (i % 4); }
-        else { const st2 = Math.min(d, v * dt); r.x += (dx / d) * st2; r.z += (dz / d) * st2; r.speed = v; r.yaw += wrap(Math.atan2(-dx, -dz) - r.yaw) * (1 - Math.exp(-dt * 8)); }
-      }
-    }
-    // oyuncu yakınsa başını çevirir
-    const pd = Math.hypot(player.current.x - r.x, player.current.z - r.z);
-    r.look = pd < 6 ? look.set(player.current.x, 1.6, player.current.z) : null;
-    // konuşanlar: aralıklı "sohbet" (dudak + jest); söz yok, yalnızca canlılık
-    if (e.talk) {
-      s.chat -= dt; const on = s.chat > 0 && s.chat < 3.2; if (s.chat < -2.5) s.chat = 3.2 + ((i * 7) % 5);
-      r.talking = on; r.mouth = on ? Math.max(0, Math.sin(t * 13 + i) * 0.5 + Math.sin(t * 7.3) * 0.4) : 0;
-      r.point = on && Math.sin(t * 0.7 + i) > 0.4 ? pt.set(r.x - Math.sin(r.yaw) * 2 + 1, 1.3, r.z - Math.cos(r.yaw) * 2) : null;
-    }
-  });
-  return <group ref={root}><Character rig={rig} palette={pal} /></group>;
-}
-
 /** Bu bölgedeki figürler */
 export function Extras({ zone, low, player }: { zone: Zone; low: boolean; player: React.MutableRefObject<{ x: number; z: number }> }) {
-  const list = useMemo(() => EXTRAS.filter((e) => e.zone === zone && (!low || !e.minTier)), [zone, low]);
-  return <group>{list.map((e, i) => <Extra key={e.id} e={e} i={i} player={player} />)}</group>;
+  const list = useMemo<Walker[]>(() => EXTRAS.filter((e) => e.zone === zone && (!low || !e.minTier)).map((e, i) => ({ ...e, palette: ROLE[e.role][i % ROLE[e.role].length] })), [zone, low]);
+  return <Crowd list={list} player={player} />;
 }

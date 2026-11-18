@@ -23,6 +23,7 @@ import { Courtyards } from './Courtyards';
 import { DivanHall, Harem } from './Interiors';
 import { TreasureRoom } from './TreasureRoom';
 import { Extras, HASAN, VISITOR } from './people';
+import { Joystick } from '../shared/Joystick';
 import { topkapiAudio } from './AudioManager';
 import {
   BUILDINGS, CEILING, DOORS, GATE1_X, GATE2_X, GATE3_X, GUIDE, START, STOP_RADIUS, THINGS, TOUR, ZONE_LABEL,
@@ -208,7 +209,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
       {S.started && (
         <>
-          <Joystick stick={stick} />
+          <Joystick stick={stick} onTouch={() => topkapiAudio.unlock()} />
           <Prompts enter={enter} inspect={inspect} />
           {!S.talk && !S.card && <Hint text={hintText(S)} />}
         </>
@@ -466,21 +467,6 @@ function MiniMap() {
         <circle cx={sx(g.x)} cy={sz(g.z)} r={2.6} fill="#2c5a4a" stroke="#fff" strokeWidth={0.8} />
         <g transform={`translate(${sx(p.x)} ${sz(p.z)}) rotate(${(-p.yaw * 180) / Math.PI})`}><path d="M0,-5 L3.4,3.4 L0,1.6 L-3.4,3.4 Z" fill="#fff" /></g>
       </svg>
-    </div>
-  );
-}
-function Joystick({ stick }: { stick: React.MutableRefObject<{ x: number; y: number }> }) {
-  const knob = useRef<HTMLSpanElement>(null);
-  const set = (e: React.PointerEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect(); let x = (e.clientX - (r.left + r.width / 2)) / (r.width / 2), y = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
-    const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } stick.current = { x, y }; if (knob.current) knob.current.style.transform = `translate(${x * 34}px, ${y * 34}px)`;
-  };
-  const reset = () => { stick.current = { x: 0, y: 0 }; if (knob.current) knob.current.style.transform = ''; };
-  return (
-    <div className="absolute bottom-24 left-5 z-40 grid h-28 w-28 touch-none place-items-center rounded-full border-2 border-white/70 bg-white/20 backdrop-blur sm:bottom-28 [@media(pointer:fine)]:hidden"
-      aria-label="Yürüme joystick'i" onPointerDown={(e) => { e.stopPropagation(); topkapiAudio.unlock(); e.currentTarget.setPointerCapture(e.pointerId); set(e); }}
-      onPointerMove={(e) => { e.stopPropagation(); if (e.currentTarget.hasPointerCapture(e.pointerId)) set(e); }} onPointerUp={(e) => { e.stopPropagation(); reset(); }} onPointerCancel={reset}>
-      <span ref={knob} className="h-12 w-12 rounded-full bg-amber-400 shadow-lg" />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ADAPT_SECONDS, APEX_Y, APSE, ARCH_Y, DOME_WINDOWS, EXPOSURE, GALLERY_Y, MIHRAB, PEND_R, POIS, R, RAILS, RING_Y, adapt, columns, domeWindows, inspectEye, inspectFov, lookingAt, shafts, sunPosition, sunVector, zoneAt } from '../src/app/games/ayasofya/hagia';
+import { LEVEL_Y, TOUR, eye3 } from '../src/app/games/ayasofya/walk';
+import { ADAPT_SECONDS, APEX_Y, APSE, ARCH_Y, DOME_WINDOWS, EXPOSURE, GALLERY_Y, MIHRAB, PEND_R, POIS, R, RING_Y, adapt, columns, domeWindows, inspectFov, shafts, sunPosition, sunVector, zoneAt } from '../src/app/games/ayasofya/hagia';
 
 describe('Ayasofya: ölçek', () => {
   it('kubbe ~31 m çap, tepe ~55–56 m, 40 pencere; pandantif geometrisi tutarlı', () => {
@@ -9,10 +10,10 @@ describe('Ayasofya: ölçek', () => {
     expect(ARCH_Y + Math.sqrt(PEND_R ** 2 - 2 * R * R)).toBeCloseTo(ARCH_Y); expect(ARCH_Y + Math.sqrt(PEND_R ** 2 - R * R)).toBeCloseTo(RING_Y);
     for (const w of domeWindows()) expect(Math.hypot(w.pos[0], w.pos[2])).toBeLessThan(R);
   });
-  it('sütunlar: yeşil, porfir ve beyaz; hiçbiri zemin rayının üstünde değil', () => {
+  it('sütunlar: yeşil, porfir ve beyaz; hiçbiri tur duraklarının üstünde değil', () => {
     const c = columns(); expect(new Set(c.map((x) => x.kind))).toEqual(new Set(['verd', 'porphyry', 'white']));
     expect(c.filter((x) => x.kind === 'porphyry')).toHaveLength(8);
-    for (const p of RAILS[0].points) for (const col of c.filter((x) => x.pos[1] === 0)) expect(Math.hypot(col.pos[0] - p[0], col.pos[2] - p[2])).toBeGreaterThan(2);
+    for (const st of TOUR) for (const col of c.filter((x) => x.pos[1] === LEVEL_Y[st.level])) expect(Math.hypot(col.pos[0] - st.at[0], col.pos[2] - st.at[1])).toBeGreaterThan(1.2);
   });
   it('mihrap apsisin içinde ve eksenden güneye kaymış', () => {
     expect(MIHRAB[2]).toBeGreaterThan(0.5); expect(Math.hypot(MIHRAB[0] - APSE.cx, MIHRAB[2])).toBeLessThan(APSE.r);
@@ -41,10 +42,10 @@ describe('Ayasofya: güneş ve ışık huzmeleri', () => {
   });
 });
 
-describe('Ayasofya: rota, göz uyumu, inceleme', () => {
-  it('bölgeler rotaya göre: narteks → nef → apsis; galeri rayı üst katta', () => {
-    const z = RAILS[0].points.map(zoneAt); expect(z[0]).toBe('avlu'); expect(z).toContain('narteks'); expect(z).toContain('nef'); expect(z[z.length - 1]).toBe('apsis');
-    for (const p of RAILS[1].points) { expect(zoneAt(p)).toBe('galeri'); expect(p[1]).toBeGreaterThan(GALLERY_Y + 1.5); }
+describe('Ayasofya: tur, göz uyumu, inceleme', () => {
+  it('tur bölgeleri sırayla: avlu → narteks → nef → apsis; galeri durakları üst katta', () => {
+    const z = TOUR.map((s) => zoneAt(eye3(s.level, ...s.at))); expect(z[0]).toBe('avlu'); expect(z[1]).toBe('narteks'); expect(z).toContain('nef'); expect(z).toContain('apsis');
+    for (const s of TOUR.filter((x) => x.level === 'galeri')) { expect(zoneAt(eye3(s.level, ...s.at))).toBe('galeri'); expect(eye3(s.level, ...s.at)[1]).toBeGreaterThan(GALLERY_Y + 1.5); }
   });
   it('göz uyumu: narteksten nefe girince pozlama önce yüksek (kamaşma), ~2 sn sonra uyum', () => {
     let e = EXPOSURE.narteks; expect(EXPOSURE.narteks).toBeGreaterThan(EXPOSURE.nef * 2);
@@ -53,18 +54,11 @@ describe('Ayasofya: rota, göz uyumu, inceleme', () => {
     for (let i = 0; i < 60 * ADAPT_SECONDS; i++) e = adapt(e, EXPOSURE.nef, 1 / 60);
     expect(e).toBeLessThan(EXPOSURE.nef * 1.12);
   });
-  it('her ilgi noktası kendi rayından görülebilir; kaynaklar https', () => {
-    for (const p of POIS) {
-      const rail = RAILS.find((r) => r.id === p.rail)!; let ok = false;
-      for (const e of rail.points) { const d = [p.pos[0] - e[0], p.pos[1] - e[1], p.pos[2] - e[2]], l = Math.hypot(...d); if (lookingAt(e, d.map((v) => v / l) as [number, number, number], rail.id)?.id === p.id) ok = true; }
-      expect(ok, p.id).toBe(true); expect(p.source.url).toMatch(/^https:\/\//);
-    }
+  it('ilgi noktalarının kaynakları https; dört mozaik var', () => {
+    for (const p of POIS) expect(p.source.url).toMatch(/^https:\/\//);
     expect(POIS.filter((p) => p.kind === 'mozaik').map((p) => p.id)).toEqual(expect.arrayContaining(['deisis', 'zoe', 'komnenos', 'apsis-mozaigi']));
   });
-  it('inceleme: yüksekteki hedefe yürünmez, görüş daralır; yakındaki hedefe yaklaşılır', () => {
-    const dome = POIS.find((p) => p.id === 'kubbe')!, zoe = POIS.find((p) => p.id === 'zoe')!;
-    expect(inspectEye(dome, [3, 1.7, 0])[1]).toBeCloseTo(1.7);
-    const e = inspectEye(zoe, [20, GALLERY_Y + 1.68, 22]); expect(e[0]).toBeGreaterThan(20); expect(e[1]).toBeCloseTo(GALLERY_Y + 1.68);
+  it('inceleme: uzaktaki hedefte görüş açısı daralır', () => {
     expect(inspectFov(50, 4)).toBeLessThan(inspectFov(5, 4)); expect(inspectFov(1000, 1)).toBe(9);
   });
 });
