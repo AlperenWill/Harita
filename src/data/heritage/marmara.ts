@@ -183,5 +183,12 @@ const sites: HeritageSite[] = [
     didYouKnow: 'Sokak adları orada toplanan esnaftan gelir: Kalpakçılar, Kuyumcular, Aynacılar, Fesçiler… 1894 depreminde ağır hasar gördü ve sonraki dört yılda onarıldı.',
     detail: 'Tonozlu sokaklar ve lonca adları',
   },
+  {
+    id: 'dolmabahce', name: 'Dolmabahçe Sarayı', province: 'İstanbul', category: 'muze', period: 'osmanli',
+    coord: [29.0000, 41.0392], wiki: 'Dolmabahçe Sarayı',
+    summary: 'Sultan Abdülmecid döneminde 1843–1856 arasında Boğaz kıyısında yapılan saray; Avrupa üsluplarını Osmanlı geleneğiyle birleştirir. Kristal avizeleri, Kristal Merdiveni ve altın yaldızlı tavanlarıyla tanınır.',
+    didYouKnow: 'Muayede Salonu’ndaki dev kristal avizenin yaklaşık 4,5 ton ağırlığında ve 750 lambalı olduğu yazılır. Atatürk 10 Kasım 1938’de bu sarayda hayatını kaybetti.',
+    detail: 'Kristal Merdiven’in Baccarat korkulukları',
+  },
 ];
 export default sites;

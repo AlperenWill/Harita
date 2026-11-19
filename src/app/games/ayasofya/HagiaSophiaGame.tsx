@@ -311,7 +311,7 @@ function Controller({ playerRef, exposure, composer }: { playerRef: React.Mutabl
     const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 5.2 : 3.5) * Math.min(1, ml);
     if (!frozen && ml > 0.08) {
       const [nx, nz] = slide(lv, [p.x, p.z], (mx / ml) * speed * dt, (mz / ml) * speed * dt), moved = Math.hypot(nx - p.x, nz - p.z);
-      p.speed = moved / dt; p.x = nx; p.z = nz; p.yaw += wrap(Math.atan2(-mx, -mz) - p.yaw) * (1 - Math.exp(-dt * 12));
+      p.speed = dt > 0 ? moved / dt : 0; p.x = nx; p.z = nz; p.yaw += wrap(Math.atan2(-mx, -mz) - p.yaw) * (1 - Math.exp(-dt * 12));
       st.current.step += moved; if (st.current.step > 0.75) { st.current.step = 0; hagiaAudio.footstep(); }
       if (cam.drag <= 0 && Math.abs(walk.x) < 0.5 && walk.y < -0.3) cam.yaw += wrap(p.yaw - cam.yaw) * (1 - Math.exp(-dt * 0.8));
     } else p.speed = 0;
@@ -327,7 +327,7 @@ function Controller({ playerRef, exposure, composer }: { playerRef: React.Mutabl
     const waitForPlayer = !S.done && pd > 12 && gg < pg;
     if (goal && !S.talk && !waitForPlayer && gg > 0.4) {
       const step = guideStep(lv, [g.x, g.z], goal, dt, S.done ? Math.min(4.6, 1.4 + pd * 0.6) : pd < 3 ? 2.6 : 3.3);
-      g.speed = step.moved / dt; g.x = step.p[0]; g.z = step.p[1]; if (step.yaw !== null) g.yaw += wrap(step.yaw - g.yaw) * (1 - Math.exp(-dt * 10));
+      g.speed = dt > 0 ? step.moved / dt : 0; g.x = step.p[0]; g.z = step.p[1]; if (step.yaw !== null) g.yaw += wrap(step.yaw - g.yaw) * (1 - Math.exp(-dt * 10));
     } else { g.speed = 0; g.yaw += wrap(Math.atan2(-(p.x - g.x), -(p.z - g.z)) - g.yaw) * (1 - Math.exp(-dt * 4)); }
     if (S.done && pd > 30) { g.x = p.x; g.z = p.z; }
     g.look = pd < 9 ? _look.set(p.x, Y0 + 1.6, p.z) : null;

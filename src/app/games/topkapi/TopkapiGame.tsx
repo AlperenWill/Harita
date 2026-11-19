@@ -308,7 +308,7 @@ function Controller({ playerXZ }: { playerXZ: React.MutableRefObject<{ x: number
     const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 5.2 : 3.5) * Math.min(1, ml);
     if (!frozen && ml > 0.08) {
       const [nx, nz] = slide(zone, [p.x, p.z], (mx / ml) * speed * dt, (mz / ml) * speed * dt);
-      p.speed = Math.hypot(nx - p.x, nz - p.z) / dt; p.x = nx; p.z = nz;
+      p.speed = dt > 0 ? Math.hypot(nx - p.x, nz - p.z) / dt : 0; p.x = nx; p.z = nz;
       p.yaw += wrap(Math.atan2(-mx, -mz) - p.yaw) * (1 - Math.exp(-dt * 12));
       // kamera kendiliğinden oyuncunun arkasına döner (oyuncu sürüklemiyorsa ve ileri yürüyorsa)
       if (cam.drag <= 0 && Math.abs(walk.x) < 0.5 && walk.y < -0.3) cam.yaw += wrap(p.yaw - cam.yaw) * (1 - Math.exp(-dt * 0.8));
@@ -325,7 +325,7 @@ function Controller({ playerXZ }: { playerXZ: React.MutableRefObject<{ x: number
     if (goal && !S.talk && !waitForPlayer && gg > 0.4) {
       const sp = S.done ? Math.min(4.6, 1.4 + pd * 0.6) : pd < 3 ? 2.6 : 3.3;
       const step = guideStep(zone, [g.x, g.z], goal, dt, sp);
-      g.speed = step.moved / dt; g.x = step.p[0]; g.z = step.p[1]; if (step.yaw !== null) g.yaw += wrap(step.yaw - g.yaw) * (1 - Math.exp(-dt * 10));
+      g.speed = dt > 0 ? step.moved / dt : 0; g.x = step.p[0]; g.z = step.p[1]; if (step.yaw !== null) g.yaw += wrap(step.yaw - g.yaw) * (1 - Math.exp(-dt * 10));
     } else {
       g.speed = 0; const want = Math.atan2(-(p.x - g.x), -(p.z - g.z)); g.yaw += wrap(want - g.yaw) * (1 - Math.exp(-dt * 4));
     }

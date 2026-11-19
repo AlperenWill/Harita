@@ -5,7 +5,7 @@
 export const DISTRICT: Record<string, string> = {
   // Marmara
   ayasofya: 'Fatih', yerebatan: 'Fatih', kariye: 'Fatih', topkapi: 'Fatih', 'turk-kahvesi': 'Fatih', yenikapi: 'Fatih',
-  galata: 'Beyoğlu', 'kiz-kulesi': 'Üsküdar', kapalicarsi: 'Fatih',
+  galata: 'Beyoğlu', 'kiz-kulesi': 'Üsküdar', kapalicarsi: 'Fatih', dolmabahce: 'Beşiktaş',
   selimiye: 'Merkez', 'bayezid-saglik': 'Merkez', uzunkopru: 'Uzunköprü', hidrellez: 'Merkez',
   'vize-ayasofya': 'Vize', asagipinar: 'Merkez', rakoczi: 'Süleymanpaşa', seka: 'İzmit', 'yalova-kosk': 'Merkez',
   justinianus: 'Adapazarı', 'ertugrul-turbe': 'Söğüt', cumalikizik: 'Yıldırım', 'koza-han': 'Osmangazi', karagoz: 'Osmangazi',
