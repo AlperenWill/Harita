@@ -5,7 +5,7 @@
  */
 export default function MapPage() {
   return (
-    <div className="h-[calc(100dvh-3.5rem)] w-full bg-[#191512] lg:h-[100dvh]">
+    <div className="h-[calc(100dvh-3.5rem)] w-full bg-[#f7f5f1] lg:h-[100dvh]">
       <iframe
         src={`${import.meta.env.BASE_URL}3d/`}
         title="Miras. Haritası"

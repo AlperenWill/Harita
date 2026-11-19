@@ -3,7 +3,6 @@ import { REGION_BY_ID, displayProvince } from '../data/regions';
 
 export function TopBar() {
   const { level, region, province, site } = useStore();
-  const count = useStore((s) => Object.keys(s.discovered).length);
   const muted = useStore((s) => s.muted);
   const st = useStore.getState();
 
@@ -33,9 +32,6 @@ export function TopBar() {
       <div className="actions">
         <button className="icon-btn glass" onClick={st.toggleMute} aria-pressed={!muted} aria-label={muted ? 'Ambiyans sesini aç' : 'Ambiyans sesini kapat'}>
           {muted ? '🔇' : '🔊'}
-        </button>
-        <button className="pill-btn glass" onClick={() => st.setJournal(true)}>
-          <span className="pill-label">Keşif Günlüğü</span> <span className="count">{count}</span>
         </button>
       </div>
     </header>

@@ -12,6 +12,10 @@ import { elevationToHeight, toWorld } from '../geo/projection';
 import { useStore } from '../state/store';
 import { PALETTE, provinceTint, shade } from './theme';
 import { loadRegionSites } from '../data/heritage';
+import { PLAYABLES, PLAYABLE_PROVINCES } from '../data/playables';
+
+/** Oyunu olan bölgeler: diğerleri gri ve kilitli ("yakında") */
+const OPEN_REGIONS = new Set(PLAYABLES.map((p) => REGION_OF_PROVINCE[p.province]));
 
 /** Genel görünümde bölgelerin sade, eşit yüksekliği */
 const REGION_HEIGHT = 0.9;
@@ -72,7 +76,7 @@ export function TurkeyMap() {
     <group>
       {regionShapes.map(({ def, shapes, center }) =>
         def.id === region ? null : (
-          <RegionMesh key={def.id} id={def.id} color={def.color} name={def.name} shapes={shapes} center={center} />
+          <RegionMesh key={def.id} id={def.id} color={OPEN_REGIONS.has(def.id) ? def.color : PALETTE.locked} name={def.name} shapes={shapes} center={center} locked={!OPEN_REGIONS.has(def.id)} />
         ),
       )}
       {provinceData?.map((p) => (
@@ -81,7 +85,8 @@ export function TurkeyMap() {
           name={p.name}
           shapes={p.shapes}
           center={p.center}
-          color={provinceTint(REGION_BY_ID[region!].color, p.index)}
+          color={PLAYABLE_PROVINCES.has(p.name) ? provinceTint(REGION_BY_ID[region!].color, p.index) : new THREE.Color(PALETTE.locked)}
+          locked={!PLAYABLE_PROVINCES.has(p.name)}
         />
       ))}
     </group>
@@ -101,8 +106,8 @@ function useExtrude(shapes: THREE.Shape[], depth: number) {
 }
 
 function RegionMesh({
-  id, color, name, shapes, center,
-}: { id: RegionId; color: string; name: string; shapes: THREE.Shape[]; center: [number, number] }) {
+  id, color, name, shapes, center, locked,
+}: { id: RegionId; color: string; name: string; shapes: THREE.Shape[]; center: [number, number]; locked: boolean }) {
   const ref = useRef<THREE.Mesh>(null!);
   const level = useStore((s) => s.level);
   const activeRegion = useStore((s) => s.region);
@@ -123,22 +128,23 @@ function RegionMesh({
   const dimmed = level !== 'country' && activeRegion !== id;
   const { base, muted, hot } = useMemo(() => {
     const b = new THREE.Color(color);
-    return { base: b, muted: b.clone().lerp(new THREE.Color('#5a524a'), 0.55), hot: b.clone().offsetHSL(0, 0.04, 0.06) };
+    return { base: b, muted: b.clone().lerp(new THREE.Color('#e4e0da'), 0.6), hot: b.clone().offsetHSL(0, 0.04, 0.06) };
   }, [color]);
 
   useFrame((_, dt) => {
     const k = 1 - Math.exp(-dt * 8);
-    const targetY = hovered && !dimmed ? 0.25 : 0;
+    const targetY = hovered && !dimmed && !locked ? 0.25 : 0;
     ref.current.position.y += (targetY - ref.current.position.y) * k;
     const targetScale = dimmed ? 0.45 : 1;
     ref.current.scale.z += (targetScale - ref.current.scale.z) * k;
-    const targetColor = dimmed ? muted : hovered ? hot : base;
+    const targetColor = dimmed ? muted : hovered && !locked ? hot : base;
     top.color.lerp(targetColor, k);
   });
 
   const onOver = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
-    useStore.getState().setHovered({ kind: 'region', id, label: dimmed ? `${name} — geç` : name });
+    useStore.getState().setHovered({ kind: 'region', id, label: locked ? `${name} — yakında` : dimmed ? `${name} — geç` : name });
+    if (locked) return;
     loadRegionSites(id); // üzerine gelinen bölgenin verisini önden indir
     document.body.style.cursor = 'pointer';
   };
@@ -150,6 +156,7 @@ function RegionMesh({
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     if (e.delta > 6) return; // sürükleme sonrası tıklama sayılmaz
+    if (locked) { useStore.getState().showToast(name, 'Bu bölgenin oyunları henüz hazır değil.'); return; }
     useStore.getState().selectRegion(id);
   };
 
@@ -165,12 +172,12 @@ function RegionMesh({
         onClick={onClick}
       >
         <lineSegments geometry={outline}>
-          <lineBasicMaterial color="#fff6e8" transparent opacity={0.35} />
+          <lineBasicMaterial color="#ffffff" transparent opacity={0.6} />
         </lineSegments>
       </mesh>
       {level === 'country' && (
         <Html position={[center[0], REGION_HEIGHT + 0.6, center[1]]} center style={{ pointerEvents: 'none' }}>
-          <div className={`map-label region-label${hovered ? ' is-hover' : ''}`}>{name}</div>
+          <div className={`map-label region-label${hovered ? ' is-hover' : ''}${locked ? ' is-locked' : ''}`}>{name}</div>
         </Html>
       )}
     </group>
@@ -178,8 +185,8 @@ function RegionMesh({
 }
 
 function ProvinceMesh({
-  name, shapes, center, color,
-}: { name: string; shapes: THREE.Shape[]; center: [number, number]; color: THREE.Color }) {
+  name, shapes, center, color, locked,
+}: { name: string; shapes: THREE.Shape[]; center: [number, number]; color: THREE.Color; locked: boolean }) {
   const ref = useRef<THREE.Mesh>(null!);
   const height = elevationToHeight(ELEVATION[name]);
   const geo = useExtrude(shapes, height);
@@ -198,13 +205,13 @@ function ProvinceMesh({
     g.setAttribute('position', new THREE.BufferAttribute(shapeOutline(shapes, height + 0.004), 3));
     return g;
   }, [shapes, height]);
-  const lineMat = useMemo(() => new THREE.LineBasicMaterial({ color: '#fff6e8', transparent: true, opacity: 0.6 }), []);
+  const lineMat = useMemo(() => new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 }), []);
 
   // Bölgeye girildiğinde iller bölge yüksekliğinden gerçek rakımlarına "yükselir"
   const startScale = REGION_HEIGHT / height;
   const pulse = useRef(0);
   const tones = useMemo(
-    () => ({ faded: color.clone().lerp(new THREE.Color('#6b625a'), 0.4), hot: color.clone().offsetHSL(0, 0.05, 0.07) }),
+    () => ({ faded: color.clone().lerp(new THREE.Color('#e8e4de'), 0.55), hot: color.clone().offsetHSL(0, 0.05, 0.07) }),
     [color],
   );
 
@@ -216,21 +223,21 @@ function ProvinceMesh({
       m.userData.init = true;
     }
     m.scale.z += (1 - m.scale.z) * k;
-    const lift = hovered && level === 'region' ? 0.18 : 0;
+    const lift = hovered && level === 'region' && !locked ? 0.18 : 0;
     m.position.y += (lift - m.position.y) * k;
     pulse.current = Math.max(0, pulse.current - dt * 1.8);
     const faded = level !== 'region' && anySelected && !selected;
-    const target = faded ? tones.faded : hovered ? tones.hot : color;
+    const target = faded ? tones.faded : hovered && !locked ? tones.hot : color;
     top.color.lerp(target, k);
     top.emissive.setRGB(pulse.current * 0.25, pulse.current * 0.2, pulse.current * 0.12);
-    lineMat.color.set(selected ? PALETTE.cini : '#fff6e8');
+    lineMat.color.set(selected ? PALETTE.marker : PALETTE.outline);
     lineMat.opacity = selected ? 1 : faded ? 0.25 : 0.6;
   });
 
   const onOver = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
-    useStore.getState().setHovered({ kind: 'province', id: name, label: displayProvince(name) });
-    document.body.style.cursor = 'pointer';
+    useStore.getState().setHovered({ kind: 'province', id: name, label: locked ? `${displayProvince(name)} — yakında` : displayProvince(name) });
+    if (!locked) document.body.style.cursor = 'pointer';
   };
   const onOut = () => {
     const h = useStore.getState().hovered;
@@ -241,11 +248,12 @@ function ProvinceMesh({
     e.stopPropagation();
     if (e.delta > 6) return;
     if (useStore.getState().level === 'site') return;
+    if (locked) { useStore.getState().showToast(displayProvince(name), 'Bu ilin oyunu henüz hazır değil.'); return; }
     pulse.current = 1; // tıklama geri bildirimi: kısa sıcak parlama
     useStore.getState().selectProvince(name);
   };
 
-  const showLabel = level === 'region' || (level === 'province' && selected);
+  const showLabel = (level === 'region' && !locked) || (level === 'province' && selected);
   return (
     <group>
       <mesh

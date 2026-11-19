@@ -1,46 +1,21 @@
-/** İl → o ile ait mini oyun (public/ altındaki bağımsız, tek klasörlük oyunlar). */
-export const GAMES: Record<string, { path: string; label: string }> = {
-  Şanlıurfa: { path: 'sanliurfa-oyun/index.html', label: '🎮 Oyna' },
-  İzmir: { path: 'izmir-efes/index.html', label: '🎮 Efes’i Oyna' },
-};
+import { PLAYABLE_BY_ID, playableUrl, type Playable } from '../data/playables';
 
-/** Miras noktası → ana uygulamadaki ayrıntılı 3D anıt sahnesi */
-export const MONUMENT_SCENES: Record<string, { path: string; label: string }> = {
-  anitkabir: { path: 'anit/ankara-anitkabir', label: '🏛️ 3D Anıtkabir’i Keşfet' },
-  galata: { path: 'oyun/galata-kulesi', label: '🏰 Galata Kulesi: Zamanın Nefesi' },
-  'kiz-kulesi': { path: 'oyun/kiz-kulesi', label: '🚢 Kız Kulesi: Vapur Yolculuğu' },
-  yerebatan: { path: 'oyun/yerebatan', label: '🕯️ Yerebatan: Suyun Altındaki Işık' },
-  ayasofya: { path: 'oyun/ayasofya', label: '🕌 Ayasofya: Işığın ve Taşın Dansı' },
-  topkapi: { path: 'oyun/topkapi', label: '🏰 Topkapı: Harem’in Fısıltıları' },
-  nemrut: { path: 'oyun/nemrut', label: '⛰️ Nemrut: Tanrıların Alacakaranlığı' },
-  kapalicarsi: { path: 'oyun/kapalicarsi', label: '🏪 Kapalıçarşı: Bin Dükkânın Sırrı' },
-  dolmabahce: { path: 'oyun/dolmabahce', label: '💎 Dolmabahçe: Kristal ve Işığın İhtişamı' },
-  zilkale: { path: 'oyun/zilkale', label: '🌫️ Zil Kale: Sis İçindeki İzler' },
-};
-
-/** Anıt sahnesini açar. 3D harita ana uygulamada iframe içinde çalıştığından üst pencere yönlendirilir. */
-export function MonumentButton({ siteId }: { siteId: string }) {
-  const scene = MONUMENT_SCENES[siteId];
-  if (!scene) return null;
-  const open = () => {
-    const url = `${import.meta.env.BASE_URL}${scene.path}`;
-    try { (window.top ?? window).location.href = url; } catch { window.location.href = url; }
-  };
-  return (
-    <button type="button" className="pill-btn primary play-btn" onClick={open}>
-      {scene.label}
-    </button>
-  );
+/**
+ * Oyunu açar. 3D harita ana uygulamada iframe içinde çalışır; uygulama içi oyunlar üst pencerede açılır
+ * (oyunun "geri" düğmesi haritaya döner), public/ altındaki bağımsız oyunlar da aynı sekmede açılır.
+ */
+export function openPlayable(p: Playable) {
+  const url = playableUrl(p, import.meta.env.BASE_URL);
+  try { (window.top ?? window).location.href = url; } catch { window.location.href = url; }
 }
 
-/** İlin oyununu yeni sekmede açan buton; o ilin oyunu yoksa hiçbir şey çizmez. */
-export function PlayButton({ province, className = '' }: { province: string; className?: string }) {
-  const game = GAMES[province];
-  if (!game) return null;
-  const open = () => window.open(`${import.meta.env.BASE_URL}${game.path}`, '_blank', 'noopener');
+/** Miras noktasının oyunu varsa "Oyna" düğmesi; yoksa hiçbir şey çizmez. */
+export function PlayButton({ siteId, className = '' }: { siteId: string; className?: string }) {
+  const p = PLAYABLE_BY_ID.get(siteId);
+  if (!p) return null;
   return (
-    <button type="button" className={`pill-btn primary play-btn ${className}`} onClick={open}>
-      {game.label}
+    <button type="button" className={`pill-btn primary play-btn ${className}`} onClick={() => openPlayable(p)}>
+      ▶ Oyna: {p.title}
     </button>
   );
 }

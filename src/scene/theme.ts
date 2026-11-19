@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 
 export const PALETTE = {
-  bg: '#191512',
-  sea: '#1b2729',
+  bg: '#f7f5f1',      // açık tema: sıcak beyaz
+  sea: '#dbe8ec',     // açık deniz mavisi
+  locked: '#dcd8d1',  // oyunu olmayan bölge/il (henüz yapılmadı)
+  marker: '#f04448',  // oynanabilir nokta (logo kırmızısı)
+  outline: '#ffffff',
   cini: '#4fb3a9', // çini turkuazı — vurgu
   cobalt: '#3a63a8',
   saffron: '#d9a441',
