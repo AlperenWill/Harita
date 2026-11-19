@@ -13,6 +13,7 @@ export const MONUMENT_SCENES: Record<string, { path: string; label: string }> = 
   ayasofya: { path: 'oyun/ayasofya', label: '🕌 Ayasofya: Işığın ve Taşın Dansı' },
   topkapi: { path: 'oyun/topkapi', label: '🏰 Topkapı: Harem’in Fısıltıları' },
   nemrut: { path: 'oyun/nemrut', label: '⛰️ Nemrut: Tanrıların Alacakaranlığı' },
+  kapalicarsi: { path: 'oyun/kapalicarsi', label: '🏪 Kapalıçarşı: Bin Dükkânın Sırrı' },
 };
 
 /** Anıt sahnesini açar. 3D harita ana uygulamada iframe içinde çalıştığından üst pencere yönlendirilir. */

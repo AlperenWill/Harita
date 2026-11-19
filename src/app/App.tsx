@@ -14,6 +14,7 @@ const YerebatanPage = lazy(() => import('./pages/YerebatanPage'));
 const AyasofyaPage = lazy(() => import('./pages/AyasofyaPage'));
 const TopkapiPage = lazy(() => import('./pages/TopkapiPage'));
 const NemrutPage = lazy(() => import('./pages/NemrutPage'));
+const KapalicarsiPage = lazy(() => import('./pages/KapalicarsiPage'));
 
 const Loading = () => (
   <div className="grid min-h-[50vh] place-items-center text-ink-muted" role="status">
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="oyun/ayasofya" element={<AyasofyaPage />} />
           <Route path="oyun/topkapi" element={<TopkapiPage />} />
           <Route path="oyun/nemrut" element={<NemrutPage />} />
+          <Route path="oyun/kapalicarsi" element={<KapalicarsiPage />} />
           <Route path="kaynakca" element={<SourcesPage />} />
           <Route path="ayarlar" element={<SettingsPage />} />
           <Route path="*" element={<NotFound />} />

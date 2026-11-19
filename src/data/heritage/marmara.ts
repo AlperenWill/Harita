@@ -176,5 +176,12 @@ const sites: HeritageSite[] = [
     summary: 'Üsküdar açıklarında küçük bir adacık üzerindeki kule; tarih boyunca gözetleme, fener ve karantina yeri olarak kullanıldı.',
     didYouKnow: 'Bugünkü yapının büyük bölümü 18. yüzyıldaki yangından sonra yeniden inşa edilmiştir; 2023’te restorasyon sonrası yeniden açıldı.',
   },
+  {
+    id: 'kapalicarsi', name: 'Kapalıçarşı', province: 'İstanbul', category: 'mimari', period: 'osmanli',
+    coord: [28.9680, 41.0106], wiki: 'Kapalıçarşı',
+    summary: 'Fatih Sultan Mehmed döneminde Cevahir Bedesteni’nin çevresinde büyüyen, dünyanın en eski ve en büyük kapalı çarşılarından biri; sokakları zanaat loncalarının adlarını taşır.',
+    didYouKnow: 'Sokak adları orada toplanan esnaftan gelir: Kalpakçılar, Kuyumcular, Aynacılar, Fesçiler… 1894 depreminde ağır hasar gördü ve sonraki dört yılda onarıldı.',
+    detail: 'Tonozlu sokaklar ve lonca adları',
+  },
 ];
 export default sites;
