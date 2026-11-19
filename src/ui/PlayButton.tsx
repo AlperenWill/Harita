@@ -15,6 +15,7 @@ export const MONUMENT_SCENES: Record<string, { path: string; label: string }> = 
   nemrut: { path: 'oyun/nemrut', label: '⛰️ Nemrut: Tanrıların Alacakaranlığı' },
   kapalicarsi: { path: 'oyun/kapalicarsi', label: '🏪 Kapalıçarşı: Bin Dükkânın Sırrı' },
   dolmabahce: { path: 'oyun/dolmabahce', label: '💎 Dolmabahçe: Kristal ve Işığın İhtişamı' },
+  zilkale: { path: 'oyun/zilkale', label: '🌫️ Zil Kale: Sis İçindeki İzler' },
 };
 
 /** Anıt sahnesini açar. 3D harita ana uygulamada iframe içinde çalıştığından üst pencere yönlendirilir. */
