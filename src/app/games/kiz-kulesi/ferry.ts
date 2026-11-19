@@ -29,7 +29,7 @@ export function clampDeck(x: number, z: number): [number, number] {
 
 /** Ada yerel düzlemi (m): ada merkezi (0,0); x doğu, -z kuzey. İskele adanın batısında. */
 export const DOCK = { x: -21, z: 4, heading: Math.PI / 2 } as const;   // vapur burnu kuzeye bakarak yanaşır
-export const FERRY_SECONDS = 75;
+export const FERRY_SECONDS = 45;   // önceki 75 sn; ortalama ~12 m/sn (oyun için hızlandırılmış)
 const START = { x: -330, z: -420 };   // kuzeybatıdan (Karaköy yönü) yaklaşır
 const smooth = (u: number) => u * u * (3 - 2 * u);
 
