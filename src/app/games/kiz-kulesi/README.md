@@ -7,7 +7,8 @@ Bağımsız, NPC odaklı bir oyun; kodu ayrı bir parça olarak yalnızca bu say
 ```
 src/app/games/kiz-kulesi/
   MaidensTowerGame.tsx   ana yönetici: bölüm geçişleri, diyalog tetikleyicileri, joystick / etkileşim / zoom, başlık ve son ekranı
-  FerryScene.tsx         1. bölüm: vapur modeli, rota, sallanma, güvertede yürüyüş, takip kamerası
+  FerryScene.tsx         1. bölüm: rota, sallanma, güvertede yürüyüş, takip kamerası (vapurun yerel uzayında yumuşatılır)
+  FerryModel.tsx         vapur modeli: 41 kesitten örülmüş gövde (şiyer, kırmızı zehirli boya, lacivert borda, beyaz kuşak), salon ve pencere sıraları, köprüüstü, baca, filikalar, can simitleri, dalgalanan Türk bayrağı
   ferry.ts               sallanma matematiği, güverte sınırı, rota (saf, test edilir)
   Water.tsx              Gerstner dalga shader'ı; köpük yalnızca vapur burnu ve ada kıyısında
   NPCController.tsx      Can: iskelet, 4 durumlu animasyon makinesi, dudak senkronu, işaret etme, rüzgâr
@@ -54,7 +55,7 @@ roll(t)  = 0.026·sin(0.55t) + 0.008·sin(1.19t + 2.0)   rad   (en çok ±1,9°)
 ```
 Frekanslar birbirinin katı olmadığı için hareket tekrar ediyormuş gibi görünmez. Hepsi `k` ile ölçeklenir: seyirde 1, iskelede 0,2–0,25.
 Kamera sallanmayan vapur dönüşümüne bağlıdır (yalnızca konum ve yön): ekranda dünya değil vapur sallanır; deniz tutmasını azaltır.
-Rota ikinci dereceden Bezier'dir, hız profili smoothstep: yavaş kalkış, yavaş yanaşma (75 sn).
+Rota ikinci dereceden Bezier'dir, hız profili smoothstep: yavaş kalkış, yavaş yanaşma (45 sn; önceki sürümde 75 sn).
 
 ## Su shader'ı
 3 Gerstner dalgası (18 m, 9 m, 5 m), analitik normal, Fresnel ile gökyüzü yansıması, güneş parıltısı. Köpük **yalnızca** iki yerde:
@@ -104,3 +105,8 @@ Geliştirme ortamında yalnızca ekran kartsız tarayıcıda (swiftshader) işle
 - [İletişim Başkanlığı — Maiden's Tower reopens after 2 years of restoration](https://www.iletisim.gov.tr/ENGLISH/dis_basinda_turkiye/detay/maidens-tower-in-istanbul-reopens-in-original-outlook-after-2-years-of-restoration)
 - [GoTürkiye — Istanbul's landmark Maiden's Tower reopens](https://goturkiye.com/branding/press-releases/istanbuls-landmark-maidens-tower-reopens)
 - [Habertürk — Kız Kulesi açılıyor](https://www.haberturk.com/kiz-kulesi-aciliyor-3590728-magazin)
+
+## Model yenilemesi
+- **Kız Kulesi:** badanalı duvarlar ve taş kaide, silmeler, köşe taşları, taş çerçeveli yuvarlak kemerli pencereler, kapak taşlı teras parapeti. Sekizgen köşkte köşe ayakları, kemerli camlar ve saçak var; S kesitli kurşun kubbe, alem ve dalgalanan Türk bayrağıyla örtülü. Fenerin camında kayıtlar var. Adanın çevresinde dalgakıran kayaları ve taş rıhtım bulunuyor. Dokular Topkapı'nın kitinden, dünya ölçekli UV ile geliyor.
+- **Vapur:** klasik şehir hatları vapuru silueti (stilize; belirli bir gemi değil).
+- **Kamera:** vapur kamerası artık vapurun yerel uzayında yumuşatılıyor. Hızlı vapurda ve düşük kare hızında kamera geride kalıp üst yapının arkasına düşmüyor.
