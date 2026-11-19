@@ -176,5 +176,19 @@ const sites: HeritageSite[] = [
     summary: 'Üsküdar açıklarında küçük bir adacık üzerindeki kule; tarih boyunca gözetleme, fener ve karantina yeri olarak kullanıldı.',
     didYouKnow: 'Bugünkü yapının büyük bölümü 18. yüzyıldaki yangından sonra yeniden inşa edilmiştir; 2023’te restorasyon sonrası yeniden açıldı.',
   },
+  {
+    id: 'kapalicarsi', name: 'Kapalıçarşı', province: 'İstanbul', category: 'mimari', period: 'osmanli',
+    coord: [28.9680, 41.0106], wiki: 'Kapalıçarşı',
+    summary: 'Fatih Sultan Mehmed döneminde Cevahir Bedesteni’nin çevresinde büyüyen, dünyanın en eski ve en büyük kapalı çarşılarından biri; sokakları zanaat loncalarının adlarını taşır.',
+    didYouKnow: 'Sokak adları orada toplanan esnaftan gelir: Kalpakçılar, Kuyumcular, Aynacılar, Fesçiler… 1894 depreminde ağır hasar gördü ve sonraki dört yılda onarıldı.',
+    detail: 'Tonozlu sokaklar ve lonca adları',
+  },
+  {
+    id: 'dolmabahce', name: 'Dolmabahçe Sarayı', province: 'İstanbul', category: 'muze', period: 'osmanli',
+    coord: [29.0000, 41.0392], wiki: 'Dolmabahçe Sarayı',
+    summary: 'Sultan Abdülmecid döneminde 1843–1856 arasında Boğaz kıyısında yapılan saray; Avrupa üsluplarını Osmanlı geleneğiyle birleştirir. Kristal avizeleri, Kristal Merdiveni ve altın yaldızlı tavanlarıyla tanınır.',
+    didYouKnow: 'Muayede Salonu’ndaki dev kristal avizenin yaklaşık 4,5 ton ağırlığında ve 750 lambalı olduğu yazılır. Atatürk 10 Kasım 1938’de bu sarayda hayatını kaybetti.',
+    detail: 'Kristal Merdiven’in Baccarat korkulukları',
+  },
 ];
 export default sites;
