@@ -1,25 +1,20 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei';
 import { Experience } from './scene/Experience';
 import { TopBar } from './ui/TopBar';
 import { Dock } from './ui/Dock';
-import { QuestTracker } from './ui/QuestTracker';
-import { HoverTip, Intro, RotateHint, Toast } from './ui/Overlays';
+import { GameCard } from './ui/GameCard';
+import { HoverTip, Intro, Toast } from './ui/Overlays';
 import { useStore } from './state/store';
-import { useQuestWatcher } from './state/useQuestWatcher';
-
-const Journal = lazy(() => import('./ui/Journal'));
 
 export default function App() {
-  const journalOpen = useStore((s) => s.journalOpen);
   const level = useStore((s) => s.level);
   const [dpr, setDpr] = useState(Math.min(window.devicePixelRatio, 1.75));
-  useQuestWatcher();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !useStore.getState().journalOpen) useStore.getState().back();
+      if (e.key === 'Escape') useStore.getState().back();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -31,7 +26,7 @@ export default function App() {
         className="stage"
         dpr={dpr}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
-        camera={{ position: [0, 62, 52], fov: 38, near: 0.05, far: 500 }}
+        camera={{ position: [0, 62, 52], fov: 38, near: 0.05, far: 700 }}
         onCreated={() => document.getElementById('boot')?.classList.add('is-done')}
         onPointerMissed={() => useStore.getState().setHovered(null)}
       >
@@ -46,18 +41,12 @@ export default function App() {
 
       <div className="ui" data-level={level}>
         <TopBar />
-        <QuestTracker />
         <Dock />
+        <GameCard />
         <Toast />
         <Intro />
       </div>
       <HoverTip />
-      {journalOpen && (
-        <Suspense fallback={null}>
-          <Journal />
-        </Suspense>
-      )}
-      <RotateHint />
     </>
   );
 }

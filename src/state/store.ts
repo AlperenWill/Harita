@@ -79,7 +79,6 @@ export const useStore = create<Store>()(
               }
             : d,
         });
-        if (isNew) get().showToast('Yeni mühür', `${s.name} Keşif Günlüğü’ne eklendi.`);
       },
       back: () => {
         const { level, province } = get();

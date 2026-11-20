@@ -1,77 +1,74 @@
 import { useState } from 'react';
 import { useStore } from '../state/store';
-import { CATEGORY_LABEL, PERIOD_BY_ID, REGIONS, REGION_BY_ID, displayProvince } from '../data/regions';
-import { useRegionSites } from '../state/useRegionSites';
+import { REGIONS, REGION_BY_ID, REGION_OF_PROVINCE, displayProvince } from '../data/regions';
+import { PLAYABLES, playablesIn } from '../data/playables';
 import { loadRegionSites } from '../data/heritage';
-import { PlayButton } from './PlayButton';
+import { openPlayable } from './PlayButton';
+
+const countIn = (region: string) => PLAYABLES.filter((p) => REGION_OF_PROVINCE[p.province] === region).length;
 
 /**
- * Bağlama duyarlı alt panel: ülke → bölge çipleri, bölge → il çipleri, il → miras noktası listesi.
- * 3D sahnenin tamamen klavye ve ekran okuyucuyla da gezilebilmesini sağlar.
+ * Alt panel: ülke → bölge çipleri (oyunu olmayanlar "yakında"), bölge → oyunu olan iller, il → oyun kartları.
+ * Haritadaki her şey src/data/playables.ts listesinden gelir.
  */
 export function Dock() {
   const level = useStore((s) => s.level);
   const region = useStore((s) => s.region);
   const province = useStore((s) => s.province);
-  const discovered = useStore((s) => s.discovered);
-  const sites = useRegionSites(region);
   const [open, setOpen] = useState(true);
   const st = useStore.getState();
 
   if (level === 'site') return null;
 
-  let title = 'Bir bölge seç';
+  let title = `Bir bölge seç · ${PLAYABLES.length} oynanabilir yer`;
   let body: JSX.Element | null = null;
 
   if (level === 'country') {
     body = (
       <ul className="chips">
-        {REGIONS.map((r) => (
-          <li key={r.id}>
-            <button
-              className="chip-btn"
-              style={{ ['--c' as string]: r.color }}
-              onClick={() => st.selectRegion(r.id)}
-              onMouseEnter={() => loadRegionSites(r.id)}
-              onFocus={() => loadRegionSites(r.id)}
-            >
-              {r.name}
-            </button>
-          </li>
-        ))}
-      </ul>
-    );
-  } else if (level === 'region' && region) {
-    const r = REGION_BY_ID[region];
-    title = `${r.name} · ${r.provinces.length} il`;
-    body = (
-      <ul className="chips">
-        {[...r.provinces].sort((a, b) => displayProvince(a).localeCompare(displayProvince(b), 'tr')).map((p) => {
-          const n = sites?.filter((s) => s.province === p).length ?? 0;
-          const d = sites?.filter((s) => s.province === p && discovered[s.id]).length ?? 0;
+        {REGIONS.map((r) => {
+          const n = countIn(r.id);
           return (
-            <li key={p}>
-              <button className="chip-btn" style={{ ['--c' as string]: r.color }} onClick={() => st.selectProvince(p)}>
-                {displayProvince(p)} <small>{d}/{n}</small>
+            <li key={r.id}>
+              <button className="chip-btn" style={{ ['--c' as string]: n ? r.color : '#c9c4bc' }} disabled={!n}
+                onClick={() => st.selectRegion(r.id)} onMouseEnter={() => n && loadRegionSites(r.id)}>
+                {r.name} <small>{n ? n : 'yakında'}</small>
               </button>
             </li>
           );
         })}
       </ul>
     );
-  } else if (level === 'province' && province) {
-    const list = sites?.filter((s) => s.province === province) ?? [];
-    title = `${displayProvince(province)} · ${list.length} miras noktası`;
+  } else if (level === 'region' && region) {
+    const r = REGION_BY_ID[region];
+    const provs = r.provinces.filter((p) => playablesIn(p).length).sort((a, b) => displayProvince(a).localeCompare(displayProvince(b), 'tr'));
+    title = `${r.name} · ${provs.length} il`;
     body = (
-      <ul className="site-list">
-        {list.map((s) => (
-          <li key={s.id}>
-            <button className={`site-btn${discovered[s.id] ? ' is-found' : ''}`} onClick={() => st.selectSite(s)}>
-              <span className="dot" style={{ background: PERIOD_BY_ID[s.period].color }} />
-              <span className="site-name">{s.name}</span>
-              <span className="site-meta">{CATEGORY_LABEL[s.category]} · {PERIOD_BY_ID[s.period].label}</span>
-              {discovered[s.id] && <span className="found" aria-label="Keşfedildi">✓</span>}
+      <ul className="chips">
+        {provs.map((p) => (
+          <li key={p}>
+            <button className="chip-btn" style={{ ['--c' as string]: r.color }} onClick={() => st.selectProvince(p)}>
+              {displayProvince(p)} <small>{playablesIn(p).length}</small>
             </button>
+          </li>
+        ))}
+      </ul>
+    );
+  } else if (level === 'province' && province) {
+    const list = playablesIn(province);
+    title = `${displayProvince(province)} · ${list.length} oyun`;
+    body = (
+      <ul className="game-list">
+        {list.map((p) => (
+          <li key={p.id} className="game-row">
+            <button className="game-info" onClick={() => loadRegionSites(REGION_OF_PROVINCE[p.province]).then((all) => { const s = all.find((x) => x.id === p.id); if (s) st.selectSite(s); })}>
+              <span className="game-emoji" aria-hidden="true">{p.emoji}</span>
+              <span className="game-text">
+                <span className="site-name">{p.name}</span>
+                <span className="site-meta">{p.title}{p.depth === 'kisa' ? ' · kısa oyun' : ''}</span>
+              </span>
+            </button>
+            <button className="pill-btn primary game-play" onClick={() => openPlayable(p)} aria-label={`${p.name} oyununu oyna`}>▶ Oyna</button>
           </li>
         ))}
       </ul>
@@ -84,7 +81,7 @@ export function Dock() {
         <span>{title}</span>
         <span aria-hidden="true">{open ? '▾' : '▴'}</span>
       </button>
-      {open && <div className="dock-body">{body}{level === 'province' && province && <PlayButton province={province} className="dock-play" />}</div>}
+      {open && <div className="dock-body">{body}</div>}
     </section>
   );
 }

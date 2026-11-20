@@ -25,6 +25,9 @@ export function CameraRig() {
   const province = useStore((s) => s.province);
   const site = useStore((s) => s.site);
   const size = useThree((s) => s.size);
+  const cam = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  // dikey telefonda yatay görüş dar kalır: görüş açısını büyüt ki Türkiye ekrana sığsın
+  useEffect(() => { cam.fov = size.height > size.width ? 52 : 38; cam.updateProjectionMatrix(); }, [cam, size.width, size.height]);
   const lastInteraction = useRef(0);
   const reduced = prefersReducedMotion();
 
@@ -61,14 +64,14 @@ export function CameraRig() {
       if (cancelled) return;
       if (level === 'country') {
         c.minDistance = 20;
-        c.maxDistance = 160;
+        c.maxDistance = 300;
         c.maxPolarAngle = Math.PI * 0.42;
         const [a, b] = toWorld(25.66, 42.11);
         const [cc, d] = toWorld(44.83, 35.81);
         const box = new THREE.Box3(new THREE.Vector3(a, 0, b), new THREE.Vector3(cc, 1, d));
         await Promise.all([
           c.rotateTo(0, 0.6, true),
-          c.fitToBox(box, true, { paddingLeft: 2, paddingRight: 2, paddingTop: 6, paddingBottom: portrait ? 4 : 9 }),
+          c.fitToBox(box, true, portrait ? { paddingLeft: 3, paddingRight: 3, paddingTop: 8, paddingBottom: 26 } : { paddingLeft: 2, paddingRight: 2, paddingTop: 6, paddingBottom: 9 }),
         ]);
         return;
       }
@@ -89,6 +92,8 @@ export function CameraRig() {
         ]);
         return;
       }
+      // dikey telefonda oyun kartı ekranın altını kaplar: yakın çekime girmeden il görünümünde kal (nokta kartın üstünde görünür)
+      if (level === 'site' && site && portrait) return;
       if (level === 'site' && site) {
         const [x, z] = toWorld(site.coord[0], site.coord[1]);
         const y = elevationToHeight(ELEVATION[site.province]);
@@ -97,7 +102,7 @@ export function CameraRig() {
         c.maxPolarAngle = Math.PI * 0.47;
         // Sinematik yaklaşım: hedefe hafif yandan ve alçaktan gir
         const az = c.azimuthAngle + 0.6;
-        const dist = portrait ? 4.2 : 3.0;
+        const dist = 3.6;
         const camPos = new THREE.Vector3(
           x + Math.sin(az) * dist,
           y + 1.25,

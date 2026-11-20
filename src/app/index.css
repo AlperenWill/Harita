@@ -5,6 +5,8 @@
 @layer base {
   html { -webkit-text-size-adjust: 100%; }
   body { @apply bg-canvas text-ink font-sans antialiased; }
+  /* arka plan: çok hafif sıcak ışık lekeleri + ince nokta dokusu (sayfa düz beyaz görünmesin) */
+  body { background-image: radial-gradient(1200px 500px at 85% -10%, rgba(240, 68, 72, 0.06), transparent 60%), radial-gradient(900px 500px at -10% 30%, rgba(79, 179, 169, 0.06), transparent 60%), radial-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px); background-size: auto, auto, 22px 22px; background-attachment: fixed; }
   :focus-visible { @apply outline-none ring-2 ring-brand/60 ring-offset-2; }
   html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after { animation: none !important; transition: none !important; }
 }
