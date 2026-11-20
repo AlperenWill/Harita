@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Gloock&display=swap');
+
+:root{color-scheme:dark;--ivory:#f4eedf;--muted:#d0c7b3;--gold:#e3b976;--panel:#19211c;--line:#746850;font-family:"DM Sans",system-ui,sans-serif}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;overflow:hidden;overscroll-behavior:none;background:#19211c;color:var(--ivory)}
+#game,#world,#overlay,#hud,.vignette{position:fixed;inset:0}
+#game,#world,#hud{touch-action:none}
+#world{background:linear-gradient(155deg,#668e91,#b4b393 55%,#707a50);overflow:hidden}
+canvas{display:block;width:100%;height:100%}
+.vignette{pointer-events:none;background:radial-gradient(ellipse at center,transparent 52%,#171e1938 100%)}
+#overlay{display:grid;align-items:center;justify-items:start;overflow:auto;overscroll-behavior:contain;padding:max(20px,env(safe-area-inset-top)) max(6vw,env(safe-area-inset-left)) max(20px,env(safe-area-inset-bottom));background:linear-gradient(90deg,#111913ec,#1820199e 44%,#17211720)}
+#panel{width:min(100%,480px);padding:clamp(20px,4vw,42px);border:1px solid #dfbf794d;border-top:3px solid var(--gold);background:linear-gradient(150deg,#212a23f5,#171d18f5);box-shadow:0 22px 80px #0d160e64}
+.eyebrow{font-size:.68rem;letter-spacing:.2em;font-weight:700;color:var(--gold);line-height:1.6}
+h1{font:400 clamp(2.2rem,5.9vw,4.5rem)/1.01 Gloock,Georgia,serif;margin:.24em 0 .35em;overflow-wrap:anywhere}
+p{color:var(--muted);line-height:1.55;margin:.6em 0 1em}
+#actions{display:grid;gap:8px;margin-top:19px}
+button,select{font:inherit;color:var(--ivory);border:1px solid var(--line);background:#273128;padding:10px 14px;border-radius:4px}
+button{cursor:pointer;font-weight:700}
+button:hover{background:#3c4939}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #fff;outline-offset:3px}
+button.primary{background:var(--gold);color:#221b11;border-color:var(--gold)}
+button.primary:hover{background:#f6d599}
+button:disabled{cursor:default;opacity:.45}
+.guide-name{margin-top:16px;padding:10px 12px;border-left:3px solid var(--gold);background:#354637;font-size:.75rem;letter-spacing:.09em;color:var(--gold)}
+#body h2{font:400 1.2rem Gloock,Georgia,serif;margin:22px 0 8px}
+fieldset{border:1px solid var(--line);margin:0;padding:10px 12px}
+label.setting{display:flex;gap:12px;align-items:center;justify-content:space-between;margin:10px 0}
+a{color:#ffdc9b}
+small{display:block;color:var(--muted);margin-top:12px;line-height:1.45}
+#hud{pointer-events:none}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 0 max(14px,env(safe-area-inset-left))}
+.tracker,#pause,#prompt,#waypoint{background:#181f19e8;border:1px solid #cfb38266;padding:10px 13px;border-radius:4px}
+.tracker{border-left:3px solid var(--gold)}
+.tracker{width:min(420px,calc(100vw - 100px))}
+#next-step{font-size:.9rem;color:#fff;line-height:1.45}
+#reason{font-size:.75rem;color:#d2c8ac}
+#navigation{position:absolute;right:18px;bottom:20px;display:grid;gap:6px;width:144px;pointer-events:auto;background:#18241fee;padding:8px;border:1px solid #87724c;border-radius:6px}
+#map{width:100%;height:auto}
+#bearing{font-size:.78rem;text-align:center;color:var(--gold)}
+#open-journal{font-size:.8rem;padding:9px 4px;min-height:44px}
+#tutorial{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);max-width:calc(100% - 360px);padding:13px 18px;background:#18241ff5;border:1px solid var(--gold);border-radius:5px;text-align:center;pointer-events:auto;line-height:1.5;font-size:.9rem}
+.celebrate{animation:reveal .4s ease-out}
+@keyframes reveal{from{transform:translateY(10px);border-color:#fff0b4}to{transform:translateY(0)}}
+.touch #navigation{top:76px;bottom:auto;right:12px;width:106px;padding:5px}
+.touch .tracker{max-width:calc(100vw - 144px)}
+.touch #tutorial{bottom:142px;max-width:calc(100% - 30px);width:440px}
+@media(max-height:540px){.touch #map{display:none}.touch #navigation{top:66px}.touch #reason{display:none}.touch #tutorial{bottom:16px;max-width:calc(100% - 290px);padding:8px}}
+@media(prefers-reduced-motion:reduce){.celebrate{animation:none}}
+.tracker p{margin:4px 0;font-size:.8rem}
+#segments{display:flex;gap:4px;margin-top:8px}
+#segments span{width:24px;height:3px;background:#665e4d}
+#segments .found{background:var(--gold)}
+#pause{pointer-events:auto;min-height:44px;min-width:44px}
+.reticle{position:absolute;left:50%;top:50%;width:7px;height:7px;border:1px solid white;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 3px #222}
+#prompt{position:absolute;left:50%;top:58%;transform:translateX(-50%);text-align:center;width:max-content;max-width:75%;font-size:.88rem}
+#waypoint{position:absolute;transform:translate(-50%,-50%);padding:5px 8px;color:#ffd894;font-size:.72rem;white-space:nowrap}
+#controls{display:none;position:absolute;inset:0;z-index:0}
+.top{position:relative;z-index:2}
+.touch #controls{display:block}
+#look{position:absolute;inset:80px 0 0 36%;pointer-events:auto}
+#stick,#interact,#sprint{position:absolute;pointer-events:auto;touch-action:none;background:#20271ecb}
+#stick{left:max(20px,env(safe-area-inset-left));bottom:max(22px,env(safe-area-inset-bottom));width:94px;height:94px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center}
+#thumb{width:36px;height:36px;background:var(--gold);border-radius:50%;pointer-events:none}
+#interact,#sprint{right:max(20px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom));min-height:44px}
+#sprint{bottom:calc(max(22px,env(safe-area-inset-bottom)) + 54px)}
+@media(max-height:540px){#overlay{align-items:start}#panel{padding:17px 21px}h1{font-size:2rem;margin:.2em 0}#stick{width:76px;height:76px}.tracker{padding:6px 9px}}
+@media(max-width:540px){#overlay{background:#11191392}#panel{justify-self:center}.tracker{max-width:78%}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+
+
+/* Miras. Haritası: haritaya dönüş düğmesi (duraklat düğmesinin yanında, aynı görünüm) */
+.top-actions{display:flex;gap:8px;pointer-events:auto}#miras-back{pointer-events:auto;min-height:44px;min-width:44px;display:grid;place-items:center;background:#181f19e8;border:1px solid #cfb38266;border-radius:4px;color:#f3e3c2;font-size:20px;font-weight:700;text-decoration:none}#miras-back:hover{border-color:#f0ce8d}

@@ -143,7 +143,14 @@ const sites: HeritageSite[] = [
     coord: [30.8540, 36.9612], wiki: 'Perge',
     summary: 'Pamfilya’nın önemli kentlerinden; Helenistik kapı kuleleri, sütunlu caddesi ve stadyumuyla tanınır.',
     didYouKnow: 'Antalya Müzesi’ndeki heykellerin büyük bölümü Perge kazılarından çıkmıştır.',
+  },  {
+    id: 'side', name: 'Side Antik Kenti', province: 'Antalya', category: 'arkeoloji', period: 'antik',
+    coord: [31.3890, 36.7660], wiki: 'Side',
+    summary: 'Denize uzanan yarımadadaki antik liman kenti: tiyatro, agora ve kıyıdaki Apollon Tapınağı.',
+    didYouKnow: 'Apollon Tapınağı’nın yeniden ayağa kaldırılan sütunları gün batımında denizin üstünde siluet çizer.',
+    detail: 'Apollon Tapınağı sütunları',
   },
+
   {
     id: 'termessos', name: 'Termessos', province: 'Antalya', category: 'arkeoloji', period: 'antik',
     coord: [30.4642, 36.9839], wiki: 'Termessos',

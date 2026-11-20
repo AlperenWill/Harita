@@ -559,6 +559,22 @@
      "wiki": "Perge"
     },
     {
+     "id": "side",
+     "name": "Side Antik Kenti",
+     "district": "Manavgat",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Antik Çağ",
+     "coord": [
+      31.389,
+      36.766
+     ],
+     "summary": "Denize uzanan yarımadadaki antik liman kenti: tiyatro, agora ve kıyıdaki Apollon Tapınağı.",
+     "didYouKnow": "Apollon Tapınağı’nın yeniden ayağa kaldırılan sütunları gün batımında denizin üstünde siluet çizer.",
+     "wiki": "Side"
+    },
+    {
      "id": "termessos",
      "name": "Termessos",
      "district": null,

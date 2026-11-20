@@ -16,7 +16,7 @@ export const DISTRICT: Record<string, string> = {
   hierapolis: 'Pamukkale', laodikeia: 'Pamukkale', akhan: 'Pamukkale', 'bodrum-kalesi': 'Bodrum', kaunos: 'Ortaca',
   stratonikeia: 'Yatağan', 'afyon-ulu': 'Merkez', ayazini: 'İhsaniye', aizanoi: 'Çavdarhisar', 'kutahya-cini': 'Merkez', karun: 'Merkez',
   // Akdeniz
-  aspendos: 'Serik', xanthos: 'Kaş', myra: 'Demre', karain: 'Döşemealtı', kizilkule: 'Alanya', 'hadrian-kapisi': 'Muratpaşa', perge: 'Aksu',
+  aspendos: 'Serik', xanthos: 'Kaş', myra: 'Demre', karain: 'Döşemealtı', kizilkule: 'Alanya', 'hadrian-kapisi': 'Muratpaşa', perge: 'Aksu', side: 'Manavgat',
   adada: 'Sütçüler', 'isparta-gul': 'Merkez', sagalassos: 'Ağlasun', hacilar: 'Merkez', kizkalesi: 'Erdemli', uzuncaburc: 'Silifke',
   yumuktepe: 'Yenişehir', 'taskopru-adana': 'Seyhan', misis: 'Yüreğir', yilankale: 'Ceyhan', 'hatay-muze': 'Antakya',
   'st-pierre': 'Antakya', 'habib-neccar': 'Antakya', titus: 'Samandağ', karatepe: 'Kadirli', germanicia: 'Dulkadiroğlu',
