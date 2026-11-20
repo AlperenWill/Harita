@@ -6,6 +6,7 @@
  *   teras   : rüzgâr + uzaktan martılar
  * Katlar arasında 1,5 sn'lik çapraz geçiş yapılır. Anlatım tarayıcının tr-TR konuşma sentezidir (varsa).
  */
+import { speakTr } from '../shared/voice';
 export type Floor = 'giris' | 'zindan' | 'merdiven' | 'sergi' | 'teras';
 type Layer = 'drone' | 'drips' | 'wind' | 'room' | 'gulls';
 
@@ -118,13 +119,7 @@ class GalataAudio {
   }
 
   /** Sesli anlatım (tarayıcının tr-TR sesi). Ses yoksa arayüzdeki altyazı yeterlidir. */
-  speak(text: string) {
-    if (this.muted || !('speechSynthesis' in window)) return;
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; u.rate = 0.95;
-    const v = speechSynthesis.getVoices().find((x) => x.lang.startsWith('tr')); if (v) u.voice = v;
-    speechSynthesis.speak(u);
-  }
+  speak(text: string) { if (this.muted) return; speakTr(text, { gender: 'any', rate: 0.95 }); }
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
 
   setMuted(m: boolean) {

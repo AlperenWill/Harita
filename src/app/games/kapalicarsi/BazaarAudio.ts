@@ -8,6 +8,7 @@
  *    kuyumcu ince şıngırtı, lambacı cam tıkırtısı, antikacı saat tik-takı, kumaşçı kumaş hışırtısı, çinici seramik tıkırtısı;
  *    halıcıda sessizlik (o dükkânın yanında uğultu da kısılır). Dükkânın içindeyken uğultu ~8 dB kısılır, dükkân sesi öne çıkar.
  */
+import { speakTr } from '../shared/voice';
 import type { Trade, V2 } from './ProceduralStreetGenerator';
 
 class BazaarAudio {
@@ -71,7 +72,7 @@ class BazaarAudio {
   setNight(n: boolean) { this.night = n; }
   setInside(v: boolean) { this.inside = v; this.shopGain.forEach((g) => this.ctx && g.gain.setTargetAtTime(v ? 1.6 : 0.9, this.ctx.currentTime, 0.3)); }
   setMuted(m: boolean) { this.muted = m; if (m) this.hush(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.2); }
-  speak(text: string) { if (this.muted || !('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; u.rate = 1; const v = speechSynthesis.getVoices().find((x) => x.lang.startsWith('tr')); if (v) u.voice = v; speechSynthesis.speak(u); }
+  speak(text: string) { if (this.muted) return; speakTr(text, { gender: 'any', rate: 1 }); }
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
   dispose() { this.timers.forEach(clearInterval); this.timers = []; this.hush(); void this.ctx?.close(); this.ctx = null; this.master = null; this.murmur = null; this.voices = []; this.shopPan = []; this.shopGain = []; }
 }

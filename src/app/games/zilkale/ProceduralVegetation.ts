@@ -42,7 +42,7 @@ export function scatter(kind: Kind, tier: Tier, seed = 11): Placed[] {
     else { x = BOUNDS.x0 + r() * (BOUNDS.x1 - BOUNDS.x0); z = BOUNDS.z1 + r() * (BOUNDS.z0 - BOUNDS.z1); }
     const dr = Math.abs(x - riverX(z)), dp = pathDist(x, z);
     if (kind === 'alder' ? dr < 7.5 || dr > 11 : dr < (kind === 'moss' ? 6.5 : 7.5)) continue;
-    if (dp < (kind === 'rhodo' ? 3 : under ? 1.2 : kind === 'alder' ? 6 : 4) || (under && dp > maxEdge)) continue;
+    if (dp < (kind === 'rhodo' ? 3 : under ? 1.2 : kind === 'alder' ? 6.5 : 6) || (under && dp > maxEdge)) continue;
     if (kind === 'spruce' && Math.hypot(x - CASTLE.x, z - CASTLE.z) < 22) continue;    // kale burnunun tepesi açık (kayalık)
     if ((kind === 'spruce' || kind === 'alder') && segDist(x, z, SUMMIT_CAM.pos[0], SUMMIT_CAM.pos[2], CASTLE.x, CASTLE.z) < 9) continue;   // tepe kamerasının görüşü açık
     if (Math.hypot(x - riverX(-4) - 22, z + 4) < 9 || Math.hypot(x - riverX(-40) - 18, z + 40) < 6) continue;   // ev ve serender çevresi

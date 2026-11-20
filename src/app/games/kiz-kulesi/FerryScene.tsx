@@ -58,7 +58,7 @@ export default function FerryScene({ device, onArrive }: { device: { shadows: bo
     if (len > 0.08) {
       const sp = 1.8 * Math.min(1, len);
       const [nx, nz] = clampDeck(pl.x + (walk.x / Math.max(1, len)) * sp * dt, pl.z + (walk.y / Math.max(1, len)) * sp * dt);
-      pl.speed = Math.hypot(nx - pl.x, nz - pl.z) / dt; if (pl.speed > 0.05) pl.yaw = Math.atan2(-(nx - pl.x), -(nz - pl.z)); pl.x = nx; pl.z = nz;
+      pl.speed = dt > 0 ? Math.hypot(nx - pl.x, nz - pl.z) / dt : 0; if (pl.speed > 0.05) pl.yaw = Math.atan2(-(nx - pl.x), -(nz - pl.z)); pl.x = nx; pl.z = nz;
     } else pl.speed = 0;
     pl.y = DECK.y; pl.wind = 1;
 

@@ -100,7 +100,7 @@ export function DockScene({ phase, dev, onDoor, onBoard }: { phase: Extract<Phas
     const m = moveFromInput(axes());
     if (m) {
       const n = slide(pl, m.x * SPEED * dt, m.z * SPEED * dt, open);
-      pl.speed = Math.hypot(n.x - pl.x, n.z - pl.z) / dt; if (pl.speed > 0.05) pl.yaw = Math.atan2(-(n.x - pl.x), -(n.z - pl.z)); pl.x = n.x; pl.z = n.z;
+      pl.speed = dt > 0 ? Math.hypot(n.x - pl.x, n.z - pl.z) / dt : 0; if (pl.speed > 0.05) pl.yaw = Math.atan2(-(n.x - pl.x), -(n.z - pl.z)); pl.x = n.x; pl.z = n.z;
     } else pl.speed = 0;
     pl.y = heightAt(pl.x, pl.z); pl.wind = 0.6;
 
@@ -146,7 +146,7 @@ export function TerraceScene({ dev }: { dev: Dev }) {
       const nx = pl.x + m.x * SPEED * dt, nz = pl.z + m.z * SPEED * dt;
       const ox = pl.x, oz = pl.z;
       if (terraceOk(nx, pl.z)) pl.x = nx; if (terraceOk(pl.x, nz)) pl.z = nz;
-      pl.speed = Math.hypot(pl.x - ox, pl.z - oz) / dt; if (pl.speed > 0.05) pl.yaw = Math.atan2(-(pl.x - ox), -(pl.z - oz));
+      pl.speed = dt > 0 ? Math.hypot(pl.x - ox, pl.z - oz) / dt : 0; if (pl.speed > 0.05) pl.yaw = Math.atan2(-(pl.x - ox), -(pl.z - oz));
     } else pl.speed = 0;
     pl.wind = 0.9;
     const tg = followTarget('beside', c, pl, Math.atan2(-axes().fx, -axes().fz));
@@ -210,11 +210,11 @@ export function TowerInterior({ onTop }: { onTop: () => void }) {
     const v = -walk.y; const ds = Math.abs(v) > 0.1 ? v * 1.6 * dt : 0;
     s.current = Math.max(0.3, Math.min(STAIR_LEN, s.current + ds));
     const a = stairAt(s.current);
-    pl.x = a.x; pl.y = a.y; pl.z = a.z; pl.speed = Math.abs(ds) / dt; if (ds) pl.yaw = ds > 0 ? a.heading : a.heading + Math.PI; pl.wind = 0;
+    pl.x = a.x; pl.y = a.y; pl.z = a.z; pl.speed = dt > 0 ? Math.abs(ds) / dt : 0; if (ds) pl.yaw = ds > 0 ? a.heading : a.heading + Math.PI; pl.wind = 0;
     // Can 1,8 m arkadan
     const goal = Math.max(0, s.current - 1.8); const before = cs.current;
     cs.current += Math.sign(goal - cs.current) * Math.min(Math.abs(goal - cs.current), 2.2 * dt);
-    const b = stairAt(cs.current); c.x = b.x; c.y = b.y; c.z = b.z; c.speed = Math.abs(cs.current - before) / dt; if (c.speed > 0.1) c.yaw = b.heading;
+    const b = stairAt(cs.current); c.x = b.x; c.y = b.y; c.z = b.z; c.speed = dt > 0 ? Math.abs(cs.current - before) / dt : 0; if (c.speed > 0.1) c.yaw = b.heading;
     // taşlar: yanından geçerken Can durdurur ve anlatır
     for (const st of stones) if (!heardSpots.current.has(st.spot) && Math.abs(s.current - st.s) < 0.6) { heardSpots.current.add(st.spot); useKiz.getState().play(stoneDialogue(st.spot)); }
     const pb = useKiz.getState().playback, line = pb?.dialogue.lines[pb.line];

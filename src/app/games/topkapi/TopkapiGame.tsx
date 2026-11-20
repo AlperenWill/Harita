@@ -357,7 +357,7 @@ function Controller({ playerXZ }: { playerXZ: React.MutableRefObject<{ x: number
     if (k !== promptKey.current) { promptKey.current = k; S.set({ prompt: { door, thing } }); if (thing && !S.seen.includes(thing.id)) topkapiAudio.whisper(); }
 
     /* kamera */
-    const card = S.card, headY = 1.55;
+    const card = S.card, headY = 1.55; let blocked = false;
     _t.set(p.x, headY, p.z);
     if (card && card.zone === zone) {
       // inceleme: nesneye dön; hazinede vitrine yaklaş
@@ -377,13 +377,14 @@ function Controller({ playerXZ }: { playerXZ: React.MutableRefObject<{ x: number
       // çarpışma: hedeften kameraya doğru ilerle, engelde dur
       const n = Math.ceil(D / 0.2); let ok = 0;
       for (let i = 1; i <= n; i++) { const f = i / n, x = p.x + (_c.x - p.x) * f, z = p.z + (_c.z - p.z) * f; if (!camClear(zone, x, z)) break; ok = f; }
-      if (ok < 1) { const f = Math.max(0.12, ok - 0.06); _c.set(p.x + (_c.x - p.x) * f, headY + (_c.y - headY) * f, p.z + (_c.z - p.z) * f); }
+      if (ok < 1) { blocked = true; const f = Math.max(0.12, ok - 0.06); _c.set(p.x + (_c.x - p.x) * f, headY + (_c.y - headY) * f, p.z + (_c.z - p.z) * f); }
       _c.y = Math.max(0.35, Math.min(_c.y, CEILING[zone] - 0.3));
       _lk.copy(_t);
       if (S.talk && pd < 6) _lk.lerp(_look.set(g.x, 1.5, g.z), 0.35);   // konuşurken rehber de kadrajda
     }
     const kk = 1 - Math.exp(-dt * (card ? 3 : 10));
-    if (camPos.current.distanceTo(_c) > 25) { camPos.current.copy(_c); lookAt.current.copy(_lk); } else { camPos.current.lerp(_c, kk); lookAt.current.lerp(_lk, kk); }
+    // duvar araya girince kamera yumuşatılmadan içeri alınır (yumuşak geçişte duvarın içinden görünmesin)
+    if (camPos.current.distanceTo(_c) > 25) { camPos.current.copy(_c); lookAt.current.copy(_lk); } else { if (blocked && _c.distanceTo(_t) < camPos.current.distanceTo(_t)) camPos.current.copy(_c); else camPos.current.lerp(_c, kk); lookAt.current.lerp(_lk, kk); }
     camera.position.copy(camPos.current); camera.lookAt(lookAt.current);
 
     /* ses */

@@ -6,6 +6,7 @@
  *  - Koridor: mum çıtırtısı; Valide dairesi: sakin oda; hamam: akan su + damla + yankı; hazine: soğuk, tiz parıltı.
  *  - Anlatım: tarayıcının tr-TR konuşma sentezi (cihazda Türkçe ses yoksa yalnızca yazı).
  */
+import { speakTr } from '../shared/voice';
 import type { V3 } from './world';
 export type Mix = 'dis' | 'divan' | 'koridor' | 'valide' | 'hamam' | 'hazine';
 const LEVEL: Record<Mix, Record<string, number>> = {
@@ -48,7 +49,7 @@ class TopkapiAudio {
   setListening(on: boolean) { this.listen = on; this.setMix(this.mix); }
   listener(pos: V3, fwd: V3) { const ctx = this.ctx; if (!ctx) return; const L = ctx.listener, t = ctx.currentTime; if (!L.positionX) return; L.positionX.setValueAtTime(pos[0], t); L.positionY.setValueAtTime(pos[1], t); L.positionZ.setValueAtTime(pos[2], t); L.forwardX.setValueAtTime(fwd[0], t); L.forwardY.setValueAtTime(fwd[1], t); L.forwardZ.setValueAtTime(fwd[2], t); }
   setMuted(m: boolean) { this.muted = m; if (m) this.hush(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.2); }
-  speak(text: string) { if (this.muted || !('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; u.rate = 0.95; const v = speechSynthesis.getVoices().find((x) => x.lang.startsWith('tr')); if (v) u.voice = v; speechSynthesis.speak(u); }
+  speak(text: string) { if (this.muted) return; speakTr(text, { gender: 'male', rate: 0.95 }); } // erkek rehber
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
   dispose() { this.timers.forEach(clearInterval); this.timers = []; this.hush(); void this.ctx?.close(); this.ctx = null; this.master = null; this.g = {}; this.pan = []; }
 }

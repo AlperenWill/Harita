@@ -220,21 +220,26 @@ function Controller() {
     live.restore.current = approach(live.restore.current, S.placed.length >= 3 ? 1 : 0, dt, 1.4);
 
     // kamera
-    const head = p.y + 1.6, card = S.card;
+    const head = p.y + 1.6, card = S.card; let blocked = false;
     if (card) {
       const dx = card.at[0] - p.x, dz = card.at[1] - p.z; if (Math.hypot(dx, dz) > 0.6) cam.yaw += wrap(Math.atan2(-dx, -dz) - cam.yaw) * (1 - Math.exp(-dt * 3));
-      _c.set(p.x + Math.sin(cam.yaw) * 4.2, head + 1.2, p.z + Math.cos(cam.yaw) * 4.2); _l.set(card.at[0], Math.max(card.y, 1), card.at[1]).lerp(_f.set(p.x, head, p.z), 0.2);
+      _c.set(p.x + Math.sin(cam.yaw) * 4.2, head + 1.2, p.z + Math.cos(cam.yaw) * 4.2);
+      { const n = 17; let ok = 0; for (let i = 1; i <= n; i++) { const f = i / n; if (!camOk(p.x + (_c.x - p.x) * f, head + (_c.y - head) * f, p.z + (_c.z - p.z) * f)) break; ok = f; }   // inceleme kamerası da heykel/kayaya girmesin
+        if (ok < 1) { blocked = true; const f = Math.max(0.1, ok - 0.05); _c.set(p.x + (_c.x - p.x) * f, head + (_c.y - head) * f, p.z + (_c.z - p.z) * f); } }
+      _c.y = Math.max(_c.y, heightAt(_c.x, _c.z) + 0.5); _l.set(card.at[0], Math.max(card.y, 1), card.at[1]).lerp(_f.set(p.x, head, p.z), 0.2);
     } else {
       const D = cam.dist, cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
       _c.set(p.x + Math.sin(cam.yaw) * cp * D, head + sp * D, p.z + Math.cos(cam.yaw) * cp * D);
       const n = Math.ceil(D / 0.25); let ok = 0;
       for (let i = 1; i <= n; i++) { const f = i / n; if (!camOk(p.x + (_c.x - p.x) * f, head + (_c.y - head) * f, p.z + (_c.z - p.z) * f)) break; ok = f; }
-      if (ok < 1) { const f = Math.max(0.1, ok - 0.05); _c.set(p.x + (_c.x - p.x) * f, head + (_c.y - head) * f, p.z + (_c.z - p.z) * f); }
+      if (ok < 1) { blocked = true; const f = Math.max(0.1, ok - 0.05); _c.set(p.x + (_c.x - p.x) * f, head + (_c.y - head) * f, p.z + (_c.z - p.z) * f); }
       _c.y = Math.max(_c.y, heightAt(_c.x, _c.z) + 0.5);
       _l.set(p.x, head, p.z); if (cam.pitch < 0) _l.y += -cam.pitch * 12;   // yukarı bakış: heykellerin tepesi
     }
     const k = 1 - Math.exp(-dt * (card ? 3 : 9));
-    if (camPos.current.distanceTo(_c) > 40) { camPos.current.copy(_c); look.current.copy(_l); } else { camPos.current.lerp(_c, k); look.current.lerp(_l, k); }
+    // engel araya girince kamera yumuşatılmadan içeri alınır (heykelin/kayanın içinden görünmesin)
+    _f.set(p.x, head, p.z);
+    if (camPos.current.distanceTo(_c) > 40) { camPos.current.copy(_c); look.current.copy(_l); } else { if (blocked && _c.distanceTo(_f) < camPos.current.distanceTo(_f)) camPos.current.copy(_c); else camPos.current.lerp(_c, k); look.current.lerp(_l, k); }
     camera.position.copy(camPos.current); camera.lookAt(look.current);
     camera.getWorldDirection(_f);
     nemrutAudio.update(atmosphere(live.hour).wind, [camera.position.x, camera.position.y, camera.position.z], [_f.x, _f.y, _f.z], p.x < 0 ? -TERRACE_X : TERRACE_X);

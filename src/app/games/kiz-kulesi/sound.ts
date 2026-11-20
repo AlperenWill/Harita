@@ -5,6 +5,7 @@
  *   iç    : boğuk oda tonu, uzaktan dalga
  * Sesli okuma: tarayıcının tr-TR konuşma sentezi (cihazda Türkçe ses yoksa yalnızca yazı).
  */
+import { speakTr } from '../shared/voice';
 type Mix = 'vapur' | 'ada' | 'ic' | 'sessiz';
 const LEVELS: Record<Mix, Record<string, number>> = {
   vapur: { engine: 0.55, water: 0.45, gulls: 0.9, wind: 0.5 },
@@ -48,11 +49,7 @@ class KizSound {
   }
   mix(m: Mix) { this.mixName = m; if (!this.ctx) return; for (const [k, v] of Object.entries(this.g)) v.gain.setTargetAtTime(LEVELS[m][k] ?? 0, this.ctx.currentTime, 0.6); }
   setMuted(m: boolean) { this.muted = m; if (m) this.hush(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.6, this.ctx.currentTime, 0.2); }
-  speak(text: string) {
-    if (this.muted || !('speechSynthesis' in window)) return;
-    speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; u.rate = 1; u.pitch = 1.05;
-    const v = speechSynthesis.getVoices().find((x) => x.lang.startsWith('tr')); if (v) u.voice = v; speechSynthesis.speak(u);
-  }
+  speak(text: string) { if (this.muted) return; speakTr(text, { gender: 'male', rate: 1 }); } // erkek rehber
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
   dispose() { this.timers.forEach(clearInterval); this.timers = []; this.hush(); void this.ctx?.close(); this.ctx = null; this.master = null; this.g = {}; }
 }

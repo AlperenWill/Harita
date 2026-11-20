@@ -174,7 +174,12 @@ function Halos({ saver }: { saver: boolean }) {
 /* ---------- hareket + kendiliğinden en iyi açı ---------- */
 const _c = new THREE.Vector3(), _l = new THREE.Vector3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion();
 function cameraFor(z: Zone, p: V3, dir: [number, number], t: number): { pos: V3; look: V3; fov: number } {
-  const head: V3 = [p[0], p[1] + 1.55, p[2]], behind = (d: number, h: number, up = 0): { pos: V3; look: V3; fov: number } => ({ pos: clampToRoom(z, [p[0] - dir[0] * d, p[1] + h, p[2] - dir[1] * d]), look: [p[0] + dir[0] * 4, head[1] + up, p[2] + dir[1] * 4], fov: 55 });
+  const head: V3 = [p[0], p[1] + 1.55, p[2]], behind = (d: number, h: number, up = 0): { pos: V3; look: V3; fov: number } => {
+    const c = clampToRoom(z, [p[0] - dir[0] * d, p[1] + h, p[2] - dir[1] * d]), got = Math.hypot(c[0] - p[0], c[2] - p[2]);
+    // duvar kamerayı karaktere yaklaştırırsa (oda sınırı) kamera yükselir ve omuz üstünden bakar: kafa kadrajı kapatmasın
+    const lift = Math.max(0, d * 0.75 - got) * 0.9;
+    return { pos: clampToRoom(z, [c[0], c[1] + lift, c[2]]), look: [p[0] + dir[0] * (4 + lift), head[1] + up - lift * 0.15, p[2] + dir[1] * (4 + lift)], fov: lift > 0.3 ? 62 : 55 };
+  };
   switch (z) {
     case 'medhal': return behind(5, 2.6, 0.3);
     case 'muayede': return { ...behind(7.5, 3.2, 3.5), fov: 62 };

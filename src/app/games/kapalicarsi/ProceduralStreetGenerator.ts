@@ -36,7 +36,7 @@ const pick = <T,>(r: () => number, a: readonly T[]) => a[Math.floor(r() * a.leng
 /* ---------- ölçüler ---------- */
 export const GRID = { cols: 8, rows: 6, cell: 13, main: 3 } as const;     // düğüm sayısı ve aralığı; ana cadde düğüm satırı
 export const WIDTH = { main: 5, side: 3.6 } as const;
-export const SHOP_W = 3.4, SHOP_D = 4, BODY = 0.3, VAULT_H = 6.2;
+export const SHOP_W = 3.4, SHOP_D = 4, BODY = 0.42, VAULT_H = 6.2;
 export const BEDESTEN = { i0: 3, i1: 5, j0: 1, j1: 3 } as const;           // hücre aralığı (düğüm indeksleri): ortadaki Cevahir Bedesteni
 
 export interface Node { id: number; i: number; j: number; x: number; z: number }
