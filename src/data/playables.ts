@@ -48,6 +48,9 @@ export const PLAYABLES: Playable[] = [
   { id: 'anitkabir', name: 'Anıtkabir', province: 'Ankara', coord: [32.8370, 39.9250], title: '3D Anıtkabir’i Keşfet', emoji: '🏛️', blurb: 'Aslanlı Yol’dan Şeref Holü’ne yürü.', kind: 'route', path: 'anit/ankara-anitkabir', depth: 'detayli', wiki: 'Anıtkabir' },
   // ---- Kapadokya ----
   { id: 'goreme', name: 'Kapadokya (Göreme)', province: 'Nevşehir', coord: [34.8450, 38.6400], title: 'Gün Doğumunda Balon', emoji: '🎈', blurb: 'Balonla peribacalarının üstünde uç; yönü rüzgâr katmanlarıyla seç.', kind: 'route', path: 'oyun/kapadokya', depth: 'detayli', wiki: 'Kapadokya' },
+  // ---- Konya (zip ile gelen bağımsız oyun: public/konya-kayip-miras) ----
+  { id: 'mevlana', name: 'Mevlana Müzesi', province: 'Konya', coord: [32.5048, 37.8705], title: 'Kayıp Miras', emoji: '🌀', blurb: 'Mevlâna Müzesi, Çatalhöyük ve Karatay Medresesi’nde 10 araştırma görevi.', kind: 'static', path: 'konya-kayip-miras/index.html', depth: 'detayli', wiki: 'Mevlana Müzesi' },
+  { id: 'catalhoyuk', name: 'Çatalhöyük', province: 'Konya', coord: [32.8280, 37.6670], title: 'Kayıp Miras', emoji: '🏺', blurb: 'Damdan girilen evleriyle 9.000 yıllık yerleşim; Kayıp Miras oyununun ikinci bölümü.', kind: 'static', path: 'konya-kayip-miras/index.html', depth: 'detayli', wiki: 'Çatalhöyük' },
   // ---- Ege ----
   { id: 'efes', name: 'Efes Antik Kenti', province: 'İzmir', coord: [27.3417, 37.9395], title: 'Zaman Penceresi', emoji: '🏛️', blurb: 'Mermer caddelerden Celsus’a ve tiyatroya yürü; yıkık yapılar Roma dönemine dönsün.', kind: 'route', path: 'oyun/efes', depth: 'detayli', wiki: 'Efes' },
   { id: 'hierapolis', name: 'Pamukkale ve Hierapolis', province: 'Denizli', coord: [29.1250, 37.9250], title: 'Beyaz Basamaklar', emoji: '🏞️', blurb: 'Travertenleri çıplak ayakla tırman, kurumuş havuzlara suyu yönlendir.', kind: 'route', path: 'oyun/pamukkale', depth: 'detayli', wiki: 'Pamukkale' },

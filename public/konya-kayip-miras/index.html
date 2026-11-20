@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171c18">
+  <title>Tarihî Konya'nın İzinde — Kayıp Miras</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="game" aria-label="Konya tarihî keşif oyunu">
+    <div id="world"></div>
+    <div class="vignette"></div>
+    <div id="hud" hidden>
+      <div class="top">
+        <section class="tracker">
+          <div class="eyebrow" id="district">KONYA</div>
+          <strong id="objective"></strong>
+          <p id="next-step"></p><p id="reason"></p><p id="progress"></p>
+          <div id="segments" aria-hidden="true"></div>
+        </section>
+        <div class="top-actions"><a id="miras-back" href="../harita" aria-label="Haritaya dön" title="Haritaya dön (ilerleme kayıtlı kalır)">←</a><button id="pause" type="button" aria-label="Duraklat">Ⅱ</button></div>
+      </div>
+      <div id="navigation"><button id="route-help" title="Hedefe giden yolu göster">Rotayı göster</button><canvas id="map" width="144" height="144" aria-label="Konum ve hedef haritası"></canvas><span id="bearing"></span><button id="open-journal">Günlük · J</button></div><div id="tutorial" hidden></div><div class="reticle" aria-hidden="true"></div>
+      <div id="prompt" hidden></div>
+      <div id="waypoint" hidden aria-hidden="true">◆</div>
+      <div id="controls">
+        <div id="look"></div>
+        <div id="stick"><span id="thumb"></span></div>
+        <button id="sprint" type="button"></button>
+        <button id="interact" type="button"></button>
+      </div>
+    </div>
+    <div id="overlay">
+      <section tabindex="-1" id="panel" aria-labelledby="title">
+        <div class="eyebrow" id="tag">TARİHÎ KONYA'NIN İZİNDE</div>
+        <h1 id="title">Konya</h1>
+        <div id="body" aria-live="polite"><p>Konya hazırlanıyor…</p></div>
+        <div id="actions"></div>
+      </section>
+    </div>
+    <noscript>Konya’yı keşfetmek için JavaScript’i etkinleştirin.</noscript>
+  </main>
+  <script defer src="vendor/three.min.js"></script>
+  <script defer src="data.js"></script>
+  <script defer src="worlds.js"></script>
+  <script defer src="game.js"></script>
+</body>
+</html>
