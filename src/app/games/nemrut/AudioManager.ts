@@ -4,6 +4,7 @@
  *   arkasından dolanan rüzgâr daha boğuk ve ıslıklı duyulur (dar bant, yüksek Q). Şiddet günün saatine göre: gece sakin, öğle hafif,
  *   gün doğumu/batımında sert. Restore: taş sürtünmesi (alçak, pürüzlü gürültü) + ince bir parıltı.
  */
+import { speakTr } from '../shared/voice';
 import { WIND_DIR, type V3 } from './DynamicLightingSystem';
 class NemrutAudio {
   private ctx: AudioContext | null = null; private master: GainNode | null = null; private noise: AudioBuffer | null = null;
@@ -43,7 +44,7 @@ class NemrutAudio {
   step() { const ctx = this.ctx; if (!ctx || !this.noise || !this.master) return; const t = ctx.currentTime, s = ctx.createBufferSource(); s.buffer = this.noise; s.playbackRate.value = 2.5; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1800 + Math.random() * 600; f.Q.value = 0.9; const g = ctx.createGain(); g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12); s.connect(f).connect(g).connect(this.master); s.start(t, Math.random() * 2); s.stop(t + 0.14); }
   setMuted(m: boolean) { this.muted = m; if (m && 'speechSynthesis' in window) speechSynthesis.cancel(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.2); }
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
-  speak(text: string) { if (this.muted || !('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; u.rate = 0.95; const v = speechSynthesis.getVoices().find((x) => x.lang.startsWith('tr')); if (v) u.voice = v; speechSynthesis.speak(u); }
+  speak(text: string) { if (this.muted) return; speakTr(text, { gender: 'any', rate: 0.95 }); }
   dispose() { if ('speechSynthesis' in window) speechSynthesis.cancel(); void this.ctx?.close(); this.ctx = null; this.master = null; this.main = null; this.pans = []; this.eg = []; }
 }
 export const nemrutAudio = new NemrutAudio();

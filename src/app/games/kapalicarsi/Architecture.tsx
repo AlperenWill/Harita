@@ -234,7 +234,7 @@ export function Architecture({ L, night, hi, lodRadius }: { L: Layout; night: bo
       {!night && <primitive object={M.bulbs} />}
       {night && <primitive object={M.shut} />}
       {goods.map((g) => <primitive key={g.trade} object={g.mesh} visible={!night || g.trade === 'lambaci'} />)}
-      <Gates L={L} />
+      <Gates L={L} night={night} />
       <Bedesten L={L} />
       {hi && <Shafts L={L} night={night} />}
       {night && <NightLamps L={L} />}
@@ -243,8 +243,20 @@ export function Architecture({ L, night, hi, lodRadius }: { L: Layout; night: bo
 }
 
 /** Kapılar: dışarıya açılan taş portal + parlak dış ışık + kapı adı */
-function Gates({ L }: { L: Layout }) {
-  const mats = useMemo(() => ({ stone: new THREE.MeshStandardMaterial({ color: '#cbb994', roughness: 0.85 }), out: new THREE.MeshBasicMaterial({ color: new THREE.Color('#fff6e4').multiplyScalar(1.6), toneMapped: false }) }), []);
+/** Kapının dışı: boş beyaz yerine gün ışığında (ya da gece) bir dış sokak görüntüsü — gökyüzü, kubbe/minare siluetleri, kaldırım */
+function outsideTex(night: boolean) {
+  return canvasTex(512, 512, (c) => {
+    const sky = c.createLinearGradient(0, 0, 0, 300); sky.addColorStop(0, night ? '#0b1430' : '#9cc7e6'); sky.addColorStop(1, night ? '#1e2b4e' : '#f4e6c8'); c.fillStyle = sky; c.fillRect(0, 0, 512, 512);
+    c.fillStyle = night ? '#141a2a' : '#c9b48e';   // karşıdaki han ve dükkânlar
+    for (let x = 0, i = 0; x < 512; i++) { const w = 60 + ((i * 53) % 70), h = 120 + ((i * 37) % 90); c.fillRect(x, 300 - h, w - 4, h); x += w; }
+    c.fillStyle = night ? '#0e1322' : '#b29c76'; c.beginPath(); c.arc(330, 190, 46, Math.PI, 0); c.fill(); c.fillRect(284, 190, 92, 40); c.fillRect(396, 90, 10, 140); c.beginPath(); c.moveTo(392, 90); c.lineTo(401, 52); c.lineTo(410, 90); c.fill();   // cami kubbesi + minare
+    if (night) { c.fillStyle = '#ffd98a'; for (let i = 0; i < 26; i++) c.fillRect((i * 97) % 500, 200 + ((i * 41) % 80), 6, 9); }   // yanan pencereler
+    const g = c.createLinearGradient(0, 300, 0, 512); g.addColorStop(0, night ? '#2a2a30' : '#a89b88'); g.addColorStop(1, night ? '#1a1a1e' : '#7c705f'); c.fillStyle = g; c.fillRect(0, 300, 512, 212);
+    c.strokeStyle = night ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.12)'; for (let y = 312; y < 512; y += 18) { c.beginPath(); c.moveTo(0, y); c.lineTo(512, y); c.stroke(); }
+  });
+}
+function Gates({ L, night }: { L: Layout; night: boolean }) {
+  const mats = useMemo(() => ({ stone: new THREE.MeshStandardMaterial({ color: '#cbb994', roughness: 0.85 }), out: new THREE.MeshBasicMaterial({ map: outsideTex(night), color: new THREE.Color(night ? '#ffffff' : '#fff8ec').multiplyScalar(night ? 0.9 : 1.15), toneMapped: false, fog: false }) }), [night]);
   const labels = useMemo(() => L.gates.map((g) => canvasTex(512, 96, (c) => { c.fillStyle = '#1c2a3a'; c.fillRect(0, 0, 512, 96); c.strokeStyle = '#d9b456'; c.lineWidth = 5; c.strokeRect(6, 6, 500, 84); c.fillStyle = '#f2d27a'; c.font = 'bold 40px Georgia, serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(g.name.toLocaleUpperCase('tr'), 256, 50); })), [L]);
   return (
     <>
@@ -252,7 +264,7 @@ function Gates({ L }: { L: Layout }) {
         const e = L.edges.find((x) => x.gate === g.name)!, w = e.w, yaw = Math.atan2(g.out[0], g.out[1]), px = g.at[0] + g.out[0] * 1.2, pz = g.at[1] + g.out[1] * 1.2;
         return (
           <group key={g.name} position={[px, 0, pz]} rotation-y={yaw}>
-            <mesh material={mats.out} position={[0, 2.2, 0.6]} rotation-y={Math.PI}><planeGeometry args={[w + 0.4, 4.4]} /></mesh>
+            <mesh material={mats.out} position={[0, (FACADE_H + 0.6) / 2, 1.6]} rotation-y={Math.PI}><planeGeometry args={[w + 1.6, FACADE_H + 0.6]} /></mesh>
             {[-1, 1].map((s) => <mesh key={s} material={mats.stone} position={[s * (w / 2 + 0.6), FACADE_H / 2 + 0.6, 0]}><boxGeometry args={[1.2, FACADE_H + 1.2, 1.4]} /></mesh>)}
             <mesh material={mats.stone} position={[0, FACADE_H + 0.35, 0]}><boxGeometry args={[w + 2.4, 1.3, 1.4]} /></mesh>
             <mesh position={[0, FACADE_H - 0.3, -0.72]} rotation-y={Math.PI}><planeGeometry args={[Math.min(w + 1.2, 4.8), 0.85]} /><meshBasicMaterial map={labels[i]} /></mesh>

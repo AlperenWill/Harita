@@ -10,6 +10,7 @@
  *  - Ayak sesi zemine göre: toprak (boğuk), taş (sert), tahta (tok).
  *  - Pil tasarrufu: çanlar ve fısıltı kapalı, dere tek katman.
  */
+import { speakTr } from '../shared/voice';
 import type { Surface, V3 } from './valley';
 
 class ZilAudio {
@@ -60,7 +61,7 @@ class ZilAudio {
     const f = ctx.createBiquadFilter(), g = ctx.createGain(); f.type = P.type; f.frequency.value = P.f; g.gain.setValueAtTime(P.a, t); g.gain.exponentialRampToValueAtTime(0.001, t + P.d); src.connect(f).connect(g).connect(this.master); src.start(t, Math.random() * 2); src.stop(t + P.d + 0.02);
   }
   setMuted(m: boolean) { this.muted = m; if (m) this.hush(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.85, this.ctx.currentTime, 0.2); }
-  speak(text: string) { if (this.muted || !('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; u.rate = 0.95; const v = speechSynthesis.getVoices().find((x) => x.lang.startsWith('tr')); if (v) u.voice = v; speechSynthesis.speak(u); }
+  speak(text: string) { if (this.muted) return; speakTr(text, { gender: 'any', rate: 0.95 }); }
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
   dispose() { this.hush(); void this.ctx?.close(); this.ctx = null; this.master = null; this.creek = null; this.wind = null; this.falls = null; }
 }

@@ -7,6 +7,7 @@
  * Müzik (isteğe bağlı, varsayılan kapalı): sentezlenmiş, çok kısık bir dem sesi (ison) — bir Bizans ilahisi ya da Osmanlı eseri DEĞİLDİR.
  * Ezan sentezlenmez; dini okuyuşu taklit etmek yerine mihrap önünde yalnızca ışık odaklanır.
  */
+import { speakTr } from '../shared/voice';
 import type { Zone } from './hagia';
 const RT: Record<Zone, number> = { avlu: 0.5, nef: 7, apsis: 4, galeri: 1.8, narteks: 2.6 };
 
@@ -56,7 +57,7 @@ class HagiaAudio {
   }
   setMusic(on: boolean) { if (this.ctx && this.music) this.music.gain.setTargetAtTime(on ? 1 : 0, this.ctx.currentTime, 1.5); }
   setMuted(m: boolean) { this.muted = m; if (m) this.hush(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.2); }
-  speak(text: string) { if (this.muted || !('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; u.rate = 0.95; const v = speechSynthesis.getVoices().find((x) => x.lang.startsWith('tr')); if (v) u.voice = v; speechSynthesis.speak(u); }
+  speak(text: string) { if (this.muted) return; speakTr(text, { gender: 'female', rate: 0.95 }); } // Elif Hoca: kadın sesi
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
   dispose() { this.timers.forEach(clearInterval); this.timers = []; this.hush(); void this.ctx?.close(); this.ctx = null; this.master = null; this.verbs = {} as never; this.water = this.music = null; }
 }

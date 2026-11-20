@@ -5,6 +5,7 @@
  *  - Kristal tınısı: kristal bir nesneye yaklaşınca, nesnenin 3B konumundan (HRTF) uyumsuz kısmi tonlu kısa bir cam tınısı.
  *  - Anlatım: tarayıcının tr-TR konuşma sentezi (isteğe bağlı).
  */
+import { speakTr } from '../shared/voice';
 import type { Surface, V3, Zone } from './palace';
 
 const VERB: Record<Zone, number> = { medhal: 2.2, muayede: 3.6, avize: 3.6, koridor: 1.2, merdiven: 2.8, sufera: 1.6, ataturk: 0.8 };
@@ -42,7 +43,7 @@ class PalaceAudio {
   }
   listener(p: V3, fwd: [number, number]) { const ctx = this.ctx; if (!ctx) return; const L = ctx.listener, t = ctx.currentTime; if (!L.positionX) return; L.positionX.setValueAtTime(p[0], t); L.positionY.setValueAtTime(p[1] + 1.6, t); L.positionZ.setValueAtTime(p[2], t); L.forwardX.setValueAtTime(fwd[0], t); L.forwardY.setValueAtTime(0, t); L.forwardZ.setValueAtTime(fwd[1], t); }
   setMuted(m: boolean) { this.muted = m; if (m) this.hush(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.2); }
-  speak(text: string) { if (this.muted || !('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; u.rate = 0.95; const v = speechSynthesis.getVoices().find((x) => x.lang.startsWith('tr')); if (v) u.voice = v; speechSynthesis.speak(u); }
+  speak(text: string) { if (this.muted) return; speakTr(text, { gender: 'any', rate: 0.95 }); }
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
   dispose() { this.hush(); void this.ctx?.close(); this.ctx = null; this.master = null; this.verbs = {}; this.tone = null; this.chimePan = null; }
 }

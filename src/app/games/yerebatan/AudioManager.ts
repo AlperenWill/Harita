@@ -9,6 +9,7 @@
  *  - Yankı: üstel sönen gürültüden üretilmiş 3,5 sn'lik dürtü yanıtı (taş + su, çok yankılı mekân).
  * Dinleyici (AudioListener) her karede kameranın konumu ve yönüyle güncellenir.
  */
+import { speakTr } from '../shared/voice';
 const DRIP_SPOTS: [number, number, number][] = [
   [-50, 6, -20], [-30, 7, 10], [-10, 6, -5], [8, 7, 18], [25, 6, -15], [45, 7, 5], [60, 6, -25], [-60, 7, 22], [0, 8, 0], [35, 6, 24],
 ];
@@ -92,10 +93,7 @@ class CisternAudio {
     this.bass?.gain.setTargetAtTime(bassLevel, t, 0.6);
   }
   setMuted(m: boolean) { this.muted = m; if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.2); if (m) this.hush(); }
-  speak(text: string) {
-    if (this.muted || !('speechSynthesis' in window)) return; speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'tr-TR'; u.rate = 0.95; const v = speechSynthesis.getVoices().find((x) => x.lang.startsWith('tr')); if (v) u.voice = v; speechSynthesis.speak(u);
-  }
+  speak(text: string) { if (this.muted) return; speakTr(text, { gender: 'any', rate: 0.95 }); }
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
   dispose() { this.timers.forEach(clearInterval); this.timers = []; this.hush(); void this.ctx?.close(); this.ctx = null; this.master = null; this.drips = []; this.hum = this.bass = null; }
 }

@@ -349,7 +349,7 @@ function Controller({ playerRef, exposure, composer }: { playerRef: React.Mutabl
     /* kamera */
     const card = S.card && poiLevel(S.card) === lv ? S.card : null, headY = Y0 + 1.6;
     _t.set(p.x, headY, p.z);
-    let fov = 60;
+    let fov = 60, blocked = false;
     if (card) {
       // hedefe dön; göz oyuncunun başında, uzak hedefte görüş açısı daralır
       const dx = card.pos[0] - p.x, dz = card.pos[2] - p.z;
@@ -361,14 +361,15 @@ function Controller({ playerRef, exposure, composer }: { playerRef: React.Mutabl
       _c.set(p.x + Math.sin(cam.yaw) * cp * D, headY + sp * D, p.z + Math.cos(cam.yaw) * cp * D);
       const n = Math.ceil(D / 0.2); let ok = 0;
       for (let i = 1; i <= n; i++) { const f = i / n; if (!camClear(lv, p.x + (_c.x - p.x) * f, p.z + (_c.z - p.z) * f)) break; ok = f; }
-      if (ok < 1) { const f = Math.max(0.12, ok - 0.06); _c.set(p.x + (_c.x - p.x) * f, headY + (_c.y - headY) * f, p.z + (_c.z - p.z) * f); }
+      if (ok < 1) { blocked = true; const f = Math.max(0.12, ok - 0.06); _c.set(p.x + (_c.x - p.x) * f, headY + (_c.y - headY) * f, p.z + (_c.z - p.z) * f); }
       _c.y = Math.max(Y0 + 0.35, Math.min(_c.y, Y0 + ceiling(lv, _c.x, _c.z) - 0.3));
       // yukarı bakınca (eğim < 0) bakış noktası yükselir: kubbeyi görmek için
       _lk.copy(_t); if (cam.pitch < 0) _lk.y += -cam.pitch * 14;
       if (S.talk && pd < 6) _lk.lerp(_look.set(g.x, Y0 + 1.5, g.z), 0.35);
     }
     const kk = 1 - Math.exp(-dt * (card ? 3 : 10));
-    if (camPos.current.distanceTo(_c) > 25) { camPos.current.copy(_c); lookAt.current.copy(_lk); } else { camPos.current.lerp(_c, kk); lookAt.current.lerp(_lk, kk); }
+    // duvar araya girince kamera yumuşatılmadan içeri alınır: aksi hâlde yumuşak geçiş sırasında duvarın içinden görünür
+    if (camPos.current.distanceTo(_c) > 25) { camPos.current.copy(_c); lookAt.current.copy(_lk); } else { if (blocked && _c.distanceTo(_t) < camPos.current.distanceTo(_t)) camPos.current.copy(_c); else camPos.current.lerp(_c, kk); lookAt.current.lerp(_lk, kk); }
     camera.position.copy(camPos.current); camera.lookAt(lookAt.current);
     const pc = camera as THREE.PerspectiveCamera; st.current.fov += (fov - st.current.fov) * (1 - Math.exp(-dt * 2.5)); if (Math.abs(pc.fov - st.current.fov) > 0.02) { pc.fov = st.current.fov; pc.updateProjectionMatrix(); }
 
