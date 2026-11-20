@@ -15,6 +15,8 @@ import { create } from 'zustand';
 import { ArrowLeft, Captions, CaptionsOff, Droplets, ExternalLink, Footprints, Volume2, VolumeX, X } from 'lucide-react';
 import { DRY, PLATEAU, poolY, ROUTE_LEN, SLOPE_Z0, SLOPE_Z1, SPOTS, heightAt, isTravertine, nearDry, nearSpot, routeAt, whiteness, type Pool, type Spot } from './terraces';
 import { speakTr } from '../shared/voice';
+import { normalFrom } from '../topkapi/kit';
+import { Polish, SkyEnvironment } from '../shared/Polish';
 
 type Tier = 'low' | 'medium' | 'high';
 const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
@@ -77,9 +79,9 @@ function Game({ onExit }: { onExit: () => void }) {
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dbeef3] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 1200, position: [30, 30, 190] }}
-        onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.82; }}>
+        onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.72; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
-        <Suspense fallback={null}><World tier={tier} /></Suspense>
+        <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#d6ecf3'} sun={'#fff6e6'} ground={'#f2f0ea'} sunDir={[0.7, 0.6, 0.5]} /><Polish tier={tier} /></Suspense>
       </Canvas>
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
         <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
@@ -126,6 +128,17 @@ function Terrain({ tier }: { tier: Tier }) {
 }
 /** Rotanın verilen z'deki x'i (havuzları yoldan uzak tutmak için) */
 function routeX(z: number) { let best = 0, bd = Infinity; for (let s = 0; s <= ROUTE_LEN; s += 2) { const p = routeAt(s).p; const d = Math.abs(p[2] - z); if (d < bd) { bd = d; best = p[0]; } } return best; }
+/** Traverten duvar dokusu: aşağı sarkan damla izleri ve saçaklar (kalsiyum karbonat birikimi) + normal haritası */
+let DRIP: { map: THREE.Texture; normal: THREE.Texture } | null = null;
+function dripTex() {
+  if (DRIP) return DRIP; const n = 256, mk = () => { const c = document.createElement('canvas'); c.width = c.height = n; return [c, c.getContext('2d')!] as const; }, [c, g] = mk(), [h, hg] = mk(), r = rng(29);
+  g.fillStyle = '#f6f5f0'; g.fillRect(0, 0, n, n); hg.fillStyle = '#808080'; hg.fillRect(0, 0, n, n);
+  for (let i = 0; i < 140; i++) { const x = r() * n, w = 2 + r() * 7, len = 40 + r() * 200, y0 = r() * 40; const gr = g.createLinearGradient(0, y0, 0, y0 + len); gr.addColorStop(0, 'rgba(225,220,205,.0)'); gr.addColorStop(0.5, `rgba(214,206,186,${0.25 + r() * 0.3})`); gr.addColorStop(1, 'rgba(240,238,230,0)'); g.fillStyle = gr; g.fillRect(x, y0, w, len);
+    hg.fillStyle = `rgba(255,255,255,${0.25 + r() * 0.3})`; hg.fillRect(x, y0, w, len); hg.fillStyle = 'rgba(0,0,0,.25)'; hg.fillRect(x + w, y0, 1, len); }
+  for (let i = 0; i < 60; i++) { const y = r() * 30; g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(0, y, n, 1); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(4, 1);
+  const nm = normalFrom(h, 2.5); nm.repeat.set(4, 1); DRIP = { map: t, normal: nm }; return DRIP;
+}
 /** Yamaca oturan havuzlar: beyaz traverten gövde (yokuş aşağı yanı kenar duvar olarak görünür) + turkuaz su yüzeyi (instanced) */
 function Pools({ tier }: { tier: Tier }) {
   const body = useRef<THREE.InstancedMesh>(null), water = useRef<THREE.InstancedMesh>(null), N = tier === 'low' ? 260 : 520;
@@ -138,8 +151,8 @@ function Pools({ tier }: { tier: Tier }) {
     for (const m of [body.current, water.current]) if (m) { m.count = k; m.instanceMatrix.needsUpdate = true; m.computeBoundingSphere(); } }, [N]);
   const disc = useMemo(() => { const g = new THREE.CircleGeometry(1, 22); g.rotateX(-Math.PI / 2); return g; }, []);
   return (<>
-    <instancedMesh ref={body} args={[undefined, undefined, N]}><cylinderGeometry args={[1, 1.06, 1, 22]} /><meshStandardMaterial color="#f4f3ee" roughness={0.5} /></instancedMesh>
-    <instancedMesh ref={water} args={[disc, undefined, N]}><meshStandardMaterial color={WATER} roughness={0.05} metalness={0.1} emissive="#2a8a96" emissiveIntensity={0.2} /></instancedMesh>
+    <instancedMesh ref={body} args={[undefined, undefined, N]}><cylinderGeometry args={[1, 1.06, 1, 22]} /><meshStandardMaterial map={dripTex().map} normalMap={dripTex().normal} roughness={0.45} /></instancedMesh>
+    <instancedMesh ref={water} args={[disc, undefined, N]}><meshStandardMaterial color={WATER} roughness={0.02} metalness={0.2} envMapIntensity={1.4} emissive="#2a8a96" emissiveIntensity={0.15} /></instancedMesh>
   </>);
 }
 /** Kurumuş havuzlar: lekeli kahverengi-gri; su verilince dolar ve beyazlar */

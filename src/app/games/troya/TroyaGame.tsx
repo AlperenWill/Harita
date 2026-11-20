@@ -15,6 +15,7 @@ import { create } from 'zustand';
 import { ArrowLeft, Captions, CaptionsOff, ExternalLink, Layers, Pickaxe, Volume2, VolumeX, X } from 'lucide-react';
 import { LAYERS, ROUTE_LEN, STOPS, TRENCH, MOUND, heightAt, isCorrect, nearStop, routeAt, type Stop } from './site';
 import { speakTr } from '../shared/voice';
+import { Polish, SkyEnvironment } from '../shared/Polish';
 
 type Tier = 'low' | 'medium' | 'high';
 const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
@@ -79,9 +80,9 @@ function Game({ onExit }: { onExit: () => void }) {
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dfe7ec] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 1500, position: [120, 20, 110] }}
-        onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.95; }}>
+        onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.85; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
-        <Suspense fallback={null}><World tier={tier} /></Suspense>
+        <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#dfe7ec'} sun={'#fff2df'} ground={'#a99a6c'} sunDir={[-0.7, 0.5, 0.4]} /><Polish tier={tier} /></Suspense>
       </Canvas>
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
         <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
@@ -137,21 +138,35 @@ function Trench() {
     {[[-2, -30, 6], [1.5, -20, 5], [-1, -13, 4]].map(([x, z, w], i) => <mesh key={i} position={[x, bot + 0.5, z]} rotation-y={0.2 * i}><boxGeometry args={[w, 1, 0.9]} /><meshStandardMaterial map={stone} roughness={0.95} /></mesh>)}
   </group>);
 }
-/** Girişteki tahta at (modern kopya, temsilî) */
+/** Girişteki tahta at (modern kopya, temsilî): tekerlekli platform, açılı bacaklar, kavisli boyun, kulaklar, yele, kuyruk; tahta dokusu */
+function plankTex() { const c = document.createElement('canvas'); c.width = 64; c.height = 256; const g = c.getContext('2d')!, r = rng(19); for (let x = 0; x < 64; x += 16) { const v = 120 + r() * 40 | 0; g.fillStyle = `rgb(${v},${v * 0.66 | 0},${v * 0.4 | 0})`; g.fillRect(x, 0, 16, 256); g.fillStyle = 'rgba(30,15,5,.6)'; g.fillRect(x, 0, 1.5, 256); for (let k = 0; k < 20; k++) { g.fillStyle = `rgba(40,20,8,${r() * 0.25})`; g.fillRect(x + 2 + r() * 12, r() * 256, 1, 20 + r() * 60); } } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; }
 function Horse() {
-  const wood = useMemo(() => new THREE.MeshStandardMaterial({ color: '#8a5a32', roughness: 0.9 }), []), y = heightAt(80, 44);
+  const wood = useMemo(() => new THREE.MeshStandardMaterial({ map: plankTex(), roughness: 0.85 }), []), dark = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a2e18', roughness: 0.9 }), []), y = heightAt(80, 44);
+  const body = useMemo(() => { const g = new THREE.CapsuleGeometry(1.9, 5.2, 4, 10); g.rotateZ(Math.PI / 2); g.scale(1, 1.05, 0.95); return g; }, []);
   return (<group position={[80, y, 44]} rotation-y={-0.8}>
-    {[[-2.6, -1.4], [-2.6, 1.4], [2.6, -1.4], [2.6, 1.4]].map(([x, z], i) => <mesh key={i} material={wood} position={[x, 2.5, z]}><boxGeometry args={[0.7, 5, 0.7]} /></mesh>)}
-    <mesh material={wood} position={[0, 6.8, 0]}><boxGeometry args={[8, 3.8, 3.6]} /></mesh>
-    <mesh material={wood} position={[4.2, 9.6, 0]} rotation-z={-0.5}><boxGeometry args={[1.8, 5, 1.8]} /></mesh>
-    <mesh material={wood} position={[5.6, 11.8, 0]}><boxGeometry args={[3, 1.6, 1.6]} /></mesh>
-    {[-2, 0, 2].map((x) => <mesh key={x} position={[x, 7.2, 1.82]}><boxGeometry args={[0.9, 0.7, 0.05]} /><meshStandardMaterial color="#2a1a0e" /></mesh>)}
-    <mesh material={wood} position={[-1.5, 2.8, 2.8]} rotation-x={0.45}><boxGeometry args={[1, 6.2, 0.15]} /></mesh>
+    {/* tekerlekli platform */}
+    <mesh material={wood} position={[0, 1.1, 0]}><boxGeometry args={[9.5, 0.5, 4.2]} /></mesh>
+    {[-3.4, 3.4].flatMap((x) => [-2.2, 2.2].map((z) => <mesh key={`${x}${z}`} material={dark} position={[x, 0.9, z]} rotation-x={Math.PI / 2}><cylinderGeometry args={[0.9, 0.9, 0.35, 16]} /></mesh>))}
+    {/* bacaklar: hafif açılı */}
+    {[[-2.8, -1.1, 0.12], [-2.8, 1.1, 0.12], [2.6, -1.1, -0.1], [2.6, 1.1, -0.1]].map(([x, z, a], i) => <mesh key={i} material={wood} position={[x, 3.3, z]} rotation-z={a}><cylinderGeometry args={[0.32, 0.42, 4.2, 8]} /></mesh>)}
+    <mesh geometry={body} material={wood} position={[0, 6.9, 0]} />
+    {/* kavisli boyun (iki parça) + baş + kulaklar + yele */}
+    <mesh material={wood} position={[3.9, 8.6, 0]} rotation-z={-0.75}><cylinderGeometry args={[0.95, 1.25, 3.6, 10]} /></mesh>
+    <mesh material={wood} position={[5.0, 10.6, 0]} rotation-z={-0.35}><cylinderGeometry args={[0.8, 0.95, 2.4, 10]} /></mesh>
+    <mesh material={wood} position={[6.1, 11.4, 0]} rotation-z={-1.25}><capsuleGeometry args={[0.7, 1.9, 3, 8]} /></mesh>
+    {[-0.35, 0.35].map((z) => <mesh key={z} material={wood} position={[5.4, 12.5, z]} rotation-z={-0.2}><coneGeometry args={[0.22, 0.8, 5]} /></mesh>)}
+    {[0, 1, 2, 3].map((i) => <mesh key={i} material={dark} position={[4.0 + i * 0.45, 9.3 + i * 0.75, 0]} rotation-z={-0.6}><boxGeometry args={[0.25, 0.9, 0.5]} /></mesh>)}
+    {[-1.5, 1.5].map((z) => <mesh key={z} position={[6.4, 11.7, z * 0.32]}><sphereGeometry args={[0.13, 8, 6]} /><meshStandardMaterial color="#120a04" /></mesh>)}
+    {/* kuyruk */}
+    <mesh material={dark} position={[-4.9, 6.2, 0]} rotation-z={0.5}><coneGeometry args={[0.45, 3.4, 6]} /></mesh>
+    {/* yan pencereler ve merdiven (ziyaretçiler atın içine çıkabilir) */}
+    {[-1.8, 0, 1.8].map((x) => <mesh key={x} position={[x, 7.3, 1.82]}><boxGeometry args={[0.9, 0.7, 0.05]} /><meshStandardMaterial color="#1e1208" /></mesh>)}
+    <group position={[-1.2, 0, 2.9]} rotation-x={0.42}>{[-0.45, 0.45].map((x) => <mesh key={x} material={dark} position={[x, 3.6, 0]}><boxGeometry args={[0.12, 6.4, 0.12]} /></mesh>)}{[0, 1, 2, 3, 4, 5, 6, 7].map((k) => <mesh key={k} material={dark} position={[0, 0.9 + k * 0.75, 0]}><boxGeometry args={[0.9, 0.08, 0.1]} /></mesh>)}</group>
   </group>);
 }
 /** Troya VI surları: eğimli kesme taş duvar parçaları + kule */
 function Walls() {
-  const tex = useMemo(() => stoneTex(7, '#b8a27c', 40), []), segs = useMemo(() => { const out: { x: number; z: number; yaw: number }[] = []; for (let a = -0.9; a <= 0.75; a += 0.11) { const r = 50; out.push({ x: Math.cos(a) * r, z: Math.sin(a) * r * 0.87, yaw: -a + Math.PI / 2 }); } return out; }, []);
+  const tex = useMemo(() => stoneTex(7, '#b8a27c', 40), []), segs = useMemo(() => { const out: { x: number; z: number; yaw: number }[] = []; for (let a = -0.9; a <= 0.75; a += 0.08) { const r = 50; out.push({ x: Math.cos(a) * r, z: Math.sin(a) * r * 0.87, yaw: -a + Math.PI / 2 }); } return out; /* sık adım: bloklar birleşip kesintisiz sur olur */ }, []);
   return (<group>
     {segs.map((s, i) => <mesh key={i} position={[s.x, heightAt(s.x, s.z) + 1.6, s.z]} rotation={[0, s.yaw, -0.18]}><boxGeometry args={[1.6, 3.4, 5.8]} /><meshStandardMaterial map={tex} roughness={0.95} /></mesh>)}
     <mesh position={[51, heightAt(51, 4) + 2.6, 4]}><boxGeometry args={[7, 5.2, 9]} /><meshStandardMaterial map={tex} roughness={0.95} /></mesh>

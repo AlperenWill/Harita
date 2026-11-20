@@ -125,6 +125,13 @@ export function Celsus({ M }: { M: ReturnType<typeof useMats> }) {
       {[-7.2, -1.2, 1.2, 7.2].map((cx) => <mesh key={cx} material={M.common} position={[cx, 8.75, 0.3]}><boxGeometry args={[3.2, 0.8, 1.4]} /></mesh>)}
       {cols.map((cx) => <group key={`u${cx}`} position={[cx * 0.82, 9.15, 0.2]}><Column h={4.6} m={M.common} r={0.85} /></group>)}
       <mesh material={M.common} position={[0, 14.2, 0.2]}><boxGeometry args={[w - 1, 0.7, 1.4]} /></mesh>
+      {/* alt kattaki dört nişte kadın heykelleri (bugün yerindekiler kopyadır): kaide + dökümlü giysi + baş */}
+      {[-7.2, -2.3, 2.3, 7.2].map((sx) => <group key={sx} position={[sx, 1.98, -0.55]}>
+        <mesh material={M.common} position={[0, 0.25, 0]}><boxGeometry args={[1.0, 0.5, 0.7]} /></mesh>
+        <mesh material={M.common} position={[0, 1.65, 0]}><cylinderGeometry args={[0.26, 0.42, 2.3, 10]} /></mesh>
+        <mesh material={M.common} position={[0, 3.0, 0]}><sphereGeometry args={[0.2, 10, 8]} /></mesh>
+        <mesh position={[0, 1.8, -0.36]}><boxGeometry args={[1.2, 3.4, 0.05]} /><meshStandardMaterial color="#5b5247" /></mesh>
+      </group>)}
       {/* sağlam hâl: arka okuma salonu, çatı, alınlıklar */}
       <mesh material={c.intact} position={[0, 8.5, -9]}><boxGeometry args={[w, 15, 15]} /></mesh>
       <mesh material={c.roof} position={[0, 16.8, -9]} rotation-y={Math.PI / 4} scale={[1, 1, 0.75]}><coneGeometry args={[15, 3.2, 4]} /></mesh>

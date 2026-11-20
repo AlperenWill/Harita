@@ -15,6 +15,7 @@ import { create } from 'zustand';
 import { ArrowDown, ArrowLeft, ArrowUp, Captions, CaptionsOff, ExternalLink, Flame, MapPin, Volume2, VolumeX, X } from 'lucide-react';
 import { LAYERS, SPOTS, START, UCHISAR, heightAt, layerAt, nearSpot, step, wind, type Balloon, type Spot } from './flight';
 import { speakTr } from '../shared/voice';
+import { Polish, SkyEnvironment } from '../shared/Polish';
 
 type Tier = 'low' | 'medium' | 'high';
 const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
@@ -77,7 +78,7 @@ function Game({ onExit }: { onExit: () => void }) {
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 55, near: 0.5, far: 2500, position: [60, 80, 220] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.95; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
-        <Suspense fallback={null}><World tier={tier} /></Suspense>
+        <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#f3c9a0'} sun={'#ffc98a'} ground={'#d9b896'} sunDir={[0.8, 0.1, -0.6]} /><Polish tier={tier} /></Suspense>
       </Canvas>
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
         <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
@@ -143,15 +144,23 @@ function Terrain({ tier }: { tier: Tier }) {
 /** Peribacaları: koni gövde + koyu bazalt şapka; noktaların çevresinde (özellikle Paşabağı ve Göreme) yoğun */
 function Chimneys({ n }: { n: number }) {
   const a = useRef<THREE.InstancedMesh>(null), b = useRef<THREE.InstancedMesh>(null);
-  const geo = useMemo(() => { const g = new THREE.CylinderGeometry(0.6, 3.2, 1, 9, 3); g.translate(0, 0.5, 0); const q = g.attributes.position as THREE.BufferAttribute; for (let i = 0; i < q.count; i++) { const y = q.getY(i); const k = 1 - 0.18 * Math.sin(y * Math.PI); q.setX(i, q.getX(i) * k); q.setZ(i, q.getZ(i) * k); } g.computeVertexNormals(); return g; }, []);
-  const cap = useMemo(() => { const g = new THREE.ConeGeometry(1.5, 1.6, 8); g.translate(0, 0.8, 0); return g; }, []);
+  // peribacası profili (birim yükseklik): geniş etek → bel → hafif şişkinlik → ince boyun; yüzey gürültüyle aşınmış, tüf katmanları renk bandı
+  const geo = useMemo(() => {
+    const prof: [number, number][] = [[3.6, 0], [3.0, 0.08], [2.2, 0.2], [1.55, 0.38], [1.35, 0.52], [1.45, 0.64], [1.2, 0.78], [0.9, 0.9], [0.75, 0.97], [0.05, 1]];
+    const g = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 14).toNonIndexed() as THREE.BufferGeometry, q = g.attributes.position as THREE.BufferAttribute, col = new Float32Array(q.count * 3);
+    const bands = ['#efdcbc', '#e7c9a6', '#f3e5cb', '#dcb898', '#ecd6b2'].map((c) => new THREE.Color(c)), c = new THREE.Color();
+    for (let i = 0; i < q.count; i++) { const x = q.getX(i), y = q.getY(i), z = q.getZ(i), a = Math.atan2(z, x), k = 1 + 0.09 * Math.sin(a * 5 + y * 9) + 0.05 * Math.sin(a * 11 - y * 17); q.setX(i, x * k); q.setZ(i, z * k);
+      c.copy(bands[Math.floor(y * 9) % bands.length]).multiplyScalar(0.94 + 0.08 * Math.sin(a * 3 + y * 40)); col.set([c.r, c.g, c.b], i * 3); }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
+  }, []);
+  const cap = useMemo(() => { const g = new THREE.SphereGeometry(1.25, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55); g.scale(1.25, 0.75, 1.15); g.translate(0, 0.1, 0); return g; }, []);
   useEffect(() => { const r = rng(11), o = new THREE.Object3D(), centers = [...SPOTS.map((s) => s.at), [60, 60], [-20, -120], [200, -20]] as [number, number][]; let k = 0;
     for (let i = 0; i < n * 3 && k < n; i++) { const c = centers[Math.floor(r() * centers.length)], ang = r() * 6.28, d = 8 + Math.pow(r(), 0.7) * 120, x = c[0] + Math.cos(ang) * d, z = c[1] + Math.sin(ang) * d;
       if (Math.hypot(x - UCHISAR.x, z - UCHISAR.z) < UCHISAR.r * 0.9 || Math.hypot(x - START.x, z - START.z) < 18) continue;
       const h = 6 + r() * 16, w = 0.6 + r() * 0.7, y = heightAt(x, z) - 0.5; o.position.set(x, y, z); o.rotation.set(0, r() * 6, 0); o.scale.set(w, h, w); o.updateMatrix(); a.current?.setMatrixAt(k, o.matrix);
-      o.position.set(x, y + h - 0.3, z); o.scale.set(w, w * (0.8 + r() * 0.5), w); o.updateMatrix(); b.current?.setMatrixAt(k, o.matrix); k++; }
+      o.position.set(x, y + h - 0.15, z); o.scale.set(w * 0.9, w * (0.8 + r() * 0.5), w * 0.9); o.updateMatrix(); b.current?.setMatrixAt(k, o.matrix); k++; }
     for (const m of [a.current, b.current]) if (m) { m.count = k; m.instanceMatrix.needsUpdate = true; m.computeBoundingSphere(); } }, [n]);
-  return (<><instancedMesh ref={a} args={[geo, undefined, n]}><meshStandardMaterial color="#efdcbc" roughness={0.95} flatShading /></instancedMesh><instancedMesh ref={b} args={[cap, undefined, n]}><meshStandardMaterial color="#6e5e52" roughness={0.9} flatShading /></instancedMesh></>);
+  return (<><instancedMesh ref={a} args={[geo, undefined, n]}><meshStandardMaterial vertexColors roughness={0.95} /></instancedMesh><instancedMesh ref={b} args={[cap, undefined, n]}><meshStandardMaterial color="#5e5048" roughness={0.85} flatShading /></instancedMesh></>);
 }
 /** Uçhisar: arazinin tepesi zaten kaya; üstüne oyuk pencereler (koyu, instanced) */
 function Uchisar() {

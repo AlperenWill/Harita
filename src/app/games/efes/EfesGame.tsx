@@ -20,6 +20,7 @@ import { ODEON, ROUTE_LEN, THEATRE, WINDOWS, nextUnseen, routeAt, type Window } 
 import { Celsus, Colonnades, Ground, Hadrian, Harbor, Terrace, Theatre, Trajan, Trees, useMats, type U } from './EfesScene';
 import { activated, morphTarget, stepMorph } from '../zilkale/HistoryLayerMorphing';
 import { speakTr } from '../shared/voice';
+import { Polish, SkyEnvironment } from '../shared/Polish';
 
 type Tier = 'low' | 'medium' | 'high';
 const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
@@ -106,7 +107,7 @@ function Game({ onExit }: { onExit: () => void }) {
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high', powerPreference: 'high-performance' }} camera={{ fov: 62, near: 0.1, far: 900, position: [110, 20, 20] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.0; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
-        <Suspense fallback={null}><World tier={tier} saver={saver} /></Suspense>
+        <Suspense fallback={null}><World tier={tier} saver={saver} /><SkyEnvironment sky={'#cfe3ee'} sun={'#fff2dc'} ground={'#c9b88e'} sunDir={[0.8, 0.6, 0.4]} /><Polish tier={tier} saver={saver} /></Suspense>
       </Canvas>
 
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
