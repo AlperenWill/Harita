@@ -20,7 +20,7 @@ export const makeMorphUniforms = (): MorphUniforms => Object.fromEntries(LAYERS.
 
 const smooth = (x: number) => { const t = Math.max(0, Math.min(1, x)); return t * t * (3 - 2 * t); };
 /** Yakınlıktan hedef: tam reach içinde 1, 1,4·reach'te 0 (yumuşak) */
-export function morphTarget(s: number, l: Layer): number { const d = Math.abs(s - l.s); return 1 - smooth((d - l.reach) / (l.reach * 0.4)); }
+export function morphTarget(s: number, l: Pick<Layer, 's' | 'reach'>): number { const d = Math.abs(s - l.s); return 1 - smooth((d - l.reach) / (l.reach * 0.4)); }
 /** Zamanla yaklaş: ~1,5 sn (oluşum) / ~2,5 sn (geri çözülme) */
 export function stepMorph(m: number, target: number, dt: number) { const tau = target > m ? 0.5 : 0.8; return m + (target - m) * (1 - Math.exp(-dt / tau)); }
 /** Etkinleşme olayı: m 0,5'i yukarı geçtiğinde (ses + kart) */

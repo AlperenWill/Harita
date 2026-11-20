@@ -63,5 +63,13 @@
       load(0);
     })();
   </script>
+<!-- Miras. Haritası: haritaya dönüş düğmesi (uygulamanın diğer oyunlarıyla aynı yer: sol üst) -->
+<a href="../harita" id="miras-back" aria-label="Haritaya dön" title="Haritaya dön">←<span>Harita</span></a>
+<style>
+  #miras-back{position:fixed;z-index:50;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));height:44px;min-width:44px;padding:0 14px 0 12px;display:flex;align-items:center;gap:6px;border-radius:22px;background:rgba(31,27,23,.82);color:#fff;font:700 15px/1 system-ui,-apple-system,"Segoe UI",sans-serif;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25);-webkit-tap-highlight-color:transparent}
+  #miras-back span{font-size:13px}
+  @media (max-width:520px){#miras-back span{display:none}#miras-back{padding:0;justify-content:center}}
+  #hud{left:calc(max(10px,env(safe-area-inset-left)) + 118px)!important}@media (max-width:520px){#hud{left:62px!important}}
+</style>
 </body>
 </html>
