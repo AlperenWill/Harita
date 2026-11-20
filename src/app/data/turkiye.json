@@ -559,6 +559,22 @@
      "wiki": "Perge"
     },
     {
+     "id": "side",
+     "name": "Side Antik Kenti",
+     "district": "Manavgat",
+     "category": "arkeoloji",
+     "categoryLabel": "Arkeolojik Alan",
+     "period": "antik",
+     "periodLabel": "Antik Çağ",
+     "coord": [
+      31.389,
+      36.766
+     ],
+     "summary": "Denize uzanan yarımadadaki antik liman kenti: tiyatro, agora ve kıyıdaki Apollon Tapınağı.",
+     "didYouKnow": "Apollon Tapınağı’nın yeniden ayağa kaldırılan sütunları gün batımında denizin üstünde siluet çizer.",
+     "wiki": "Side"
+    },
+    {
      "id": "termessos",
      "name": "Termessos",
      "district": null,
@@ -2819,6 +2835,22 @@
      "summary": "1260’lardaki Selçuklu medresesi, bugün Taş ve Ahşap Eserler Müzesi’dir.",
      "didYouKnow": "Taç kapısındaki yazı kuşakları birbirine düğümlenerek taş üzerinde bir örgü etkisi yaratır.",
      "wiki": "İnce Minareli Medrese"
+    },
+    {
+     "id": "karatay",
+     "name": "Karatay Medresesi",
+     "district": "Karatay",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      32.495,
+      37.8747
+     ],
+     "summary": "1251’de Emir Celaleddin Karatay’ın yaptırdığı Selçuklu medresesi; bugün Çini Eserler Müzesi’dir.",
+     "didYouKnow": "Kubbesinin iç yüzü lacivert ve turkuaz çinilerle kaplıdır; ortadaki açıklık gökyüzüne açılır.",
+     "wiki": "Karatay Medresesi"
     },
     {
      "id": "esrefoglu",

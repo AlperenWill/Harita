@@ -16,13 +16,13 @@ export const DISTRICT: Record<string, string> = {
   hierapolis: 'Pamukkale', laodikeia: 'Pamukkale', akhan: 'Pamukkale', 'bodrum-kalesi': 'Bodrum', kaunos: 'Ortaca',
   stratonikeia: 'Yatağan', 'afyon-ulu': 'Merkez', ayazini: 'İhsaniye', aizanoi: 'Çavdarhisar', 'kutahya-cini': 'Merkez', karun: 'Merkez',
   // Akdeniz
-  aspendos: 'Serik', xanthos: 'Kaş', myra: 'Demre', karain: 'Döşemealtı', kizilkule: 'Alanya', 'hadrian-kapisi': 'Muratpaşa', perge: 'Aksu',
+  aspendos: 'Serik', xanthos: 'Kaş', myra: 'Demre', karain: 'Döşemealtı', kizilkule: 'Alanya', 'hadrian-kapisi': 'Muratpaşa', perge: 'Aksu', side: 'Manavgat',
   adada: 'Sütçüler', 'isparta-gul': 'Merkez', sagalassos: 'Ağlasun', hacilar: 'Merkez', kizkalesi: 'Erdemli', uzuncaburc: 'Silifke',
   yumuktepe: 'Yenişehir', 'taskopru-adana': 'Seyhan', misis: 'Yüreğir', yilankale: 'Ceyhan', 'hatay-muze': 'Antakya',
   'st-pierre': 'Antakya', 'habib-neccar': 'Antakya', titus: 'Samandağ', karatepe: 'Kadirli', germanicia: 'Dulkadiroğlu',
   // İç Anadolu
   anitkabir: 'Çankaya', amm: 'Altındağ', augustus: 'Altındağ', 'ankara-kalesi': 'Altındağ', gordion: 'Polatlı', arslanhane: 'Altındağ',
-  catalhoyuk: 'Çumra', mevlana: 'Karatay', sema: 'Karatay', 'ince-minare': 'Selçuklu', esrefoglu: 'Beyşehir', zazadin: 'Selçuklu',
+  catalhoyuk: 'Çumra', mevlana: 'Karatay', sema: 'Karatay', 'ince-minare': 'Selçuklu', karatay: 'Karatay', esrefoglu: 'Beyşehir', zazadin: 'Selçuklu',
   kultepe: 'Kocasinan', 'sultanhan-kayseri': 'Kocasinan', 'gevher-nesibe': 'Melikgazi', midas: 'Han', odunpazari: 'Odunpazarı',
   luletasi: 'Odunpazarı', divrigi: 'Divriği', 'gok-medrese-sivas': 'Merkez', asiklik: 'Merkez', ihlara: 'Güzelyurt',
   'sultanhani-aksaray': 'Sultanhanı', asikli: 'Gülağaç', binbirkilise: 'Merkez', hatuniye: 'Merkez', cacabey: 'Merkez',

@@ -1,0 +1,38 @@
+TARİHÎ KONYA'NIN İZİNDE — KAYIP MİRAS
+
+1. ZIP dosyasının tamamını bir klasöre çıkar.
+2. Klasördeki index.html dosyasını Chrome, Edge, Firefox veya Safari ile aç.
+3. Yeni keşif → Araştırmaya başla düğmelerini kullan.
+
+Kurulum, Node.js, npm, hesap veya derleme gerekmez.
+Three.js pakete dahildir. Oyun internet olmadan çalışır;
+yalnızca dış kaynak bağlantıları için internet gerekir.
+
+BİLGİSAYAR
+WASD: yürü | Fare: bak | Shift: koş | E: incele
+J: tarihî günlük | Esc: duraklat
+Fare yakalama engellenirse ekrana tıklayıp sürükleyerek bakabilirsin.
+
+TELEFON
+Sol sanal çubuk: yürü | Ekranın sağı: sürükleyerek bak
+Araştır: etkileşim | Koş: basılı tut | Sağ üst: duraklat
+Telefonda statik web sitesi olarak açmak en kolay yöntemdir.
+
+GÖREV AKIŞI
+Altın işaretli panoya yaklaş → E / Araştır → Görevi üstlen.
+İki gözlem noktasını incele → panoya dön → Kanıtları birleştir.
+Rotayı göster düğmesi zemine yönlendirme halkaları ekler.
+Bölüm sınavını tamamladığında sonraki mekân açılır.
+
+İlerleme aynı tarayıcıda otomatik kaydedilir. Tarayıcı verilerini
+silmek kaydı siler. Gizli mod veya engellenen depolama durumunda
+yalnızca açık oturumdaki ilerleme korunabilir.
+
+Sesli anlatım yoktur. Müzik ve efektler başlangıçta sessizdir.
+Sesleri Ayarlar ekranındaki ayrı sürgülerle açabilirsin.
+
+Sahne açılmazsa ZIP'in tamamını çıkardığını, vendor klasörünün
+yerinde olduğunu ve tarayıcının WebGL desteğini kontrol et.
+
+Tarihî kaynaklar, kanıt ekranlarında, günlükte ve raporlardadır.
+Mimari modeller eğitim yorumlarıdır; birebir ölçülü kopyalar değildir.

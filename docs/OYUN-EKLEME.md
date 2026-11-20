@@ -18,6 +18,16 @@ Oyunu olmayan bölge ve iller gri kalır, tıklanmaz ("yakında"). Bir ile ilk o
 1. Zip'i `public/<klasor>/` altına aç. Oyunun kendi `index.html`'i olmalı ve göreli yollar kullanmalı.
 2. Kayıt: `src/data/playables.ts` listesine `kind: 'static'`, `path: '<klasor>/index.html'` ile bir satır ekle.
 
+### Bir zip'te birden çok yer varsa
+Zip'teki her yer haritada **ayrı bir nokta** olur. Her biri oyunun o bölümünü doğrudan açar:
+- Oyuna bir adres parametresi eklenir, ör. `index.html?mekan=karatay`. Parametre oyunun açılışında okunur, o bölüm açılır ve kilitliyse kilidi kaldırılır.
+- Örnek: `public/konya-kayip-miras/game.js` → `boot()` içindeki `mekan` bloğu.
+- Listede her yer için bir satır yazılır, `path` alanı aynı dosyayı farklı parametreyle açar.
+- Yer miras verisinde yoksa önce oraya eklenir: `src/data/heritage/<bölge>.ts`, `src/app/data/turkiye.json`, `src/data/districts.ts`.
+
+### Haritaya dönüş düğmesi
+Zip'li oyunlara mutlaka "haritaya dön" düğmesi eklenir: `href="../harita"`, oyunun kendi arayüz diline uygun biçimde.
+
 ## Kayıt satırı
 ```ts
 { id: 'zilkale', name: 'Zil Kale', province: 'Rize', coord: [41.0667, 40.9581],

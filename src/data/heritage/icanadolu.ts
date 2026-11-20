@@ -60,6 +60,13 @@ const sites: HeritageSite[] = [
     detail: 'Düğümlenen yazı kuşakları',
   },
   {
+    id: 'karatay', name: 'Karatay Medresesi', province: 'Konya', category: 'muze', period: 'selcuklu',
+    coord: [32.4950, 37.8747], wiki: 'Karatay Medresesi',
+    summary: '1251’de Emir Celaleddin Karatay’ın yaptırdığı Selçuklu medresesi; bugün Çini Eserler Müzesi’dir.',
+    didYouKnow: 'Kubbesinin iç yüzü lacivert ve turkuaz çinilerle kaplıdır; ortadaki açıklık gökyüzüne açılır.',
+    detail: 'Çini kaplı kubbe',
+  },
+  {
     id: 'esrefoglu', name: 'Eşrefoğlu Camii', province: 'Konya', category: 'unesco', period: 'selcuklu',
     coord: [31.7250, 37.6830], wiki: 'Eşrefoğlu Camii',
     summary: 'Beyşehir’deki 1299 tarihli ahşap direkli beylik camisi; 2023’te UNESCO listesine girdi.',

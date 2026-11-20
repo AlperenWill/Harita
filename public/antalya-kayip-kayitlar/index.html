@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171c18">
+  <title>Antik Antalya’da Yolculuk · Kayıp Kayıtlar</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="game" aria-label="Perge">
+    <div id="world"></div>
+    <div class="vignette"></div>
+    <div id="hud" hidden>
+      <div class="top">
+        <section class="tracker">
+          <div class="eyebrow" id="district">PERGE · PAMPHYLIA</div>
+          <strong id="objective"></strong>
+          <p id="next-step"></p><p id="reason"></p><p id="progress"></p>
+          <div id="segments" aria-hidden="true"></div>
+        </section>
+        <div class="top-actions"><a id="miras-back" href="../harita" aria-label="Haritaya dön" title="Haritaya dön (ilerleme kayıtlı kalır)">←</a><button id="pause" type="button" aria-label="Duraklat">Ⅱ</button></div>
+      </div>
+      <div id="navigation"><canvas id="map" width="144" height="144" aria-label="Konum ve hedef haritası"></canvas><span id="bearing"></span><button id="open-journal">Günlük · J</button></div><div id="tutorial" hidden></div><div class="reticle" aria-hidden="true"></div>
+      <div id="prompt" hidden></div>
+      <div id="waypoint" hidden aria-hidden="true">◆</div>
+      <div id="controls">
+        <div id="look"></div>
+        <div id="stick"><span id="thumb"></span></div>
+        <button id="sprint" type="button"></button>
+        <button id="interact" type="button"></button>
+      </div>
+    </div>
+    <div id="overlay">
+      <section id="panel" aria-labelledby="title">
+        <div class="eyebrow" id="tag">ANTİK ANTALYA’DA YOLCULUK</div>
+        <h1 id="title">Perge</h1>
+        <div id="body"><p>Antik kentler yükleniyor…</p></div>
+        <div id="actions"></div>
+      </section>
+    </div>
+    <noscript>Perge’yi keşfetmek için JavaScript’i etkinleştirin.</noscript>
+  </main>
+  <script defer src="game.js"></script>
+</body>
+</html>
