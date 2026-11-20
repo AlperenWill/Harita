@@ -49,7 +49,8 @@
     (() => {
       const urls = [
         'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-        'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'
+        'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+        'vendor/three-global.js'   // Miras. Haritası: CDN'e ulaşılamazsa yerel yedek (three r169, aynı temel API)
       ];
       const load = i => {
         if (i >= urls.length) {
