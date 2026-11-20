@@ -63,6 +63,7 @@ export const PLAYABLES: Playable[] = [
   { id: 'balikligol', name: 'Balıklıgöl', province: 'Şanlıurfa', coord: [38.7860, 37.1460], title: 'Urfa’nın Minik Kâşifleri', emoji: '🐟', blurb: 'Göl bahçesinde küçük kâşiflerle oyna.', kind: 'static', path: 'sanliurfa-oyun/index.html', depth: 'kisa', wiki: 'Balıklıgöl' },
   { id: 'nemrut', name: 'Nemrut Dağı', province: 'Adıyaman', coord: [38.7410, 37.9810], title: 'Tanrıların Alacakaranlığı', emoji: '⛰️', blurb: 'Dev başlar arasında gün doğumunu bekle.', kind: 'route', path: 'oyun/nemrut', depth: 'detayli', wiki: 'Nemrut_Dağı' },
   // ---- Karadeniz ----
+  { id: 'hattusa', name: 'Hattuşa', province: 'Çorum', coord: [34.6150, 40.0140], title: 'Kralın Yolu', emoji: '🦁', blurb: 'Hitit başkentinde kapı ritüellerini yerine getir, Yazılıkaya’ya ulaş.', kind: 'route', path: 'oyun/hattusa', depth: 'detayli', wiki: 'Hattuşaş' },
   { id: 'zilkale', name: 'Zil Kale', province: 'Rize', coord: [41.0667, 40.9581], title: 'Sis İçindeki İzler', emoji: '🌫️', blurb: 'Sisli Fırtına Vadisi’nden kaleye yürü.', kind: 'route', path: 'oyun/zilkale', depth: 'detayli', wiki: 'Zilkale' },
 ];
 
