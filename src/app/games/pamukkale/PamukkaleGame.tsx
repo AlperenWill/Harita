@@ -103,9 +103,9 @@ function World({ tier }: { tier: Tier }) {
   return (
     <group>
       <Sky sunPosition={[200, 120, 160]} turbidity={5} rayleigh={1.1} />
-      <fog attach="fog" args={['#dfeef2', 220, 900]} />
-      <hemisphereLight args={['#f4fbff', '#c9c0a8', 1.1]} />
-      <directionalLight position={[200, 160, 160]} intensity={2.0} color="#fff6e6" />
+      <fog attach="fog" args={['#cfe2ec', 220, 900]} />
+      <hemisphereLight args={['#f4fbff', '#c9c0a8', 0.75]} />
+      <directionalLight position={[200, 160, 160]} intensity={1.35} color="#fff6e6" />
       <Terrain tier={tier} />
       <Pools tier={tier} />
       <DryPools />
@@ -119,9 +119,9 @@ function World({ tier }: { tier: Tier }) {
 function Terrain({ tier }: { tier: Tier }) {
   const geo = useMemo(() => {
     const N = tier === 'high' ? 260 : tier === 'medium' ? 200 : 140, g = new THREE.PlaneGeometry(500, 520, N, N); g.rotateX(-Math.PI / 2); g.translate(0, 0, -20);
-    const p = g.attributes.position as THREE.BufferAttribute, col = new Float32Array(p.count * 3), c = new THREE.Color(), white = new THREE.Color('#f7f8f6'), cream = new THREE.Color('#e9e1cf'), green = new THREE.Color('#8fa064'), dry = new THREE.Color('#c8b98f'), r = rng(7);
+    const p = g.attributes.position as THREE.BufferAttribute, col = new Float32Array(p.count * 3), c = new THREE.Color(), white = new THREE.Color('#f7f8f6'), cream = new THREE.Color('#d6c9ad'), green = new THREE.Color('#8fa064'), dry = new THREE.Color('#c8b98f'), r = rng(7);
     for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); let y = heightAt(x, z); if (Math.abs(x) > 84 && z > SLOPE_Z0) y += (Math.abs(x) - 84) * 0.25; if (z > SLOPE_Z1) y -= (z - SLOPE_Z1) * 0.02; p.setY(i, y);
-      if (isTravertine(x, z)) c.copy(white).lerp(cream, 0.1 + r() * 0.25); else c.copy(z < SLOPE_Z0 ? dry : green).lerp(dry, r() * 0.3); col.set([c.r, c.g, c.b], i * 3); }
+      if (isTravertine(x, z)) c.copy(white).lerp(cream, 0.2 + 0.35 * Math.abs(Math.sin(x * 0.07 + z * 0.11) * Math.cos(z * 0.05)) + r() * 0.15); /* krem lekeler: beyaz yamaç gökyüzü/sisle karışmasın */ else c.copy(z < SLOPE_Z0 ? dry : green).lerp(dry, r() * 0.3); col.set([c.r, c.g, c.b], i * 3); }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
   }, [tier]);
   return <mesh geometry={geo}><meshStandardMaterial vertexColors roughness={0.55} /></mesh>;
