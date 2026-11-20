@@ -44,6 +44,8 @@ export const PLAYABLES: Playable[] = [
   { id: 'dolmabahce', name: 'Dolmabahçe Sarayı', province: 'İstanbul', coord: [29.0000, 41.0392], title: 'Kristal ve Işığın İhtişamı', emoji: '💎', blurb: 'Salonlarda parlayan on nesneyi bul.', kind: 'route', path: 'oyun/dolmabahce', depth: 'detayli', wiki: 'Dolmabahçe_Sarayı' },
   // ---- Ankara ----
   { id: 'anitkabir', name: 'Anıtkabir', province: 'Ankara', coord: [32.8370, 39.9250], title: '3D Anıtkabir’i Keşfet', emoji: '🏛️', blurb: 'Aslanlı Yol’dan Şeref Holü’ne yürü.', kind: 'route', path: 'anit/ankara-anitkabir', depth: 'detayli', wiki: 'Anıtkabir' },
+  // ---- Kapadokya ----
+  { id: 'goreme', name: 'Kapadokya (Göreme)', province: 'Nevşehir', coord: [34.8450, 38.6400], title: 'Gün Doğumunda Balon', emoji: '🎈', blurb: 'Balonla peribacalarının üstünde uç; yönü rüzgâr katmanlarıyla seç.', kind: 'route', path: 'oyun/kapadokya', depth: 'detayli', wiki: 'Kapadokya' },
   // ---- Ege ----
   { id: 'efes', name: 'Efes Antik Kenti', province: 'İzmir', coord: [27.3417, 37.9395], title: 'Zaman Penceresi', emoji: '🏛️', blurb: 'Mermer caddelerden Celsus’a ve tiyatroya yürü; yıkık yapılar Roma dönemine dönsün.', kind: 'route', path: 'oyun/efes', depth: 'detayli', wiki: 'Efes' },
   // ---- Güneydoğu ----
