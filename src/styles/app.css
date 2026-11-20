@@ -276,7 +276,7 @@ h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; letter-spacin
   .game-list { grid-template-columns: 1fr; }
   .intro { left: 8px; right: 8px; width: auto; top: 60px; }
   .toast { top: 60px; width: max-content; max-width: calc(100% - 24px); }
-  .game-card { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 72vh; border-radius: 20px 20px 0 0; padding-bottom: var(--safe-b); animation-name: sheet-in; }
+  .game-card { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 56vh; border-radius: 20px 20px 0 0; padding-bottom: var(--safe-b); animation-name: sheet-in; }
   @keyframes sheet-in { from { transform: translateY(40px); opacity: 0; } }
-  .game-media { height: 140px; }
+  .game-media { height: 96px; }
 }
