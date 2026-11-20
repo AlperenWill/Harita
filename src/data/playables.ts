@@ -45,7 +45,7 @@ export const PLAYABLES: Playable[] = [
   // ---- Ankara ----
   { id: 'anitkabir', name: 'Anıtkabir', province: 'Ankara', coord: [32.8370, 39.9250], title: '3D Anıtkabir’i Keşfet', emoji: '🏛️', blurb: 'Aslanlı Yol’dan Şeref Holü’ne yürü.', kind: 'route', path: 'anit/ankara-anitkabir', depth: 'detayli', wiki: 'Anıtkabir' },
   // ---- Ege ----
-  { id: 'efes', name: 'Efes Antik Kenti', province: 'İzmir', coord: [27.3417, 37.9395], title: 'Efes’in Gezgini', emoji: '🏺', blurb: 'Celsus Kütüphanesi’ne uzanan antik caddede gez.', kind: 'static', path: 'izmir-efes/index.html', depth: 'kisa', wiki: 'Efes' },
+  { id: 'efes', name: 'Efes Antik Kenti', province: 'İzmir', coord: [27.3417, 37.9395], title: 'Zaman Penceresi', emoji: '🏛️', blurb: 'Mermer caddelerden Celsus’a ve tiyatroya yürü; yıkık yapılar Roma dönemine dönsün.', kind: 'route', path: 'oyun/efes', depth: 'detayli', wiki: 'Efes' },
   // ---- Güneydoğu ----
   { id: 'balikligol', name: 'Balıklıgöl', province: 'Şanlıurfa', coord: [38.7860, 37.1460], title: 'Urfa’nın Minik Kâşifleri', emoji: '🐟', blurb: 'Göl bahçesinde küçük kâşiflerle oyna.', kind: 'static', path: 'sanliurfa-oyun/index.html', depth: 'kisa', wiki: 'Balıklıgöl' },
   { id: 'nemrut', name: 'Nemrut Dağı', province: 'Adıyaman', coord: [38.7410, 37.9810], title: 'Tanrıların Alacakaranlığı', emoji: '⛰️', blurb: 'Dev başlar arasında gün doğumunu bekle.', kind: 'route', path: 'oyun/nemrut', depth: 'detayli', wiki: 'Nemrut_Dağı' },
