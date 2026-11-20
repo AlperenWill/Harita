@@ -588,6 +588,10 @@ collision grid, renderer lifecycle, mission state, settings, save and journal fl
       renderer.shadowMap.type=THREE.PCFSoftShadowMap;
       $("world").append(renderer.domElement);
       loadWorld();input();setupGuidance();menu();requestAnimationFrame(frame);
+      // Miras. Haritası: haritadaki her nokta kendi mekânını doğrudan açar (?mekan=mevlana|catalhoyuk|karatay).
+      // Haritadan seçilen mekân kilitliyse açılır; böylece her mekân ayrı bir mini oyun gibi oynanabilir.
+      {const q=new URLSearchParams(location.search).get('mekan'),qi={mevlana:0,catalhoyuk:1,karatay:2}[q];
+       if(qi!==undefined&&chapters[qi]){campaign.unlocked=Math.max(campaign.unlocked,qi);enterChapter(qi);}}
     }catch(error){
       console.error(error);show("error","Konya");paragraph(t("unavailable"));
       button(t("reload"),()=>location.reload());

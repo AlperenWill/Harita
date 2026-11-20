@@ -22,7 +22,7 @@ export const DISTRICT: Record<string, string> = {
   'st-pierre': 'Antakya', 'habib-neccar': 'Antakya', titus: 'Samandağ', karatepe: 'Kadirli', germanicia: 'Dulkadiroğlu',
   // İç Anadolu
   anitkabir: 'Çankaya', amm: 'Altındağ', augustus: 'Altındağ', 'ankara-kalesi': 'Altındağ', gordion: 'Polatlı', arslanhane: 'Altındağ',
-  catalhoyuk: 'Çumra', mevlana: 'Karatay', sema: 'Karatay', 'ince-minare': 'Selçuklu', esrefoglu: 'Beyşehir', zazadin: 'Selçuklu',
+  catalhoyuk: 'Çumra', mevlana: 'Karatay', sema: 'Karatay', 'ince-minare': 'Selçuklu', karatay: 'Karatay', esrefoglu: 'Beyşehir', zazadin: 'Selçuklu',
   kultepe: 'Kocasinan', 'sultanhan-kayseri': 'Kocasinan', 'gevher-nesibe': 'Melikgazi', midas: 'Han', odunpazari: 'Odunpazarı',
   luletasi: 'Odunpazarı', divrigi: 'Divriği', 'gok-medrese-sivas': 'Merkez', asiklik: 'Merkez', ihlara: 'Güzelyurt',
   'sultanhani-aksaray': 'Sultanhanı', asikli: 'Gülağaç', binbirkilise: 'Merkez', hatuniye: 'Merkez', cacabey: 'Merkez',

@@ -25,7 +25,7 @@ describe('oynanabilir yerler', () => {
   });
   it('her oyunun açılacağı yer gerçekten var (uygulama rotası ya da public/ dosyası)', () => {
     for (const p of PLAYABLES) {
-      if (p.kind === 'static') expect(existsSync(`public/${p.path}`), p.path).toBe(true);
+      if (p.kind === 'static') expect(existsSync(`public/${p.path.split('?')[0]}`), p.path).toBe(true);   // ?mekan= gibi parametreler dosya yolu değildir
       else if (p.path.startsWith('anit/')) expect(app).toContain('path="anit/:id"');
       else expect(app, p.path).toContain(`path="${p.path}"`);
     }

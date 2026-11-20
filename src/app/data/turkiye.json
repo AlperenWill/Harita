@@ -2821,6 +2821,22 @@
      "wiki": "İnce Minareli Medrese"
     },
     {
+     "id": "karatay",
+     "name": "Karatay Medresesi",
+     "district": "Karatay",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "selcuklu",
+     "periodLabel": "Selçuklu & Beylikler",
+     "coord": [
+      32.495,
+      37.8747
+     ],
+     "summary": "1251’de Emir Celaleddin Karatay’ın yaptırdığı Selçuklu medresesi; bugün Çini Eserler Müzesi’dir.",
+     "didYouKnow": "Kubbesinin iç yüzü lacivert ve turkuaz çinilerle kaplıdır; ortadaki açıklık gökyüzüne açılır.",
+     "wiki": "Karatay Medresesi"
+    },
+    {
      "id": "esrefoglu",
      "name": "Eşrefoğlu Camii",
      "district": "Beyşehir",
