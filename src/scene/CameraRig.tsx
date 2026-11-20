@@ -92,8 +92,6 @@ export function CameraRig() {
         ]);
         return;
       }
-      // dikey telefonda oyun kartı ekranın altını kaplar: yakın çekime girmeden il görünümünde kal (nokta kartın üstünde görünür)
-      if (level === 'site' && site && portrait) return;
       if (level === 'site' && site) {
         const [x, z] = toWorld(site.coord[0], site.coord[1]);
         const y = elevationToHeight(ELEVATION[site.province]);
@@ -102,13 +100,15 @@ export function CameraRig() {
         c.maxPolarAngle = Math.PI * 0.47;
         // Sinematik yaklaşım: hedefe hafif yandan ve alçaktan gir
         const az = c.azimuthAngle + 0.6;
-        const dist = 3.6;
+        // dikey telefonda oyun kartı ekranın alt yarısını kaplar: kamera biraz uzak ve yüksekte durur, bakış noktası
+        // modelin altına kaydırılır → model ekranın üst çeyreğinde, kartın üstünde görünür
+        const dist = portrait ? 4.6 : 3.6;
         const camPos = new THREE.Vector3(
           x + Math.sin(az) * dist,
-          y + 1.25,
+          y + (portrait ? 2.4 : 1.25),
           z + Math.cos(az) * dist,
         );
-        await c.setLookAt(camPos.x, camPos.y, camPos.z, x, y + 0.35, z, true);
+        await c.setLookAt(camPos.x, camPos.y, camPos.z, x, y + (portrait ? -1.1 : 0.35), z, true);
       }
     })();
     return () => {
