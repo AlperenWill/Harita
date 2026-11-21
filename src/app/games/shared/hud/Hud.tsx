@@ -3,7 +3,7 @@
  *
  * Yerleşim (telefon dikey ekran önce, çentik/güvenli alan payı dahil):
  *  ┌──────────────────────────────────────────┐
- *  │ [← Harita]       [görev · ilerleme]   [🔊][⋯] │  üst sıra: geri her zaman sol üstte, ayarlar sağ üstte
+ *  │ [← Harita]       [görev · ilerleme]      [≡] │  üst sıra: geri her zaman sol üstte, menü sağ üstte
  *  │ [araç paneli]                              │  sol: oyuna özel gösterge (ör. rüzgâr katmanları), daraltılabilir
  *  │                                    [gezinme]│  sağ kenar: ikincil düğmeler
  *  │              [geri bildirim]               │  üst orta: kısa bildirim (doğru/yanlış)
@@ -14,15 +14,15 @@
  * Oyuna özgü tek şey VURGU rengidir (accent): ana düğme, ilerleme, başlık üstü etiket.
  */
 import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { ArrowLeft, BookOpen, ExternalLink, HelpCircle, MoreHorizontal, RotateCcw, Volume2, VolumeX, X, Captions, CaptionsOff, Map as MapIcon, Play } from 'lucide-react';
+import { ArrowLeft, BookOpen, ExternalLink, HelpCircle, Menu, RotateCcw, Settings, Volume2, VolumeX, X, Captions, CaptionsOff, Map as MapIcon, Play } from 'lucide-react';
 
 /* ---------- tema ---------- */
 export interface HudTheme { accent: string; accentInk?: string }
 const ThemeCtx = createContext<HudTheme>({ accent: '#f04448', accentInk: '#ffffff' });
 const useTheme = () => useContext(ThemeCtx);
 const stop = (e: React.PointerEvent) => e.stopPropagation();
-const GLASS = 'bg-white/80 text-[#1f1b17] shadow-[0_6px_24px_rgba(31,27,23,0.14)] ring-1 ring-black/5 backdrop-blur-md';
-const SOLID = 'bg-[#fbfaf7] text-[#1f1b17] shadow-[0_18px_50px_rgba(31,27,23,0.25)] ring-1 ring-black/5';
+const GLASS = 'bg-[#f7f5f1]/85 text-[#1f1b17] shadow-[0_6px_24px_rgba(31,27,23,0.14)] ring-1 ring-black/5 backdrop-blur-md';
+const SOLID = 'bg-[#f7f5f1] text-[#1f1b17] shadow-[0_18px_50px_rgba(31,27,23,0.25)] ring-1 ring-black/5';
 
 /** Bütün HUD'u saran katman: güvenli alanlar, tema değişkenleri. Sahneye dokunuşları engellemez. */
 export function Hud({ theme, children }: { theme: HudTheme; children: ReactNode }) {
@@ -69,25 +69,39 @@ export function Objective({ label, done, total, icon }: { label: ReactNode; done
   );
 }
 
-/* ---------- menü ---------- */
-export interface MenuState { muted: boolean; tts: boolean }
-/** Sağ üst kümesi: ses + ⋯ menü (sesli anlatım, nasıl oynanır, baştan başla, haritaya dön) */
-export function SettingsCluster({ muted, onMute, tts, onTts, help, onRestart, onExit }: { muted: boolean; onMute: () => void; tts?: boolean; onTts?: () => void; help?: ReactNode; onRestart?: () => void; onExit: () => void }) {
-  const [open, setOpen] = useState(false), [showHelp, setShowHelp] = useState(false);
+/* ---------- menü (≡) ----------
+ * Konya / Antalya oyunlarındaki duraklatma menüsü gibi: tek düğme, açılınca oyun durur; alt alta tam genişlikte seçenekler.
+ * Ana görünüm: Devam et · Nasıl oynanır · Ayarlar · Baştan başla · Haritaya dön. Ayarlar ayrı sayfa: ses, sesli anlatım. */
+export function GameMenu({ muted, onMute, tts, onTts, help, onRestart, onExit, onPause }: { muted: boolean; onMute: () => void; tts?: boolean; onTts?: () => void; help?: ReactNode; onRestart?: () => void; onExit: () => void; onPause?: (paused: boolean) => void }) {
+  const [view, setView] = useState<null | 'main' | 'settings' | 'help'>(null);
+  const open = (v: typeof view) => { setView(v); onPause?.(v !== null); };
+  const t = useTheme();
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Escape') open(view ? null : 'main'); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); });
   return (<>
-    <IconButton label={muted ? 'Sesi aç' : 'Sesi kapat'} onClick={onMute}>{muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</IconButton>
-    <IconButton label="Menü" onClick={() => setOpen(true)}><MoreHorizontal size={20} /></IconButton>
-    {open && <Modal onClose={() => setOpen(false)} title="Menü">
+    <IconButton label="Menü" onClick={() => open('main')}><Menu size={20} /></IconButton>
+    {view === 'main' && <Modal title="Duraklatıldı" onClose={() => open(null)}>
       <div className="grid gap-2">
-        {onTts && <MenuRow icon={tts ? <Captions size={18} /> : <CaptionsOff size={18} />} label="Sesli anlatım" value={tts ? 'Açık' : 'Kapalı'} onClick={onTts} />}
-        <MenuRow icon={muted ? <VolumeX size={18} /> : <Volume2 size={18} />} label="Ses" value={muted ? 'Kapalı' : 'Açık'} onClick={onMute} />
-        {help && <MenuRow icon={<HelpCircle size={18} />} label="Nasıl oynanır" onClick={() => { setOpen(false); setShowHelp(true); }} />}
-        {onRestart && <MenuRow icon={<RotateCcw size={18} />} label="Baştan başla" onClick={() => { setOpen(false); onRestart(); }} />}
+        <button onClick={() => open(null)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl text-[15px] font-bold" style={{ background: t.accent, color: t.accentInk ?? '#fff' }}><Play size={16} /> Devam et</button>
+        {help && <MenuRow icon={<HelpCircle size={18} />} label="Nasıl oynanır" onClick={() => setView('help')} />}
+        <MenuRow icon={<Settings size={18} />} label="Ayarlar" onClick={() => setView('settings')} />
+        {onRestart && <MenuRow icon={<RotateCcw size={18} />} label="Baştan başla" onClick={() => { open(null); onRestart(); }} />}
         <MenuRow icon={<MapIcon size={18} />} label="Haritaya dön" onClick={onExit} />
       </div>
     </Modal>}
-    {showHelp && <Modal onClose={() => setShowHelp(false)} title="Nasıl oynanır">{help}</Modal>}
+    {view === 'settings' && <Modal title="Ayarlar" onClose={() => open(null)}>
+      <div className="grid gap-2">
+        <Toggle icon={muted ? <VolumeX size={18} /> : <Volume2 size={18} />} label="Ses" on={!muted} onClick={onMute} />
+        {onTts && <Toggle icon={tts ? <Captions size={18} /> : <CaptionsOff size={18} />} label="Sesli anlatım" on={!!tts} onClick={onTts} />}
+        <MenuRow icon={<ArrowLeft size={18} />} label="Geri" onClick={() => setView('main')} />
+      </div>
+    </Modal>}
+    {view === 'help' && <Modal title="Nasıl oynanır" onClose={() => open(null)}>{help}<div className="mt-3"><MenuRow icon={<ArrowLeft size={18} />} label="Geri" onClick={() => setView('main')} /></div></Modal>}
   </>);
+}
+function Toggle({ icon, label, on, onClick }: { icon: ReactNode; label: string; on: boolean; onClick: () => void }) {
+  const t = useTheme();
+  return <button onClick={onClick} role="switch" aria-checked={on} className="flex h-12 items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold ring-1 ring-black/5 transition hover:bg-black/[0.03]">{icon}<span className="flex-1">{label}</span>
+    <span className="relative h-6 w-10 rounded-full transition-colors" style={{ background: on ? t.accent : 'rgba(31,27,23,0.18)' }}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? 'left-[18px]' : 'left-0.5'}`} /></span></button>;
 }
 function MenuRow({ icon, label, value, onClick }: { icon: ReactNode; label: string; value?: string; onClick: () => void }) {
   return <button onClick={onClick} className="flex h-12 items-center gap-3 rounded-xl px-3 text-left text-sm font-semibold ring-1 ring-black/5 transition hover:bg-black/[0.03] active:scale-[0.99]">{icon}<span className="flex-1">{label}</span>{value && <span className="text-xs font-semibold text-[#857b70]">{value}</span>}</button>;

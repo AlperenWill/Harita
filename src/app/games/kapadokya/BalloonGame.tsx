@@ -13,7 +13,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
 import { ArrowDown, ArrowLeft, ArrowUp, Flame, MapPin, Move, Wind } from 'lucide-react';
-import { ActionDock, Controls, EndSheet, Hint, Hud, InfoSheet, Objective, RoundAction, SettingsCluster, StartSheet, ToolPanel, TopBar } from '../shared/hud/Hud';
+import { ActionDock, Controls, EndSheet, Hint, Hud, InfoSheet, Objective, RoundAction, GameMenu, StartSheet, ToolPanel, TopBar } from '../shared/hud/Hud';
 import { LAYERS, SPOTS, START, UCHISAR, heightAt, layerAt, nearSpot, step, wind, type Balloon, type Spot } from './flight';
 import { speakTr } from '../shared/voice';
 import { Polish, SkyEnvironment } from '../shared/Polish';
@@ -43,8 +43,8 @@ class BalloonAudio {
 const audio = new BalloonAudio();
 
 /* ---------- durum ---------- */
-interface S { started: boolean; seen: string[]; card: Spot | null; agl: number; layer: number; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, seen: [] as string[], card: null, agl: 0, layer: 0, endShown: false };
+interface S { started: boolean; paused: boolean; seen: string[]; card: Spot | null; agl: number; layer: number; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, paused: false, seen: [] as string[], card: null, agl: 0, layer: 0, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const live = { b: { ...START } as Balloon, input: 0, t: 0, camYaw: 0, camPitch: 0.25, burn: false };
 
@@ -86,7 +86,7 @@ function Game({ onExit }: { onExit: () => void }) {
       <Hud theme={THEME}>
         <TopBar onExit={onExit}
           objective={S.started ? <Objective icon={<MapPin size={15} />} label={next ? `Sıradaki: ${next.name}` : 'Bütün noktalar görüldü'} done={S.seen.length} total={SPOTS.length} /> : undefined}
-          right={<SettingsCluster muted={S.muted} onMute={() => { audio.unlock(); S.set({ muted: !S.muted }); }} tts={S.tts} onTts={() => { S.set({ tts: !S.tts }); if (S.tts) audio.hush(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} />} />
+          right={<GameMenu onPause={(v) => S.set({ paused: v })} muted={S.muted} onMute={() => { audio.unlock(); S.set({ muted: !S.muted }); }} tts={S.tts} onTts={() => { S.set({ tts: !S.tts }); if (S.tts) audio.hush(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} />} />
         {S.started && <>
           {/* rüzgâr katmanları: hangi yükseklikte rüzgâr nereye eser (oklar kameraya göre) */}
           <ToolPanel title={<><Wind size={14} className="mr-1" style={{ color: THEME.accent }} />{Math.round(S.agl)} m · {L.name}</>}>
@@ -207,7 +207,7 @@ function Controller() {
   const { camera } = useThree(), cam = useRef(new THREE.Vector3(60, 80, 220)), st = useRef({ spot: '', agl: -1, layer: -1 });
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState();
-    if (S.started) { live.t += dt; live.burn = live.input > 0; audio.setBurner(live.burn); live.b = step(live.b, live.input, dt, live.t); }
+    if (S.started && !S.paused) { live.t += dt; live.burn = live.input > 0; audio.setBurner(live.burn); live.b = step(live.b, live.input, dt, live.t); } else audio.setBurner(false);   // menü açıkken oyun durur
     const b = live.b, agl = b.y - heightAt(b.x, b.z), layer = Math.max(0, layerAt(agl));
     if (Math.abs(agl - st.current.agl) > 1 || layer !== st.current.layer) { st.current.agl = agl; st.current.layer = layer; S.set({ agl, layer }); }
     const sp = S.started ? nearSpot(b) : null;
