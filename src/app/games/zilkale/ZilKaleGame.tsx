@@ -271,8 +271,8 @@ function Controller({ plan, wind: wu, sky, charRef }: { plan: FogPlan; wind: Win
     wu.uTime.value = t; wu.uWind.value.set(w.dir[0], w.dir[1], 0); wu.uAmp.value = plan.windAnim ? 0.5 + w.speed : 0;
     // --- tarih katmanı
     let near: Layer | null = null;
-    for (const l of LAYERS) { const raw = S.started ? morphTarget(live.s, l) : 0; if (raw > 0 && !near) near = l; if (raw === 0) live.opened.delete(l.id);
-      const prev = live.morph[l.id] ?? 0, tg = live.opened.has(l.id) ? raw : 0, next = plan.saver ? (tg > 0.5 ? 1 : 0) : stepMorph(prev, tg, dt); live.morph[l.id] = next; U[l.id].value = next;
+    for (const l of LAYERS) { const raw = S.started ? morphTarget(live.s, l) : 0; if (raw >= 0.5 && !near) near = l;   // istem yalnızca yapının yanında (kenarda değil) if (raw === 0) live.opened.delete(l.id);
+      const prev = live.morph[l.id] ?? 0, tg = live.opened.has(l.id) && raw > 0 ? 1 : 0, next = plan.saver ? (tg > 0.5 ? 1 : 0) : stepMorph(prev, tg, dt); live.morph[l.id] = next; U[l.id].value = next;
       if (activated(prev, next) && S.started) { zilAudio.history(); const s2 = useDb.getState(); s2.set({ card: l, seen: s2.seen.includes(l.id) ? s2.seen : [...s2.seen, l.id] }); if (s2.tts) zilAudio.speak(`${l.name}. ${l.pastText}`); }
       if (S.card?.id === l.id && tg === 0 && next < 0.4) S.set({ card: null }); }
     if ((near?.id ?? null) !== (S.near?.id ?? null)) S.set({ near });

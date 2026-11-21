@@ -174,8 +174,8 @@ function Controller({ saver }: { saver: boolean }) {
     // zaman pencereleri
     let all = 0;
     let near: Window | null = null;
-    for (const w of WINDOWS) { const raw = S.started ? morphTarget(live.s, w) : 0; if (raw > 0 && !near) near = w; if (raw === 0) live.open.delete(w.id);   // uzaklaşınca pencere kapanır, dönünce yine E ile açılır
-      const prev = live.morph[w.id] ?? 0, tg = live.open.has(w.id) ? raw : 0, next = saver ? (tg > 0.5 ? 1 : 0) : stepMorph(prev, tg, dt); live.morph[w.id] = next; U[w.id].value = next; all = Math.max(all, next);
+    for (const w of WINDOWS) { const raw = S.started ? morphTarget(live.s, w) : 0; if (raw >= 0.5 && !near) near = w;   // istem yalnızca yapının yanında (kenarda değil) if (raw === 0) live.open.delete(w.id);   // uzaklaşınca pencere kapanır, dönünce yine E ile açılır
+      const prev = live.morph[w.id] ?? 0, tg = live.open.has(w.id) && raw > 0 ? 1 : 0, next = saver ? (tg > 0.5 ? 1 : 0) : stepMorph(prev, tg, dt); live.morph[w.id] = next; U[w.id].value = next; all = Math.max(all, next);
       if (activated(prev, next) && S.started) { audio.chime(); const s2 = useDb.getState(); s2.set({ card: w, seen: s2.seen.includes(w.id) ? s2.seen : [...s2.seen, w.id] }); if (s2.tts) audio.speak(`${w.name}. ${w.then}`); }
       if (S.card?.id === w.id && tg === 0 && next < 0.4) S.set({ card: null }); }
     if ((near?.id ?? null) !== (S.near?.id ?? null)) S.set({ near });
