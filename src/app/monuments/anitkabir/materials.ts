@@ -1,11 +1,12 @@
 import * as THREE from 'three';
+import { HALL } from './interior';
 
 /**
  * Prosedürel taş malzemesi: doku dosyası indirilmez (0 bayt). Standart PBR malzemenin shader'ına
  * dünya koordinatına bağlı gürültü ve taş sırası derzleri eklenir; aynı malzeme InstancedMesh ile
  * binlerce parçada paylaşılır. Dünya koordinatı kullanıldığı için UV açmaya da gerek kalmaz.
  */
-type Variant = 'stone' | 'kilim' | 'grass' | 'paving' | 'hall' | 'mosaic';
+type Variant = 'stone' | 'kilim' | 'grass' | 'paving' | 'hall' | 'mosaic' | 'tiger' | 'gallery';
 
 const NOISE = /* glsl */ `
   varying vec3 vWPos;
@@ -40,15 +41,55 @@ const BODY: Record<Variant, string> = {
     col = mix(col, vec3(0.62, 0.55, 0.45), step(0.0, border) * step(border, 1.2));
     diffuseColor.rgb = col * (0.9 + 0.16 * vnoise(vWPos * 1.7));
   `,
-  // Şeref Holü zemini: krem, kırmızı ve siyah mermer şeritler
+  // Şeref Holü orta hol zemini: kırmızı ağırlıklı, siyah mermer kenar şeritleri; ortada koç boynuzu motifli kilim kuşağı.
+  // (orta hol z ±8; kenar kuşağı 6,6–7,6; orta kuşak |z| < 3,2, motif 3,2 m'de bir)
   hall: /* glsl */ `
-    vec2 c = vWPos.xz / 3.0, f = abs(fract(c) - 0.5);
-    float pick = h3(vec3(floor(c), 3.0));
-    vec3 col = vec3(0.90, 0.86, 0.78);
-    col = mix(col, vec3(0.55, 0.16, 0.14), step(0.38, max(f.x, f.y)));
-    col = mix(col, vec3(0.10, 0.10, 0.11), step(0.46, max(f.x, f.y)));
-    col = mix(col, vec3(0.55, 0.16, 0.14), step(f.x + f.y, 0.16) * step(0.5, pick));
-    diffuseColor.rgb = col * (0.85 + 0.25 * vnoise(vWPos * 0.9));
+    vec3 red = vec3(0.52, 0.13, 0.11), black = vec3(0.07, 0.07, 0.08), cream = vec3(0.88, 0.82, 0.70);
+    float az = abs(vWPos.z);
+    vec3 col = red;
+    col = mix(col, black, step(6.6, az) * step(az, 7.6));
+    col = mix(col, cream, step(6.95, az) * step(az, 7.25));
+    // kenar kuşağında "yaba" (ok) dizisi: krem çizgi üstünde siyah oklar
+    float ax = fract(vWPos.x / 1.1) - 0.5;
+    col = mix(col, cream, step(6.7, az) * step(az, 6.9) * step(abs(ax), 0.3 - (az - 6.7) * 1.5));
+    // orta kuşak: siyah çerçeve, içinde krem baklava ve koç boynuzu kıvrımları
+    float band = step(az, 3.2);
+    col = mix(col, black, band * step(2.9, az));
+    vec2 c = vec2(fract(vWPos.x / 3.2) - 0.5, vWPos.z / 3.2);
+    float d = abs(c.x) + abs(c.y);
+    col = mix(col, cream, band * step(d, 0.42) * step(0.34, d));
+    col = mix(col, black, band * step(d, 0.24) * step(0.17, d));
+    float horn = step(abs(length(vec2(abs(c.x) - 0.2, abs(c.y) - 0.2)) - 0.09), 0.025);   // koç boynuzu kıvrımı
+    col = mix(col, cream, band * horn * step(0.42, d));
+    col *= 0.9 + 0.18 * vnoise(vWPos * 1.3) + 0.06 * vnoise(vWPos * 9.0);
+    diffuseColor.rgb = col;
+  `,
+  // Yan galerilerin zemini: krem mermer, bölmeler arası siyah şerit ve koç boynuzu (bölme = 49,55 / 9 m)
+  gallery: /* glsl */ `
+    vec3 cream = vec3(0.86, 0.81, 0.71), black = vec3(0.08, 0.08, 0.09), red = vec3(0.52, 0.14, 0.12);
+    float bx = fract((vWPos.x - BAY0) / BAYW), ex = min(bx, 1.0 - bx) * BAYW;
+    vec3 col = cream;
+    col = mix(col, black, step(ex, 0.45));
+    vec2 c = vec2((bx - 0.5) * BAYW, abs(vWPos.z) - 14.35) / 3.0;
+    float d = abs(c.x) + abs(c.y);
+    col = mix(col, black, step(abs(d - 0.36), 0.035));
+    col = mix(col, red, step(d, 0.16));
+    vec2 g = abs(fract(vWPos.xz / 1.2) - 0.5);
+    col *= 1.0 - 0.06 * step(0.48, max(g.x, g.y));
+    col *= 0.9 + 0.16 * vnoise(vWPos * 1.1);
+    diffuseColor.rgb = col;
+  `,
+  // Yan duvar: kaplan postu beyaz mermer (damarlı krem), altta yeşil mermer kuşak (zeminden 1,3 m)
+  tiger: /* glsl */ `
+    float v = vnoise(vWPos * vec3(0.7, 2.8, 0.7) + vnoise(vWPos * 0.5) * 2.0);
+    vec3 col = mix(vec3(0.91, 0.86, 0.76), vec3(0.62, 0.48, 0.32), smoothstep(0.58, 0.8, v) * 0.75);
+    float y = vWPos.y - FLOORY;
+    float g = vnoise(vWPos * vec3(1.5, 4.0, 1.5));
+    vec3 green = mix(vec3(0.10, 0.22, 0.17), vec3(0.32, 0.45, 0.36), smoothstep(0.5, 0.85, g));
+    col = mix(col, green, step(y, 1.3) * step(-0.5, y));
+    col = mix(col, vec3(0.08, 0.08, 0.08), step(abs(y - 1.32), 0.04));
+    float j = step(0.985, abs(fract(vWPos.y / 1.6) * 2.0 - 1.0)) * step(1.4, y);
+    diffuseColor.rgb = col * (1.0 - 0.12 * j);
   `,
   // Şeref Holü tavanı: kilim motifli altın mozaik
   mosaic: /* glsl */ `
@@ -74,6 +115,8 @@ const BODY: Record<Variant, string> = {
   `,
 };
 
+/** Gölgelendiricilere gömülen sabitler (hol zemini ve duvar kuşağı için) */
+export const SHADER_CONST = { FLOORY: HALL.floorY, BAY0: HALL.x0, BAYW: (HALL.x1 - HALL.x0) / HALL.bays };
 export function proceduralMaterial(variant: Variant, color: THREE.ColorRepresentation, opts: THREE.MeshStandardMaterialParameters = {}) {
   const m = new THREE.MeshStandardMaterial({ color, roughness: 0.9, metalness: 0, ...opts });
   m.onBeforeCompile = (shader) => {
@@ -87,7 +130,7 @@ export function proceduralMaterial(variant: Variant, color: THREE.ColorRepresent
         vWPos = (modelMatrix * wp).xyz;`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\n' + NOISE)
-      .replace('#include <color_fragment>', '#include <color_fragment>\n' + BODY[variant]);
+      .replace('#include <color_fragment>', '#include <color_fragment>\n' + BODY[variant].replace(/FLOORY/g, SHADER_CONST.FLOORY.toFixed(3)).replace(/BAY0/g, SHADER_CONST.BAY0.toFixed(3)).replace(/BAYW/g, SHADER_CONST.BAYW.toFixed(3)));
   };
   m.customProgramCacheKey = () => 'anitkabir-' + variant;
   return m;
@@ -119,6 +162,12 @@ export function createMaterials() {
     hallFloor: proceduralMaterial('hall', '#ffffff', { roughness: 0.35 }),
     mosaic: proceduralMaterial('mosaic', '#ffffff', { roughness: 0.5 }),
     hallWall: proceduralMaterial('stone', '#eee6d6', { roughness: 0.6 }),
+    tiger: proceduralMaterial('tiger', '#ffffff', { roughness: 0.4 }),
+    gallery: proceduralMaterial('gallery', '#ffffff', { roughness: 0.35 }),
+    whiteMarble: new THREE.MeshStandardMaterial({ color: '#f1ede4', roughness: 0.3 }),
+    glass: new THREE.MeshStandardMaterial({ color: '#cfe0e6', roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.18, depthWrite: false }),
+    plaster: proceduralMaterial('stone', '#e9e2d4', { roughness: 0.9 }),
+    museumFloor: proceduralMaterial('paving', '#b9ad98', { roughness: 0.5 }),
     // gündüz sönük, gece parlayan yüzeyler (ışık hesabı gerektirmez)
     bulb: new THREE.MeshBasicMaterial({ color: '#b9b4a6' }),
     windowGlow: new THREE.MeshBasicMaterial({ color: '#2a2622' }),

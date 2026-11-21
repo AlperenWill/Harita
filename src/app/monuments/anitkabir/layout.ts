@@ -29,15 +29,7 @@ export const MAUSOLEUM = {
 export const FRONT_X = MAUSOLEUM.x - LEN / 2;
 const BACK_X = MAUSOLEUM.x + LEN / 2;
 
-/** Şeref Holü: sütunların içindeki kapalı hacim */
-const INSET = 5, WALL = 1.2;
-export const HALL = {
-  outer: [FRONT_X + INSET, -(WID / 2 - INSET), BACK_X - INSET, WID / 2 - INSET] as Rect,
-  x0: FRONT_X + INSET + WALL, x1: BACK_X - INSET - WALL, halfW: WID / 2 - INSET - WALL,
-  floorY: PODIUM_H, ceilY: PODIUM_H + 13.4, wall: WALL,
-  door: { w: 5, h: 8 },
-};
-export const SARCOPHAGUS: V3 = [HALL.x1 - 7, PODIUM_H, 0];
+/* Şeref Holü ve müze (iç mekânlar): interior.ts */
 
 /** 44 sütun: ön ve arka cephede 8'er (köşeler dahil), yan cephelerde 14'er */
 export function mausoleumColumns(): V3[] {
@@ -132,10 +124,7 @@ export function walkColliders(): Rect[] {
   for (const t of towers()) add(t.pos[0], t.pos[2], TOWER.w, TOWER.d);
   for (const c of mausoleumColumns()) add(c[0], c[2], MAUSOLEUM.colSize + 0.3, MAUSOLEUM.colSize + 0.3);
   for (const l of lions()) add(l.pos[0], l.pos[2], 3.6, 3.6);
-  // Şeref Holü duvarları: ön duvarda kapı boşluğu
-  const [x0, z0, x1, z1] = HALL.outer, w = HALL.wall, dw = HALL.door.w / 2;
-  out.push([x0, z0, x1, z0 + w], [x0, z1 - w, x1, z1], [x1 - w, z0, x1, z1], [x0, z0, x0 + w, -dw], [x0, dw, x0 + w, z1]);
-  add(SARCOPHAGUS[0], SARCOPHAGUS[2], 5, 7.5);
+  // Şeref Holü duvarları, payeler ve lahit: interior.ts → hallColliders (allColliders ikisini birleştirir)
   add(FLAGPOLE.pos[0], FLAGPOLE.pos[2], 4, 4);
   add(INONU.pos[0], INONU.pos[2], 3.4, 5.4);
   // merdivenin iki yanındaki kabartma duvarları
