@@ -26,15 +26,15 @@ export type Motif = 'yildiz' | 'rumi' | 'rozet' | 'lale' | 'mukarnas' | 'zincir'
 export interface Stop { id: string; name: string; stand: [number, number]; panel: { at: [number, number, number]; yaw: number; size: number }; motif: Motif; motifName: string; text: string; source: { title: string; url: string }; s: number }
 const W = { title: 'Wikipedia — İshak Paşa Sarayı', url: 'https://tr.wikipedia.org/wiki/%C4%B0shak_Pa%C5%9Fa_Saray%C4%B1' }, KTB = { title: 'Kültür Portalı — İshak Paşa Sarayı', url: 'https://www.kulturportali.gov.tr/turkiye/agri/gezilecekyer/ishak-pasa-sarayi' };
 const RAW: Omit<Stop, 's'>[] = [
-  { id: 'tackapi', name: 'Taç Kapı', stand: [56, 0], panel: { at: [43.62, 6.5, -4.1], yaw: Math.PI / 2, size: 2.6 }, motif: 'rumi', motifName: 'Kıvrık dal (rumi) bordürü', source: W,
+  { id: 'tackapi', name: 'Taç Kapı', stand: [56, 0], panel: { at: [43.7, 6.5, -5.3], yaw: Math.PI / 2, size: 2.1 }, motif: 'rumi', motifName: 'Kıvrık dal (rumi) bordürü', source: W,
     text: 'Saray 1685’te Çolak Abdi Paşa tarafından başlatıldı, torunu İshak Paşa döneminde 1784’te tamamlandı. Girişteki yüksek taç kapı yoğun taş işçiliğiyle süslüdür. Kapının altın kaplamalı kanatlarının 19. yüzyıldaki Rus işgalinde götürüldüğü anlatılır.' },
   { id: 'selamlik', name: 'Selamlık', stand: [20, -9], panel: { at: [20, 4.5, -23.88], yaw: 0, size: 3.4 }, motif: 'yildiz', motifName: 'Sekiz kollu yıldız geçmesi', source: KTB,
     text: 'Selamlık, sarayın erkeklere ayrılan ve konukların ağırlandığı bölümüdür. Birinci avludan ikinci avluya geçilir; avlular sarayı halka açık ve özel bölümlere ayırır.' },
   { id: 'turbe', name: 'Türbe', stand: [-8, 4], panel: { at: [-14.6, 3.2, -6.2], yaw: 0.45, size: 2.2 }, motif: 'lale', motifName: 'Lale ve hayat ağacı', source: W,
     text: 'İç avludaki türbe, Selçuklu kümbet geleneğini sürdüren sekizgen gövdeli, külahlı bir yapıdır. İshak Paşa ve ailesinden kişilerin burada gömülü olduğu kabul edilir. Cephesinde bitkisel ve geometrik kabartmalar vardır.' },
-  { id: 'cami', name: 'Cami ve minare', stand: [-22, -6], panel: { at: [-22, 4, -21.8], yaw: 0, size: 2.6 }, motif: 'zincir', motifName: 'Zincir geçme (örgü)', source: KTB,
+  { id: 'cami', name: 'Cami ve minare', stand: [-22, -6], panel: { at: [-26.5, 4.3, -22.9], yaw: 0, size: 2.6 }, motif: 'zincir', motifName: 'Zincir geçme (örgü)', source: KTB,
     text: 'Sarayın kubbeli camisi ve iki renkli taşlarla örülmüş minaresi iç avlunun kuzeyindedir. Sarayda Osmanlı, Selçuklu ve İran mimari üslupları bir arada görülür.' },
-  { id: 'harem', name: 'Harem ve Tören Salonu', stand: [-34, 6], panel: { at: [-41.8, 5, 6], yaw: Math.PI / 2, size: 3 }, motif: 'mukarnas', motifName: 'Mukarnas (stalaktit) dizisi', source: W,
+  { id: 'harem', name: 'Harem ve Tören Salonu', stand: [-34, 6], panel: { at: [-41.85, 5, 3.1], yaw: Math.PI / 2, size: 3 }, motif: 'mukarnas', motifName: 'Mukarnas (stalaktit) dizisi', source: W,
     text: 'Harem, ailenin yaşadığı bölümdür; tören salonu sarayın en görkemli mekânlarındandır. Duvarların içinden geçen kanallarla odaların ısıtıldığı bir sistem bulunduğu bilinir. Sarayda 366 oda olduğu söylenir; bu sayı kaynaklarda kesin değildir.' },
   { id: 'teras', name: 'Teras: Ağrı Dağı’na bakış', stand: [8, 46], panel: { at: [13, 1.9, 40], yaw: -0.6, size: 1.8 }, motif: 'rozet', motifName: 'Güneş kursu (rozet)', source: KTB,
     text: 'Saray İpek Yolu’nun geçtiği ovaya bakar. Arkasındaki kayalıkta Eski Bayazıt kalesinin kalıntıları, kuzeyde ise Türkiye’nin en yüksek dağı Ağrı Dağı (5.137 m) görülür.' },

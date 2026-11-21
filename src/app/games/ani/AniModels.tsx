@@ -5,76 +5,21 @@
  * sivri kemerli pencereler, konik külahlı kasnaklar, yıkık köşeler ve moloz.
  */
 import { useEffect, useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GORGE_DEPTH, ROUTE_LEN, WALL_Z, edgeDist, heightAt, routeAt } from './site';
 import { bicolorTex, rng, type Tier } from '../shared/walkKit';
-
-/* ---------- yardımcılar ---------- */
-/** Dünya ölçekli UV'li kutu: doku her yüzde `s` metrede bir tekrar eder (uzun duvarlar gerilmez) */
-export function bx(w: number, h: number, d: number, s = 4) {
-  const g = new THREE.BoxGeometry(w, h, d), uv = g.attributes.uv as THREE.BufferAttribute, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
-  for (let f = 0; f < 6; f++) for (let i = 0; i < 4; i++) { const k = f * 4 + i; uv.setXY(k, (uv.getX(k) * dims[f][0]) / s, (uv.getY(k) * dims[f][1]) / s); }
-  return g;
-}
-/** Üçgen prizma çatı: mahya +y, uzunluk z boyunca */
-function gable(w: number, h: number, len: number) {
-  const s = new THREE.Shape(); s.moveTo(-w / 2, 0); s.lineTo(0, h); s.lineTo(w / 2, 0); s.closePath();
-  const g = new THREE.ExtrudeGeometry(s, { depth: len, bevelEnabled: false }); g.translate(0, 0, -len / 2); return g;
-}
-/** Kemerli açıklık silüeti (düz, koyu): pointed = sivri kemer */
-function archGeo(w: number, h: number, pointed = true) {
-  const s = new THREE.Shape(), r = w / 2, sp = h - r; s.moveTo(-r, 0); s.lineTo(-r, sp);
-  if (pointed) { s.quadraticCurveTo(-r, sp + r * 0.9, 0, sp + r * 1.25); s.quadraticCurveTo(r, sp + r * 0.9, r, sp); } else s.absarc(0, sp, r, Math.PI, 0, true);
-  s.lineTo(r, 0); s.closePath(); return new THREE.ShapeGeometry(s, 6);
-}
-/** Cephedeki derin üçgen niş (Ani kiliselerinin tipik öğesi): üstü yarım daire kapanan dar, koyu kama */
-function vNicheGeo(w: number, h: number) { const s = new THREE.Shape(); s.moveTo(0, 0); s.lineTo(-w / 2, h - w / 2); s.absarc(0, h - w / 2, w / 2, Math.PI, 0, true); s.closePath(); return new THREE.ShapeGeometry(s, 8); }
+import { archGeo, bx, gable, groundTex, stoneTex, useGrassCards, vNicheGeo, weather } from '../shared/scenery';
+export { Sun, Clouds } from '../shared/scenery';
+export const SUN_DIR = new THREE.Vector3(-0.84, 0.42, -0.2).normalize();
 
 export interface Mats { red: THREE.Material; dark: THREE.Material; pale: THREE.Material; wall: THREE.Material; hole: THREE.Material; trim: THREE.Material; roof: THREE.Material; checker: THREE.Material }
-/* ---------- taş dokusu (512 px, metre başına ~128 px) ----------
- * Ani yapıları çok renkli tüften örülür: kırmızı, pembemsi-bej, kahve ve siyah bloklar karışık dizilir.
- * Her blok kendi tonunda; ince, düşük karşıtlıklı derz; kenarlarda ışık/gölge; benek, yosun-leke ve dikey yağmur izi.
- * Ayrı gri tonlu kabartma haritası: derz derin, blok yüzü hafif pürüzlü. */
-const texCache = new Map<string, { map: THREE.CanvasTexture; bump: THREE.CanvasTexture }>();
-function stoneTex(key: string, palette: string[], courses: [number, number] = [40, 30], blockW: [number, number] = [70, 80]) {
-  const hit = texCache.get(key); if (hit) return hit;
-  const N = 512, c = document.createElement('canvas'), b = document.createElement('canvas'); c.width = c.height = b.width = b.height = N;
-  const g = c.getContext('2d')!, h = b.getContext('2d')!, r = rng(key.split('').reduce((a, ch) => a + ch.charCodeAt(0) * 7, 3));
-  g.fillStyle = '#6e5044'; g.fillRect(0, 0, N, N); h.fillStyle = '#202020'; h.fillRect(0, 0, N, N);
-  let y = 0; while (y < N) { const ch = Math.min(N - y, courses[0] + r() * courses[1]); let x = -r() * blockW[0];
-    while (x < N) { const w = blockW[0] + r() * blockW[1], col = new THREE.Color(palette[Math.floor(r() * palette.length)]); col.offsetHSL((r() - 0.5) * 0.015, (r() - 0.5) * 0.05, (r() - 0.5) * 0.05);
-      const draw = (xx: number) => { g.fillStyle = `#${col.getHexString()}`; g.fillRect(xx + 1, y + 1, w - 2, ch - 2);
-        g.fillStyle = 'rgba(255,240,220,.10)'; g.fillRect(xx + 1.5, y + 1.5, w - 3, 3); g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(xx + 1.5, y + ch - 5, w - 3, 3.5);
-        const v = 150 + r() * 50 | 0; h.fillStyle = `rgb(${v},${v},${v})`; h.fillRect(xx + 2, y + 2, w - 4, ch - 4);
-        if (r() < 0.25) { g.fillStyle = 'rgba(30,20,15,.35)'; g.beginPath(); g.arc(xx + r() * w, y + (r() < 0.5 ? 2 : ch - 2), 3 + r() * 6, 0, Math.PI * 2); g.fill(); h.fillStyle = '#303030'; h.beginPath(); h.arc(xx + r() * w, y + 2, 3 + r() * 5, 0, Math.PI * 2); h.fill(); } };   // kırık kenar
-      draw(x); if (x + w > N) draw(x - N); x += w; }
-    y += ch; }
-  for (let i = 0; i < 9000; i++) { const v = r(); g.fillStyle = v < 0.5 ? `rgba(0,0,0,${r() * 0.18})` : `rgba(255,245,230,${r() * 0.12})`; const s = 1 + r() * 2.2; g.fillRect(r() * N, r() * N, s, s); h.fillStyle = `rgba(${v < 0.5 ? '0,0,0' : '255,255,255'},${r() * 0.25})`; h.fillRect(r() * N, r() * N, s, s); }
-  for (let i = 0; i < 26; i++) { const x = r() * N, len = 60 + r() * 220, gr = g.createLinearGradient(0, 0, 0, len); gr.addColorStop(0, 'rgba(25,18,14,.16)'); gr.addColorStop(1, 'rgba(25,18,14,0)'); g.fillStyle = gr; g.save(); g.translate(x, r() * N * 0.6); g.fillRect(0, 0, 3 + r() * 8, len); g.restore(); }   // yağmur izi
-  for (let i = 0; i < 14; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '110,115,70' : '170,160,120'},${0.08 + r() * 0.1})`; g.beginPath(); g.ellipse(r() * N, r() * N, 10 + r() * 30, 6 + r() * 18, r() * 3, 0, Math.PI * 2); g.fill(); }   // liken lekeleri
-  const mk = (cv: HTMLCanvasElement, srgb: boolean) => { const t = new THREE.CanvasTexture(cv); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
-  const out = { map: mk(c, true), bump: mk(b, false) }; texCache.set(key, out); return out;
-}
-/** Dip kirlenmesi + geniş ölçekli ton dalgası: aynı doku tekrarını kırar, yapıyı zemine oturtur */
-function weather(mat: THREE.MeshStandardMaterial) {
-  mat.onBeforeCompile = (sh) => {
-    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWPos;').replace('#include <map_fragment>', `#include <map_fragment>
-      float baseY = vWPos.y > -15.0 ? 0.0 : -${GORGE_DEPTH.toFixed(1)};
-      float grime = 1.0 - 0.38 * (1.0 - smoothstep(0.0, 2.2, vWPos.y - baseY));
-      float wave = 0.9 + 0.1 * sin(vWPos.x * 0.21 + sin(vWPos.z * 0.17) * 2.0) * sin(vWPos.y * 0.33 + vWPos.z * 0.05);
-      diffuseColor.rgb *= grime * wave;`);
-  };
-  return mat;
-}
 export function useMats(): Mats {
   return useMemo(() => {
-    const mk = (key: string, pal: string[], courses?: [number, number], bw?: [number, number], extra: Partial<THREE.MeshStandardMaterialParameters> = {}) => { const t = stoneTex(key, pal, courses, bw); return weather(new THREE.MeshStandardMaterial({ map: t.map, bumpMap: t.bump, bumpScale: 0.35, roughness: 0.93, ...extra })); };
+    const mk = (key: string, pal: string[], courses?: [number, number], bw?: [number, number], extra: Partial<THREE.MeshStandardMaterialParameters> = {}) => { const t = stoneTex(key, pal, courses, bw); return weather(new THREE.MeshStandardMaterial({ map: t.map, bumpMap: t.bump, bumpScale: 0.35, roughness: 0.93, ...extra }), -GORGE_DEPTH); };
     const RED = ['#8e5543', '#955b47', '#874f3e', '#9c6450', '#82503f', '#90584a'], MIX = [...RED, ...RED, '#a5806a', '#5a4038'];   // çoğunluk kırmızı tüf; arada açık ve koyu blok
     return {
       red: mk('red', MIX), dark: mk('dark', ['#4a3833', '#523e37', '#45342f', '#5a453d']), pale: mk('pale', ['#b8967a', '#c4a487', '#a9876c'], [34, 20], [90, 90]), wall: mk('wall', RED, [44, 34], [80, 90]),
-      hole: new THREE.MeshStandardMaterial({ color: '#140d0a', roughness: 1, side: THREE.DoubleSide }), trim: weather(new THREE.MeshStandardMaterial({ color: '#b98d70', roughness: 0.85 })),
+      hole: new THREE.MeshStandardMaterial({ color: '#140d0a', roughness: 1, side: THREE.DoubleSide }), trim: weather(new THREE.MeshStandardMaterial({ color: '#b98d70', roughness: 0.85 }), -GORGE_DEPTH),
       roof: mk('roof', ['#5d4238', '#6b4c40', '#54392f'], [22, 10], [40, 30]), checker: new THREE.MeshStandardMaterial({ map: bicolorTex(43, '#a8735a', '#2f2321', 'checker'), roughness: 0.9 }),
     };
   }, []);
@@ -101,16 +46,6 @@ export function Terrain({ tier }: { tier: Tier }) {
   const tex = useMemo(() => groundTex(), []);
   return <mesh geometry={geo} userData={{ noCast: true }}><meshStandardMaterial vertexColors map={tex.map} bumpMap={tex.bump} bumpScale={0.25} roughness={1} /></mesh>;
 }
-/** Zemin ayrıntısı: kuru ot lifleri, toprak lekeleri, çakıl (tekrarlanan, köşe renkleriyle çarpılır) */
-function groundTex() {
-  const N = 512, c = document.createElement('canvas'), b = document.createElement('canvas'); c.width = c.height = b.width = b.height = N; const g = c.getContext('2d')!, h = b.getContext('2d')!, r = rng(321);
-  g.fillStyle = '#d8d8d8'; g.fillRect(0, 0, N, N); h.fillStyle = '#808080'; h.fillRect(0, 0, N, N);
-  for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '150,120,90' : '235,235,225'},${0.15 + r() * 0.2})`; g.beginPath(); g.ellipse(r() * N, r() * N, 20 + r() * 60, 12 + r() * 40, r() * 3, 0, Math.PI * 2); g.fill(); }
-  for (let i = 0; i < 5200; i++) { const x = r() * N, y = r() * N, l = 4 + r() * 10, a = -Math.PI / 2 + (r() - 0.5) * 1.2, v = r(); g.strokeStyle = v < 0.5 ? `rgba(70,75,30,${0.25 + r() * 0.3})` : `rgba(255,250,210,${0.2 + r() * 0.3})`; g.lineWidth = 1 + r(); g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); h.strokeStyle = v < 0.5 ? 'rgba(40,40,40,.5)' : 'rgba(220,220,220,.5)'; h.beginPath(); h.moveTo(x, y); h.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); h.stroke(); }
-  for (let i = 0; i < 500; i++) { const x = r() * N, y = r() * N, s = 1.5 + r() * 3.5; g.fillStyle = `rgba(${90 + r() * 60 | 0},${80 + r() * 40 | 0},${70 + r() * 30 | 0},.7)`; g.beginPath(); g.arc(x, y, s, 0, Math.PI * 2); g.fill(); h.fillStyle = '#e0e0e0'; h.beginPath(); h.arc(x, y, s, 0, Math.PI * 2); h.fill(); }
-  const mk = (cv: HTMLCanvasElement, srgb: boolean) => { const t = new THREE.CanvasTexture(cv); if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(240, 240); t.anisotropy = 8; return t; };
-  return { map: mk(c, true), bump: mk(b, false) };
-}
 /** Kanyon dibindeki Arpaçay: akıntı izli su şeridi */
 export function River() {
   const tex = useMemo(() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d')!, r = rng(77); g.fillStyle = '#5d8c8c'; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 160; i++) { g.fillStyle = `rgba(230,245,240,${r() * 0.35})`; g.fillRect(r() * 128, r() * 128, 10 + r() * 20, 1.2); } const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(60, 60); t.colorSpace = THREE.SRGBColorSpace; return t; }, []);
@@ -121,18 +56,7 @@ export function River() {
 /** Bozkır otu tutamları ve kır çiçekleri */
 export function Grass({ n }: { n: number }) {
   const tuft = useRef<THREE.InstancedMesh>(null), flower = useRef<THREE.InstancedMesh>(null);
-  const { geo, mat } = useMemo(() => {
-    const c = document.createElement('canvas'); c.width = 128; c.height = 128; const g = c.getContext('2d')!, r = rng(13);
-    for (let i = 0; i < 46; i++) { const x = 10 + r() * 108, hgt = 50 + r() * 72, lean = (r() - 0.5) * 34, v = 0.6 + r() * 0.5; g.strokeStyle = `rgb(${150 * v | 0},${145 * v | 0},${70 * v | 0})`; g.lineWidth = 1.5 + r() * 2; g.beginPath(); g.moveTo(x, 128); g.quadraticCurveTo(x + lean * 0.3, 128 - hgt * 0.6, x + lean, 128 - hgt); g.stroke(); }
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-    const a = new THREE.PlaneGeometry(1.0, 0.55); a.translate(0, 0.275, 0); const b2 = a.clone().rotateY(Math.PI / 2), c2 = a.clone().rotateY(Math.PI / 4);
-    const merged = new THREE.BufferGeometry(); const parts = [a, b2, c2]; const pos: number[] = [], uv: number[] = [], nor: number[] = [], idx: number[] = []; let off = 0;
-    for (const p of parts) { pos.push(...(p.attributes.position.array as Float32Array)); uv.push(...(p.attributes.uv.array as Float32Array)); for (let i = 0; i < p.attributes.position.count; i++) nor.push(0, 1, 0); idx.push(...Array.from(p.index!.array as Uint16Array, (x) => x + off)); off += p.attributes.position.count; }
-    merged.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); merged.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); merged.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); merged.setIndex(idx);
-    const mat = new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 1 });
-    mat.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\nnormal = normalize(vNormal);'); };   // arka yüz de yukarı bakan normali kullanır: kararmaz
-    return { geo: merged, mat };   // normal yukarı: kartlar zeminle aynı ışığı alır, kart kenarı görünmez
-  }, []);
+  const { geo, mat } = useGrassCards();
   useEffect(() => { const r = rng(97), o = new THREE.Object3D(), col = new THREE.Color(); let k = 0, f = 0; const nf = Math.floor(n / 6);
     for (let i = 0; i < n * 4 && k < n; i++) { const near = r() < 0.7, s0 = r() * ROUTE_LEN, rp = routeAt(s0).p; const x = near ? rp[0] + (r() - 0.5) * 60 : (r() - 0.5) * 320, z = near ? rp[2] + (r() - 0.5) * 60 : -210 + r() * 520;
       if (edgeDist(x, z) < 1) continue; let onPath = false; for (let s = Math.max(0, s0 - 40); s < Math.min(ROUTE_LEN, s0 + 40) && near; s += 4) { const p = routeAt(s).p; if (Math.abs(p[0] - x) + Math.abs(p[2] - z) < 3) { onPath = true; break; } } if (onPath) continue;
@@ -143,24 +67,6 @@ export function Grass({ n }: { n: number }) {
     <instancedMesh ref={tuft} args={[geo, mat, n]} userData={{ noCast: true }} />
     <instancedMesh ref={flower} args={[undefined, undefined, Math.floor(n / 6)]} userData={{ noCast: true }}><icosahedronGeometry args={[1, 0]} /><meshStandardMaterial roughness={0.8} /></instancedMesh>
   </group>);
-}
-
-/* ---------- güneş, gölge, bulut ---------- */
-/** Gölgeli güneş: gölge kamerası oyuncuyu izler (±75 m), böylece küçük bir gölge haritası yeter */
-export const SUN_DIR = new THREE.Vector3(-0.84, 0.42, -0.2).normalize();
-export function Sun({ tier }: { tier: Tier }) {
-  const ref = useRef<THREE.DirectionalLight>(null);
-  useEffect(() => { const l = ref.current; if (!l) return; const cam = l.shadow.camera as THREE.OrthographicCamera; cam.left = cam.bottom = -75; cam.right = cam.top = 75; cam.near = 10; cam.far = 420; cam.updateProjectionMatrix(); l.shadow.bias = -0.0005; l.shadow.normalBias = 0.05; }, []);
-  useFrame(({ camera }) => { const l = ref.current; if (!l) return; const f = camera.getWorldDirection(_v).multiplyScalar(35); l.target.position.set(camera.position.x + f.x, camera.position.y, camera.position.z + f.z); l.position.copy(l.target.position).addScaledVector(SUN_DIR, 200); l.target.updateMatrixWorld(); });
-  const size = tier === 'high' ? 2048 : 1024;
-  return <directionalLight ref={ref} intensity={7.5} color="#ffe2bd" castShadow={tier !== 'low'} shadow-mapSize-width={size} shadow-mapSize-height={size} />;
-}
-const _v = new THREE.Vector3();
-/** Yumuşak bulut kümeleri (kamera yönüne dönen düz kartlar) */
-export function Clouds() {
-  const tex = useMemo(() => { const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d')!, r = rng(8); for (let i = 0; i < 22; i++) { const x = 40 + r() * 176, y = 50 + r() * 40, rad = 18 + r() * 34, gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, 'rgba(255,255,255,.85)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 256, 128); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }, []);
-  const list = useMemo(() => { const r = rng(44); return Array.from({ length: 14 }, () => { const a = r() * Math.PI * 2, d = 700 + r() * 700; return { p: [Math.sin(a) * d, 180 + r() * 160, Math.cos(a) * d] as [number, number, number], s: 260 + r() * 300 }; }); }, []);
-  return <group>{list.map((c, i) => <sprite key={i} position={c.p} scale={[c.s, c.s * 0.45, 1]}><spriteMaterial map={tex} transparent depthWrite={false} fog={false} opacity={0.85} /></sprite>)}</group>;
 }
 
 /* ---------- surlar ve Aslanlı Kapı ---------- */

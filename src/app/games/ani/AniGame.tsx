@@ -15,7 +15,7 @@ import { BookOpen, Camera, Check, ChevronLeft, ChevronRight, Images, MapPin, Rot
 import { ROUTE_LEN, SHOTS, AIM_TOL, aimError, nearShot, routeAt, type Shot } from './site';
 import { Polish, SkyEnvironment } from '../shared/Polish';
 import { EndCard, Hint, InfoCard, TitleCard, TopBar, WalkAudio, WikiFallback, detectTier, dprFor, newLive, pinned, stepWalk, supportsWebGL, useWalkInput, wrapA, type CamState, type Tier } from '../shared/walkKit';
-import { Bridge, Cathedral, Clouds, Columns, FarHills, Grass, Sun, HalfChurch, MaidenCastle, Mosque, River, RoundChurch, Rubble, Ruins, Terrain, Tigran, Walls, useMats } from './AniModels';
+import { Bridge, Cathedral, Clouds, Columns, FarHills, Grass, SUN_DIR, Sun, HalfChurch, MaidenCastle, Mosque, River, RoundChurch, Rubble, Ruins, Terrain, Tigran, Walls, useMats } from './AniModels';
 
 const audio = new WalkAudio({ freq: 420, gain: 0.11 }, 'female');
 interface S { started: boolean; albumOpen: boolean; album: string[]; near: Shot | null; framed: boolean; card: Shot | null; flash: number; muted: boolean; endShown: boolean; set: (p: Partial<S>) => void }
@@ -125,7 +125,7 @@ function World({ tier }: { tier: Tier }) {
       <group userData={{ noCast: true }}><Sky sunPosition={[-840, 420, -200]} turbidity={3} rayleigh={2.2} mieCoefficient={0.006} mieDirectionalG={0.85} /></group>
       <fog attach="fog" args={['#d3dde4', 320, 1900]} />
       <hemisphereLight args={['#cfe0ee', '#6f6545', 0.32]} />
-      <Sun tier={tier} />
+      <Sun tier={tier} dir={SUN_DIR} />
       {tier !== 'low' && <Clouds />}
       <Terrain tier={tier} /><group userData={{ noCast: true }}><River /><FarHills /></group>
       <Walls m={m} /><Cathedral m={m} /><Mosque m={m} /><Tigran m={m} /><Bridge m={m} /><MaidenCastle m={m} />

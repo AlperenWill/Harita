@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
-import { ArrowLeft, ExternalLink, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, ChevronLeft, ChevronRight, ExternalLink, MapPin, RotateCcw, Undo2, X } from 'lucide-react';
 import { speakTr, type VoiceGender } from './voice';
 
 export type Tier = 'low' | 'medium' | 'high';
@@ -149,6 +149,35 @@ export function WikiFallback({ wiki, alt, items, onExit, speak }: { wiki: string
         <p className="text-xs text-white/60">Bu cihazda 3D desteklenmiyor · Fotoğraf: Vikipedi / Wikimedia Commons</p>
         <h2 className="mt-1 text-lg font-bold">{s.name}</h2><p className="mt-1 text-sm">{s.text}</p>
         <div className="mt-3 flex gap-2"><button onClick={() => speak(s.text)} className="h-10 rounded-lg bg-white/15 px-3 text-sm">Dinle</button><button onClick={() => setI((i + 1) % items.length)} className="h-10 rounded-lg bg-amber-300 px-4 text-sm font-semibold text-black">Sonraki</button></div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- gezinme: sağ kenar düğmeleri ve durak listesi (Ani, İshak Paşa) ---------- */
+export function NavRail({ onNext, onPrev, onTurn, onList, nextDisabled, prevDisabled, listLabel = 'Durak listesi' }: { onNext: () => void; onPrev: () => void; onTurn: () => void; onList: () => void; nextDisabled: boolean; prevDisabled: boolean; listLabel?: string }) {
+  const B = ({ label, disabled, onClick, children }: { label: string; disabled?: boolean; onClick: () => void; children: ReactNode }) => <button onClick={onClick} disabled={disabled} title={label} aria-label={label} className={`grid h-11 w-11 place-items-center rounded-full text-white shadow ${disabled ? 'bg-black/20 text-white/40' : 'bg-black/50 active:scale-95'}`}>{children}</button>;
+  return <div className="absolute right-3 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-2" onPointerDown={stop}>
+    <B label="Sonraki durak" disabled={nextDisabled} onClick={onNext}><ChevronRight size={20} /></B>
+    <B label="Önceki durağa dön" disabled={prevDisabled} onClick={onPrev}><ChevronLeft size={20} /></B>
+    <B label="Arkanı dön" onClick={onTurn}><Undo2 size={18} /></B>
+    <B label={listLabel} onClick={onList}><BookOpen size={18} /></B>
+  </div>;
+}
+export function StopList({ title, items, doneLabel, todoLabel, onGo, onRead, onRestart, onClose }: { title: string; items: { id: string; name: string; done: boolean }[]; doneLabel: string; todoLabel: string; onGo: (i: number) => void; onRead: (i: number) => void; onRestart: () => void; onClose: () => void }) {
+  return (
+    <div className="absolute inset-0 z-40 grid place-items-center bg-black/30 p-4" onPointerDown={stop}>
+      <div className="max-h-[86vh] w-full max-w-md overflow-y-auto rounded-3xl bg-[#f6efe2] p-5 text-ink shadow-2xl">
+        <div className="flex items-center gap-2"><BookOpen size={18} className="text-amber-700" /><h2 className="text-lg font-bold">{title} · {items.filter((x) => x.done).length}/{items.length}</h2>
+          <button onClick={onClose} className="ml-auto grid h-10 w-10 place-items-center rounded-full bg-black/5" aria-label="Listeyi kapat"><X size={18} /></button></div>
+        <ol className="mt-3 space-y-2">{items.map((x, i) => (
+          <li key={x.id} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3">
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold ${x.done ? 'bg-amber-300 text-black' : 'bg-slate-100 text-slate-500'}`}>{x.done ? <Check size={16} /> : i + 1}</span>
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{x.name}</p><p className="text-xs text-slate-500">{x.done ? doneLabel : todoLabel}</p></div>
+            {x.done && <button onClick={() => onRead(i)} className="h-9 rounded-lg border border-line px-3 text-xs font-semibold">Oku</button>}
+            <button onClick={() => onGo(i)} className="inline-flex h-9 items-center gap-1 rounded-lg bg-brand px-3 text-xs font-semibold text-white"><MapPin size={12} /> Git</button>
+          </li>))}</ol>
+        <button onClick={onRestart} className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-line font-semibold"><RotateCcw size={16} /> Baştan başla</button>
       </div>
     </div>
   );
