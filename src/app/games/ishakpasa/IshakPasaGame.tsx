@@ -14,6 +14,7 @@ import { Puzzle, Sparkles, Volume2, VolumeX, X } from 'lucide-react';
 import { CENTER, GRID, ROUTE_LEN, STOPS, isSolved, nearStop, rotateTile, routeAt, scramble, type Stop } from './site';
 import { Polish, SkyEnvironment } from '../shared/Polish';
 import { Clouds, Sun } from '../shared/scenery';
+import { LookCrosshair } from '../shared/mouseLook';
 import { Boulders, Grass, Mountain, OldFortress, Palace, Panel, SUN_DIR, Terrain, useMats } from './IshakModels';
 import { motifURL } from './motif';
 import { EndCard, Hint, InfoCard, NavRail, StopList, TitleCard, TopBar, WalkAudio, WikiFallback, detectTier, dprFor, newLive, pinned, stepWalk, supportsWebGL, useWalkInput, wrapA, type CamState, type Tier } from '../shared/walkKit';
@@ -39,7 +40,7 @@ function Game({ onExit }: { onExit: () => void }) {
   const tap = useCallback((i: number) => { const s = useDb.getState(), p = s.puzzle; if (!p || i === CENTER) return; const tiles = rotateTile(s.tiles, i); audio.click();
     if (isSolved(tiles)) { audio.tone(true); s.set({ tiles, puzzle: null, card: p, done: [...s.done, p.id] }); audio.speak(`${p.name}. ${p.text}`); } else s.set({ tiles }); }, []);
   const solveAll = useCallback(() => { const s = useDb.getState(); if (!s.puzzle) return; s.tiles.forEach((v, i) => { for (let k = 0; k < (4 - v) % 4; k++) tap(i); }); }, [tap]);
-  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); }, () => audio.unlock());
+  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); }, () => audio.unlock(), () => { const s = useDb.getState(); return s.started && !s.card && !s.puzzle && !s.listOpen; });
 
   const goTo = useCallback((i: number) => { if (i < 0 || i >= STOPS.length) return; nav.to = STOPS[i].s; nav.speed = Math.max(16, Math.abs(nav.to - live.s) / 3); useDb.getState().set({ card: null, puzzle: null, listOpen: false }); audio.hush(); }, []);
   const restart = useCallback(() => { audio.hush(); Object.assign(live, newLive()); nav.to = null; useDb.setState({ ...INITIAL, started: true }); }, []);
@@ -61,9 +62,10 @@ function Game({ onExit }: { onExit: () => void }) {
       </TopBar>
       {S.started && !S.listOpen && !S.puzzle && <NavRail onNext={() => goTo(nI)} onPrev={() => goTo(pI)} onTurn={() => { nav.turn += Math.PI; }} onList={() => S.set({ listOpen: true, card: null })} nextDisabled={nI < 0} prevDisabled={pI < 0} listLabel="Nakış listesi" />}
       {S.listOpen && <StopList title="Nakışlar" items={STOPS.map((x) => ({ id: x.id, name: x.name, done: S.done.includes(x.id) }))} doneLabel="Onarıldı" todoLabel="Henüz onarılmadı" onGo={goTo} onRead={(i) => { const x = STOPS[i]; S.set({ listOpen: false, card: x }); audio.speak(`${x.name}. ${x.text}`); }} onRestart={restart} onClose={() => S.set({ listOpen: false })} />}
+      <LookCrosshair locked={input.locked} />
       {S.puzzle && <PuzzlePanel stop={S.puzzle} tiles={S.tiles} onTap={tap} onLeave={() => S.set({ puzzle: null })} />}
       {S.started && !S.puzzle && !S.card && S.near && !S.done.includes(S.near.id) && <button onPointerDown={(e) => e.stopPropagation()} onClick={() => S.set({ puzzle: S.near })} className="absolute bottom-16 left-1/2 z-30 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-amber-300 px-5 font-semibold text-black shadow-lg"><Puzzle size={18} /> Nakışı onar</button>}
-      {S.started && !S.puzzle && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · fareyle bak</span></Hint>}
+      {S.started && !S.puzzle && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · W/S yürü · tıkla, fareyle bak (Esc: bırak)</span></Hint>}
       {S.card && !S.listOpen && <InfoCard kicker={`Nakış ${S.done.indexOf(S.card.id) + 1} / ${STOPS.length} · ${S.card.motifName}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} />}
       {!S.started && <TitleCard kicker="Ağrı · Doğubayazıt · 18. yüzyıl" title="İshak Paşa Sarayı: Taşın Nakışı" note="Plan stilizedir; motifler saraydaki süslemelerden esinlenilmiş temsilî çizimlerdir." cta="Taç kapıdan gir" icon={<Puzzle size={18} />} onStart={() => { audio.unlock(); S.set({ started: true }); }}>
         <p>Ağrı Dağı’na bakan sarayın avlularını gez. Her durakta yüzyıllar içinde aşınmış bir taş süsleme var: parçalara dokunarak çevir, motifi tamamla, panoyu yerine oturt.</p>

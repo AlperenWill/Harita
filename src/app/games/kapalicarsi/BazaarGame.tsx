@@ -6,7 +6,7 @@
  * KAMERA: serbest kamera yok. Sokakta birinci şahıs (göz yüksekliği 1,62 m, adımda hafif sallanma); dükkâna girince kamera kendiliğinden
  * tezgâha yaklaşır, bir nesneye dokununca o nesneye yakınlaşır. Pusula şeridi yönü gösterir (ipuçları pusula yönüyle verilir).
  * KONTROLLER: dokunmatikte tek parmak sürükleme = yürü (yukarı: ileri) ve dön (yana); çift dokunuş = en yakın dükkânın kapısına git.
- * Masaüstünde WASD + fareyle sürükleyerek bakış; E: konuş / gir; Esc: dükkândan çık; çift tıklama = en yakın dükkân.
+ * Masaüstünde WASD (A/D yana adım) + tıkla ve fareyle bak (imleç kilidi, Esc bırakır); E: konuş / gir; Esc: dükkândan çık; çift tıklama = en yakın dükkân.
  * KALİTE: düşük/orta/yüksek + pil tasarrufu (kalabalık 100 kişiye iner, ışık huzmeleri ve sis kapanır).
  * Şanlıurfa ve öteki İstanbul oyunlarıyla tutarlılık: aynı cihaz profili, alttaki diyalog kutusu, daktilo + sesli okuma, WebGL yoksa fotoğraf yedeği.
  */
@@ -26,6 +26,7 @@ import { counterItems } from './items';
 import { DialogueBox } from './DialogueSystem';
 import { esnafTitle, type Clue, type Question } from './clues';
 import { bazaarAudio } from './BazaarAudio';
+import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
 
 /* ---------- cihaz profili ---------- */
 type Tier = 'low' | 'medium' | 'high';
@@ -67,6 +68,7 @@ export default function BazaarGame({ onExit }: { onExit: () => void }) {
 
 function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), [saver, setSaver] = useState(false);
+  const look = useMouseLook((dx, dy) => { live.yaw -= dx * LOOK_YAW; live.pitch = THREE.MathUtils.clamp(live.pitch - dy * LOOK_PITCH, -0.6, 0.9); live.autoYaw = null; }, () => { const s = useBz.getState(); return s.phase === 'street' && s.esnaf === null && !s.notebook; });
   const prof = useMemo(() => profile(tier, saver), [tier, saver]);
   const S = useBz();
   const keys = useRef(new Set<string>());
@@ -107,7 +109,7 @@ function Game({ onExit }: { onExit: () => void }) {
     };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
-    let raf = 0; const loop = () => { const k = keys.current; live.fwd = touch.current.fwd || (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); live.strafe = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0); live.turn = (k.has('ArrowRight') ? 1 : 0) - (k.has('ArrowLeft') ? 1 : 0); raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
+    let raf = 0; const loop = () => { const k = keys.current; live.fwd = touch.current.fwd || (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); live.strafe = (k.has('KeyD') ? 1 : 0) - (k.has('KeyA') ? 1 : 0); live.turn = 0;   /* kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle */ raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [enterShop, exitShop, talk]);
   useEffect(() => {
@@ -121,7 +123,7 @@ function Game({ onExit }: { onExit: () => void }) {
   // dokunma: tek parmak sürükleme = yürü/dön; fare sürükleme = bak; çift dokunuş/tıklama = en yakın dükkâna git
   const touch = useRef({ id: -1, x0: 0, y0: 0, lx: 0, ly: 0, fwd: 0, last: 0, mouse: false });
   const onDown = (e: React.PointerEvent) => {
-    bazaarAudio.unlock(); const s = useBz.getState(); if (s.phase !== 'street' || s.esnaf !== null) return; const T = touch.current, now = performance.now();
+    look.lock(e); bazaarAudio.unlock(); const s = useBz.getState(); if (s.phase !== 'street' || s.esnaf !== null) return; const T = touch.current, now = performance.now();
     if (now - T.last < 300) { const sh = nearestShop(s.L, live.x, live.z); live.auto = [...sh.door]; live.autoYaw = Math.atan2(sh.normal[0], sh.normal[1]); }   // çift dokunuş
     T.last = now; T.id = e.pointerId; T.x0 = T.lx = e.clientX; T.y0 = T.ly = e.clientY; T.mouse = e.pointerType === 'mouse';
   };
@@ -136,6 +138,7 @@ function Game({ onExit }: { onExit: () => void }) {
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#140e08] text-white" style={{ touchAction: 'none' }}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <LookCrosshair locked={look.locked} />
       <Canvas key={`${S.seed}-${S.night}`} dpr={prof.dpr} gl={{ antialias: prof.tier === 'high', powerPreference: 'high-performance' }} camera={{ fov: 70, near: 0.05, far: 160 }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
@@ -302,7 +305,7 @@ function Prompts({ onTalk, onEnter }: { onTalk: (id: number) => void; onEnter: (
         {prompt.esnaf !== null && <button onClick={() => onTalk(prompt.esnaf!)} className="flex h-12 items-center gap-2 rounded-full bg-amber-400 px-4 text-sm font-semibold text-black shadow-lg"><MessageCircle size={18} /> Konuş: {esnafTitle(L.esnaf[prompt.esnaf])}<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
         {prompt.shop !== null && <button onClick={() => onEnter(prompt.shop!)} className={`flex h-12 max-w-[70vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg ${visited.includes(prompt.shop) ? 'bg-black/60 text-white' : 'bg-white text-ink'}`}><DoorOpen size={18} className="shrink-0" /><span className="truncate">Dükkâna gir: {L.shops[prompt.shop].sign}</span><span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
       </div>
-      <p className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full bg-black/45 px-4 py-1.5 text-xs sm:block">WASD yürü · fareyle sürükle: bak · çift tıkla: en yakın dükkân · E: konuş/gir · J: defter</p>
+      <p className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full bg-black/45 px-4 py-1.5 text-xs sm:block">WASD yürü · tıkla, fareyle bak (Esc: bırak) · çift tıkla: en yakın dükkân · E: konuş/gir · J: defter</p>
       <p className="pointer-events-none absolute bottom-6 left-4 rounded-full bg-black/45 px-3 py-1.5 text-[11px] sm:hidden">Sürükle: yürü/dön · çift dokun: en yakın dükkân</p>
     </>
   );

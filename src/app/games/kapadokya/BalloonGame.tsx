@@ -64,8 +64,7 @@ function Game({ onExit }: { onExit: () => void }) {
     const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); if ((e.code === 'Escape' || e.code === 'KeyE') && useDb.getState().card) close(); };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
-    let raf = 0; const loop = () => { const k = keys.current, kb = (k.has('KeyW') || k.has('ArrowUp') || k.has('Space') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); live.input = hold.current || kb;
-      live.camYaw += ((k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0) - (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0)) * 0.03; raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
+    let raf = 0; const loop = () => { const k = keys.current, kb = (k.has('KeyW') || k.has('ArrowUp') || k.has('Space') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); live.input = hold.current || kb; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: sürükle ya da tekerlekle raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [close]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __balon: unknown }).__balon = { tp: (x: number, z: number, agl = 60) => { live.b = { x, z, y: heightAt(x, z) + agl, vy: 0 }; useDb.getState().set({ started: true }); }, cam: (y: number, p = 0.25) => { live.camYaw = y; live.camPitch = p; }, state: () => ({ ...useDb.getState(), b: { ...live.b } }), SPOTS }; }, []);

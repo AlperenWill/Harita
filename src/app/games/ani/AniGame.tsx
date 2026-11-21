@@ -37,7 +37,7 @@ function Game({ onExit }: { onExit: () => void }) {
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
   const shoot = useCallback(() => { const s = useDb.getState(), n = s.near; if (!n || !s.framed || s.album.includes(n.id)) return;
     audio.click(); audio.tone(true); s.set({ album: [...s.album, n.id], card: n, flash: Date.now() }); audio.speak(`${n.name}. ${n.text}`); }, []);
-  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); if (e.code === 'Space' || e.code === 'Enter') shoot(); }, () => audio.unlock());
+  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); if (e.code === 'Space' || e.code === 'Enter') shoot(); }, () => audio.unlock(), () => { const s = useDb.getState(); return s.started && !s.card && !s.albumOpen; });
   const pending = S.near && !S.album.includes(S.near.id) && !S.card && !S.albumOpen;
   const goTo = useCallback((i: number) => { if (i < 0 || i >= SHOTS.length) return; nav.to = SHOTS[i].s; nav.speed = Math.max(18, Math.abs(nav.to - live.s) / 3); useDb.getState().set({ card: null, albumOpen: false }); audio.hush(); }, []);
   const restart = useCallback(() => { audio.hush(); Object.assign(live, newLive()); nav.to = null; useDb.setState({ ...INITIAL, started: true }); }, []);
@@ -67,7 +67,7 @@ function Game({ onExit }: { onExit: () => void }) {
       {S.albumOpen && <Album album={S.album} onGo={goTo} onRead={(x) => { S.set({ albumOpen: false, card: x }); audio.speak(`${x.name}. ${x.text}`); }} onRestart={restart} onClose={() => S.set({ albumOpen: false })} />}
       {pending && <Viewfinder name={S.near!.name} framed={S.framed} onShoot={shoot} />}
       {S.flash > 0 && <Flash key={S.flash} />}
-      {S.started && !pending && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · fareyle bak · Boşluk: çek</span></Hint>}
+      {S.started && !pending && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · W/S yürü · tıkla, fareyle bak (Esc: bırak) · Boşluk: çek</span></Hint>}
       {S.card && !S.albumOpen && <InfoCard kicker={`Fotoğraf ${S.album.indexOf(S.card.id) + 1} / ${SHOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} />}
       {!S.started && <TitleCard kicker="Kars · Arpaçay kıyısı · UNESCO Dünya Mirası" title="Ani: Bin Bir Kilise Kenti" note="Plan stilizedir; yapılar ve kanyonlar ölçekli değildir." cta="Surlardan gir" icon={<Camera size={18} />} onStart={() => { audio.unlock(); S.set({ started: true }); }}>
         <p>İki kanyonun arasındaki platoda kurulmuş Ortaçağ başkenti Ani’yi belgeleme ekibinin fotoğrafçısı olarak gez. Her yapının yanında vizör açılır: yapıyı ortala, deklanşöre bas, albümü doldur.</p>

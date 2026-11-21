@@ -48,7 +48,7 @@ function Game({ onExit }: { onExit: () => void }) {
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current, lr = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
-      if (!drag.current || drag.current.mouse) { if (useDb.getState().phase === 'boat') live.rudder = lr; else live.orbit += lr * dt * 1.2; }
+      if (!drag.current || drag.current.mouse) { if (useDb.getState().phase === 'boat') live.rudder = lr; }   // A/D yalnız teknede dümen; adada kamera fareyle sürüklenir, tekerlekle yaklaşır
       live.radius = THREE.MathUtils.clamp(live.radius + ((k.has('KeyS') || k.has('ArrowDown') ? 1 : 0) - (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0)) * dt * 8, 13, 28); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
@@ -65,7 +65,7 @@ function Game({ onExit }: { onExit: () => void }) {
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (useDb.getState().phase === 'boat') live.rudder = 0; drag.current = null; } };
 
   return (
-    <div className="fixed inset-0 select-none overflow-hidden bg-[#dce8f0]" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+    <div className="fixed inset-0 select-none overflow-hidden bg-[#dce8f0]" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onWheel={(e) => { if (useDb.getState().phase === 'island') live.radius = THREE.MathUtils.clamp(live.radius + e.deltaY * 0.01, 13, 28); }}>
       <Canvas shadows={tier !== 'low' ? 'soft' : false} dpr={dprFor(tier)} gl={{ antialias: tier === 'high' }} camera={{ fov: 58, near: 0.3, far: 6000, position: [-60, 20, 560] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.75; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
@@ -77,7 +77,7 @@ function Game({ onExit }: { onExit: () => void }) {
         {S.phase === 'island' && <div className="mx-auto max-w-[70vw] rounded-2xl bg-black/50 px-3 py-2 text-center text-xs text-white"><p className="flex items-center justify-center gap-1 font-semibold text-amber-300"><Search size={12} /> Kabartma {Math.min(S.found.length + 1, TARGETS.length)}/{TARGETS.length}</p>{next ? <p className="mt-0.5">{next.clue}</p> : <p className="mt-0.5">Bütün sahneleri buldun.</p>}</div>}
       </TopBar>
       {S.phase === 'boat' && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs text-white">Sağa-sola sürükle: dümen · rüzgâr tekneyi doğuya iter<span className="hidden [@media(pointer:fine)]:inline"> · A/D</span></p>}
-      {S.phase === 'island' && !S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs text-white">{S.wrong ?? <>Yatay sürükle: kilisenin çevresinde dön · dikey: yaklaş · kabartmaya dokun<span className="hidden [@media(pointer:fine)]:inline"> · A/D, W/S</span></>}</p>}
+      {S.phase === 'island' && !S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs text-white">{S.wrong ?? <>Yatay sürükle: kilisenin çevresinde dön · dikey: yaklaş · kabartmaya dokun<span className="hidden [@media(pointer:fine)]:inline"> · tekerlek: yaklaş</span></>}</p>}
       {S.phase === 'island' && !S.listOpen && !S.card && <NavRail onNext={() => orbitBy(Math.PI / 2)} onPrev={() => orbitBy(-Math.PI / 2)} onTurn={() => orbitBy(Math.PI)} onList={() => S.set({ listOpen: true, card: null })} nextDisabled={false} prevDisabled={false} listLabel="Kabartma listesi" />}
       {S.listOpen && <StopList title="Kabartmalar" items={TARGETS.map((x) => ({ id: x.id, name: S.found.includes(x.id) ? x.name : x.clue, done: S.found.includes(x.id) }))} doneLabel="Bulundu" todoLabel="Henüz bulunmadı · Git: o cepheye döner (ipucu)" onGo={goRelief} onRead={(i) => { const x = TARGETS[i]; S.set({ listOpen: false, card: x }); audio.speak(`${x.name}. ${x.text}`); }} onRestart={restart} onClose={() => S.set({ listOpen: false })} />}
       {S.card && !S.listOpen && <InfoCard kicker={`Kabartma ${S.found.indexOf(S.card.id) + 1} / ${TARGETS.length}`} title={S.card.name} text={S.card.text} source={{ title: 'Wikipedia — Akdamar Kilisesi', url: 'https://tr.wikipedia.org/wiki/Akdamar_Kilisesi' }} onClose={close} />}

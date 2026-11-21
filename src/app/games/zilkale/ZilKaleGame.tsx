@@ -30,6 +30,7 @@ import { activated, makeMorphUniforms, morphTarget, stepMorph } from './HistoryL
 import { alderGeometry, billboardGeometry, fernGeometry, fernTexture, fillInstances, makeWind, mossGeometry, rhodoGeometry, scatter, spruceCardTexture, spruceGeometry, windMaterial, type WindUniforms } from './ProceduralVegetation';
 import { Bridge, Castle, HemsinHouse, Mountains, mountainMat, PathRibbon, River, SUN_DIR, Serender, Terrain } from './OrganicArchitecture';
 import { zilAudio } from './ZilKaleAudio';
+import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
 
 const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
 const pinned = (() => { const q = new URLSearchParams(location.search).get('q'); return q === 'low' || q === 'medium' || q === 'high' ? (q as Tier) : null; })();
@@ -56,6 +57,7 @@ export default function ZilKaleGame({ onExit }: { onExit: () => void }) {
 
 function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), [saver, setSaver] = useState(() => location.search.includes('saver'));
+  const look = useMouseLook((dx, dy) => { live.yaw -= dx * LOOK_YAW; live.pitch = THREE.MathUtils.clamp(live.pitch - dy * LOOK_PITCH, -1, 0.9); }, () => { const s = useDb.getState(); return s.started && !s.card; });
   const plan = useMemo(() => fogPlan(tier, saver), [tier, saver]);
   const S = useDb();
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y0: number; y: number; mouse: boolean } | null>(null), lastTap = useRef(0);
@@ -80,7 +82,7 @@ function Game({ onExit }: { onExit: () => void }) {
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current;
       const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
-      const turn = (k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0) - (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0); live.yaw += turn * dt * 1.8; raf = requestAnimationFrame(loop); };
+      void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [close, goNext]);
@@ -91,6 +93,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
   // dokunmatik: dikey sürükleme = yürü, yatay = bak; fare: sürükleme = bak (iki eksen), W/S = yürü; çift dokunuş = sıradaki Tarih Katmanı
   const onDown = (e: React.PointerEvent) => {
+    look.lock(e);
     zilAudio.unlock(); if (!useDb.getState().started) return; const now = performance.now();
     if (now - lastTap.current < 300) goNext(); lastTap.current = now; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' };
   };
@@ -106,6 +109,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#b7c2c3] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <LookCrosshair locked={look.locked} />
       <Canvas dpr={plan.dpr} gl={{ antialias: plan.tier === 'high', powerPreference: 'high-performance' }} camera={{ fov: 62, near: 0.1, far: 1400, position: [20, 7, 18] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.0; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
@@ -134,7 +138,7 @@ function Game({ onExit }: { onExit: () => void }) {
       </div>
       {S.reveal && <p key={S.reveal} className="pointer-events-none absolute inset-x-0 top-[28%] text-center text-3xl font-bold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.6)] sm:text-4xl" style={{ animation: 'zkfade 4.2s ease-out forwards' }}>{S.reveal}<span className="mt-1 block text-sm font-normal text-white/85">sis aralanıyor</span></p>}
       <style>{'@keyframes zkfade{0%{opacity:0;transform:translateY(8px)}15%{opacity:1;transform:none}70%{opacity:1}100%{opacity:0}}'}</style>
-      {S.started && !S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">{S.summit ? 'Zil Kale · geri yürümek için aşağı sürükle' : 'Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki tarih izi'}<span className="hidden [@media(pointer:fine)]:inline"> · W/S · fareyle bak · N</span></p>}
+      {S.started && !S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">{S.summit ? 'Zil Kale · geri yürümek için aşağı sürükle' : 'Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki tarih izi'}<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · N</span></p>}
       {S.card && <Card l={S.card} onClose={close} />}
       {!S.started && <TitleCard onStart={start} />}
       {S.started && S.summit && allSeen && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}

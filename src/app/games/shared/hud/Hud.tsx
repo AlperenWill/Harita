@@ -75,7 +75,7 @@ export function Objective({ label, done, total, icon }: { label: ReactNode; done
  * Ana görünüm: Devam et · Nasıl oynanır · Ayarlar · Baştan başla · Haritaya dön. Ayarlar ayrı sayfa: ses, sesli anlatım. */
 export function GameMenu({ help, onRestart, onExit, onPause, tts = true, look = true }: { help?: ReactNode; onRestart?: () => void; onExit: () => void; onPause?: (paused: boolean) => void; /** sesli anlatım ayarı gösterilsin mi */ tts?: boolean; /** bakış hassasiyeti ayarı gösterilsin mi */ look?: boolean }) {
   const [view, setView] = useState<null | 'main' | 'settings' | 'help'>(null);
-  const open = (v: typeof view) => { setView(v); onPause?.(v !== null); };
+  const open = (v: typeof view) => { if (v && document.pointerLockElement) document.exitPointerLock?.(); setView(v); onPause?.(v !== null); };   // menü açılınca imleç serbest kalır
   const t = useTheme(), st = useSettings();
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Escape') open(view ? null : 'main'); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); });
   return (<>

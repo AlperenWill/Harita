@@ -1,12 +1,13 @@
 /**
  * Rotaya kilitli yürüyüş oyunları için ortak parçalar (Ani, İshak Paşa, Akdamar).
  * Troya / Efes / Pamukkale ile aynı sözleşme: ?q=low|medium|high, ?debug, tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek.
- * Dokunmatik: dikey sürükleme yürütür, yatay sürükleme bakar. Klavye: W/S yürü, A/D ya da oklar bak.
+ * Dokunmatik: dikey sürükleme yürütür, yatay sürükleme bakar. Masaüstü: W/S yürü, tıkla ve fareyle bak (imleç kilidi, Esc bırakır).
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
 import { ArrowLeft, BookOpen, Check, ChevronLeft, ChevronRight, ExternalLink, MapPin, RotateCcw, Undo2, X } from 'lucide-react';
 import { speakTr, type VoiceGender } from './voice';
+import { LOOK_PITCH, LOOK_YAW, useMouseLook } from './mouseLook';
 
 export type Tier = 'low' | 'medium' | 'high';
 export const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
@@ -56,7 +57,9 @@ export class WalkAudio {
 export interface Live { s: number; v: number; input: number; yaw: number; pitch: number }
 export const newLive = (): Live => ({ s: 0, v: 0, input: 0, yaw: 0, pitch: 0 });
 /** Klavye döngüsü ve işaretçi işleyicileri. canMove false iken sürükleme yalnızca bakış içindir. */
-export function useWalkInput(live: Live, enabled: () => boolean, onKey?: (e: KeyboardEvent) => void, unlock?: () => void) {
+/** lookEnabled: fareyle bakış (imleç kilidi) ne zaman açık olsun; kart/bulmaca açıkken false ver ki düğmelere tıklanabilsin */
+export function useWalkInput(live: Live, enabled: () => boolean, onKey?: (e: KeyboardEvent) => void, unlock?: () => void, lookEnabled: () => boolean = enabled) {
+  const look = useMouseLook((dx, dy) => { live.yaw -= dx * LOOK_YAW; live.pitch = THREE.MathUtils.clamp(live.pitch - dy * LOOK_PITCH, -1, 0.9); }, lookEnabled);
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y0: number; y: number; mouse: boolean } | null>(null), keyCb = useRef(onKey); keyCb.current = onKey;
   useEffect(() => {
     const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); if (!e.repeat) keyCb.current?.(e); };
@@ -64,12 +67,13 @@ export function useWalkInput(live: Live, enabled: () => boolean, onKey?: (e: Key
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current; const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
-      live.yaw += ((k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0) - (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0)) * dt * 1.8; raf = requestAnimationFrame(loop); };
+      void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: bakış fareyle (imleç kilidi) ya da sürüklemeyle
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [live]);
   return {
-    onPointerDown: (e: React.PointerEvent) => { unlock?.(); if (!enabled()) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; },
+    locked: look.locked,
+    onPointerDown: (e: React.PointerEvent) => { unlock?.(); look.lock(e); if (!enabled()) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; },
     onPointerMove: (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; },
     onPointerUp: (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (!drag.current.mouse) live.input = 0; drag.current = null; } },
   };

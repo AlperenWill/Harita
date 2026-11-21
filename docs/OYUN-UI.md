@@ -29,6 +29,13 @@ Bütün oyunlar aynı arayüzü kullanır: `src/app/games/shared/hud/Hud.tsx`. �
 
 Oyunda kullanımı: `const G = useSettings()`; kademe `initialTier(G)`, otomatik düşürme `adaptive(G) && <PerformanceMonitor …>`, ses `audio.setMuted(G.muted)`, `audio.setVolume(G.volume)`, anlatım `useSettings.getState().tts`, sürükleme hızı `× sensitivity`.
 
+## Kamera ve kontroller (masaüstü)
+- Kamera klavyeyle (A/D, sol/sağ oklar) **çevrilmez**.
+- Birinci şahıs oyunlar (Ani, İshak Paşa, Troya, Efes, Pamukkale, Zil Kale, Kapalıçarşı, Yerebatan): sahneye tıkla → imleç kilitlenir, fareyle bak; Esc imleci bırakır. Kart, bulmaca ya da menü açılınca kilit kendiliğinden bırakılır. Ortak kod: `src/app/games/shared/mouseLook.tsx` (`useMouseLook`, `LookCrosshair`).
+- W/S (ve oklar yukarı/aşağı) yürür. A/D yalnız serbest yürünen oyunlarda yana adımdır (Kapalıçarşı, Yerebatan, Kız Kulesi) ya da teknede dümendir (Akdamar).
+- Üçüncü şahıs ve yörünge kameraları (Kapadokya, Akdamar adası, Ayasofya, Topkapı, Nemrut, Hattuşa, Dolmabahçe): fareyle sürükleyerek döndür; Akdamar'da tekerlek yaklaştırır.
+- Dokunmatik değişmedi: dikey sürükleme yürür, yatay sürükleme bakar.
+
 ## Bir oyunu geçirmek
 1. Eski üst sıra, kart, başlık ve bitiş bileşenlerini kaldır.
 2. `<Hud theme>` içine `TopBar` (`objective`, `right={<GameMenu onPause …/>}`), ana kontroller için `ActionDock`, kartlar için `InfoSheet`, `StartSheet` ve `EndSheet` koy.

@@ -15,6 +15,7 @@ import { create } from 'zustand';
 import { ArrowLeft, Captions, CaptionsOff, ExternalLink, Layers, Pickaxe, Volume2, VolumeX, X } from 'lucide-react';
 import { LAYERS, ROUTE_LEN, STOPS, TRENCH, MOUND, heightAt, isCorrect, nearStop, routeAt, type Stop } from './site';
 import { speakTr } from '../shared/voice';
+import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
 import { Polish, SkyEnvironment } from '../shared/Polish';
 
 type Tier = 'low' | 'medium' | 'high';
@@ -52,6 +53,7 @@ export default function TroyaGame({ onExit }: { onExit: () => void }) {
 }
 function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), S = useDb();
+  const look = useMouseLook((dx, dy) => { live.yaw -= dx * LOOK_YAW; live.pitch = THREE.MathUtils.clamp(live.pitch - dy * LOOK_PITCH, -1, 0.9); }, () => { const s = useDb.getState(); return s.started && !s.card && !s.quiz; });
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y0: number; y: number; mouse: boolean } | null>(null);
   useEffect(() => { audio.setMuted(S.muted); }, [S.muted]);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: 0 }); }, []);
@@ -66,12 +68,12 @@ function Game({ onExit }: { onExit: () => void }) {
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current; const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
-      live.yaw += ((k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0) - (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0)) * dt * 1.8; raf = requestAnimationFrame(loop); };
+      void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [close, answer]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __troya: unknown }).__troya = { go: (s: number) => { live.s = s; useDb.getState().set({ started: true }); }, look: (y: number, p = 0) => { live.yaw = y; live.pitch = p; }, answer, state: () => ({ ...useDb.getState(), s: live.s }), STOPS, ROUTE_LEN }; }, [answer]);
-  const onDown = (e: React.PointerEvent) => { audio.unlock(); if (!useDb.getState().started) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
+  const onDown = (e: React.PointerEvent) => { audio.unlock(); look.lock(e); if (!useDb.getState().started) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
   const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; };
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (!drag.current.mouse) live.input = 0; drag.current = null; } };
   const quizzes = STOPS.filter((s) => s.answer);
@@ -79,6 +81,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dfe7ec] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <LookCrosshair locked={look.locked} />
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 1500, position: [120, 20, 110] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.85; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
@@ -91,7 +94,7 @@ function Game({ onExit }: { onExit: () => void }) {
         {S.started && <div className="mx-auto rounded-2xl bg-black/45 px-3 py-2 text-xs"><p className="mb-1 flex items-center justify-center gap-1"><Layers size={12} /> Katmanlar · {S.solved.filter((id) => quizzes.some((q) => q.id === id)).length}/{quizzes.length}</p>
           <div className="flex gap-0.5">{LAYERS.map((l) => <span key={l.n} className={`rounded px-1.5 py-0.5 font-semibold ${solvedLayers.has(l.n) ? 'text-black' : 'text-white/50'}`} style={{ background: solvedLayers.has(l.n) ? l.color : 'rgba(255,255,255,.08)' }}>{l.n}</span>)}</div></div>}
       </div>
-      {S.started && !S.card && !S.quiz && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · fareyle bak · 1/2/3: cevap</span></p>}
+      {S.started && !S.card && !S.quiz && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · 1/2/3: cevap</span></p>}
       {S.quiz && <Quiz q={S.quiz} wrong={S.wrong} onPick={answer} />}
       {S.card && <Card s={S.card} onClose={close} />}
       {!S.started && <TitleCard onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
