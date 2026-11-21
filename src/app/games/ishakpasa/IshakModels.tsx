@@ -8,7 +8,7 @@ import { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { heightAt, type Stop } from './site';
 import { rng, type Tier } from '../shared/walkKit';
-import { archGeo, bx, groundTex, stoneTex, useGrassCards, weather } from '../shared/scenery';
+import { archGeo, bx, groundTex, mountainGeo, stoneTex, useGrassCards, weather } from '../shared/scenery';
 import { motifURL } from './motif';
 
 export const SUN_DIR = new THREE.Vector3(0.55, 0.5, 0.67).normalize();   // güneydoğudan sabah ışığı: oyuncunun baktığı doğu ve güney cepheler aydınlık
@@ -71,13 +71,7 @@ export function Boulders({ m, n }: { m: Mats; n: number }) {
 }
 /** Ağrı Dağı: gürültülü dönel profil, köşe renkleriyle kar örtüsü; yanında Küçük Ağrı (ölçekli değil) */
 export function Mountain() {
-  const make = (R: number, H: number, seed: number, snow: number) => { const r = rng(seed), pts: THREE.Vector2[] = []; for (let i = 0; i <= 24; i++) { const t = i / 24; pts.push(new THREE.Vector2(R * (1 - t) ** 1.35 + 0.01, H * t)); }
-    const g = new THREE.LatheGeometry(pts, 64); const p = g.attributes.position as THREE.BufferAttribute, col = new Float32Array(p.count * 3), c = new THREE.Color(), rockC = new THREE.Color('#7d7a7e'), snowC = new THREE.Color('#f5f7fa'), low = new THREE.Color('#9a8e78');
-    const ridges = Array.from({ length: 9 }, () => [r() * Math.PI * 2, 0.04 + r() * 0.06]);
-    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(z, x); let k = 1; for (const [ra, amp] of ridges) k += amp * Math.cos((a - ra) * 3) * Math.sin(y / H * Math.PI); p.setXYZ(i, x * k, y, z * k);
-      const t = y / H, sn = THREE.MathUtils.smoothstep(t + 0.06 * Math.sin(a * 7), snow - 0.05, snow + 0.05); c.copy(low).lerp(rockC, Math.min(1, t * 2.5)).lerp(snowC, sn); col.set([c.r, c.g, c.b], i * 3); }
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); return g; };
-  const big = useMemo(() => make(2000, 1500, 3, 0.58), []), small = useMemo(() => make(1000, 760, 5, 0.85), []);
+  const big = useMemo(() => mountainGeo(2000, 1500, 3, 0.58), []), small = useMemo(() => mountainGeo(1000, 760, 5, 0.85), []);
   return (<group position={[900, -20, -3400]} userData={{ noCast: true }}>
     <mesh geometry={big}><meshStandardMaterial vertexColors roughness={0.95} /></mesh>
     <mesh geometry={small} position={[-1750, 0, 700]}><meshStandardMaterial vertexColors roughness={0.95} /></mesh>

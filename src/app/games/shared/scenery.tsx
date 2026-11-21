@@ -105,3 +105,12 @@ export function Clouds() {
   return <group>{list.map((c, i) => <sprite key={i} position={c.p} scale={[c.s, c.s * 0.45, 1]}><spriteMaterial map={tex} transparent depthWrite={false} fog={false} opacity={0.85} /></sprite>)}</group>;
 }
 
+
+/** Dağ: gürültülü dönel profil, sırtlar ve köşe renkleriyle kar örtüsü (snow: karın başladığı yükseklik oranı) */
+export function mountainGeo(R: number, H: number, seed: number, snow: number, low = '#9a8e78') { const r = rng(seed), pts: THREE.Vector2[] = []; for (let i = 0; i <= 24; i++) { const t = i / 24; pts.push(new THREE.Vector2(R * (1 - t) ** 1.35 + 0.01, H * t)); }
+    const g = new THREE.LatheGeometry(pts, 64); const p = g.attributes.position as THREE.BufferAttribute, col = new Float32Array(p.count * 3), c = new THREE.Color(), rockC = new THREE.Color('#7d7a7e'), snowC = new THREE.Color('#f5f7fa'), lowC = new THREE.Color(low);
+    const ridges = Array.from({ length: 9 }, () => [r() * Math.PI * 2, 0.04 + r() * 0.06]);
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), a = Math.atan2(z, x); let k = 1; for (const [ra, amp] of ridges) k += amp * Math.cos((a - ra) * 3) * Math.sin(y / H * Math.PI); p.setXYZ(i, x * k, y, z * k);
+      const t = y / H, sn = THREE.MathUtils.smoothstep(t + 0.06 * Math.sin(a * 7), snow - 0.05, snow + 0.05); c.copy(lowC).lerp(rockC, Math.min(1, t * 2.5)).lerp(snowC, sn); col.set([c.r, c.g, c.b], i * 3); }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
+}
