@@ -51,3 +51,14 @@ export function trackBeam(hold: Record<string, number>, found: string[], eye: V3
   }
   return { hold: next, newly };
 }
+
+/** Fenerin şu an aydınlattığı (henüz bulunmamış) arma: oyuncu E'ye basınca bulunur — kendiliğinden bulunmaz */
+export function aimedCrest(found: string[], eye: V3, dir: V3): string | null {
+  for (const c of CRESTS) if (!found.includes(c.id) && inBeam(eye, dir, c.pos)) return c.id;
+  return null;
+}
+
+/** Birinci şahıs: yürünebilir alan (duvarlardan 0,4 m içeride) ve merdivene açılan kapı */
+export const DUNGEON_AREA = { kind: 'rect' as const, minX: -DUNGEON.wid / 2 + 0.4, maxX: DUNGEON.wid / 2 - 0.4, minZ: -DUNGEON.len / 2 + 0.4, maxZ: DUNGEON.len / 2 - 0.4 };
+export const DOOR: [number, number] = [-1.6, -DUNGEON.len / 2];
+export const DOOR_REACH = 1.3;

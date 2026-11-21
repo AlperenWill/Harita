@@ -108,6 +108,7 @@ function Game({ onExit }: { onExit: () => void }) {
       keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useBz.getState(); if (e.repeat) return;
       if (e.code === 'KeyE' && s.phase === 'street' && s.esnaf === null) { if (s.prompt.esnaf !== null) talk(s.prompt.esnaf); else if (s.prompt.shop !== null) enterShop(s.prompt.shop); }
+      if (e.code === 'Escape' && (s.esnaf !== null || s.picked !== null || s.phase !== 'street')) e.preventDefault();
       if (e.code === 'Escape') { if (s.esnaf !== null) s.set({ esnaf: null }); else if (s.picked !== null) s.set({ picked: null }); else exitShop(); }
       if (e.code === 'KeyJ') s.set({ notebook: !s.notebook });
     };
@@ -161,7 +162,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
       <TopRow onExit={onExit} objective={S.phase !== 'title' ? <Objective icon={<Search size={15} />} label={`Kayıp: ${p.item.name} · ${S.clues.length} ipucu · ${S.visited.length} dükkân`} /> : undefined}
         right={<>{S.phase !== 'title' && <IconButton label="Defter" active={S.notebook} onClick={() => S.set({ notebook: !S.notebook })}><BookOpen size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onRestart={() => newBazaar()} onExit={onExit} /></>} />
-      {S.phase === 'street' && <div className="pointer-events-none absolute inset-x-0 top-[176px] z-20 flex justify-center sm:top-[124px]"><Compass /></div>}
+      {S.phase === 'street' && <div className="pointer-events-none absolute inset-x-0 top-[176px] z-20 flex justify-center sm:top-[68px]"><Compass /></div>}
       {S.notebook && S.phase !== 'title' && <Notebook onClose={() => S.set({ notebook: false })} />}
 
       {S.phase === 'street' && S.esnaf === null && <Prompts onTalk={talk} onEnter={enterShop} />}
@@ -355,7 +356,7 @@ function Toast() {
   const t = useBz((s) => s.toast), [show, setShow] = useState(true);
   useEffect(() => { const id = setTimeout(() => setShow(false), t && !t.ok ? 5500 : 3000); return () => clearTimeout(id); }, [t]);
   if (!t || !show) return null;
-  return <div className="pointer-events-none absolute left-1/2 top-[124px] z-50 sm:top-[72px] max-w-[90vw] -translate-x-1/2 rounded-2xl px-4 py-2 text-center text-sm font-semibold shadow-xl" style={{ background: '#f7f5f1', color: t.ok ? '#1f9d63' : '#b5452f' }}>{t.text}</div>;
+  return <div className="pointer-events-none absolute left-1/2 top-[68px] z-50 sm:top-[72px] max-w-[90vw] -translate-x-1/2 rounded-2xl px-4 py-2 text-center text-sm font-semibold shadow-xl" style={{ background: '#f7f5f1', color: t.ok ? '#1f9d63' : '#b5452f' }}>{t.text}</div>;
 }
 function TitleCard({ onStart, onReroll, onNight, onExit }: { onStart: () => void; onReroll: () => void; onNight: (n: boolean) => void; onExit?: () => void }) {
   const { L, night } = useBz();

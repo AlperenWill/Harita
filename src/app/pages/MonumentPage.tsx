@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Controls as HudControls, GameMenu, HudTheme, Objective, TopRow } from '../games/shared/hud/Hud';
 import { autoTier, useSettings } from '../games/shared/hud/settings';
 import { useRef } from 'react';
-import { Landmark, DoorOpen, Footprints, Home, Lightbulb, Moon, Plane, RotateCw, Sun, Sunrise, Sunset, X } from 'lucide-react';
+import { ExternalLink, Search, Landmark, DoorOpen, Footprints, Home, Lightbulb, Moon, Plane, RotateCw, Sun, Sunrise, Sunset, X } from 'lucide-react';
 import { walkInput } from '../monuments/walkInput';
 import { MONUMENTS } from '../monuments/registry';
 import { useMonumentStore } from '../monuments/store';
@@ -11,6 +11,7 @@ import { supportsWebGL, useDeviceProfile } from '../monuments/useDeviceProfile';
 import type { MonumentData, TimeOfDay } from '../monuments/types';
 import { PLAZA, MAUSOLEUM, LION_ROAD, HOTSPOTS, STAIRS, STAIRS_DEPTH, STAIR_X0, WALK, buildings, towers } from '../monuments/anitkabir/layout';
 import NotFound from './NotFound';
+import { interact } from '../monuments/anitkabir/interact';
 
 const TIMES: { id: TimeOfDay; label: string; icon: typeof Sun }[] = [
   { id: 'sabah', label: 'Sabah', icon: Sunrise }, { id: 'ogle', label: 'Öğle', icon: Sun },
@@ -47,9 +48,11 @@ export default function MonumentPage() {
       {supportsWebGL && <Controls />}
       {supportsWebGL && <WalkPad />}
       <InfoPanel data={data} />
+      {supportsWebGL && <WalkPrompt />}
+      <ExhibitCard />
 
       {isMobile && portrait && !hintClosed && (
-        <div className="absolute inset-x-3 top-[124px] z-40 flex items-center gap-3 rounded-xl bg-[#f7f5f1]/95 px-3 py-2.5 text-sm text-[#1f1b17] shadow-lg ring-1 ring-black/5" role="status">
+        <div className="absolute inset-x-3 top-[68px] z-40 flex items-center gap-3 rounded-xl bg-[#f7f5f1]/95 px-3 py-2.5 text-sm text-[#1f1b17] shadow-lg ring-1 ring-black/5" role="status">
           <RotateCw size={18} className="shrink-0 text-brand" />
           <span className="flex-1">Daha geniş bir görüş için telefonunu yatay çevir.</span>
           <button onClick={() => setHintClosed(true)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label="Kapat"><X size={16} /></button>
@@ -68,7 +71,7 @@ function TopBar({ data }: { data: MonumentData }) {
       <TopRow onExit={() => navigate('/harita')} objective={<Objective icon={<Landmark size={15} />} label={`${data.metadata.name} · ${data.metadata.city} · ${data.metadata.built}`} />}
         right={<GameMenu tts={false} look={false} help={<HudControls items={[
           { icon: <Plane size={16} />, text: <>Kuşbakışı: sürükle döndür, iki parmak ya da tekerlek yakınlaştır</> },
-          { icon: <Footprints size={16} />, text: <>Yürü: joystick ya da <b>WASD</b>; noktalara dokun, bilgi kartını aç</> },
+          { icon: <Footprints size={16} />, text: <>Yürü: joystick ya da <b>WASD</b>; bir şeyin yanında <b>E</b>: incele · Misak-ı Millî Kulesi'nden müzeye gir</> },
           { icon: <Sun size={16} />, text: <>Alttaki düğmeler: günün saati</> },
         ]} />} onExit={() => navigate('/harita')} />} />
     </HudTheme>
@@ -111,6 +114,34 @@ function Controls() {
         </>
       )}
     </div>
+  );
+}
+
+/** Yürürken yakındaki kapı / incelenebilir nokta: kart yalnızca E'ye ya da düğmeye basınca açılır */
+function WalkPrompt() {
+  const walking = useMonumentStore((s) => s.mode === 'walk'), prompt = useMonumentStore((s) => s.prompt), open = useMonumentStore((s) => !!s.exhibit);
+  if (!walking || !prompt || open) return null;
+  const door = prompt.id.startsWith('door:');
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-[132px] z-40 flex justify-center px-4 sm:bottom-24">
+      <button onClick={interact} className={`pointer-events-auto flex h-12 max-w-full items-center gap-2 rounded-full pl-4 pr-2 text-sm font-semibold shadow-xl ${door ? 'bg-brand text-white' : 'bg-white/95 text-ink'}`}>
+        {door ? <DoorOpen size={18} /> : <Search size={18} />}<span className="truncate">{prompt.label}</span>
+        <kbd className={`ml-1 grid h-8 min-w-8 place-items-center rounded-full px-2 font-sans text-xs font-bold ${door ? 'bg-white/25' : 'bg-black/5'}`}>E</kbd>
+      </button>
+    </div>
+  );
+}
+function ExhibitCard() {
+  const ex = useMonumentStore((s) => s.exhibit);
+  if (!ex) return null;
+  return (
+    <aside className="absolute bottom-3 left-3 right-3 z-40 max-h-[55%] animate-fade-up overflow-y-auto rounded-2xl border border-line bg-white/95 p-5 shadow-2xl backdrop-blur sm:bottom-auto sm:left-auto sm:top-16 sm:w-[380px]">
+      <button onClick={() => useMonumentStore.getState().set({ exhibit: null })} className="absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-xl text-ink-muted hover:bg-slate-100" aria-label="Kartı kapat"><X size={18} /></button>
+      <p className="pr-10 text-xs font-semibold uppercase tracking-wide text-brand">{ex.kicker}</p>
+      <h2 className="mt-1 pr-10 text-xl font-bold">{ex.title}</h2>
+      <p className="mt-3 text-sm leading-relaxed text-ink-muted">{ex.text}</p>
+      {ex.source && <a href={ex.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-ink-muted underline underline-offset-2">{ex.source.title} <ExternalLink size={12} /></a>}
+    </aside>
   );
 }
 
@@ -172,7 +203,7 @@ function WalkPad() {
       </div>
       {hint && (
         <p className="pointer-events-none absolute left-1/2 top-20 z-30 -translate-x-1/2 rounded-xl bg-ink/85 px-4 py-2 text-center text-sm text-white" role="status">
-          <span className="[@media(pointer:coarse)]:hidden">WASD ile yürü, fareyi sürükleyerek etrafa bak. Shift: hızlı yürü.</span>
+          <span className="[@media(pointer:coarse)]:hidden">WASD ile yürü, fareyi sürükleyerek etrafa bak. E: incele / kapıdan geç. Shift: hızlı yürü.</span>
           <span className="[@media(pointer:fine)]:hidden">Soldaki joystick ile yürü, ekranı sürükleyerek etrafa bak.</span>
         </p>
       )}

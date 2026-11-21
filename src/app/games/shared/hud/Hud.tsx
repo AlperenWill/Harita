@@ -14,7 +14,7 @@
  * Oyuna özgü tek şey VURGU rengidir (accent): ana düğme, ilerleme, başlık üstü etiket.
  */
 import { useSettings, urlQuality, type Quality } from './settings';
-import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ArrowLeft, BatteryLow, BookOpen, ExternalLink, HelpCircle, Menu, RotateCcw, Settings, Volume2, VolumeX, X, Captions, CaptionsOff, Map as MapIcon, Play } from 'lucide-react';
 
 /* ---------- tema ---------- */
@@ -45,18 +45,15 @@ export function IconButton({ label, onClick, active, children }: { label: string
     className={`pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-full transition active:scale-95 ${GLASS}`} style={active ? { background: t.accent, color: t.accentInk ?? '#fff' } : undefined}>{children}</button>;
 }
 /** Sol üst: haritaya dön — her oyunda aynı yerde, aynı biçimde */
-export function BackButton({ onClick }: { onClick: () => void }) {
-  return <button onClick={onClick} onPointerDown={stop} aria-label="Haritaya dön" className={`pointer-events-auto inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full pl-3 pr-4 text-sm font-semibold transition active:scale-95 ${GLASS}`}><ArrowLeft size={18} /><span>Harita</span></button>;
-}
 
 /* ---------- üst sıra ---------- */
 /** Üst sıra: sol geri, orta görev, sağ ses + menü. Telefonda görev ikinci satıra iner. */
-export function TopBar({ onExit, objective, right }: { onExit: () => void; objective?: ReactNode; right?: ReactNode }) {
+/** Üst çubuk: ortada görev, sağda ≡ menü (haritaya dönüş menünün içinde; sol üstte ayrı geri düğmesi yok). onExit uyumluluk için kalır. */
+export function TopBar({ objective, right }: { onExit?: () => void; objective?: ReactNode; right?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start gap-2">
-      <BackButton onClick={onExit} />
-      {objective && <div className="order-3 flex w-full justify-center sm:order-none sm:w-auto sm:flex-1">{objective}</div>}
-      <div className="ml-auto flex gap-2">{right}</div>
+    <div className="flex items-start gap-2">
+      <div className="flex min-w-0 flex-1 justify-center">{objective}</div>
+      <div className="flex shrink-0 gap-2">{right}</div>
     </div>
   );
 }
@@ -84,7 +81,9 @@ export function GameMenu({ help, onRestart, onExit, onPause, tts = true, look = 
   const [view, setView] = useState<null | 'main' | 'settings' | 'help'>(null);
   const open = (v: typeof view) => { if (v && document.pointerLockElement) document.exitPointerLock?.(); setView(v); onPause?.(v !== null); };   // menü açılınca imleç serbest kalır
   const t = useTheme(), st = useSettings();
-  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Escape') open(view ? null : 'main'); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); });
+  // Esc: menüyü aç/kapat. Oyun Esc'i bir kartı/bulmacayı kapatmak için kullandıysa (preventDefault) menü açılmaz.
+  // Dinleyici sırası her çizimde değiştiği için karar, bütün dinleyiciler çalıştıktan sonra (setTimeout) verilir.
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Escape' && !e.repeat) setTimeout(() => { if (!e.defaultPrevented || view) open(view ? null : 'main'); }, 0); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); });
   return (<>
     <IconButton label="Menü" onClick={() => open('main')}><Menu size={20} /></IconButton>
     {view === 'main' && <Modal title="Duraklatıldı" onClose={() => open(null)}>
@@ -159,6 +158,21 @@ export function Hint({ children, fadeAfter = 7000 }: { children: ReactNode; fade
   useEffect(() => { setOn(true); const t = setTimeout(() => setOn(false), fadeAfter); return () => clearTimeout(t); }, [children, fadeAfter]);
   return <div className={`pointer-events-none absolute inset-x-0 bottom-[max(16px,env(safe-area-inset-bottom))] flex justify-center px-24 transition-opacity duration-700 ${on ? 'opacity-100' : 'opacity-0'}`}><p className={`rounded-full px-4 py-2 text-center text-xs font-medium ${GLASS}`}>{children}</p></div>;
 }
+/**
+ * Etkileşim istemi: oyuncu bir şeyin yanındayken çıkar ("İncele: …  E"). Bilgi kartı, bulmaca ya da konuşma ASLA kendiliğinden açılmaz;
+ * oyuncu E'ye basar ya da bu düğmeye dokunur. Alt ortada, ipucunun üstünde; dokunmatikte başparmakla erişilir.
+ */
+export function InteractPrompt({ label, onClick, icon, keyLabel = 'E', muted }: { label: ReactNode; onClick: () => void; icon?: ReactNode; keyLabel?: string; muted?: boolean }) {
+  const t = useTheme();
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-[calc(max(16px,env(safe-area-inset-bottom))+92px)] z-40 flex justify-center px-4 sm:bottom-[calc(max(16px,env(safe-area-inset-bottom))+56px)] sm:px-20">
+      <button onPointerDown={stop} onClick={onClick} className={`pointer-events-auto flex h-12 max-w-full items-center gap-2 rounded-full pl-4 pr-2 text-sm font-semibold transition active:scale-95 ${muted ? GLASS : 'shadow-[0_10px_30px_rgba(31,27,23,0.3)]'}`} style={muted ? undefined : { background: t.accent, color: t.accentInk ?? '#fff' }}>
+        {icon}<span className="truncate">{label}</span>
+        <kbd className={`ml-1 grid h-8 min-w-8 place-items-center rounded-full px-2 font-sans text-xs font-bold ${muted ? 'bg-black/5' : 'bg-white/25'}`}>{keyLabel}</kbd>
+      </button>
+    </div>
+  );
+}
 /** Sağ alt ana kontrol yuvası (başparmak bölgesi) */
 export function ActionDock({ children }: { children: ReactNode }) {
   return <div className="pointer-events-auto absolute bottom-[max(16px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] flex flex-col items-center gap-3" onPointerDown={stop}>{children}</div>;
@@ -172,7 +186,7 @@ export function RoundAction({ label, primary, size = 64, children, ...handlers }
 export function ToolPanel({ title, children, defaultOpen = true }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className={`pointer-events-auto absolute left-[max(12px,env(safe-area-inset-left))] top-[118px] w-max max-w-[46vw] rounded-2xl p-2.5 sm:top-[72px] ${GLASS}`} onPointerDown={stop}>
+    <div className={`pointer-events-auto absolute left-[max(12px,env(safe-area-inset-left))] top-[68px] w-max max-w-[46vw] rounded-2xl p-2.5 sm:top-[72px] ${GLASS}`} onPointerDown={stop}>
       <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-1 text-left text-xs font-bold" aria-expanded={open}>{title}<span className="ml-auto pl-2 text-[#857b70]">{open ? '−' : '+'}</span></button>
       {open && <div className="mt-1.5">{children}</div>}
     </div>
@@ -183,6 +197,9 @@ export function ToolPanel({ title, children, defaultOpen = true }: { title: Reac
 /** Alttan açılan bilgi paneli; masaüstünde sağ altta kart */
 export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { kicker: ReactNode; title: ReactNode; text: ReactNode; source?: { title: string; url: string }; onClose?: () => void; onListen?: () => void }) {
   const t = useTheme();
+  // Esc kartı kapatır (≡ menüyü açmaz)
+  const close = useRef(onClose); close.current = onClose;
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Escape' && close.current) { e.preventDefault(); close.current(); } }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
   return (
     <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-40 flex justify-center sm:inset-x-auto sm:bottom-[max(16px,env(safe-area-inset-bottom))] sm:right-[max(96px,env(safe-area-inset-right))]" onPointerDown={stop}>
       <div className={`max-h-[56vh] w-full overflow-y-auto rounded-t-3xl px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-2.5 sm:w-[400px] sm:rounded-3xl sm:pb-5 ${SOLID}`}>
@@ -204,7 +221,7 @@ export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { 
 export function Toast({ text, tone = 'info' }: { text: string | null; tone?: 'ok' | 'bad' | 'info' }) {
   if (!text) return null;
   const c = tone === 'ok' ? '#1f9d63' : tone === 'bad' ? '#d14343' : '#1f1b17';
-  return <div className="pointer-events-none absolute inset-x-0 top-[124px] flex justify-center px-4 sm:top-[72px]"><p className={`rounded-full px-4 py-2 text-center text-sm font-semibold ${GLASS}`} style={{ color: c }}>{text}</p></div>;
+  return <div className="pointer-events-none absolute inset-x-0 top-[68px] flex justify-center px-4 sm:top-[72px]"><p className={`rounded-full px-4 py-2 text-center text-sm font-semibold ${GLASS}`} style={{ color: c }}>{text}</p></div>;
 }
 
 /* ---------- başlangıç ve bitiş ---------- */

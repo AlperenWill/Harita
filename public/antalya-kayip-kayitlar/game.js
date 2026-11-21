@@ -654,6 +654,7 @@
     button(t("journal"),journal);
     button(t("settings"),()=>settings(()=>{state="playing";pause();}));
     button(t("menu"),menu);
+    button("← Haritaya dön",()=>{save();location.href="../harita";});   // Miras. Haritası: haritaya dönüş duraklatma menüsünde (sol üstte ayrı düğme yok)
   }
   function startAudio(){
     if(!prefs.sound) return;

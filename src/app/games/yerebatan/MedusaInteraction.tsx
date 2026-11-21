@@ -1,8 +1,8 @@
 /**
  * Medusa başları — model, vurgu ışığı, yaklaşma algılama, inceleme (yakınlaşma) modu ve bilgi paneli.
  *
- * Neden: Medusa başları sarnıcın "ödül" anı. Oyuncu kuzeybatı köşeye yürüdüğünde başlardan birine 3,2 m'den
- * yakın ve ona bakıyorsa (ışın küreye çarpıyor) inceleme modu kendiliğinden açılır: kamera platformun kenarındaki
+ * Neden: Medusa başları sarnıcın "ödül" anı. Oyuncu kuzeybatı köşede bir başa bakınca nişangâh parlar; E'ye / İncele'ye
+ * basınca (kendiliğinden değil) inceleme modu açılır: kamera platformun kenarındaki
  * sabit bir bakış noktasına süzülür, başa kilitlenir ve görüş açısı 70°'den 36°'ye yavaşça daralır (zoom).
  * Oyuncu bu sırada kamerayı çeviremez (serbest kamera yok); E / dokunma / Kapat ile çıkar ve kaldığı yerden yürür.
  * Gölge: sahnede yalnızca başlar ve giriş kapısı gölge üretir/alır; başların vurgu ışıkları gölgeli spot ışığıdır.
@@ -15,7 +15,7 @@ import { ExternalLink, X } from 'lucide-react';
 import { DECK_Y, MEDUSA, MEDUSA_Y, POIS, colX, rowZ, type Poi } from './cistern';
 import { stoneTextures } from './CisternScene';
 
-export const INSPECT_FOV = 36, NORMAL_FOV = 70, AUTO_DIST = 3.2;
+export const INSPECT_FOV = 36, NORMAL_FOV = 70;
 /** İnceleme bakış noktası: başın doğusundaki platform kenarı, baş hizasının biraz üstü */
 export function inspectPose(id: string) {
   const m = MEDUSA.find((x) => x.id === id)!, hx = colX(m.col[0]), hz = rowZ(m.col[1]);
@@ -90,7 +90,7 @@ export function InfoPanel({ poi, onClose, inspecting }: { poi: Poi | null; onClo
   const t = useTransition(poi, { keys: (p) => p?.id ?? 'none', from: { x: 40, opacity: 0 }, enter: { x: 0, opacity: 1 }, leave: { x: 40, opacity: 0 }, config: { tension: 240, friction: 24 } });
   return t((style, p) => p && (
     <animated.div style={{ transform: style.x.to((x) => `translateX(${x}px)`), opacity: style.opacity }}
-      className="pointer-events-auto absolute right-3 top-[124px] z-30 sm:top-[72px] w-[min(23rem,calc(100%-1.5rem))] rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4 shadow-[0_10px_30px_rgba(31,27,23,0.18)] backdrop-blur" role="dialog" aria-label={p.name}>
+      className="pointer-events-auto absolute right-3 top-[68px] z-30 sm:top-[72px] w-[min(23rem,calc(100%-1.5rem))] rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4 shadow-[0_10px_30px_rgba(31,27,23,0.18)] backdrop-blur" role="dialog" aria-label={p.name}>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-300">{p.kind === 'medusa' ? 'Medusa · inceleme' : p.kind === 'column' ? 'Sütun' : 'Bilgi'}</p>
       <h3 className="text-lg font-bold">{p.name}</h3>
       <p className="mt-1 text-sm text-[#4a433c]">{p.text}</p>

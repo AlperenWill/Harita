@@ -4,12 +4,14 @@
  *   kule   : dar merdiven. Oyuncu önden çıkar, Can arkadan gelir (behind) ve duvardaki taşlarda durdurup işaret ederek anlatır.
  *   teras  : çatı terası; Can manzarayı gösterir (iki yaka). Etkileşim düğmesi ek bilgi açar.
  *   donus  : iskelede veda; oyuncu vapura binince oyun biter.
- * Kamera her yerde otomatik takip eder; yön bölüme göre sabittir, oyuncu yalnızca yakınlaştırır.
+ * Kamera her yerde birinci şahıstır (göz hizası); bakış serbest (fare kilidi / sürükleme). Taşlarda Can kendiliğinden anlatmaz:
+ * "Can anlatmak istiyor" çıkar, oyuncu E'ye basınca başlar.
  */
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Character, CAN, PLAYER, newRig, type RigState } from './NPCController';
+import { Character, CAN, newRig, type RigState } from './NPCController';
+import { applyFp } from '../shared/fpLook';
 import { followTarget, stepToward } from './npc';
 import { DOOR, LEAD_ROUTE, PLAYER_START, ROOF_Y, SHAFT_HALF, STAIR_LEN, STONES, TERRACE_START, ISLAND, areaAt, heightAt, slide, stairAt, terraceOk, FERRY_YAW } from './island';
 import { DOCK, bob } from './ferry';
@@ -18,7 +20,7 @@ import { Gangboard, KizKulesi, LANDMARKS, Shores } from './TowerModel';
 import { Water, type FoamRefs } from './Water';
 import { mouthOpen } from './dialogue';
 import { now, useKiz, type Phase } from './store';
-import { walk } from './input';
+import { fpMove, view, walk } from './input';
 
 type Dev = { shadows: boolean; water: number; blocks: number };
 const SPEED = 2.4;
@@ -35,23 +37,15 @@ function applyDialogue(c: RigState, pl: RigState, targets: Partial<Record<string
   if (line && c.speed < 0.2) turn(c, c.point ? faceTo(c, c.point.x, c.point.z) : faceTo(c, pl.x, pl.z), dt, 4);
 }
 
-/** Sabit yönlü takip kamerası; hareket girdisini kameranın yönüne göre dünyaya çevirir */
-function useFollowCamera(target: React.MutableRefObject<RigState>, offset: THREE.Vector3, lookUp = 1.2) {
+/** Birinci şahıs kamera: oyuncunun göz hizası, bakış input.view'dan; ilk karede bakış başlangıç yönüne ayarlanır */
+function useEyeCamera(target: React.MutableRefObject<RigState>, startYaw: number, startPitch = 0) {
   const { camera } = useThree();
-  const pos = useRef<THREE.Vector3 | null>(null), want = useMemo(() => new THREE.Vector3(), []), look = useMemo(() => new THREE.Vector3(), []);
-  useFrame((_, raw) => {
-    const dt = Math.min(raw, 0.05), r = target.current, z = useKiz.getState().zoom;
-    want.set(r.x + offset.x * z, r.y + offset.y * z, r.z + offset.z * z);
-    if (!pos.current) pos.current = want.clone();
-    pos.current.lerp(want, 1 - Math.exp(-dt * 4));
-    camera.position.copy(pos.current); look.set(r.x, r.y + lookUp, r.z); camera.lookAt(look);
+  const st = useRef({ bob: 0, lx: target.current.x, lz: target.current.z });
+  useEffect(() => { view.yaw = startYaw; view.pitch = startPitch; (camera as THREE.PerspectiveCamera).fov = 66; (camera as THREE.PerspectiveCamera).updateProjectionMatrix(); }, [camera, startYaw, startPitch]);
+  useFrame(() => {
+    const r = target.current, S = st.current; S.bob += Math.hypot(r.x - S.lx, r.z - S.lz) * 3.1; S.lx = r.x; S.lz = r.z;
+    applyFp(camera, r.x, r.y + 1.62, r.z, view, r.speed > 0.1 ? Math.sin(S.bob) * 0.03 : 0);
   });
-  return () => { const f = new THREE.Vector2(-offset.x, -offset.z).normalize(); return { fx: f.x, fz: f.y, rx: -f.y, rz: f.x }; };
-}
-function moveFromInput(axes: { fx: number; fz: number; rx: number; rz: number }) {
-  const len = Math.hypot(walk.x, walk.y); if (len < 0.08) return null;
-  const k = Math.min(1, len) / len;
-  return { x: (axes.rx * walk.x - axes.fx * walk.y) * k, z: (axes.rz * walk.x - axes.fz * walk.y) * k };
 }
 
 /* ================= Dış dünya: iskele, ada, teras ================= */
@@ -88,7 +82,7 @@ export function DockScene({ phase, dev, onDoor, onBoard }: { phase: Extract<Phas
   const player = useRef<RigState>(newRig(start.x, start.z, phase === 'yanasma' ? -Math.PI / 2 : Math.PI / 2));
   const can = useRef<RigState>(phase === 'yanasma' ? newRig(LEAD_ROUTE[0].x, LEAD_ROUTE[0].z, -Math.PI / 2) : newRig(-13.6, 11.2, Math.PI / 2));
   const wp = useRef(1), gangDown = useRef(phase === 'yanasma' ? 0 : 1), done = useRef(false), t0 = useRef<number | null>(null);
-  const axes = useFollowCamera(player, phase === 'yanasma' ? new THREE.Vector3(-6.5, 4.6, 4) : new THREE.Vector3(6.5, 4.6, 3.5));
+  useEyeCamera(player, phase === 'yanasma' ? -Math.PI / 2 : Math.PI / 2, -0.05);
   useEffect(() => { scene.background = new THREE.Color('#bcd6e6'); scene.fog = new THREE.Fog('#cfe0ea', 300, 2600); return () => { scene.fog = null; }; }, [scene]);
 
   useFrame(({ clock }, raw) => {
@@ -97,11 +91,12 @@ export function DockScene({ phase, dev, onDoor, onBoard }: { phase: Extract<Phas
     const el = clock.elapsedTime - t0.current;
     if (phase === 'yanasma') gangDown.current = Math.min(1, Math.max(0, (el - 0.5) / 2.5));
     const open = gangDown.current >= 1;
-    const m = moveFromInput(axes());
+    const m = fpMove();
     if (m) {
       const n = slide(pl, m.x * SPEED * dt, m.z * SPEED * dt, open);
-      pl.speed = dt > 0 ? Math.hypot(n.x - pl.x, n.z - pl.z) / dt : 0; if (pl.speed > 0.05) pl.yaw = Math.atan2(-(n.x - pl.x), -(n.z - pl.z)); pl.x = n.x; pl.z = n.z;
+      pl.speed = dt > 0 ? Math.hypot(n.x - pl.x, n.z - pl.z) / dt : 0; pl.x = n.x; pl.z = n.z;
     } else pl.speed = 0;
+    pl.yaw = view.yaw;
     pl.y = heightAt(pl.x, pl.z); pl.wind = 0.6;
 
     if (phase === 'yanasma') {
@@ -123,7 +118,6 @@ export function DockScene({ phase, dev, onDoor, onBoard }: { phase: Extract<Phas
   return (
     <group>
       <World dev={dev} gangDown={gangDown} />
-      <Character rig={player} palette={PLAYER} castShadow={dev.shadows} />
       <Character rig={can} palette={CAN} castShadow={dev.shadows} />
     </group>
   );
@@ -136,20 +130,21 @@ export function TerraceScene({ dev }: { dev: Dev }) {
   const can = useRef<RigState>(newRig(TERRACE_START.x - 1.4, TERRACE_START.z + 0.6, -Math.PI / 2));
   player.current.y = can.current.y = ROOF_Y;
   const gangDown = useRef(1);
-  // kamera doğudan, yüksekten batıya bakar: kulenin güneyinden geçen bakış Galata (KB) ile Sarayburnu'nu (BGB) aynı kadrajda tutar
-  const axes = useFollowCamera(player, new THREE.Vector3(14, 8, 0.5), 1.4);
+  // bakış batıya: Galata (KB) ile Sarayburnu (BGB) karşıda
+  useEyeCamera(player, Math.PI / 2, 0.02);
   useEffect(() => { scene.background = new THREE.Color('#bcd6e6'); scene.fog = new THREE.Fog('#cfe0ea', 400, 3200); return () => { scene.fog = null; }; }, [scene]);
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), pl = player.current, c = can.current;
-    const m = moveFromInput(axes());
+    const m = fpMove();
     if (m) {
       const nx = pl.x + m.x * SPEED * dt, nz = pl.z + m.z * SPEED * dt;
       const ox = pl.x, oz = pl.z;
       if (terraceOk(nx, pl.z)) pl.x = nx; if (terraceOk(pl.x, nz)) pl.z = nz;
-      pl.speed = dt > 0 ? Math.hypot(pl.x - ox, pl.z - oz) / dt : 0; if (pl.speed > 0.05) pl.yaw = Math.atan2(-(pl.x - ox), -(pl.z - oz));
+      pl.speed = dt > 0 ? Math.hypot(pl.x - ox, pl.z - oz) / dt : 0;
     } else pl.speed = 0;
+    pl.yaw = view.yaw;
     pl.wind = 0.9;
-    const tg = followTarget('beside', c, pl, Math.atan2(-axes().fx, -axes().fz));
+    const tg = followTarget('beside', c, pl, view.yaw);
     const goal = terraceOk(tg.x, tg.z) ? tg : c;
     const s = stepToward(c, goal, dt); c.x = s.pos.x; c.z = s.pos.z; c.speed = s.speed; if (s.yaw !== null) c.yaw = s.yaw;
     c.wind = 0.9;
@@ -158,7 +153,6 @@ export function TerraceScene({ dev }: { dev: Dev }) {
   return (
     <group>
       <World dev={dev} gangDown={gangDown} />
-      <Character rig={player} palette={PLAYER} castShadow={dev.shadows} />
       <Character rig={can} palette={CAN} castShadow={dev.shadows} />
     </group>
   );
@@ -203,20 +197,25 @@ export function TowerInterior({ onTop }: { onTop: () => void }) {
     return () => { scene.fog = null; };
   }, [camera, scene]);
 
-  const cam = useMemo(() => new THREE.Vector3(), []), look = useMemo(() => new THREE.Vector3(), []);
+  const cam = useMemo(() => new THREE.Vector3(), []);
+  useEffect(() => { view.yaw = stairAt(0.3).heading; view.pitch = 0.15; }, []);
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), pl = player.current, c = can.current;
-    // yalnızca yol boyunca ileri/geri (joystick yukarı = yukarı çık)
-    const v = -walk.y; const ds = Math.abs(v) > 0.1 ? v * 1.6 * dt : 0;
+    // merdiven boyunca ileri/geri: joystick/W bakılan yöne göre (yukarı bakıp ilerle = çık)
+    const h0 = stairAt(s.current).heading, facing = -Math.sin(view.yaw) * -Math.sin(h0) - Math.cos(view.yaw) * -Math.cos(h0) >= -0.15 ? 1 : -1;
+    const v = -walk.y * facing; const ds = Math.abs(v) > 0.1 ? v * 1.6 * dt : 0;
     s.current = Math.max(0.3, Math.min(STAIR_LEN, s.current + ds));
     const a = stairAt(s.current);
-    pl.x = a.x; pl.y = a.y; pl.z = a.z; pl.speed = dt > 0 ? Math.abs(ds) / dt : 0; if (ds) pl.yaw = ds > 0 ? a.heading : a.heading + Math.PI; pl.wind = 0;
+    pl.x = a.x; pl.y = a.y; pl.z = a.z; pl.speed = dt > 0 ? Math.abs(ds) / dt : 0; pl.yaw = view.yaw; pl.wind = 0;
     // Can 1,8 m arkadan
     const goal = Math.max(0, s.current - 1.8); const before = cs.current;
     cs.current += Math.sign(goal - cs.current) * Math.min(Math.abs(goal - cs.current), 2.2 * dt);
     const b = stairAt(cs.current); c.x = b.x; c.y = b.y; c.z = b.z; c.speed = dt > 0 ? Math.abs(cs.current - before) / dt : 0; if (c.speed > 0.1) c.yaw = b.heading;
-    // taşlar: yanından geçerken Can durdurur ve anlatır
-    for (const st of stones) if (!heardSpots.current.has(st.spot) && Math.abs(s.current - st.s) < 0.6) { heardSpots.current.add(st.spot); useKiz.getState().play(stoneDialogue(st.spot)); }
+    // taşlar: yanındayken "Can anlatmak istiyor" (E ile başlar); uzaklaşınca teklif kalkar
+    { const K = useKiz.getState(); for (const st of stones) { const id = stoneDialogue(st.spot); if (K.heard.includes(id)) heardSpots.current.add(st.spot); }
+      const near = stones.find((x) => !heardSpots.current.has(x.spot) && Math.abs(s.current - x.s) < 0.9), want = near ? stoneDialogue(near.spot) : null;
+      const isStone = (id: string | null) => !!id && id.startsWith('tas-');
+      if (want && K.pending !== want && !K.playback && (!K.pending || isStone(K.pending))) K.offer(want); else if (!want && isStone(K.pending)) K.offer(null); }
     const pb = useKiz.getState().playback, line = pb?.dialogue.lines[pb.line];
     const spot = stones.find((x) => pb?.dialogue.trigger.type === 'reach' && 'spot' in pb.dialogue.trigger && pb.dialogue.trigger.spot === x.spot);
     applyDialogue(c, pl, { stone: spot?.pos }, dt);
@@ -224,12 +223,9 @@ export function TowerInterior({ onTop }: { onTop: () => void }) {
     glow.current.forEach((g, i) => { if (g) (g.material as THREE.MeshBasicMaterial).opacity = heardSpots.current.has(stones[i].spot) ? 0.15 : 0.35 + Math.sin(clock.elapsedTime * 3) * 0.2; });
     if (!done.current && s.current >= STAIR_LEN - 0.05 && !pb) { done.current = true; onTop(); }
 
-    // kamera: oyuncunun arkasında, kuyunun içinde kalır
-    const z = useKiz.getState().zoom, fx = -Math.sin(a.heading), fz = -Math.cos(a.heading);
-    cam.set(a.x - fx * 2.2 * z - a.x * 0.25, a.y + 1.5 + 0.4 * z, a.z - fz * 2.2 * z - a.z * 0.25);
-    const lim = SHAFT_HALF - 0.25; cam.x = THREE.MathUtils.clamp(cam.x, -lim, lim); cam.z = THREE.MathUtils.clamp(cam.z, -lim, lim);
-    camera.position.lerp(cam, 1 - Math.exp(-dt * 5));
-    look.set(a.x + fx * 1.2, a.y + 1.2, a.z + fz * 1.2); camera.lookAt(look);
+    // kamera: birinci şahıs, kuyunun içinde
+    const lim = SHAFT_HALF - 0.2; cam.set(THREE.MathUtils.clamp(a.x, -lim, lim), a.y + 1.58, THREE.MathUtils.clamp(a.z, -lim, lim));
+    applyFp(camera, cam.x, cam.y, cam.z, view);
   });
 
   return (
@@ -247,7 +243,6 @@ export function TowerInterior({ onTop }: { onTop: () => void }) {
         </group>
       ))}
       {[0.25, 0.5, 0.75, 0.95].map((u) => { const a = stairAt(u * STAIR_LEN); return <pointLight key={u} position={[a.x * 0.4, a.y + 2.2, a.z * 0.4]} intensity={5} distance={6} color="#ffd9a8" />; })}
-      <Character rig={player} palette={PLAYER} />
       <Character rig={can} palette={CAN} />
     </group>
   );

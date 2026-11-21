@@ -1,110 +1,62 @@
 /**
- * Galata Kulesi — merdiven: tırmanış ritmi (saf mantık; React ve three.js'e bağımlı değildir, test edilir).
+ * Galata Kulesi — merdiven: sarmal merdiveni yürüyerek çıkma ve nefes (saf; test edilir).
  *
- * Neden bu mekanik: Kulenin içinde dar ve dönen bir merdivenle yukarı çıkmak yavaş, ritmik bir iştir.
- * Oyuncu her vuruşta (adım sesi + halka nabzı) yukarı kaydırarak bir basamak çıkar; her sahanlıkta
- * pencerenin önünde durup bir nefes alır (basılı tut). Kaçırılan vuruş cezalandırılmaz: basamak sayılmaz
- * ve üst üste kaçırılırsa tempo yavaşlar. Kaybetme yok — amaç acele etmeden, nefesle uyumlu çıkmak.
+ * Yeni mekanik: Ritimle dokunmak yerine oyuncu dar sarmal merdiveni kendisi yürür (birinci şahıs, bakış serbest).
+ * Merdivenin neresinde olduğu, kulenin ekseni etrafında dönülen açıdan (açının "açılmış" toplamı, θ) bulunur;
+ * yükseklik θ ile artar. Çıkmak nefes tüketir: nefes azaldıkça adımlar yavaşlar, soluma sesi ağırlaşır.
+ * Durunca nefes yavaşça, bir pencerenin önünde dururken hızla dolar. Her sahanlıkta dışarıya bakan bir pencere
+ * vardır; pencereden bakınca kulenin tarihinden bir an anlatılır. Kaybetme ve süre baskısı yok.
  */
-export const START_BEAT = 0.8;           // sn / vuruş (75 vuruş/dk, sakin yürüyüş)
-export const SLOWEST_BEAT = 1.15;        // art arda kaçırınca tempo en fazla buraya kadar yavaşlar
-export const PERFECT = 0.16;             // vuruşa ± bu kadar yakınsa "tam"
-export const GOOD = 0.3;                 // ± bu kadar yakınsa "iyi"
-export const STEPS_PER_FLIGHT = 16;      // oyunda bir sahanlıktan diğerine (gerçek basamak sayısı değildir)
-export const FLIGHTS = 3;
-export const TOTAL_STEPS = STEPS_PER_FLIGHT * FLIGHTS;
-export const BREATH_MIN = 2.6;           // nefes: en az bu kadar basılı tutulmalı (≈ 3–4 vuruş)
-export const BREATH_FULL = 3.2;          // halkanın tamamen dolduğu süre
+export const RISE = 0.2;                  // basamak yüksekliği (m)
+export const STEPS_PER_TURN = 16;         // bir tam dönüşte basamak (oyun ölçeği; gerçek sayı değildir)
+export const TURNS = 4;
+export const TOTAL_STEPS = STEPS_PER_TURN * TURNS;
+export const STEP_ANGLE = (Math.PI * 2) / STEPS_PER_TURN;
+export const TOP_THETA = TOTAL_STEPS * STEP_ANGLE;
+export const CORE_R = 0.95, WALL_R = 4.45;                 // orta direk ve iç duvar
+export const WALK_MIN = CORE_R + 0.45, WALK_MAX = WALL_R - 0.4;
+export const TOP_Y = TOTAL_STEPS * RISE;
 
-export type Judgement = 'tam' | 'iyi' | 'erken' | 'gec';
-export type ClimbPhase = 'climb' | 'breath' | 'done';
+/** θ → basamağın üst yüzeyi (m). Basamaklı ama hafifçe yumuşatılmış (rampa + basamak hissi) */
+export function floorAt(theta: number): number {
+  const t = Math.max(0, Math.min(TOP_THETA, theta)) / STEP_ANGLE, i = Math.floor(t), f = t - i;
+  return (i + Math.min(1, f * 3.2)) * RISE;   // basamağın ilk üçte birinde yükselir, sonra düz
+}
+/** Yeni konumun açısından açılmış açıyı günceller (bir adımda en fazla yarım dönüş değişebilir) */
+export function unwrap(prevTheta: number, x: number, z: number): number {
+  const a = Math.atan2(z, x), prev = ((prevTheta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  let d = a - prev; d = Math.atan2(Math.sin(d), Math.cos(d));
+  return prevTheta + d;
+}
+/** Merdivende kalınabilecek açı aralığı: başlangıçtaki zeminden en tepedeki kapıya */
+export const clampTheta = (t: number) => Math.max(-0.2, Math.min(TOP_THETA + 0.15, t));
 
-export interface ClimbState {
-  phase: ClimbPhase;
-  steps: number;          // çıkılan basamak
-  beat: number;           // geçerli vuruş aralığı (sn)
-  origin: number;         // vuruş ızgarasının başlangıç zamanı
-  combo: number;
-  misses: number;         // art arda kaçırma
-  holdStart: number | null;
-  perfect: number; good: number; missed: number; breaths: number;
-}
-export type ClimbEvent =
-  | { type: 'step'; judgement: 'tam' | 'iyi'; steps: number }
-  | { type: 'miss'; judgement: 'erken' | 'gec' }
-  | { type: 'landing'; flight: number }     // sahanlığa varıldı → nefes zamanı
-  | { type: 'breath-short' }                // erken bırakıldı, yeniden dene (ceza yok)
-  | { type: 'breath-done'; flight: number }
-  | { type: 'tempo'; beat: number }
-  | { type: 'top' };
+/* ---------- pencereler (her dönüşün sonunda bir sahanlık) ---------- */
+export interface Window { id: string; theta: number; title: string; era: string; text: string; source: { title: string; url: string } }
+const W = { title: 'Wikipedia — Galata Tower', url: 'https://en.wikipedia.org/wiki/Galata_Tower' };
+export const WINDOWS: Window[] = [
+  { id: 'deprem', theta: STEP_ANGLE * STEPS_PER_TURN * 1 - 0.35, era: '1509', title: 'Büyük deprem', source: W,
+    text: '1509’daki büyük İstanbul depremi kuleye zarar verdi. Kule, Osmanlı döneminde Mimar Hayreddin tarafından onarıldı.' },
+  { id: 'yangin', theta: STEP_ANGLE * STEPS_PER_TURN * 2 - 0.35, era: '1794 · 1831', title: 'Yangınlar', source: W,
+    text: 'Kule 1794’te ve 1831’de yangın geçirdi. 1831’den sonra II. Mahmud döneminde onarılırken üstüne yeni katlar eklendi.' },
+  { id: 'firtina', theta: STEP_ANGLE * STEPS_PER_TURN * 3 - 0.35, era: '1875 · 1965–1967', title: 'Fırtına ve külah', source: W,
+    text: '1875’teki bir fırtına kulenin külahını yıktı; kule uzun yıllar düz damlı kaldı. 1965–1967 onarımında bugünkü konik külah yeniden yapıldı.' },
+];
+/** Pencerenin duvardaki yeri ve yüksekliği */
+export const windowAngle = (w: Window) => w.theta;
+export const windowY = (w: Window) => floorAt(w.theta) + 1.5;
+/** Oyuncu bu pencerenin sahanlığında mı? (aynı tur, yakın açı) */
+export const atWindow = (theta: number, w: Window) => Math.abs(theta - w.theta) < 0.55;
 
-export function createClimb(now = 0): ClimbState {
-  return { phase: 'climb', steps: 0, beat: START_BEAT, origin: now, combo: 0, misses: 0, holdStart: null, perfect: 0, good: 0, missed: 0, breaths: 0 };
+/* ---------- nefes ---------- */
+export const DRAIN_PER_M = 0.11;          // her yükselen metre için harcanan nefes (dolu nefesle ~9 m)
+export const REST_RATE = 0.12;            // dururken saniyede dolan
+export const WINDOW_REST_RATE = 0.45;     // pencerenin önünde dururken saniyede dolan
+/** Nefesi günceller: yükselince azalır, dururken (pencerede daha hızlı) dolar */
+export function breathStep(breath: number, climbed: number, moving: boolean, atWin: boolean, dt: number): number {
+  let b = breath - Math.max(0, climbed) * DRAIN_PER_M;
+  if (!moving) b += (atWin ? WINDOW_REST_RATE : REST_RATE) * dt;
+  return Math.max(0, Math.min(1, b));
 }
-
-/** t anına en yakın vuruşa uzaklık (sn, işaretli: negatif = erken) */
-export function offset(s: ClimbState, t: number): number {
-  const k = Math.round((t - s.origin) / s.beat);
-  return t - (s.origin + k * s.beat);
-}
-/** 0..1: geçerli vuruşun ne kadarı geçti (arayüzdeki nabız halkası için) */
-export function beatPhase(s: ClimbState, t: number): number {
-  const x = (t - s.origin) / s.beat;
-  return x - Math.floor(x);
-}
-
-export function judge(off: number): Judgement {
-  const a = Math.abs(off);
-  if (a <= PERFECT) return 'tam';
-  if (a <= GOOD) return 'iyi';
-  return off < 0 ? 'erken' : 'gec';
-}
-
-/** Yukarı kaydırma / boşluk tuşu: bir basamak çıkma denemesi */
-export function stepInput(prev: ClimbState, t: number): { state: ClimbState; events: ClimbEvent[] } {
-  if (prev.phase !== 'climb') return { state: prev, events: [] };
-  const s = { ...prev }, events: ClimbEvent[] = [];
-  const j = judge(offset(s, t));
-  if (j === 'tam' || j === 'iyi') {
-    s.steps += 1; s.combo += 1; s.misses = 0;
-    if (j === 'tam') s.perfect += 1; else s.good += 1;
-    events.push({ type: 'step', judgement: j, steps: s.steps });
-    if (s.steps >= TOTAL_STEPS) { s.phase = 'done'; events.push({ type: 'top' }); }
-    else if (s.steps % STEPS_PER_FLIGHT === 0) { s.phase = 'breath'; events.push({ type: 'landing', flight: s.steps / STEPS_PER_FLIGHT }); }
-  } else {
-    s.combo = 0; s.misses += 1; s.missed += 1;
-    events.push({ type: 'miss', judgement: j });
-    if (s.misses >= 3 && s.beat < SLOWEST_BEAT) {
-      // tempoyu yavaşlat; ızgarayı şimdiki ana hizala ki bir sonraki vuruş tam bir aralık sonra gelsin
-      s.beat = Math.min(SLOWEST_BEAT, +(s.beat + 0.1).toFixed(2)); s.origin = t; s.misses = 0;
-      events.push({ type: 'tempo', beat: s.beat });
-    }
-  }
-  return { state: s, events };
-}
-
-/** Nefes: sahanlıkta basılı tutmaya başla */
-export function holdStart(prev: ClimbState, t: number): ClimbState {
-  return prev.phase === 'breath' ? { ...prev, holdStart: t } : prev;
-}
-/** 0..1 nefes halkasının doluluğu */
-export function breathFill(s: ClimbState, t: number): number {
-  return s.phase === 'breath' && s.holdStart !== null ? Math.min(1, (t - s.holdStart) / BREATH_FULL) : 0;
-}
-/** Nefes: bırak. Yeterince uzun tutulduysa tırmanış sürer ve vuruş ızgarası bırakma anına hizalanır. */
-export function holdEnd(prev: ClimbState, t: number): { state: ClimbState; events: ClimbEvent[] } {
-  if (prev.phase !== 'breath' || prev.holdStart === null) return { state: prev, events: [] };
-  const held = t - prev.holdStart;
-  if (held < BREATH_MIN) return { state: { ...prev, holdStart: null }, events: [{ type: 'breath-short' }] };
-  const flight = prev.steps / STEPS_PER_FLIGHT;
-  return { state: { ...prev, phase: 'climb', holdStart: null, origin: t, breaths: prev.breaths + 1, combo: 0 }, events: [{ type: 'breath-done', flight }] };
-}
-
-/** Basılı tutarken halka dolunca kendiliğinden bırakılmış sayılır (oyuncunun ne zaman bırakacağını düşünmesine gerek yok) */
-export function tick(prev: ClimbState, t: number): { state: ClimbState; events: ClimbEvent[] } {
-  if (prev.phase === 'breath' && prev.holdStart !== null && t - prev.holdStart >= BREATH_FULL - 1e-6) return holdEnd(prev, t);
-  return { state: prev, events: [] };
-}
-
-/** Kat sayacı: 0 = zemin, 1..FLIGHTS */
-export const flightOf = (s: ClimbState) => Math.min(FLIGHTS, Math.floor(s.steps / STEPS_PER_FLIGHT));
+/** Nefese göre yürüme hızı çarpanı: nefes tükenince adımlar ağırlaşır ama oyuncu hiç durmaz */
+export const speedFactor = (breath: number) => 0.3 + 0.7 * Math.min(1, breath / 0.35);

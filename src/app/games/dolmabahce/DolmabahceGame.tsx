@@ -1,13 +1,10 @@
 /**
  * Dolmabahçe Sarayı — "Kristal ve Işığın İhtişamı": Parıltı Avı. Ana yönetici.
  *
- * Oyuncu sarayı ilk kez gören bir misafirdir. Ziyaretçi rotasında yalnızca İLERİ/GERİ yürür (W/S, ya da ekranı dikey sürükleme);
- * kamera her bölümde en iyi açıyı kendisi bulur ve yavaşça süzülür (serbest kamera yok):
- *   Medhal: arkadan, göz hizasının biraz üstünden · Muayede: geniş açı, kubbeye doğru yükselen bakış · avizenin altı: avize çevresinde
- *   aşağıdan yörünge · Kristal Merdiven: merdiven boşluğunun köşesinden sabit (iki kol ve kristal korkuluklar kadrajda) · Süfera ve
- *   Atatürk'ün odası: sakin takip ya da sabit açı.
- * Parıltı Avı: on nesne hafifçe nabız atar (hale + ışıma). Yaklaşınca kristal tınısı çalar ve "İncele" çıkar; tıklayınca kamera nesneye
- * makro yakınlaşır, malzeme bilgisi kartı açılır. Çift dokunuş/tıklama: henüz bulunmamış en yakın nesneye kendiliğinden gider ve açar.
+ * Oyuncu sarayı ilk kez gören bir misafirdir. Ziyaretçi rotasında ileri/geri yürür (W/S ya da joystick; bakılan yöne göre).
+ * Kamera birinci şahıs, göz hizasında; bakış serbesttir (masaüstünde tıkla + fare, dokunmatikte sürükle).
+ * Parıltı Avı: on nesne hafifçe nabız atar (hale + ışıma). Yaklaşınca kristal tınısı çalar ve "İncele" çıkar; bilgi kartı yalnızca
+ * oyuncu E'ye ya da düğmeye basınca açılır (kamera kendiliğinden yakınlaşmaz). N / ≫: henüz bulunmamış en yakın nesneye yürür (açmaz).
  * Kalite: ReflectionOptimizer.reflectionPlan (düzlemsel yansıma / ortam küpü, transmission, kristal sayısı, LOD); kare hızı düşerse kademe iner.
  * Şanlıurfa ve öteki oyunlarla tutarlılık: aynı cihaz profili, ?q= / ?debug, pil tasarrufu, sesli okuma, WebGL yoksa fotoğraf yedeği.
  */
@@ -18,15 +15,17 @@ import { Environment, Lightformer, PerformanceMonitor } from '@react-three/drei'
 import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
-import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { Controls, GameMenu, Hint, HudTheme, IconButton, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
-import { ChevronsRight, Footprints, Info } from 'lucide-react';
+import { ChevronsRight, Footprints, Info, Move } from 'lucide-react';
+import { Joystick } from '../shared/Joystick';
+import { applyFp, useFpLook } from '../shared/fpLook';
+import { LookCrosshair } from '../shared/mouseLook';
 import { ArrowLeft, Gem, Search, Sparkles } from 'lucide-react';
-import { Character, newRig, type Palette } from '../kiz-kulesi/NPCController';
-import { CHANDELIER, ROUTE_LEN, STAIR, UPPER, clampToRoom, routeAt, zoneAt, type V3, type Zone } from './palace';
+import { newRig } from '../kiz-kulesi/NPCController';
+import { ROUTE_LEN, routeAt, zoneAt, type Zone } from './palace';
 import { SPARKLES, nearSparkle, nextUnfound, pulse, type Sparkle } from './SparkleHuntMechanic';
 import { reflectionPlan, reflectorRoom, type Plan, type Tier } from './ReflectionOptimizer';
-import { orbitCamera } from './CrystalChandelier';
 import { PalaceScene } from './PalaceScene';
 import { palaceAudio } from './DolmabahceAudio';
 
@@ -38,14 +37,13 @@ function detectTier(): Tier {
   if (nav.connection?.saveData || (nav.deviceMemory ?? 8) <= 3 || (nav.hardwareConcurrency ?? 8) <= 4) return 'low';
   return matchMedia('(pointer: coarse)').matches ? 'medium' : 'high';
 }
-const GUEST: Palette = { skin: '#d9a982', hair: '#2a1a12', top: '#24324a', pants: '#2a2a30', shoes: '#3a2a20', scarf: '#c9a24a' };
 
 /* ---------- durum ---------- */
 interface S { started: boolean; zone: Zone; found: string[]; card: Sparkle | null; near: Sparkle | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
 const INITIAL = { started: false, zone: 'medhal' as Zone, found: [] as string[], card: null, near: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
-const live = { s: 0, v: 0, input: 0, goal: null as number | null, goalOpen: null as Sparkle | null, rig: newRig(0, 13, 0) };
+const live = { s: 0, v: 0, input: 0, goal: null as number | null, rig: newRig(0, 13, 0), view: { yaw: 0, pitch: 0 }, aimed: false, bob: 0 };
 
 export default function DolmabahceGame({ onExit }: { onExit: () => void }) {
   if (!supportsWebGL) return <Fallback onExit={onExit} />;
@@ -56,7 +54,7 @@ function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), [saver, setSaver] = useState(false);
   const plan = useMemo(() => reflectionPlan(tier, saver), [tier, saver]);
   const S = useDb();
-  const keys = useRef(new Set<string>()), drag = useRef<{ id: number; y0: number; last: number } | null>(null), lastTap = useRef(0);
+  const keys = useRef(new Set<string>()), stick = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     type B = EventTarget & { level: number; charging: boolean }; let b: B | null = null; const check = () => b && setSaver(b.level < 0.2 && !b.charging);
@@ -65,11 +63,11 @@ function Game({ onExit }: { onExit: () => void }) {
   }, []);
   const G = useSettings(); useEffect(() => { palaceAudio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => { palaceAudio.setZone(S.zone); }, [S.zone]);
-  useEffect(() => () => { palaceAudio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, goal: null, goalOpen: null }); }, []);
+  useEffect(() => () => { palaceAudio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, goal: null, aimed: false }); }, []);
 
   const open = useCallback((k: Sparkle) => { const s = useDb.getState(); s.set({ card: k, found: s.found.includes(k.id) ? s.found : [...s.found, k.id] }); if (useSettings.getState().tts) palaceAudio.speak(`${k.name}. ${k.text}`); }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); palaceAudio.hush(); }, []);
-  const goNext = useCallback(() => { const k = nextUnfound(live.s, useDb.getState().found); if (k) { live.goal = k.sAnchor; live.goalOpen = k; } }, []);
+  const goNext = useCallback(() => { const k = nextUnfound(live.s, useDb.getState().found); if (k) live.goal = k.sAnchor; }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -79,7 +77,7 @@ function Game({ onExit }: { onExit: () => void }) {
     };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
-    let raf = 0; const loop = () => { const k = keys.current, kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); live.input = drag.current ? live.input : kb; raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
+    let raf = 0; const loop = () => { const k = keys.current, kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); live.input = THREE.MathUtils.clamp(kb - stick.current.y, -1, 1); if (Math.abs(live.input) > 0.1) live.goal = null; raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [open, close, goNext]);
   useEffect(() => {
@@ -87,17 +85,11 @@ function Game({ onExit }: { onExit: () => void }) {
     (window as unknown as { __dolma: unknown }).__dolma = { go: (s: number) => { live.s = s; live.goal = null; useDb.getState().set({ started: true }); }, open: (id: string) => open(SPARKLES.find((k) => k.id === id)!), close, state: () => ({ ...useDb.getState(), s: live.s }) };
   }, [open, close]);
 
-  // tek parmak / fare dikey sürükleme = ileri-geri; çift dokunuş = en yakın parlayan nesne
-  const onDown = (e: React.PointerEvent) => {
-    palaceAudio.unlock(); if (!useDb.getState().started || useDb.getState().card) return; const now = performance.now();
-    if (now - lastTap.current < 300) goNext(); lastTap.current = now; drag.current = { id: e.pointerId, y0: e.clientY, last: now };
-  };
-  const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); if (Math.abs(live.input) > 0.1) live.goal = null; };
-  const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { drag.current = null; live.input = 0; } };
+  const fpl = useFpLook(live.view, () => { const a = useDb.getState(); return a.started && !a.card && !pause.on; }, () => palaceAudio.unlock());
   const start = () => { palaceAudio.unlock(); S.set({ started: true }); };
 
   return (
-    <div className="fixed inset-0 select-none overflow-hidden bg-[#120d08] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+    <div className="fixed inset-0 select-none overflow-hidden bg-[#120d08] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
       <Canvas dpr={plan.dpr} gl={{ antialias: plan.tier === 'high', powerPreference: 'high-performance' }} camera={{ fov: 55, near: 0.05, far: 200, position: [0, 2.4, 18] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; }}>
@@ -114,13 +106,14 @@ function Game({ onExit }: { onExit: () => void }) {
         </Suspense>
       </Canvas>
 
-      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Gem size={15} />} label={S.found.length < SPARKLES.length ? 'Salonlarda parlayan nesneleri bul' : 'Hepsi bulundu'} done={S.found.length} total={SPARKLES.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Gem size={15} />} label={S.found.length < SPARKLES.length ? 'Salonlarda parlayan nesneleri bul' : 'Hepsi bulundu'} done={S.found.length} total={SPARKLES.length} /> : undefined} right={<>{S.started && <IconButton label="Sıradaki parıltıya git (N)" onClick={goNext}><ChevronsRight size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} /></>} />
       {S.started && !S.card && S.near && (
         <button onPointerDown={(e) => e.stopPropagation()} onClick={() => open(S.near!)} className={`absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-xl ${S.found.includes(S.near.id) ? 'bg-black/60' : 'animate-pulse bg-[#b98b2e] text-white'}`}>
           <Search size={18} /> İncele: {S.near.name}<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span>
         </button>
       )}
-      {S.started && !S.card && <Hint>Dikey sürükle: ileri/geri · çift dokun: en yakın parıltı<span className="hidden [@media(pointer:fine)]:inline"> · W/S · N: sıradaki parıltı</span></Hint>}
+      {S.started && <><Joystick stick={stick} onTouch={() => palaceAudio.unlock()} /><LookCrosshair locked={fpl.locked} /></>}
+      {S.started && !S.card && <Hint>Parlayan nesneye yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak · N: sıradaki parıltı</span></Hint>}
       {S.card && <Card k={S.card} onClose={close} />}
       {!S.started && <TitleCard onStart={start} onExit={onExit} />}
       {S.started && S.found.length === SPARKLES.length && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
@@ -132,7 +125,6 @@ function Game({ onExit }: { onExit: () => void }) {
 /* ---------- 3B dünya ---------- */
 function World({ plan }: { plan: Plan }) {
   const zone = useDb((s) => s.zone);
-  const rig = useMemo(() => ({ current: live.rig }), []);
   return (
     <group>
       {/* ortam küpü: pencereler (soğuk) + avize halkaları (sıcak); metal ve kristal yansımaları buradan (düşük kademede tek yansıma kaynağı) */}
@@ -148,7 +140,6 @@ function World({ plan }: { plan: Plan }) {
       <ambientLight intensity={0.12} color="#ffe2b8" />
       <PalaceScene plan={plan} reflector={reflectorRoom(zone)} />
       <Halos saver={plan.saver} />
-      <Character rig={rig} palette={GUEST} />
       <Controller />
     </group>
   );
@@ -169,31 +160,15 @@ function Halos({ saver }: { saver: boolean }) {
 
 /* ---------- hareket + kendiliğinden en iyi açı ---------- */
 const _c = new THREE.Vector3(), _l = new THREE.Vector3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion();
-function cameraFor(z: Zone, p: V3, dir: [number, number], t: number): { pos: V3; look: V3; fov: number } {
-  const head: V3 = [p[0], p[1] + 1.55, p[2]], behind = (d: number, h: number, up = 0): { pos: V3; look: V3; fov: number } => {
-    const c = clampToRoom(z, [p[0] - dir[0] * d, p[1] + h, p[2] - dir[1] * d]), got = Math.hypot(c[0] - p[0], c[2] - p[2]);
-    // duvar kamerayı karaktere yaklaştırırsa (oda sınırı) kamera yükselir ve omuz üstünden bakar: kafa kadrajı kapatmasın
-    const lift = Math.max(0, d * 0.75 - got) * 0.9;
-    return { pos: clampToRoom(z, [c[0], c[1] + lift, c[2]]), look: [p[0] + dir[0] * (4 + lift), head[1] + up - lift * 0.15, p[2] + dir[1] * (4 + lift)], fov: lift > 0.3 ? 62 : 55 };
-  };
-  switch (z) {
-    case 'medhal': return behind(5, 2.6, 0.3);
-    case 'muayede': return { ...behind(7.5, 3.2, 3.5), fov: 62 };
-    case 'avize': return { pos: orbitCamera([CHANDELIER.x, CHANDELIER.y, CHANDELIER.z], t), look: [CHANDELIER.x, CHANDELIER.y - 0.8, CHANDELIER.z], fov: 62 };
-    case 'koridor': return behind(3.2, 2, 0);
-    case 'merdiven': return { pos: [STAIR.cx + 7.6, UPPER + 3.2, STAIR.cz + 8.6], look: [p[0], p[1] + 1.2, p[2]], fov: 58 };
-    case 'sufera': return behind(5, 2.6, 0.8);
-    default: return { pos: [45.2, UPPER + 2.8, -41.2], look: [p[0] + 1.5, p[1] + 1.3, p[2] - 0.6], fov: 50 };
-  }
-}
 function Controller() {
   const { camera } = useThree();
   const st = useRef({ step: 0, near: '', zone: '' as Zone | '', chimed: new Set<string>(), fov: 55, last: 0 }), cam = useRef({ p: new THREE.Vector3(0, 2.6, 18), q: new THREE.Quaternion() });
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState(), t = clock.elapsedTime;
     // hız: girdi ya da otomatik hedef; yumuşak hızlanma (lüks mekânda ani hareket yok)
-    let want = S.started && !S.card && !pause.on ? live.input * 3.2 : 0;
-    if (live.goal !== null && !S.card) { const d = live.goal - live.s; if (Math.abs(d) < 0.15) { live.goal = null; if (live.goalOpen) { const k = live.goalOpen; live.goalOpen = null; const s2 = useDb.getState(); s2.set({ card: k, found: s2.found.includes(k.id) ? s2.found : [...s2.found, k.id] }); if (s2.tts) palaceAudio.speak(`${k.name}. ${k.text}`); } } else want = Math.sign(d) * Math.min(4, Math.abs(d) * 2 + 0.6); }
+    const R0 = routeAt(live.s), facing = -Math.sin(live.view.yaw) * R0.dir[0] - Math.cos(live.view.yaw) * R0.dir[1] >= -0.15 ? 1 : -1;   // bakılan yöne göre rotada ileri/geri
+    let want = S.started && !S.card && !pause.on ? live.input * 3.2 * facing : 0;
+    if (live.goal !== null && !S.card) { const d = live.goal - live.s; if (Math.abs(d) < 0.15) live.goal = null; else want = Math.sign(d) * Math.min(5, Math.abs(d) * 1.4 + 0.8); }
     live.v += (want - live.v) * (1 - Math.exp(-dt * 4));
     const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt));
     const R = routeAt(live.s), r = live.rig, moved = live.s - before;
@@ -203,14 +178,17 @@ function Controller() {
     // bölge, yakın nesne, kristal tınısı
     const z = zoneAt(R.p); if (z !== st.current.zone) { st.current.zone = z; S.set({ zone: z }); }
     const n = nearSparkle(live.s); if ((n?.id ?? '') !== st.current.near) { st.current.near = n?.id ?? ''; S.set({ near: n }); if (n && !st.current.chimed.has(n.id) && (n.material === 'kristal' || n.material === 'altin')) { st.current.chimed.add(n.id); palaceAudio.chime(n.pos); } }
-    // kamera: inceleme (makro) ya da bölgenin en iyi açısı; yavaş süzülme
-    const c = S.card ? { pos: S.card.cam.from, look: S.card.cam.look, fov: S.card.cam.fov } : S.started ? cameraFor(z, R.p, R.dir, t) : { pos: [3, 2.4, 17] as V3, look: [0, 4, 0] as V3, fov: 50 };
-    _c.set(...c.pos); _l.set(...c.look);
-    const k = 1 - Math.exp(-dt * (S.card ? 2.2 : z === 'avize' ? 1.6 : 2.6)), C = cam.current;
-    C.p.lerp(_c, k); _q.setFromRotationMatrix(_m.lookAt(C.p, _l, THREE.Object3D.DEFAULT_UP)); C.q.slerp(_q, k);
-    camera.position.copy(C.p); camera.quaternion.copy(C.q);
-    st.current.fov += (c.fov - st.current.fov) * k; const pc = camera as THREE.PerspectiveCamera; if (Math.abs(pc.fov - st.current.fov) > 0.05) { pc.fov = st.current.fov; pc.updateProjectionMatrix(); }
-    if (t - st.current.last > 0.15) { st.current.last = t; palaceAudio.listener([camera.position.x, camera.position.y - 1.6, camera.position.z], [R.dir[0], R.dir[1]]); }
+    // kamera: başlıkta süzülen görünüm; oyunda birinci şahıs (göz hizası), inceleme kamerayı oynatmaz
+    if (!S.started) {
+      _c.set(3, 2.4, 17); _l.set(0, 4, 0); const k = 1 - Math.exp(-dt * 2.6), C = cam.current;
+      C.p.lerp(_c, k); _q.setFromRotationMatrix(_m.lookAt(C.p, _l, THREE.Object3D.DEFAULT_UP)); C.q.slerp(_q, k); camera.position.copy(C.p); camera.quaternion.copy(C.q);
+    } else {
+      if (!live.aimed) { live.aimed = true; live.view.yaw = Math.atan2(-R.dir[0], -R.dir[1]); live.view.pitch = 0.08; }
+      live.bob += Math.abs(moved) * 3.1;
+      applyFp(camera, R.p[0], R.p[1] + 1.62, R.p[2], live.view, r.speed > 0.1 ? Math.sin(live.bob) * 0.025 : 0);
+      const want = z === 'muayede' || z === 'avize' ? 68 : 62, pc = camera as THREE.PerspectiveCamera; st.current.fov += (want - st.current.fov) * (1 - Math.exp(-dt * 3)); if (Math.abs(pc.fov - st.current.fov) > 0.05) { pc.fov = st.current.fov; pc.updateProjectionMatrix(); }
+    }
+    if (t - st.current.last > 0.15) { st.current.last = t; palaceAudio.listener([camera.position.x, camera.position.y - 1.6, camera.position.z], [-Math.sin(live.view.yaw), -Math.cos(live.view.yaw)]); }
   });
   return null;
 }
@@ -221,9 +199,10 @@ function Card({ k, onClose }: { k: Sparkle; onClose: () => void }) {
 }
 const THEME = { accent: '#b98b2e' };
 const CONTROLS = [
-  { icon: <Footprints size={16} />, text: <>Ekranı dikey sürükle ya da W/S: ileri/geri</> },
-  { icon: <Info size={16} />, text: <>kamera açıyı kendisi bulur</> },
-  { icon: <ChevronsRight size={16} />, text: <>çift dokun: en yakın parıltıya git</> },
+  { icon: <Footprints size={16} />, text: <>Joystick ya da W/S: rotada yürü (bakılan yöne)</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda tıkla, fareyle bak · telefonda ekranı sürükle</> },
+  { icon: <Info size={16} />, text: <>E: parlayan nesneyi incele</> },
+  { icon: <ChevronsRight size={16} />, text: <>≫ ya da N: sıradaki parıltıya yürü</> },
 ];
 function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
   return <StartSheet kicker="İstanbul · Beşiktaş · 1843–1856" title="Dolmabahçe: Kristal ve Işığın İhtişamı" intro={<>Sarayı ilk kez gören bir misafirsin. Salonlarda hafifçe parlayan on nesneyi bul: kristal avizeler, Baccarat korkuluklar, altın yaldızlı tavanlar, Hereke halısı… Yaklaş, incele, hikâyesini öğren.</>} controls={CONTROLS} note="Plan stilizedir, ölçüler kısaltılmıştır. Avizenin Kraliçe Victoria’nın hediyesi olduğu bilgisi tartışmalıdır." cta="Saraya gir" ctaIcon={<Sparkles size={18} />} onStart={onStart} onExit={onExit} />;

@@ -9,10 +9,13 @@ import { pinnedQuality } from '../useDeviceProfile';
 import data from '../data/ankara-anitkabir.json';
 import { walkInput } from '../walkInput';
 import {
-  FLAGPOLE, HALL, HOTSPOTS, INONU, LION_ROAD, MAUSOLEUM, PLAZA, PODIUM_H, POSES, SARCOPHAGUS, STAIRS, STAIRS_DEPTH,
-  STAIR_X0, TOWER, WALK, buildings, groundHeight, isClear, lamps, lions, mausoleumColumns, stairSteps, towers, walkColliders, type V3,
+  FLAGPOLE, HOTSPOTS, INONU, LION_ROAD, MAUSOLEUM, PLAZA, PODIUM_H, POSES, STAIRS, STAIRS_DEPTH,
+  STAIR_X0, TOWER, WALK, buildings, groundHeight, isClear, lamps, lions, mausoleumColumns, stairSteps, towers, type V3,
 } from './layout';
 import { applyNight, createMaterials, flagTexture, type Materials } from './materials';
+import { HALL, allColliders, levelFloor, museumBlocked, nearestInteract, type Level } from './interior';
+import { HallInterior, HallShell, Museum, MuseumDoor } from './AnitkabirInterior';
+import { interact } from './interact';
 
 /* =========================================================
    Ortak geometri ve InstancedMesh yardımcıları
@@ -97,7 +100,7 @@ function Mausoleum({ m, quality, night }: { m: Materials; quality: Quality; nigh
     };
   }, [cols]);
   const { len, wid, h, colH, x, podium } = MAUSOLEUM, top = PODIUM_H + colH, stairX = STAIR_X0 + STAIRS_DEPTH / 2;
-  const [hx0, hz0, hx1, hz1] = HALL.outer, hw = HALL.wall, hLen = hx1 - hx0, hWid = hz1 - hz0, wy = PODIUM_H + colH / 2, dw = HALL.door.w, dh = HALL.door.h;
+  const hx0 = HALL.front, dw = HALL.door.w, dh = HALL.door.h;
 
   return (
     <group>
@@ -113,12 +116,8 @@ function Mausoleum({ m, quality, night }: { m: Materials; quality: Quality; nigh
         </>
       ) : (
         <>
-          {/* Şeref Holü'nün duvarları: içi boş, ön duvarda kapı boşluğu (içine girilebilir) */}
-          <Block pos={[(hx0 + hx1) / 2, wy, hz0 + hw / 2]} size={[hLen, colH, hw]} mat={m.travertineLight} cast />
-          <Block pos={[(hx0 + hx1) / 2, wy, hz1 - hw / 2]} size={[hLen, colH, hw]} mat={m.travertineLight} cast />
-          <Block pos={[hx1 - hw / 2, wy, 0]} size={[hw, colH, hWid]} mat={m.travertineLight} cast />
-          {[-1, 1].map((s) => <Block key={'f' + s} pos={[hx0 + hw / 2, wy, s * (dw / 2 + (hWid / 2 - dw / 2) / 2)]} size={[hw, colH, hWid / 2 - dw / 2]} mat={m.travertineLight} cast />)}
-          <Block pos={[hx0 + hw / 2, PODIUM_H + dh + (colH - dh) / 2, 0]} size={[hw, colH - dh, dw]} mat={m.travertineLight} />
+          {/* Şeref Holü kabuğu: ön duvar (üç giriş), sütun araları pencereli yan cepheler, Ankara Kalesi'ne bakan pencereli arka duvar */}
+          <HallShell m={m} />
           {/* çatı levhası ve kurşun kaplama */}
           <Block pos={[x, top + (h - colH) / 2, 0]} size={[len, h - colH, wid]} mat={m.travertineLight} cast />
           <Block pos={[x, top + (h - colH) + 0.12, 0]} size={[len - 3, 0.24, wid - 3]} mat={m.roofMetal} />
@@ -135,7 +134,8 @@ function Mausoleum({ m, quality, night }: { m: Materials; quality: Quality; nigh
           <Block pos={[x, top + (h - colH) + 0.3, 0]} size={[len + 1.6, 0.4, wid + 1.6]} mat={m.travertine} />
           {[-1, 1].map((s) => <Block key={'k' + s} pos={[hx0 - 0.15, PODIUM_H + dh / 2, s * (dw / 2 + 0.3)]} size={[0.5, dh, 0.6]} mat={m.bronze} />)}
           <Block pos={[hx0 - 0.15, PODIUM_H + dh + 0.3, 0]} size={[0.5, 0.6, dw + 1.2]} mat={m.bronze} />
-          {[-1, 1].map((s) => <Block key={'y' + s} pos={[hx0 - 0.07, PODIUM_H + 6, s * 9.5]} size={[0.14, 7, 7]} mat={m.gold} />)}
+          {/* Gençliğe Hitabe (solda) ve Onuncu Yıl Nutku (sağda): taş üzerine altın varak yazı panoları, kapılar arasında */}
+          {[-1, 1].map((s) => <Block key={'y' + s} pos={[hx0 - 0.07, PODIUM_H + 6, s * 8.6]} size={[0.14, 7, 5.6]} mat={m.gold} />)}
           <Block pos={[STAIR_X0 + STAIRS_DEPTH * 0.5, PODIUM_H * 0.5 + 0.9, 0]} size={[2, 1.8, 3.2]} mat={m.marble} />
           {[-1, 1].map((s) => <Block key={'r' + s} pos={[STAIR_X0 - 0.07, PODIUM_H * 0.5, s * (STAIRS.width / 2 + 3)]} size={[0.14, PODIUM_H * 0.7, 5]} mat={m.travertineLight} />)}
         </>
@@ -154,48 +154,7 @@ function Mausoleum({ m, quality, night }: { m: Materials; quality: Quality; nigh
   );
 }
 
-/* =========================================================
-   ŞEREF HOLÜ (mozolenin içi)
-   ========================================================= */
-function HallInterior({ m, night }: { m: Materials; night: boolean }) {
-  const { x0, x1, halfW, floorY, ceilY } = HALL, len = x1 - x0, cx = (x0 + x1) / 2;
-  const items = useMemo(() => {
-    const bars: Item[] = [], torches: Item[] = [], flames: Item[] = [], pilasters: Item[] = [];
-    for (let i = -4; i <= 4; i++) bars.push({ pos: [x1 - 0.25, floorY + 6.5, i * 1.3], scale: [0.18, 11, 0.18] });
-    for (let i = 0; i <= 5; i++) bars.push({ pos: [x1 - 0.25, floorY + 1.6 + i * 2, 0], scale: [0.18, 0.18, 11] });
-    for (let i = 0; i < 6; i++) for (const s of [-1, 1]) {
-      const x = x0 + 5 + i * ((len - 10) / 5);
-      torches.push({ pos: [x, floorY + 3.2, s * (halfW - 0.5)], scale: [0.22, 1.4, 0.22] });
-      flames.push({ pos: [x, floorY + 4.2, s * (halfW - 0.5)], scale: [0.3, 0.5, 0.3] });
-      pilasters.push({ pos: [x + (len - 10) / 10, floorY + (ceilY - floorY) / 2, s * (halfW - 0.3)], scale: [1.6, ceilY - floorY, 0.6] });
-    }
-    return { bars, torches, flames, pilasters };
-  }, [len, x0, x1, halfW, floorY, ceilY]);
-  return (
-    <group>
-      <mesh geometry={BOX} material={m.hallFloor} position={[cx, floorY + 0.03, 0]} scale={[len, 0.06, halfW * 2]} />
-      <mesh geometry={BOX} material={m.mosaic} position={[cx, ceilY, 0]} scale={[len, 0.1, halfW * 2]} />
-      {/* iç duvar kaplaması ve payeler */}
-      <Block pos={[cx, floorY + (ceilY - floorY) / 2, -halfW + 0.05]} size={[len, ceilY - floorY, 0.1]} mat={m.hallWall} />
-      <Block pos={[cx, floorY + (ceilY - floorY) / 2, halfW - 0.05]} size={[len, ceilY - floorY, 0.1]} mat={m.hallWall} />
-      <Block pos={[x1 - 0.05, floorY + (ceilY - floorY) / 2, 0]} size={[0.1, ceilY - floorY, halfW * 2]} mat={m.hallWall} />
-      <Instances mat={m.hallWall} items={items.pilasters} />
-      {/* lahdin arkasındaki büyük pencere ve bronz parmaklık */}
-      <mesh geometry={BOX} material={m.hallWindow} position={[x1 - 0.12, floorY + 6.5, 0]} scale={[0.06, 11, 11]} />
-      <Instances mat={m.bronze} items={items.bars} />
-      {/* sembolik lahit: tek parça kırmızı mermer */}
-      <Block pos={[SARCOPHAGUS[0], floorY + 0.25, 0]} size={[5.4, 0.5, 8]} mat={m.marble} />
-      <Block pos={[SARCOPHAGUS[0], floorY + 0.75, 0]} size={[4.2, 0.5, 6.6]} mat={m.marble} />
-      <Block pos={[SARCOPHAGUS[0], floorY + 1.9, 0]} size={[2.6, 1.8, 4.8]} mat={m.redMarble} />
-      <Block pos={[SARCOPHAGUS[0], floorY + 2.95, 0]} size={[2.9, 0.3, 5.1]} mat={m.redMarble} />
-      {/* duvar meşaleleri */}
-      <Instances geo={CYL} mat={m.bronze} items={items.torches} />
-      <Instances geo={BLOB} mat={m.flame} items={items.flames} />
-      <pointLight position={[cx, floorY + 9, 0]} color="#ffd9a0" intensity={night ? 1500 : 900} distance={90} decay={2} />
-      <pointLight position={[SARCOPHAGUS[0] - 4, floorY + 6, 0]} color="#ffe6c0" intensity={500} distance={40} decay={2} />
-    </group>
-  );
-}
+/* Şeref Holü içi ve müze: AnitkabirInterior.tsx */
 
 /* =========================================================
    MEYDAN, GALERİLİ BİNALAR, KULELER, İNÖNÜ, BAYRAK
@@ -213,13 +172,14 @@ function PlazaAndBuildings({ m, quality }: { m: Materials; quality: Quality }) {
       const L = alongX ? w : d, n = Math.round(L / 5);
       for (let i = 0; i <= n; i++) {
         const t = -L / 2 + (L * i) / n;
-        pillars.push({ pos: alongX ? [x + t, (h - 0.8) / 2, z + sgn * (d / 2 + PORCH - 0.5)] : [x + d / 2 + PORCH - 0.5, (h - 0.8) / 2, z + t], scale: [0.9, h - 0.8, 0.9] });
-        if (i < n) windows.push({ pos: alongX ? [x + t + L / n / 2, h * 0.55, z - sgn * (d / 2 + 0.03)] : [x - d / 2 - 0.03, h * 0.55, z + t + L / n / 2], scale: alongX ? [1.4, 2.4, 0.08] : [0.08, 2.4, 1.4] });
+        pillars.push({ pos: alongX ? [x + t, (h - 0.8) / 2, z + sgn * (d / 2 + PORCH - 0.5)] : [x + w / 2 + PORCH - 0.5, (h - 0.8) / 2, z + t], scale: [0.9, h - 0.8, 0.9] });
+        if (i < n) windows.push({ pos: alongX ? [x + t + L / n / 2, h * 0.55, z - sgn * (d / 2 + 0.03)] : [x - w / 2 - 0.03, h * 0.55, z + t + L / n / 2], scale: alongX ? [1.4, 2.4, 0.08] : [0.08, 2.4, 1.4] });
       }
-      porch.push({ pos: alongX ? [x, h - 0.4, z + sgn * (d / 2 + PORCH / 2)] : [x + d / 2 + PORCH / 2, h - 0.4, z], scale: alongX ? [w, 0.8, PORCH] : [PORCH, 0.8, d] });
-      recess.push({ pos: alongX ? [x, (h - 0.8) / 2, z + sgn * (d / 2 + 0.06)] : [x + d / 2 + 0.06, (h - 0.8) / 2, z], scale: alongX ? [w - 1, h - 1.4, 0.12] : [0.12, h - 1.4, d - 1] });
-      const rw = alongX ? w + 1 : d + PORCH + 1, rd = alongX ? d + PORCH + 1 : w + 1;
-      return { geo: hipRoof(alongX ? rw : rd, alongX ? rd : rw, 3.4), pos: (alongX ? [x, h, z + (sgn * PORCH) / 2] : [x + PORCH / 2, h, z]) as V3 };
+      porch.push({ pos: alongX ? [x, h - 0.4, z + sgn * (d / 2 + PORCH / 2)] : [x + w / 2 + PORCH / 2, h - 0.4, z], scale: alongX ? [w, 0.8, PORCH] : [PORCH, 0.8, d] });   // '+x' revakında binanın x derinliği w'dir (d meydan boyunca uzunluk)
+      recess.push({ pos: alongX ? [x, (h - 0.8) / 2, z + sgn * (d / 2 + 0.06)] : [x + w / 2 + 0.06, (h - 0.8) / 2, z], scale: alongX ? [w - 1, h - 1.4, 0.12] : [0.12, h - 1.4, d - 1] });
+      // çatı: x ve z boyunca ölçüler (revak dahil)
+      const sx = alongX ? w + 1 : w + PORCH + 1, sz = alongX ? d + PORCH + 1 : d + 1;
+      return { geo: hipRoof(sx, sz, 3.4), pos: (alongX ? [x, h, z + (sgn * PORCH) / 2] : [x + PORCH / 2, h, z]) as V3 };
     });
     return {
       roofs,
@@ -409,23 +369,24 @@ const TIMES: Record<TimeOfDay, { sun: V3; sunColor: string; sunI: number; sky: s
   aksam: { sun: [-0.9, 0.26, 0.4], sunColor: '#ff9d5c', sunI: 2.1, sky: '#f0c5a0', ground: '#6a5a48', hemiI: 0.5, bg: '#eab38d', fog: 0.002 },
   gece: { sun: [0.35, 0.8, 0.4], sunColor: '#8fa6d8', sunI: 0.3, sky: '#2a3757', ground: '#0d0e14', hemiI: 0.45, bg: '#0b1020', fog: 0.0022 },
 };
-function Atmosphere({ time, effects, shadows }: { time: TimeOfDay; effects: boolean; shadows: boolean }) {
+function Atmosphere({ time, effects, shadows, indoor }: { time: TimeOfDay; effects: boolean; shadows: boolean; indoor: boolean }) {
   const t = TIMES[time], { scene } = useThree();
   const sun = useRef<THREE.DirectionalLight>(null!);
   useEffect(() => {
-    scene.background = new THREE.Color(t.bg);
+    scene.background = new THREE.Color(indoor ? '#141210' : t.bg);
     // Üstel sis: uzaktaki ağaçları ve park sınırını yumuşatır, düşük poligonlu arka planı gizler
     scene.fog = effects ? new THREE.FogExp2(t.bg, t.fog) : null;
-  }, [scene, t, effects]);
+  }, [scene, t, effects, indoor]);
   useEffect(() => {
     const l = sun.current; l.target.position.set(30, 0, 0); l.target.updateMatrixWorld();
     const c = l.shadow.camera; c.left = -150; c.right = 150; c.top = 150; c.bottom = -150; c.near = 10; c.far = 700; c.updateProjectionMatrix();
   }, []);
   return (
     <>
-      <hemisphereLight args={[t.sky, t.ground, t.hemiI]} />
+      {/* müzede (kaide içinde, gün ışığı yok) güneş kapanır, ortam ışığı loşlaşır */}
+      <hemisphereLight args={indoor ? ['#f2e4cc', '#3a3026', 0.55] : [t.sky, t.ground, t.hemiI]} />
       <directionalLight
-        ref={sun} position={[t.sun[0] * 300 + 30, t.sun[1] * 300, t.sun[2] * 300]} color={t.sunColor} intensity={t.sunI}
+        ref={sun} position={[t.sun[0] * 300 + 30, t.sun[1] * 300, t.sun[2] * 300]} color={t.sunColor} intensity={indoor ? 0 : t.sunI}
         castShadow={shadows} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} shadow-normalBias={0.6}
       />
     </>
@@ -492,9 +453,10 @@ function CameraRig({ target, enabled }: { target: string; enabled: boolean }) {
 /* =========================================================
    KAMERA 2: yürüme modu — birinci şahıs, çarpışma ve merdiven çıkma
    ========================================================= */
-const COLLIDERS = walkColliders();
-function blocked(x: number, z: number, curH: number) {
+const COLLIDERS = allColliders();
+function blocked(x: number, z: number, curH: number, lv: Level = 'out') {
   const [bx0, bz0, bx1, bz1] = WALK.bound, r = WALK.radius;
+  if (lv !== 'out') return museumBlocked(lv, x, z, r);
   if (x < bx0 || x > bx1 || z < bz0 || z > bz1) return true;
   if (Math.abs(groundHeight(x, z) - curH) > 0.6) return true;      // kaide kenarından düşülmez, duvara tırmanılmaz; merdiven rampa gibi çıkılır
   return COLLIDERS.some(([x0, z0, x1, z1]) => x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r);
@@ -502,10 +464,11 @@ function blocked(x: number, z: number, curH: number) {
 function Walker() {
   const { camera, gl } = useThree();
   const teleport = useMonumentStore((s) => s.teleport);
-  const st = useRef({ x: WALK.spawn.x, z: WALK.spawn.z, yaw: WALK.spawn.yaw, pitch: 0, bob: 0 });
+  const st = useRef({ x: WALK.spawn.x, z: WALK.spawn.z, yaw: WALK.spawn.yaw, pitch: 0, bob: 0, level: 'out' as Level, prompt: '' });
   const keys = useRef<Record<string, boolean>>({});
+  if (location.search.includes('debug')) (window as unknown as { __walk: unknown }).__walk = st.current;
 
-  useEffect(() => { if (teleport) Object.assign(st.current, { x: teleport.x, z: teleport.z, yaw: teleport.yaw, pitch: 0 }); }, [teleport]);
+  useEffect(() => { if (teleport) Object.assign(st.current, { x: teleport.x, z: teleport.z, yaw: teleport.yaw, pitch: 0, level: teleport.level ?? 'out' }); }, [teleport]);
 
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera, prev = { fov: cam.fov, near: cam.near };
@@ -519,7 +482,7 @@ function Walker() {
       drag.x = e.clientX; drag.y = e.clientY;
     };
     const up = () => { drag = null; };
-    const kd = (e: KeyboardEvent) => { keys.current[e.code] = true; }, ku = (e: KeyboardEvent) => { keys.current[e.code] = false; };
+    const kd = (e: KeyboardEvent) => { keys.current[e.code] = true; if (e.code === 'KeyE' && !e.repeat) interact(); if (e.code === 'Escape' && useMonumentStore.getState().exhibit) { e.preventDefault(); useMonumentStore.getState().set({ exhibit: null }); } }, ku = (e: KeyboardEvent) => { keys.current[e.code] = false; };
     el.addEventListener('pointerdown', down); window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     window.addEventListener('keydown', kd); window.addEventListener('keyup', ku);
     return () => {
@@ -536,13 +499,17 @@ function Walker() {
     const len = Math.hypot(f, r);
     if (len > 0.05) {
       if (len > 1) { f /= len; r /= len; }
-      const sp = (k.ShiftLeft || k.ShiftRight ? 16 : 8.5) * dt, h = groundHeight(s.x, s.z);
+      const inside = s.level !== 'out', sp = (k.ShiftLeft || k.ShiftRight ? (inside ? 6 : 16) : inside ? 3.2 : 8.5) * dt, h = groundHeight(s.x, s.z);
       const dx = (-Math.sin(s.yaw) * f + Math.cos(s.yaw) * r) * sp, dz = (-Math.cos(s.yaw) * f - Math.sin(s.yaw) * r) * sp;
-      if (!blocked(s.x + dx, s.z, h)) s.x += dx;                     // eksen eksen: duvar boyunca kayarak ilerle
-      if (!blocked(s.x, s.z + dz, groundHeight(s.x, s.z))) s.z += dz;
+      if (!blocked(s.x + dx, s.z, h, s.level)) s.x += dx;                     // eksen eksen: duvar boyunca kayarak ilerle
+      if (!blocked(s.x, s.z + dz, groundHeight(s.x, s.z), s.level)) s.z += dz;
       s.bob += dt * 9 * Math.min(len, 1);
     }
-    camera.position.set(s.x, groundHeight(s.x, s.z) + WALK.eye + Math.sin(s.bob) * 0.04, s.z);
+    const floor = levelFloor(s.level) ?? groundHeight(s.x, s.z);
+    camera.position.set(s.x, floor + WALK.eye + Math.sin(s.bob) * 0.04, s.z);
+    // yakındaki kapı / incelenebilir nokta → istem (kart kendiliğinden açılmaz)
+    const near = nearestInteract(s.level, s.x, s.z), pid = near ? (near.kind === 'door' ? 'door:' + near.door.id : 'ex:' + near.ex.id) : '';
+    if (pid !== s.prompt) { s.prompt = pid; useMonumentStore.getState().set({ prompt: near ? { id: pid, label: near.kind === 'door' ? near.door.label : 'İncele: ' + near.ex.title } : null }); }
     camera.rotation.set(s.pitch, s.yaw, 0, 'YXZ');
   });
   return null;
@@ -583,6 +550,7 @@ function World({ onPointClick }: Pick<MonumentSceneProps, 'onPointClick'>) {
   const saver = useMonumentStore((s) => s.batterySaver);
   const time = useMonumentStore((s) => s.timeOfDay);
   const walking = useMonumentStore((s) => s.mode === 'walk');
+  const level = useMonumentStore((s) => s.level);
   const q: Quality = saver ? 'low' : quality;
   const night = time === 'gece';
   const m = useMemo(() => createMaterials(), []);
@@ -590,14 +558,20 @@ function World({ onPointClick }: Pick<MonumentSceneProps, 'onPointClick'>) {
   useEffect(() => () => Object.values(m).forEach((x) => x.dispose()), [m]);
   return (
     <>
-      <Atmosphere time={time} effects={q !== 'low'} shadows={q !== 'low' && !night} />
-      <Mausoleum m={m} quality={q} night={night} />
-      <HallInterior m={m} night={night} />
-      <PlazaAndBuildings m={m} quality={q} />
-      <LionRoad m={m} quality={q} />
-      <PeacePark m={m} quality={q} />
-      <Lamps m={m} night={night} quality={q} />
-      {q !== 'low' && <Motes night={night} />}
+      <Atmosphere time={time} effects={q !== 'low' && level === 'out'} shadows={q !== 'low' && !night} indoor={level !== 'out'} />
+      {/* müzedeyken dış dünya çizilmez: müze zemini meydanın altında (dış zemin içeriden görünmesin) ve GPU yalnız müzeyi çizer */}
+      {level === 'out' ? (
+        <>
+          <Mausoleum m={m} quality={q} night={night} />
+          <HallInterior m={m} night={night} lite={q === 'low'} />
+          <MuseumDoor m={m} />
+          <PlazaAndBuildings m={m} quality={q} />
+          <LionRoad m={m} quality={q} />
+          <PeacePark m={m} quality={q} />
+          <Lamps m={m} night={night} quality={q} />
+          {q !== 'low' && <Motes night={night} />}
+        </>
+      ) : <Museum m={m} level={level} />}
       {!walking && <Hotspots onPointClick={onPointClick} />}
       {walking && <Walker />}
     </>

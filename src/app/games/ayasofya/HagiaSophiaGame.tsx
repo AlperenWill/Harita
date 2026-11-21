@@ -1,10 +1,10 @@
 /**
  * Ayasofya — "Işığın ve Taşın Dansı": serbest yürüyüş + rehber. Ana oyun yöneticisi.
  *
- * Oyuncu avludan nartekse, kubbenin altına, apsise ve rampadan güney galeriye serbestçe yürür (joystick / WASD); kamera üçüncü
- * şahıstan izler, sürükleyerek çevrilir, duvarların ve galeri döşemesinin içine girmez. Rehber Elif Hoca (kurgusal sanat tarihçisi)
- * on duraklık turu yönetir: durağa yürür, bekler, oyuncu yanına gelince anlatır (yazı + isteğe bağlı sesli okuma); rampadan birlikte geçer.
- * Yakındaki ilgi noktaları "İncele" ile kart açar; kamera hedefe döner ve uzaktaki hedeflerde görüş açısı daralır (dürbün etkisi).
+ * Oyuncu avludan nartekse, kubbenin altına, apsise ve rampadan güney galeriye serbestçe yürür (joystick / WASD); kamera birinci
+ * şahıstır (göz hizası); fareyle ya da sürükleyerek serbestçe bakılır. Rehber Elif Hoca (kurgusal sanat tarihçisi)
+ * on duraklık turu yönetir: durağa yürür, bekler, oyuncu yanına gelip E'ye basınca anlatır (yazı + isteğe bağlı sesli okuma); rampadan birlikte geçer.
+ * Yakındaki ilgi noktaları "İncele" ile kart açar (yalnızca oyuncu isteyince; kamera kendiliğinden dönmez).
  * Göz uyumu korunur: karanlık narteksten nefe geçince pozlama bir süre yüksek kalır → göz kamaşır, sonra uyum sağlar.
  */
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,15 +16,16 @@ import { Effect, ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
 import { Controls, EndSheet, GameMenu, Hint as HudHint, HudTheme, IconButton, InfoSheet, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
-import { Move } from 'lucide-react';
-import { ArrowLeft, DoorOpen, Footprints, Music, Search, Sun } from 'lucide-react';
+import { ArrowLeft, DoorOpen, Footprints, MessageCircle, Move, Music, Search, Sun } from 'lucide-react';
+import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
+import { LookCrosshair } from '../shared/mouseLook';
 import { Character, newRig, type Palette } from '../kiz-kulesi/NPCController';
 import { keys, readKeys, walk } from '../kiz-kulesi/input';
 import { Joystick } from '../shared/Joystick';
 import { Crowd, type Walker } from '../shared/Crowd';
-import { EXPOSURE, POIS, adapt, inspectFov, sunVector, zoneAt, type Poi, type Zone } from './hagia';
+import { EXPOSURE, POIS, adapt, sunVector, zoneAt, type Poi, type Zone } from './hagia';
 import {
-  EXTRAS, GUIDE, LEVEL_Y, START, STOP_RADIUS, TOUR, camClear, ceiling, eye3, guideGoal, guideStep, nearestDoor, nearestPoi, poiLevel, slide, walkable,
+  EXTRAS, GUIDE, LEVEL_Y, START, STOP_RADIUS, TOUR, ceiling, eye3, guideGoal, guideStep, nearestDoor, nearestPoi, slide, walkable,
   type Door, type Level, type Role, type V2,
 } from './walk';
 import { Atmosphere, Columns, Furnishings, Galleries, GodRays, Lighting, Mosaics, Shell, Windows, type Tier } from './HagiaScene';
@@ -56,7 +57,6 @@ class ExposureEffect extends Effect {
 
 /* ---------- figürler ---------- */
 export const ELIF: Palette = { skin: '#e0b28e', hair: '#3a2416', top: '#3f5f7f', pants: '#2b2f3a', shoes: '#5a3a26', kaftan: '#3f5f7f', trim: '#e9c46a', hat: 'yemeni', hatColor: '#7a2e3a' };
-const VISITOR: Palette = { skin: '#c99272', hair: '#151515', top: '#2f8f83', pants: '#3a3a42', shoes: '#e9e6df' };
 const ROLE: Record<Role, Palette[]> = {
   ziyaretci: [
     { skin: '#e2b48d', hair: '#3b2a20', top: '#b8483e', pants: '#2b3445', shoes: '#efe9df' },
@@ -73,17 +73,17 @@ const ROLE: Record<Role, Palette[]> = {
 interface Talk { lines: string[]; i: number; t0: number; onDone?: () => void }
 interface S {
   started: boolean; level: Level; zone: Zone; stop: number; told: string[]; talk: Talk | null; card: Poi | null; seen: string[];
-  prompt: { door: Door | null; poi: Poi | null }; muted: boolean; tts: boolean; music: boolean; fade: boolean; done: boolean; endShown: boolean; hour: number; panel: boolean;
+  prompt: { door: Door | null; poi: Poi | null; guide: boolean }; muted: boolean; tts: boolean; music: boolean; fade: boolean; done: boolean; endShown: boolean; hour: number; panel: boolean;
   set: (p: Partial<S>) => void;
 }
-const INITIAL = { started: false, level: START.level, zone: 'avlu' as Zone, stop: 0, told: [] as string[], talk: null, card: null, seen: [] as string[], prompt: { door: null, poi: null }, fade: false, done: false, endShown: false };
+const INITIAL = { started: false, level: START.level, zone: 'avlu' as Zone, stop: 0, told: [] as string[], talk: null, card: null, seen: [] as string[], prompt: { door: null, poi: null, guide: false }, fade: false, done: false, endShown: false };
 const useAya = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, music: false, hour: 10.5, panel: false, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = {
   player: newRig(START.at[0], START.at[1], START.yaw), guide: newRig(START.at[0] + 4, START.at[1] + 1.6, START.yaw),
-  cam: { yaw: START.yaw, pitch: 0.3, dist: 5, drag: 0 }, goal: null as V2 | null,
+  cam: { yaw: START.yaw, pitch: 0 }, goal: null as V2 | null,
 };
-function resetLive() { Object.assign(live.player, newRig(START.at[0], START.at[1], START.yaw)); Object.assign(live.guide, newRig(START.at[0] + 4, START.at[1] + 1.6, START.yaw)); Object.assign(live.cam, { yaw: START.yaw, pitch: 0.3, dist: 5, drag: 0 }); live.goal = null; }
+function resetLive() { Object.assign(live.player, newRig(START.at[0], START.at[1], START.yaw)); Object.assign(live.guide, newRig(START.at[0] + 4, START.at[1] + 1.6, START.yaw)); Object.assign(live.cam, { yaw: START.yaw, pitch: 0 }); live.goal = null; }
 const CPS = 40, lineTime = (s: string) => s.length / CPS + 1.6 + s.length * 0.03;
 function say(lines: string[], onDone?: () => void) { useAya.getState().set({ talk: { lines, i: 0, t0: performance.now(), onDone } }); if (useSettings.getState().tts) hagiaAudio.speak(lines[0]); }
 function advance() {
@@ -129,20 +129,26 @@ function Game({ onExit }: { onExit: () => void }) {
       p.x = d.spawn[0]; p.z = d.spawn[1]; p.y = g.y = LEVEL_Y[d.to]; p.yaw = d.yaw; p.speed = 0;
       const cand: V2[] = [[d.spawn[0] - fz * 1.1 - fx * 0.6, d.spawn[1] + fx * 1.1 - fz * 0.6], [d.spawn[0] + fz * 1.1 - fx * 0.6, d.spawn[1] - fx * 1.1 - fz * 0.6], [d.spawn[0] - fx * 1.2, d.spawn[1] - fz * 1.2]];
       const ok = cand.find((c) => walkable(d.to, c[0], c[1])) ?? ([...d.spawn] as V2); g.x = ok[0]; g.z = ok[1]; g.yaw = d.yaw;
-      Object.assign(live.cam, { yaw: d.yaw, pitch: 0.25, dist: 4 });
+      Object.assign(live.cam, { yaw: d.yaw, pitch: 0 });
       useAya.getState().set({ level: d.to });
       setTimeout(() => useAya.getState().set({ fade: false }), 250);
     }, 450);
   }, []);
   const inspect = useCallback((p: Poi) => { const s = useAya.getState(); s.set({ card: p, seen: s.seen.includes(p.id) ? s.seen : [...s.seen, p.id] }); hagiaAudio.chime(); if (useSettings.getState().tts && !s.talk) hagiaAudio.speak(p.text); }, []);
   const closeCard = useCallback(() => { useAya.getState().set({ card: null }); hagiaAudio.hush(); }, []);
+  /** Rehberin yanındayken E / Konuş: o durağın anlatımı başlar (kendiliğinden başlamaz) */
+  const talkGuide = useCallback(() => {
+    const s = useAya.getState(); if (s.talk || s.done || !s.prompt.guide) return;
+    const stp = TOUR[s.stop], idx = s.stop; live.guide.point = _pt.set(...stp.look); s.set({ prompt: { ...s.prompt, guide: false } });
+    say(stp.lines, () => { const s2 = useAya.getState(), told = [...s2.told, stp.id]; live.guide.point = null; if (idx + 1 >= TOUR.length) s2.set({ told, done: true }); else s2.set({ told, stop: idx + 1 }); });
+  }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useAya.getState(); if (!s.started || e.repeat) return;
       if (e.code === 'Space' || e.code === 'Enter') { if (s.talk) advance(); else if (s.card) closeCard(); }
-      if (e.code === 'KeyE') { if (s.talk) advance(); else if (s.card) closeCard(); else if (s.prompt.door) enter(s.prompt.door); else if (s.prompt.poi) inspect(s.prompt.poi); }
+      if (e.code === 'KeyE') { if (s.talk) advance(); else if (s.card) closeCard(); else if (s.prompt.guide) talkGuide(); else if (s.prompt.door) enter(s.prompt.door); else if (s.prompt.poi) inspect(s.prompt.poi); }
       if (e.code === 'KeyF') { if (s.card) closeCard(); else if (s.prompt.poi) inspect(s.prompt.poi); }
       if (e.code === 'Escape' && s.card) closeCard();
     };
@@ -150,37 +156,27 @@ function Game({ onExit }: { onExit: () => void }) {
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0; const loop = () => { readKeys(stick.current); raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); keys.clear(); };
-  }, [enter, inspect, closeCard]);
+  }, [enter, inspect, closeCard, talkGuide]);
 
   useEffect(() => {
     if (!location.search.includes('debug')) return;
     (window as unknown as { __aya: unknown }).__aya = {
-      tp: (level: Level, x: number, z: number, yaw = 0, pitch = 0.3, dist = 5) => { const p = live.player, g = live.guide; p.x = x; p.z = z; p.yaw = yaw; p.y = g.y = LEVEL_Y[level]; g.x = x + 1.2; g.z = z + 1; Object.assign(live.cam, { yaw, pitch, dist, drag: 3 }); useAya.getState().set({ level, started: true, talk: null }); },
+      tp: (level: Level, x: number, z: number, yaw = 0, pitch = 0) => { const p = live.player, g = live.guide; p.x = x; p.z = z; p.yaw = yaw; p.y = g.y = LEVEL_Y[level]; g.x = x + 1.2; g.z = z + 1; Object.assign(live.cam, { yaw, pitch }); useAya.getState().set({ level, started: true, talk: null }); },
       stop: (i: number) => useAya.getState().set({ stop: i, told: TOUR.slice(0, i).map((s) => s.id) }),
       inspect: (id: string) => { const p = POIS.find((x) => x.id === id); if (p) inspect(p); },
       hour: (h: number) => useAya.getState().set({ hour: h }),
+      freeze: () => useAya.getState().set({ done: true, endShown: true }),
       state: () => ({ ...useAya.getState(), player: { ...live.player }, guide: { ...live.guide } }),
     };
   }, [inspect]);
 
-  // sürükle: bak · tekerlek / iki parmak: yakınlaş
-  const ptr = useRef(new Map<number, { x: number; y: number }>()), pinch = useRef<number | null>(null);
-  const onDown = (e: React.PointerEvent) => { hagiaAudio.unlock(); ptr.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); };
-  const onMove = (e: React.PointerEvent) => {
-    const p = ptr.current.get(e.pointerId); if (!p) return;
-    const dx = e.clientX - p.x, dy = e.clientY - p.y; ptr.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptr.current.size === 2) { const [a, b] = [...ptr.current.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch.current) live.cam.dist = THREE.MathUtils.clamp(live.cam.dist * (pinch.current / d), 1.6, 9); pinch.current = d; return; }
-    if (useAya.getState().card) return;
-    live.cam.yaw -= dx * 0.006; live.cam.pitch = THREE.MathUtils.clamp(live.cam.pitch + dy * 0.004, -0.6, 1.25); live.cam.drag = 1.5;
-  };
-  const onUp = (e: React.PointerEvent) => { ptr.current.delete(e.pointerId); if (ptr.current.size < 2) pinch.current = null; };
-  const onWheel = (e: React.WheelEvent) => { live.cam.dist = THREE.MathUtils.clamp(live.cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 1.6, 9); };
+  // birinci şahıs: fareyle (imleç kilidi) ya da sürükleyerek bak
+  const fpl = useFpLook(live.cam, () => { const a = useAya.getState(); return a.started && !a.card && !a.fade && !pause.on; }, () => hagiaAudio.unlock());
   const start = () => { hagiaAudio.unlock(); hagiaAudio.setZone('avlu'); S.set({ started: true }); };
   const hh = Math.floor(S.hour), mm = S.hour % 1 ? '30' : '00';
 
   return (
-    <div className="fixed inset-0 select-none overflow-hidden bg-[#0d0906] text-white" style={{ touchAction: 'none' }}
-      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={onUp} onWheel={onWheel}>
+    <div className="fixed inset-0 select-none overflow-hidden bg-[#0d0906] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
       <Canvas shadows={prof.shadows} dpr={prof.dpr} gl={{ antialias: prof.antialias, powerPreference: 'high-performance' }}
         camera={{ fov: 60, near: 0.1, far: 900, position: [-120, 14, 30] }}
@@ -202,7 +198,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Sun size={15} />} label={`${ZONE_LABEL[S.zone]} · Keşif ${S.seen.length}/${POIS.length} · ${hh}:${mm}`} done={S.told.length} total={TOUR.length} /> : undefined} right={<><IconButton label="Işık ve müzik" active={S.panel} onClick={() => S.set({ panel: !S.panel })}><Sun size={18} /></IconButton><GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} /></>} />
       {S.panel && (
-        <div className="absolute right-3 top-[118px] z-40 w-80 sm:top-[68px] max-w-[calc(100%-1.5rem)] rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4 text-sm" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="absolute right-3 top-[68px] z-40 w-80 sm:top-[68px] max-w-[calc(100%-1.5rem)] rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4 text-sm" onPointerDown={(e) => e.stopPropagation()}>
           <label htmlFor="hr" className="block font-semibold">Günün saati: {hh}:{mm}</label>
           <input id="hr" type="range" min={7} max={18.5} step={0.5} value={S.hour} onChange={(e) => S.set({ hour: Number(e.target.value) })} className="mt-2 w-full accent-[#b07a2a]" />
           <p className="mt-1 text-xs text-[#857b70]">Güneş ekinoks gününe göre hesaplanır; huzmeler pencerelerden o saatin açısıyla girer.</p>
@@ -214,7 +210,8 @@ function Game({ onExit }: { onExit: () => void }) {
       {S.started && (
         <>
           <Joystick stick={stick} onTouch={() => hagiaAudio.unlock()} />
-          <Prompts enter={enter} inspect={inspect} />
+          <Prompts enter={enter} inspect={inspect} talkGuide={talkGuide} />
+          <LookCrosshair locked={fpl.locked} />
           {!S.talk && !S.card && <Hint text={hintText(S)} />}
         </>
       )}
@@ -232,7 +229,7 @@ const ZONE_LABEL: Record<Zone, string> = { avlu: 'Avlu', narteks: 'Narteks', nef
 function hintText(S: S) {
   if (S.done) return 'Dilediğin gibi dolaş';
   const g = guideGoal(S.level, S.stop);
-  return g.door ? `${GUIDE.name} rampada bekliyor: ${g.door.label}` : `${GUIDE.name}’nın yanına yürü`;
+  return g.door ? `${GUIDE.name} rampada bekliyor: ${g.door.label}` : `${GUIDE.name}’nın yanına yürü, konuşmak için E`;
 }
 
 /* ---------- 3B dünya ---------- */
@@ -240,7 +237,7 @@ function World({ prof, stage, exposure }: { prof: Prof; stage: number; exposure:
   const started = useAya((s) => s.started), zone = useAya((s) => s.zone), hour = useAya((s) => s.hour);
   const outside = zone === 'avlu';
   const playerRef = useRef({ x: live.player.x, y: 0, z: live.player.z });
-  const pRig = useMemo(() => ({ current: live.player }), []), gRig = useMemo(() => ({ current: live.guide }), []);
+  const gRig = useMemo(() => ({ current: live.guide }), []);
   const crowd = useMemo<Walker[]>(() => EXTRAS.filter((e) => !prof.low || !e.minTier).map((e, i) => ({ ...e, y: LEVEL_Y[e.level], palette: ROLE[e.role][i % ROLE[e.role].length] })), [prof.low]);
   const { camera } = useThree();
   useFrame(({ clock }) => {   // başlık ekranı: avlunun üstünden süzülen kamera
@@ -259,7 +256,6 @@ function World({ prof, stage, exposure }: { prof: Prof; stage: number; exposure:
       {stage >= 1 && <><Columns tier={prof.tier} /><Galleries /></>}
       {stage >= 2 && <><Mosaics detail={prof.tesserae} tier={prof.tier} /><Furnishings tier={prof.tier} /><GodRays hour={hour} enabled={prof.rays && !outside} motes={prof.motes} /></>}
       <Crowd list={crowd} player={playerRef} />
-      <Character rig={pRig} palette={VISITOR} castShadow={prof.shadows} />
       <Character rig={gRig} palette={ELIF} castShadow={prof.shadows} />
       <GoalMarker />
       {started && <Controller playerRef={playerRef} exposure={exposure} composer={prof.bloom} />}
@@ -287,12 +283,11 @@ function GoalMarker() {
   return <mesh ref={ref} rotation-x={-Math.PI / 2}><ringGeometry args={[0.55, 0.7, 40]} /><meshBasicMaterial color={new THREE.Color('#ffd27a').multiplyScalar(2)} toneMapped={false} transparent opacity={0.8} /></mesh>;
 }
 
-const _t = new THREE.Vector3(), _c = new THREE.Vector3(), _look = new THREE.Vector3(), _lk = new THREE.Vector3(), _pt = new THREE.Vector3();
+const _look = new THREE.Vector3(), _pt = new THREE.Vector3();
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 function Controller({ playerRef, exposure, composer }: { playerRef: React.MutableRefObject<{ x: number; y: number; z: number }>; exposure: ExposureEffect; composer: boolean }) {
   const { camera, gl } = useThree();
-  const lookAt = useRef(new THREE.Vector3(live.player.x, 1.5, live.player.z)), camPos = useRef(camera.position.clone());
-  const st = useRef({ key: '', zone: '' as Zone | '', exp: EXPOSURE.avlu, fov: 60, step: 0 });
+  const st = useRef({ key: '', zone: '' as Zone | '', exp: EXPOSURE.avlu, step: 0, bob: 0 });
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useAya.getState(), lv = S.level, p = live.player, g = live.guide, cam = live.cam, t = clock.elapsedTime, Y0 = LEVEL_Y[lv];
     const frozen = S.fade || !!S.card || pause.on;
@@ -303,11 +298,10 @@ function Controller({ playerRef, exposure, composer }: { playerRef: React.Mutabl
     const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 5.2 : 3.5) * Math.min(1, ml);
     if (!frozen && ml > 0.08) {
       const [nx, nz] = slide(lv, [p.x, p.z], (mx / ml) * speed * dt, (mz / ml) * speed * dt), moved = Math.hypot(nx - p.x, nz - p.z);
-      p.speed = dt > 0 ? moved / dt : 0; p.x = nx; p.z = nz; p.yaw += wrap(Math.atan2(-mx, -mz) - p.yaw) * (1 - Math.exp(-dt * 12));
-      st.current.step += moved; if (st.current.step > 0.75) { st.current.step = 0; hagiaAudio.footstep(); }
-      if (cam.drag <= 0 && Math.abs(walk.x) < 0.5 && walk.y < -0.3) cam.yaw += wrap(p.yaw - cam.yaw) * (1 - Math.exp(-dt * 0.8));
+      p.speed = dt > 0 ? moved / dt : 0; p.x = nx; p.z = nz;
+      st.current.step += moved; st.current.bob += moved * 3.1; if (st.current.step > 0.75) { st.current.step = 0; hagiaAudio.footstep(); }
     } else p.speed = 0;
-    cam.drag -= dt; p.y = g.y = Y0;
+    p.yaw = cam.yaw; p.y = g.y = Y0;
     playerRef.current.x = p.x; playerRef.current.y = Y0; playerRef.current.z = p.z;
 
     /* rehber */
@@ -323,47 +317,22 @@ function Controller({ playerRef, exposure, composer }: { playerRef: React.Mutabl
     } else { g.speed = 0; g.yaw += wrap(Math.atan2(-(p.x - g.x), -(p.z - g.z)) - g.yaw) * (1 - Math.exp(-dt * 4)); }
     if (S.done && pd > 30) { g.x = p.x; g.z = p.z; }
     g.look = pd < 9 ? _look.set(p.x, Y0 + 1.6, p.z) : null;
+    let guideReady = false;
     if (!S.done && !S.talk && !S.fade && !S.card) {
       const stp = TOUR[S.stop], at = stp.level === lv && Math.hypot(stp.at[0] - g.x, stp.at[1] - g.z) < 0.6;
-      if (at && pd < STOP_RADIUS && !S.told.includes(stp.id)) {
-        g.point = _pt.set(...stp.look); const idx = S.stop;
-        say(stp.lines, () => { const s2 = useAya.getState(), told = [...s2.told, stp.id]; live.guide.point = null; if (idx + 1 >= TOUR.length) s2.set({ told, done: true }); else s2.set({ told, stop: idx + 1 }); });
-      }
+      guideReady = at && pd < STOP_RADIUS && !S.told.includes(stp.id);
     }
     const tk = useAya.getState().talk;
     if (tk) { const el = (performance.now() - tk.t0) / 1000; g.talking = true; g.mouth = el < tk.lines[tk.i].length / CPS + 0.2 ? Math.max(0, Math.sin(t * 15) * 0.55 + Math.sin(t * 9.7) * 0.35) : 0; if (tk.i > 0) g.point = null; if (el > lineTime(tk.lines[tk.i])) advance(); }
     else { g.talking = false; g.mouth = 0; }
 
     /* yakındaki rampa / ilgi noktası */
-    const door = frozen ? null : nearestDoor(lv, p.x, p.z), poi = frozen ? null : nearestPoi(lv, p.x, p.z), k = `${door?.id ?? ''}|${poi?.id ?? ''}`;
-    if (k !== st.current.key) { st.current.key = k; S.set({ prompt: { door, poi } }); }
+    const door = frozen ? null : nearestDoor(lv, p.x, p.z), poi = frozen ? null : nearestPoi(lv, p.x, p.z), guide = !frozen && guideReady, k = `${door?.id ?? ''}|${poi?.id ?? ''}|${guide}`;
+    if (k !== st.current.key) { st.current.key = k; S.set({ prompt: { door, poi, guide } }); }
 
-    /* kamera */
-    const card = S.card && poiLevel(S.card) === lv ? S.card : null, headY = Y0 + 1.6;
-    _t.set(p.x, headY, p.z);
-    let fov = 60, blocked = false;
-    if (card) {
-      // hedefe dön; göz oyuncunun başında, uzak hedefte görüş açısı daralır
-      const dx = card.pos[0] - p.x, dz = card.pos[2] - p.z;
-      if (Math.hypot(dx, dz) > 0.5) cam.yaw += wrap(Math.atan2(-dx, -dz) - cam.yaw) * (1 - Math.exp(-dt * 3));
-      _c.set(p.x + Math.sin(cam.yaw) * 0.6, headY + 0.15, p.z + Math.cos(cam.yaw) * 0.6); _lk.set(card.pos[0] + 0.01, card.pos[1], card.pos[2]);
-      fov = inspectFov(_c.distanceTo(_lk), card.radius) * 1.15;
-    } else {
-      const D = cam.dist, cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
-      _c.set(p.x + Math.sin(cam.yaw) * cp * D, headY + sp * D, p.z + Math.cos(cam.yaw) * cp * D);
-      const n = Math.ceil(D / 0.2); let ok = 0;
-      for (let i = 1; i <= n; i++) { const f = i / n; if (!camClear(lv, p.x + (_c.x - p.x) * f, p.z + (_c.z - p.z) * f)) break; ok = f; }
-      if (ok < 1) { blocked = true; const f = Math.max(0.12, ok - 0.06); _c.set(p.x + (_c.x - p.x) * f, headY + (_c.y - headY) * f, p.z + (_c.z - p.z) * f); }
-      _c.y = Math.max(Y0 + 0.35, Math.min(_c.y, Y0 + ceiling(lv, _c.x, _c.z) - 0.3));
-      // yukarı bakınca (eğim < 0) bakış noktası yükselir: kubbeyi görmek için
-      _lk.copy(_t); if (cam.pitch < 0) _lk.y += -cam.pitch * 14;
-      if (S.talk && pd < 6) _lk.lerp(_look.set(g.x, Y0 + 1.5, g.z), 0.35);
-    }
-    const kk = 1 - Math.exp(-dt * (card ? 3 : 10));
-    // duvar araya girince kamera yumuşatılmadan içeri alınır: aksi hâlde yumuşak geçiş sırasında duvarın içinden görünür
-    if (camPos.current.distanceTo(_c) > 25) { camPos.current.copy(_c); lookAt.current.copy(_lk); } else { if (blocked && _c.distanceTo(_t) < camPos.current.distanceTo(_t)) camPos.current.copy(_c); else camPos.current.lerp(_c, kk); lookAt.current.lerp(_lk, kk); }
-    camera.position.copy(camPos.current); camera.lookAt(lookAt.current);
-    const pc = camera as THREE.PerspectiveCamera; st.current.fov += (fov - st.current.fov) * (1 - Math.exp(-dt * 2.5)); if (Math.abs(pc.fov - st.current.fov) > 0.02) { pc.fov = st.current.fov; pc.updateProjectionMatrix(); }
+    /* kamera: birinci şahıs, göz hizasında (kart açılınca kamera kendiliğinden dönmez/yakınlaşmaz) */
+    const eyeY = Math.min(Y0 + 1.62, Y0 + ceiling(lv, p.x, p.z) - 0.25), bob = p.speed > 0.1 ? Math.sin(st.current.bob) * 0.03 : 0;
+    applyFp(camera, p.x, eyeY, p.z, cam, bob); easeFov(camera, 66, dt);
 
     /* bölge + göz uyumu */
     const z = zoneAt(eye3(lv, p.x, p.z)); if (z !== st.current.zone) { st.current.zone = z; S.set({ zone: z }); }
@@ -374,14 +343,19 @@ function Controller({ playerRef, exposure, composer }: { playerRef: React.Mutabl
 }
 
 /* ---------- arayüz ---------- */
-function Prompts({ enter, inspect }: { enter: (d: Door) => void; inspect: (p: Poi) => void }) {
+function Prompts({ enter, inspect, talkGuide }: { enter: (d: Door) => void; inspect: (p: Poi) => void; talkGuide: () => void }) {
   const prompt = useAya((s) => s.prompt), talk = useAya((s) => !!s.talk), card = useAya((s) => !!s.card), seen = useAya((s) => s.seen);
   if (card) return null;
   return (
     <div className={`absolute right-4 z-40 flex flex-col items-end gap-2 ${talk ? 'bottom-40' : 'bottom-24 sm:bottom-28'}`} onPointerDown={(e) => e.stopPropagation()}>
+      {prompt.guide && !talk && (
+        <button onClick={talkGuide} className="flex h-14 max-w-[62vw] items-center gap-2 rounded-full bg-[#b07a2a] px-5 text-sm font-bold text-white shadow-xl">
+          <MessageCircle size={20} className="shrink-0" /><span className="truncate">Konuş: {GUIDE.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· E</span>
+        </button>
+      )}
       {prompt.poi && (
         <button onClick={() => inspect(prompt.poi!)} className={`flex h-12 max-w-[62vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg ${seen.includes(prompt.poi.id) ? 'bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5' : 'bg-[#b07a2a] text-white'}`}>
-          <Search size={18} className="shrink-0" /><span className="truncate">İncele: {prompt.poi.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· F</span>
+          <Search size={18} className="shrink-0" /><span className="truncate">İncele: {prompt.poi.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· {prompt.guide || prompt.door ? 'F' : 'E'}</span>
         </button>
       )}
       {prompt.door && (
@@ -416,7 +390,7 @@ function DialogueBox() {
   );
 }
 function Hint({ text }: { text: string }) {
-  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · sürükle: bak</span></HudHint>;
+  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · tıkla, fareyle bak</span></HudHint>;
 }
 function InfoCard({ poi, onClose }: { poi: Poi | null; onClose: () => void }) {
   if (!poi) return null;
@@ -425,7 +399,7 @@ function InfoCard({ poi, onClose }: { poi: Poi | null; onClose: () => void }) {
 }
 function StartCard({ stage, onEnter, onExit }: { stage: number; onEnter: () => void; onExit?: () => void }) {
   return <StartSheet kicker="İstanbul · UNESCO Dünya Mirası · 537" title="Ayasofya: Işığın ve Taşın Dansı" loading={(stage + 1) / 3}
-    intro={<>Avludan karanlık nartekse, kubbenin altına, mihraba ve rampadan üst galerideki mozaiklere serbestçe yürü. Sanat tarihçisi <b>{GUIDE.name}</b> yol gösterecek; yanına gidince anlatır.</>}
+    intro={<>Avludan karanlık nartekse, kubbenin altına, mihraba ve rampadan üst galerideki mozaiklere serbestçe yürü. Sanat tarihçisi <b>{GUIDE.name}</b> yol gösterecek; yanına gidip <b>E</b>’ye basınca anlatır.</>}
     controls={CONTROLS} note="Ölçüler yaklaşıktır, plan stilizedir; mozaikler canlandırmadır. Elif Hoca kurgusal bir karakterdir." cta="Avluya gir" ctaIcon={<Footprints size={18} />} onStart={onEnter} onExit={onExit} />;
 }
 function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
@@ -435,8 +409,8 @@ function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void })
 const THEME = { accent: '#b07a2a' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: koş)</> },
-  { icon: <Move size={16} />, text: <>Sürükle: bak (yukarı sürükle: kubbeye bak) · iki parmak ya da tekerlek: yakınlaş</> },
-  { icon: <Search size={16} />, text: <><b>F</b>: incele · <b>E</b>: rampa / kapı</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda sahneye tıkla, fareyle bak (Esc bırakır) · telefonda ekranı sürükle</> },
+  { icon: <Search size={16} />, text: <><b>E</b>: konuş / incele / rampa · <b>F</b>: incele</> },
   { icon: <Sun size={16} />, text: <>Güneş düğmesi: günün saatini ve müziği değiştir</> },
 ];
 function Fallback({ onExit }: { onExit: () => void }) {

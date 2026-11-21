@@ -18,14 +18,12 @@ dolmabahce/
 
 ## Oynanış
 - **Rota:** Medhal → Muayede Salonu (avizenin altından geçer) → koridor → Kristal Merdiven (sol kol) → Süfera Salonu → Atatürk'ün odası.
-- **Hareket:** yalnızca ileri/geri (W/S ya da ekranı dikey sürükleme). Hız yumuşakça artar ve azalır.
-- **Kamera:** her bölümde kendiliğinden en iyi açıyı bulur ve yavaşça süzülür. Serbest kamera yok.
-  - Avizenin altında kamera avizenin çevresinde aşağıdan yukarı doğru döner (`orbitCamera`).
-  - Kristal Merdiven'de sabit bir köşe açısı kullanılır; iki kol ve kristal korkuluklar kadraja girer.
+- **Hareket:** rotada ileri/geri (W/S ya da joystick; bakılan yöne göre). Hız yumuşakça artar ve azalır.
+- **Kamera:** birinci şahıs, göz hizasında; bakış serbest (tıkla + fare / sürükleme). `orbitCamera` artık oyunda kullanılmıyor (testte kalıyor).
 - **Parıltı Avı:** on nesne nabız atar (eklemeli hale + yıldız ışıltısı).
   - Yaklaşınca kristal ve altın nesnelerde cam tınısı çalar ve "İncele" düğmesi çıkar.
-  - "İncele"ye basınca kamera nesneye makro yakınlaşır (dar görüş açısı) ve malzeme kartı açılır: ad, malzeme, bilgi, kaynak.
-  - Çift dokunuş ya da N tuşu: henüz bulunmamış en yakın nesneye kendiliğinden gider ve kartı açar.
+  - "İncele"ye (E) basınca malzeme kartı açılır: ad, malzeme, bilgi, kaynak. Kamera kendiliğinden yakınlaşmaz.
+  - ≫ düğmesi ya da N tuşu: henüz bulunmamış en yakın nesneye yürür (kartı açmaz).
 
 ## PBR gerekçeleri (ayrıntı: LuxuryMaterialSystem.ts)
 - **Kristal: `transmission 1, ior 1.5, roughness 0, thickness 0.5`.**

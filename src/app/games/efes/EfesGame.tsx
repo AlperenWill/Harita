@@ -5,8 +5,8 @@
  * Yamaç Evler) → Celsus Kütüphanesi → Mermer Cadde → Büyük Tiyatro → Arkadiane ve antik liman.
  * KAMERA: birinci şahıs, rotaya kilitli (yalnız ileri/geri: W/S ya da dikey sürükleme), bakış serbest (fare / yatay sürükleme / ←→).
  *   Arkana dönüp ileri basarsan geldiğin yöne yürürsün. Yokuşta bakış eğime uyar. (Zil Kale ile aynı, denenmiş kontrol şeması.)
- * ZAMAN PENCERESİ: yedi noktaya yaklaşınca yapı bugünkü harabe hâlinden Roma dönemindeki sağlam hâline çözülerek dönüşür; caddelerin
- *   sütunları da ayağa kalkar. Kaynaklı bir kart açılır. Arkadiane'nin sonunda bugünkü tarlaların yerine antik liman ve deniz belirir.
+ * ZAMAN PENCERESİ: yedi noktaya yaklaşınca "Zaman penceresi (E)" çıkar; oyuncu basınca yapı bugünkü harabe hâlinden Roma dönemindeki
+ *   sağlam hâline çözülerek dönüşür, caddelerin sütunları ayağa kalkar ve kaynaklı kart açılır (hiçbiri kendiliğinden olmaz). Arkadiane'nin sonunda bugünkü tarlaların yerine antik liman ve deniz belirir.
  * DOKUNMATİK: tek parmak sürükleme = yürü (dikey) + bak (yatay); çift dokunuş = henüz görülmemiş sıradaki pencereye git.
  * Öteki oyunlarla tutarlılık: ?q=low|medium|high, ?debug (__efes), pil tasarrufu, tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek.
  */
@@ -15,7 +15,7 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, InteractPrompt, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
 import { ChevronsRight, Footprints, MousePointer2 } from 'lucide-react';
 import { ArrowLeft, Hourglass, Landmark } from 'lucide-react';
@@ -62,11 +62,11 @@ class EfesAudio {
 const audio = new EfesAudio();
 
 /* ---------- durum ---------- */
-interface S { started: boolean; seen: string[]; card: Window | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, seen: [] as string[], card: null, endShown: false };
+interface S { started: boolean; seen: string[]; card: Window | null; near: Window | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, seen: [] as string[], card: null, near: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
-const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.04, goal: null as number | null, morph: {} as Record<string, number> };
+const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.04, goal: null as number | null, morph: {} as Record<string, number>, open: new Set<string>() };
 const U: U = Object.fromEntries([...WINDOWS.map((w) => w.id), 'all'].map((k) => [k, { value: 0 }]));
 
 export default function EfesGame({ onExit }: { onExit: () => void }) {
@@ -85,11 +85,13 @@ function Game({ onExit }: { onExit: () => void }) {
     return () => { b?.removeEventListener('levelchange', check); b?.removeEventListener('chargingchange', check); };
   }, []);
   const G = useSettings(); useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
-  useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.04, goal: null, morph: {} }); for (const k in U) U[k].value = 0; }, []);
+  useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.04, goal: null, morph: {} }); live.open.clear(); for (const k in U) U[k].value = 0; }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
+  /** Oyuncu isteyince pencere açılır: dönüşüm başlar, kart dönüşüm tamamlanınca açılır */
+  const openWin = useCallback(() => { const s = useDb.getState(), w = s.near; if (!w) return; if (live.open.has(w.id) && live.morph[w.id] > 0.6) { s.set({ card: w }); if (s.tts) audio.speak(`${w.name}. ${w.then}`); } else live.open.add(w.id); }, []);
   const goNext = useCallback(() => { const w = nextUnseen(live.s, useDb.getState().seen); if (w) live.goal = w.s; }, []);
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (!s.started || e.repeat) return; if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); if (e.code === 'KeyN') goNext(); };
+    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (!s.started || e.repeat) return; if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'KeyE') openWin(); if (e.code === 'KeyN') goNext(); };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
@@ -121,6 +123,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Hourglass size={15} />} label={nextW ? `Sıradaki: ${nextW.name}` : 'Bütün pencereler açıldı'} done={S.seen.length} total={WINDOWS.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
       {S.started && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki pencere<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · N</span></Hint>}
+      {S.started && S.near && !S.card && <InteractPrompt icon={<Hourglass size={18} />} label={live.open.has(S.near.id) ? `Bilgi: ${S.near.name}` : `Zaman penceresi: ${S.near.name}`} onClick={openWin} muted={S.seen.includes(S.near.id)} />}
       {S.card && <Card w={S.card} onClose={close} />}
       {!S.started && <TitleCard onExit={onExit} onStart={start} />}
       {S.started && atEnd && S.seen.length === WINDOWS.length && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
@@ -170,9 +173,12 @@ function Controller({ saver }: { saver: boolean }) {
     st.current.step += Math.abs(moved); if (st.current.step > 0.8) { st.current.step = 0; audio.step(); } st.current.bob += Math.abs(moved) * 2.2;
     // zaman pencereleri
     let all = 0;
-    for (const w of WINDOWS) { const prev = live.morph[w.id] ?? 0, tg = S.started ? morphTarget(live.s, w) : 0, next = saver ? (tg > 0.5 ? 1 : 0) : stepMorph(prev, tg, dt); live.morph[w.id] = next; U[w.id].value = next; all = Math.max(all, next);
+    let near: Window | null = null;
+    for (const w of WINDOWS) { const raw = S.started ? morphTarget(live.s, w) : 0; if (raw >= 0.5 && !near) near = w;   // istem yalnızca yapının yanında (kenarda değil) if (raw === 0) live.open.delete(w.id);   // uzaklaşınca pencere kapanır, dönünce yine E ile açılır
+      const prev = live.morph[w.id] ?? 0, tg = live.open.has(w.id) && raw > 0 ? 1 : 0, next = saver ? (tg > 0.5 ? 1 : 0) : stepMorph(prev, tg, dt); live.morph[w.id] = next; U[w.id].value = next; all = Math.max(all, next);
       if (activated(prev, next) && S.started) { audio.chime(); const s2 = useDb.getState(); s2.set({ card: w, seen: s2.seen.includes(w.id) ? s2.seen : [...s2.seen, w.id] }); if (s2.tts) audio.speak(`${w.name}. ${w.then}`); }
       if (S.card?.id === w.id && tg === 0 && next < 0.4) S.set({ card: null }); }
+    if ((near?.id ?? null) !== (S.near?.id ?? null)) S.set({ near });
     U.all.value = all;
     // kamera
     const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(st.current.head)) st.current.head = hd; st.current.head += wrapA(hd - st.current.head) * (1 - Math.exp(-dt * 3));
@@ -192,10 +198,11 @@ const THEME = { accent: '#b98a3e' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
   { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
-  { icon: <ChevronsRight size={16} />, text: <>çift dokun: sıradaki pencereye git</> },
+  { icon: <Hourglass size={16} />, text: <>noktada <b>E</b> / Zaman penceresi: yapıyı Roma dönemine döndür</> },
+  { icon: <ChevronsRight size={16} />, text: <>çift dokun ya da N: sıradaki pencereye git</> },
 ];
 function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
-  return <StartSheet kicker="İzmir · Selçuk · UNESCO Dünya Mirası" title="Efes: Zaman Penceresi" intro={<>Antik kentin mermer caddelerinden aşağı yürü. Odeon’dan Celsus Kütüphanesi’ne, oradan Büyük Tiyatro’ya ve limana. Yedi noktada zaman penceresi açılır: yıkık yapılar Roma dönemindeki hâline döner.</>} controls={CONTROLS} note="Plan stilizedir, mesafeler kısaltılmıştır. Yapıların “sağlam hâli” bir canlandırmadır." cta="Kente gir" ctaIcon={<Landmark size={18} />} onStart={onStart} onExit={onExit} />;
+  return <StartSheet kicker="İzmir · Selçuk · UNESCO Dünya Mirası" title="Efes: Zaman Penceresi" intro={<>Antik kentin mermer caddelerinden aşağı yürü. Odeon’dan Celsus Kütüphanesi’ne, oradan Büyük Tiyatro’ya ve limana. Yedi noktada zaman penceresini açabilirsin: yıkık yapılar Roma dönemindeki hâline döner.</>} controls={CONTROLS} note="Plan stilizedir, mesafeler kısaltılmıştır. Yapıların “sağlam hâli” bir canlandırmadır." cta="Kente gir" ctaIcon={<Landmark size={18} />} onStart={onStart} onExit={onExit} />;
 }
 function EndCard({ onStay, onExit, onRestart }: { onStay: () => void; onExit: () => void; onRestart?: () => void }) {
   return <EndSheet kicker="Bütün pencereler açıldı" title="Efes’in iki yüzü" text="Odeon’dan limana, kentin bugününü ve Roma dönemini yan yana gördün. Deniz bugün kilometrelerce uzakta." stayLabel="Gezmeye devam" onStay={onStay} onExit={onExit} onRestart={onRestart} />;

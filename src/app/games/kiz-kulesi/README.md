@@ -1,7 +1,7 @@
 # Kız Kulesi — "Vapur Yolculuğu & Ada Keşfi"
 
 Adres: `/oyun/kiz-kulesi`. 3D haritada Kız Kulesi noktasının kartındaki **🚢 Kız Kulesi: Vapur Yolculuğu** düğmesiyle de açılır.
-Bağımsız, NPC odaklı bir oyun; kodu ayrı bir parça olarak yalnızca bu sayfada indirilir (~66 KB, gzip ~24 KB). Serbest kamera yok.
+Bağımsız, NPC odaklı bir oyun; kodu ayrı bir parça olarak yalnızca bu sayfada indirilir (~66 KB, gzip ~24 KB). Kamera birinci şahıstır; bakış serbest.
 
 ## Dosya yapısı
 ```
@@ -27,7 +27,7 @@ src/app/pages/KizKulesiPage.tsx · tests/kizkulesi.test.ts
 ```
 
 ## Akış
-| Bölüm | Oyuncu | Can | Kamera |
+| Bölüm | Oyuncu | Can | Kamera (eski, üçüncü şahıs düzeni; artık her bölümde birinci şahıs) |
 |---|---|---|---|
 | Vapur (gidiş) | Baş güvertesinde serbest ama sınırlı yürüyüş (düşme yok) | Yanında (beside); replikler rastgele sırayla | Arkada ve köprüüstü hizasında, burna (kuleye) bakar; vapurla birlikte kuleye ilerler |
 | Yanaşma | İskele tahtası inince güverte → tahta → iskele → kapı | Önden yürür (lead), oyuncu 6 m geride kalırsa bekler | Batıdan, sabit yönlü takip |
@@ -35,7 +35,8 @@ src/app/pages/KizKulesiPage.tsx · tests/kizkulesi.test.ts
 | Teras | Çatıda kulenin çevresinde yürüyüş | Yanında; iki yakayı gösterir; etkileşim düğmesi ek bilgi | Doğudan, yüksekten batıya |
 | Dönüş | İskeleden vapura bin | Adada kalır, vedalaşır | Doğudan iskeleye |
 
-Kullanıcının kamera üzerindeki tek kontrolü yakınlaştırmadır (+/− düğmeleri, fare tekerleği, iki parmak, klavyede +/−).
+Kamera artık her bölümde birinci şahıstır (göz hizası): masaüstünde tıkla + fareyle, telefonda sürükleyerek bakılır; yakınlaştırma düğmeleri kaldırıldı.
+Can kendiliğinden konuşmaz: bölüm başında, vapurda arada bir ve merdivendeki taşlarda "Can anlatmak istiyor" çıkar; konuşma E / el düğmesiyle başlar.
 
 ## Neden bu NPC davranışı
 - **Rehber, oyun karakteri değil:** Can oyuncunun yolunu kesmemeli ve kaybolmamalı. Vapurda yanında, adada önden (oyuncu geride kalınca bekleyerek),

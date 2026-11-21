@@ -1,41 +1,51 @@
 import { describe, expect, it } from 'vitest';
 import * as S from '../src/app/games/galata/StaircaseMechanic';
+import * as F from '../src/app/games/galata/firstPerson';
 import { CRESTS, DUNGEON, WALK_Z, inBeam, trackBeam, type V3 } from '../src/app/games/galata/dungeon';
 import { VIEWPOINTS, bearingOf, distanceOf, isWater, toLocal } from '../src/app/games/galata/panorama';
 import { EXHIBITS, nearestExhibit } from '../src/app/games/galata/exhibits';
 
-describe('Galata: merdiven ritmi', () => {
-  it('vuruşa denk gelen kaydırma basamak çıkar, uzak olan çıkmaz', () => {
-    let s = S.createClimb(0);
-    let r = S.stepInput(s, 0.8 + 0.05); expect(r.events[0]).toMatchObject({ type: 'step', judgement: 'tam' }); s = r.state;
-    r = S.stepInput(s, 1.6 + 0.25); expect(r.events[0]).toMatchObject({ type: 'step', judgement: 'iyi' }); s = r.state;
-    r = S.stepInput(s, 2.0); expect(r.events[0].type).toBe('miss'); expect(r.state.steps).toBe(2);
+describe('Galata: sarmal merdiven (yürüyerek çıkma)', () => {
+  it('yükseklik açıyla artar, basamaklıdır ve tepede durur', () => {
+    let prev = -1;
+    for (let th = 0; th <= S.TOP_THETA; th += 0.05) { const y = S.floorAt(th); expect(y).toBeGreaterThanOrEqual(prev); prev = y; }
+    expect(S.floorAt(S.TOP_THETA)).toBeCloseTo(S.TOP_Y, 5); expect(S.floorAt(S.TOP_THETA + 5)).toBeCloseTo(S.TOP_Y, 5); expect(S.floorAt(-1)).toBe(0);
   });
-  it('kusursuz oyuncu: 3 sahanlıkta nefes alarak 48 basamağı çıkar', () => {
-    let s = S.createClimb(0), t = 0, landings = 0, top = false;
-    while (!top && t < 400) {
-      if (s.phase === 'climb') {
-        t = s.origin + Math.ceil((t - s.origin) / s.beat + 0.5) * s.beat;   // bir sonraki vuruş
-        const r = S.stepInput(s, t); s = r.state;
-        for (const e of r.events) { if (e.type === 'landing') landings++; if (e.type === 'top') top = true; }
-      } else if (s.phase === 'breath') {
-        s = S.holdStart(s, t); t += S.BREATH_FULL; const r = S.tick(s, t); s = r.state;
-        expect(r.events[0].type).toBe('breath-done');
-      }
-    }
-    expect(top).toBe(true); expect(s.steps).toBe(S.TOTAL_STEPS); expect(landings).toBe(S.FLIGHTS - 1); expect(s.missed).toBe(0);
+  it('açı tur atınca da kesintisiz izlenir; uçlarda sınırlanır', () => {
+    let th = 0.1; const r = 2.6;
+    for (let k = 1; k <= 200; k++) { const a = 0.1 + k * 0.1; th = S.unwrap(th, Math.cos(a) * r, Math.sin(a) * r); }
+    expect(th).toBeCloseTo(0.1 + 200 * 0.1, 5);
+    expect(S.clampTheta(-3)).toBeGreaterThan(-0.5); expect(S.clampTheta(999)).toBeLessThan(S.TOP_THETA + 0.5);
   });
-  it('kısa nefes cezasız tekrarlanır; sahanlıkta basamak çıkılmaz', () => {
-    let s = { ...S.createClimb(0), steps: S.STEPS_PER_FLIGHT, phase: 'breath' as const };
-    expect(S.stepInput(s, 10).events).toEqual([]);
-    s = S.holdStart(s, 10) as typeof s;
-    const r = S.holdEnd(s, 11); expect(r.events[0].type).toBe('breath-short'); expect(r.state.phase).toBe('breath');
+  it('çıkmak nefes harcar; durunca dolar, pencere önünde daha hızlı; nefes bitince yavaşlar ama durmaz', () => {
+    let b = 1; for (let i = 0; i < 50; i++) b = S.breathStep(b, 0.2, true, false, 0.1);
+    expect(b).toBeLessThan(0.1); expect(S.speedFactor(b)).toBeGreaterThan(0.25); expect(S.speedFactor(1)).toBe(1);
+    const rest = S.breathStep(0.2, 0, false, false, 1), win = S.breathStep(0.2, 0, false, true, 1);
+    expect(rest).toBeGreaterThan(0.2); expect(win).toBeGreaterThan(rest);
+    expect(S.breathStep(0.5, 0, true, true, 1)).toBe(0.5);   // yürürken dolmaz
   });
-  it('art arda 3 kaçırma tempoyu yavaşlatır, ama en yavaş sınırın altına inmez', () => {
-    let s = S.createClimb(0);
-    for (let i = 0; i < 30; i++) s = S.stepInput(s, s.origin + s.beat * 0.5 + i * 0.001).state;
-    expect(s.beat).toBeGreaterThan(S.START_BEAT); expect(s.beat).toBeLessThanOrEqual(S.SLOWEST_BEAT);
-    expect(s.phase).toBe('climb');
+  it('her pencere bir sahanlıkta, merdivenin içinde ve kaynaklı', () => {
+    expect(S.WINDOWS.length).toBe(S.TURNS - 1);
+    for (const w of S.WINDOWS) { expect(w.theta).toBeGreaterThan(0); expect(w.theta).toBeLessThan(S.TOP_THETA); expect(S.atWindow(w.theta, w)).toBe(true); expect(w.source.url).toMatch(/^https:/); }
+  });
+});
+
+describe('Galata: birinci şahıs hareket ve bakış', () => {
+  it('ileri, bakılan yöne gider; sağa adım dik yöne; çapraz hızlanmaz', () => {
+    const [x, z] = F.walk([0, 0], 0, 1, 0, 2, 1); expect(x).toBeCloseTo(0); expect(z).toBeCloseTo(-2);
+    const [x2, z2] = F.walk([0, 0], 0, 0, 1, 2, 1); expect(x2).toBeCloseTo(2); expect(z2).toBeCloseTo(0);
+    const [x3, z3] = F.walk([0, 0], 1.1, 1, 1, 2, 1); expect(Math.hypot(x3, z3)).toBeCloseTo(2, 5);
+  });
+  it('alanlar ve engeller', () => {
+    expect(F.clampTo({ kind: 'rect', minX: -1, maxX: 1, minZ: -2, maxZ: 2 }, [5, -9])).toEqual([1, -2]);
+    const [rx, rz] = F.clampTo({ kind: 'ring', rMin: 8, rMax: 9 }, [3, 0]); expect(Math.hypot(rx, rz)).toBeCloseTo(8);
+    const [px, pz] = F.pushOut([0.1, 0], [{ x: 0, z: 0, r: 1 }]); expect(Math.hypot(px, pz)).toBeCloseTo(1);
+  });
+  it('bakış serbest: yaw sınırsız, pitch yalnızca boyun sınırında; hedefe bakış ölçülür', () => {
+    expect(F.clampPitch(3)).toBe(F.PITCH_LIMIT); expect(F.clampPitch(-3)).toBe(-F.PITCH_LIMIT);
+    expect(F.lookError([0, 1.6, 0], 0, 0, [0, 1.6, -5])).toBeCloseTo(0, 5);
+    expect(F.lookError([0, 1.6, 0], Math.PI, 0, [0, 1.6, -5])).toBeCloseTo(Math.PI, 5);
+    expect(F.yawError([0, 0], -Math.PI / 2, [10, 0])).toBeCloseTo(0, 5);
   });
 });
 

@@ -1,8 +1,8 @@
 /**
  * İshak Paşa Sarayı — "Taşın Nakışı". Ana yönetici.
  *
- * Taç kapıdan gir; selamlık → türbe → cami → harem → teras. Her durakta aşınmış bir süsleme panosu var:
- * 3×3 parçayı dokunarak çevir, motifi tamamla. Tamamlanan motif saraydaki panoya oturur ve bilgi kartı açılır.
+ * Taç kapıdan gir; selamlık → türbe → cami → harem → teras. Her durakta aşınmış bir süsleme panosu var; "Onar (E)" ile bulmaca açılır
+ * (kendiliğinden açılmaz): 3×3 parçayı dokunarak çevir, motifi tamamla. Tamamlanan motif saraydaki panoya oturur ve bilgi kartı açılır.
  * KAMERA: birinci şahıs, rotaya kilitli (Troya, Ani ile aynı şema). Bulmaca açıkken yürüme durur.
  */
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
@@ -17,7 +17,7 @@ import { Clouds, Sun } from '../shared/scenery';
 import { LookCrosshair } from '../shared/mouseLook';
 import { Boulders, Grass, Mountain, OldFortress, Palace, Panel, SUN_DIR, Terrain, useMats } from './IshakModels';
 import { motifURL } from './motif';
-import { Controls, EndCard, GameMenu, Hint, HudTheme, InfoCard, NavRail, Objective, StopList, TitleCard, TopBar, WalkAudio, useAudioSettings, WikiFallback, detectTier, dprFor, newLive, pinned, stepWalk, supportsWebGL, useWalkInput, wrapA, type CamState, type Tier } from '../shared/walkKit';
+import { Controls, EndCard, GameMenu, Hint, HudTheme, InfoCard, InteractPrompt, NavRail, Objective, StopList, TitleCard, TopBar, WalkAudio, useAudioSettings, WikiFallback, detectTier, dprFor, newLive, pinned, stepWalk, supportsWebGL, useWalkInput, wrapA, type CamState, type Tier } from '../shared/walkKit';
 
 const audio = new WalkAudio({ freq: 380, gain: 0.1 }, 'male');
 interface S { started: boolean; listOpen: boolean; done: string[]; near: Stop | null; puzzle: Stop | null; tiles: number[]; card: Stop | null; muted: boolean; endShown: boolean; set: (p: Partial<S>) => void }
@@ -41,7 +41,7 @@ function Game({ onExit }: { onExit: () => void }) {
   const tap = useCallback((i: number) => { const s = useDb.getState(), p = s.puzzle; if (!p || i === CENTER) return; const tiles = rotateTile(s.tiles, i); audio.click();
     if (isSolved(tiles)) { audio.tone(true); s.set({ tiles, puzzle: null, card: p, done: [...s.done, p.id] }); audio.speak(`${p.name}. ${p.text}`); } else s.set({ tiles }); }, []);
   const solveAll = useCallback(() => { const s = useDb.getState(); if (!s.puzzle) return; s.tiles.forEach((v, i) => { for (let k = 0; k < (4 - v) % 4; k++) tap(i); }); }, [tap]);
-  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); }, () => audio.unlock(), () => { const s = useDb.getState(); return s.started && !s.card && !s.puzzle && !s.listOpen; });
+  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'Escape' && s.puzzle) { e.preventDefault(); s.set({ puzzle: null }); } else if (e.code === 'KeyE' && !s.puzzle && s.near && !s.done.includes(s.near.id)) s.set({ puzzle: s.near }); }, () => audio.unlock(), () => { const s = useDb.getState(); return s.started && !s.card && !s.puzzle && !s.listOpen; });
 
   const goTo = useCallback((i: number) => { if (i < 0 || i >= STOPS.length) return; nav.to = STOPS[i].s; nav.speed = Math.max(16, Math.abs(nav.to - live.s) / 3); useDb.getState().set({ card: null, puzzle: null, listOpen: false }); audio.hush(); }, []);
   const restart = useCallback(() => { audio.hush(); Object.assign(live, newLive()); nav.to = null; useDb.setState({ ...INITIAL, started: true }); }, []);
@@ -62,7 +62,7 @@ function Game({ onExit }: { onExit: () => void }) {
       {S.listOpen && <StopList title="Nakışlar" items={STOPS.map((x) => ({ id: x.id, name: x.name, done: S.done.includes(x.id) }))} doneLabel="Onarıldı" todoLabel="Henüz onarılmadı" onGo={goTo} onRead={(i) => { const x = STOPS[i]; S.set({ listOpen: false, card: x }); audio.speak(`${x.name}. ${x.text}`); }} onRestart={restart} onClose={() => S.set({ listOpen: false })} />}
       <LookCrosshair locked={input.locked} />
       {S.puzzle && <PuzzlePanel stop={S.puzzle} tiles={S.tiles} onTap={tap} onLeave={() => S.set({ puzzle: null })} />}
-      {S.started && !S.puzzle && !S.card && S.near && !S.done.includes(S.near.id) && <button onPointerDown={(e) => e.stopPropagation()} onClick={() => S.set({ puzzle: S.near })} className="absolute bottom-20 left-1/2 z-30 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 font-bold text-white shadow-[0_10px_30px_rgba(31,27,23,0.3)]" style={{ background: THEME.accent }}><Puzzle size={18} /> Nakışı onar</button>}
+      {S.started && !S.puzzle && !S.card && S.near && !S.done.includes(S.near.id) && <InteractPrompt icon={<Puzzle size={18} />} label={`Onar: ${S.near.name}`} onClick={() => S.set({ puzzle: S.near })} />}
       {S.started && !S.puzzle && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · W/S yürü · tıkla, fareyle bak (Esc: bırak)</span></Hint>}
       {S.card && !S.listOpen && <InfoCard kicker={`Nakış ${S.done.indexOf(S.card.id) + 1} / ${STOPS.length} · ${S.card.motifName}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} />}
       {!S.started && <TitleCard kicker="Ağrı · Doğubayazıt · 18. yüzyıl" title="İshak Paşa Sarayı: Taşın Nakışı" note="Plan stilizedir; motifler saraydaki süslemelerden esinlenilmiş temsilî çizimlerdir." cta="Taç kapıdan gir" onExit={onExit} controls={CONTROLS} icon={<Puzzle size={18} />} onStart={() => { audio.unlock(); S.set({ started: true }); }}>
@@ -96,7 +96,7 @@ const THEME = { accent: '#a8782c' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da <b>W/S</b>: ileri / geri yürü</> },
   { icon: <MousePointer2 size={16} />, text: <>Yatay sürükle ya da <b>tıkla, fareyle bak</b> (Esc imleci bırakır)</> },
-  { icon: <Puzzle size={16} />, text: <>Nakış parçasına dokun: 90° döner; motifi tamamla</> },
+  { icon: <Puzzle size={16} />, text: <><b>E</b> / Onar: panoyu aç · parçaya dokun: 90° döner; motifi tamamla</> },
   { icon: <ChevronRight size={16} />, text: <>Sağdaki oklar ya da çift dokunuş: sonraki / önceki durak</> },
 ];
 
@@ -139,7 +139,7 @@ function Controller() {
     if (focus) { const [px, py, pz] = focus.panel.at, dx = px - camera.position.x, dz = pz - camera.position.z, want = wrapA(Math.atan2(-dx, -dz) - cs.current.head);
       live.yaw += wrapA(want - live.yaw) * (1 - Math.exp(-dt * 3)); live.pitch += (THREE.MathUtils.clamp(Math.atan2(py - camera.position.y + (S.puzzle ? -1.2 : 0), Math.hypot(dx, dz)), -0.5, 0.5) - live.pitch) * (1 - Math.exp(-dt * 3)); }
     if (id !== last.current) { last.current = id;
-      if (n && !S.done.includes(n.id)) S.set({ near: n, puzzle: n, tiles: scramble(STOPS.indexOf(n) + 1), card: null });
+      if (n && !S.done.includes(n.id)) S.set({ near: n, tiles: scramble(STOPS.indexOf(n) + 1), card: null });   // bulmaca kendiliğinden açılmaz: "Onar" (E)
       else S.set({ near: n, ...(n ? {} : { card: null, puzzle: null }) }); }
   });
   return null;

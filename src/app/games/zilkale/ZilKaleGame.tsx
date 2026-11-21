@@ -6,11 +6,11 @@
  * KAMERA:
  *   - Vadide birinci şahıs, rotaya kilitli: yalnız İLERİ/GERİ (W/S ya da dikey sürükleme). Bakış serbest (fare sürükleme / yatay
  *     sürükleme / ←→). Arkana dönüp ileri basarsan geldiğin yöne yürürsün (girdi işareti bakış yönüne göre çevrilir).
- *   - Kale tepesinde (rotanın son 14 metresi) sabit üçüncü şahıs geniş açı: kale + arkadaki dağlar kadrajda; kamera kalenin DIŞINDA,
- *     karşı yamacın üstünde durur, duvarların içine asla girmez (SUMMIT_CAM, kale merkezinden ~40 m).
+ *   - Kale tepesinde de birinci şahıs (üçüncü şahıs geniş açı kaldırıldı); tepede sis açılır, arkadaki dağlar görünür.
  * SİS: VolumetricFogSystem.density(s, t, open) her kare FogExp2'ye yazılır; köprü, şelale ve kale girişinde "açılma anı" (open → 1).
  *   Sis perdeleri rüzgârla sürüklenir; ışık huzmelerinin parlaklığı Henyey–Greenstein fazı × geçirgenlik (bakış güneşe dönünce güçlenir).
- * TARİH KATMANI: beş noktaya yaklaşınca yapı harabe ↔ sağlam hâl arasında çözülerek dönüşür (HistoryLayerMorphing); kart + cızırtı sesi.
+ * TARİH KATMANI: beş noktada "Tarih katmanı (E)" çıkar; oyuncu basınca yapı harabe ↔ sağlam hâl arasında çözülerek dönüşür
+ *   (HistoryLayerMorphing) ve kart açılır. Hiçbiri kendiliğinden olmaz.
  * DOKUNMATİK: tek parmak sürükleme = yürü (dikey) + bak (yatay); çift dokunuş = henüz görülmemiş en yakın Tarih Katmanı noktasına git.
  * Şanlıurfa ve öteki oyunlarla tutarlılık: aynı cihaz profili (?q=low|medium|high), ?debug kancası (__zil), pil tasarrufu, PerformanceMonitor
  *   ile kademe düşürme, tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek ekran; kartlarda kaynak bağlantısı.
@@ -22,12 +22,12 @@ import { PerformanceMonitor } from '@react-three/drei';
 import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
-import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, InteractPrompt, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
 import { ChevronsRight, Footprints, MousePointer2 } from 'lucide-react';
 import { ArrowLeft, History, Mountain } from 'lucide-react';
 import { Character, newRig, type Palette } from '../kiz-kulesi/NPCController';
-import { LAYERS, REVEALS, ROUTE_LEN, SUMMIT_CAM, SUMMIT_S, castleBase, fallsFoot, heightAt, nextLayer, riverX, routeAt, waterY, type Layer, type V3 } from './valley';
+import { LAYERS, REVEALS, ROUTE_LEN, SUMMIT_S, fallsFoot, heightAt, nextLayer, riverX, routeAt, waterY, type Layer, type V3 } from './valley';
 import { BASE_DENSITY, density, fogPlan, fogSheetTexture, linearFogRange, revealWeight, shaftIntensity, stepOpen, summitClear, wind, type FogPlan, type Tier } from './VolumetricFogSystem';
 import { activated, makeMorphUniforms, morphTarget, stepMorph } from './HistoryLayerMorphing';
 import { alderGeometry, billboardGeometry, fernGeometry, fernTexture, fillInstances, makeWind, mossGeometry, rhodoGeometry, scatter, spruceCardTexture, spruceGeometry, windMaterial, type WindUniforms } from './ProceduralVegetation';
@@ -47,11 +47,11 @@ const TRAVELER: Palette = { skin: '#d2a07c', hair: '#2a1d14', top: '#7a2e24', pa
 const FOG_COLOR = new THREE.Color('#b7c2c3'), WALK = 3.5, EYE = 1.65;
 
 /* ---------- durum ---------- */
-interface S { started: boolean; seen: string[]; card: Layer | null; reveal: string | null; summit: boolean; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, seen: [] as string[], card: null, reveal: null, summit: false, endShown: false };
+interface S { started: boolean; seen: string[]; card: Layer | null; near: Layer | null; reveal: string | null; summit: boolean; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, seen: [] as string[], card: null, near: null, reveal: null, summit: false, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
-const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.05, goal: null as number | null, open: 0, sigma: BASE_DENSITY, rig: newRig(0, 0, 0), morph: {} as Record<string, number> };
+const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.05, goal: null as number | null, open: 0, sigma: BASE_DENSITY, rig: newRig(0, 0, 0), morph: {} as Record<string, number>, opened: new Set<string>() };
 const U = makeMorphUniforms();
 
 export default function ZilKaleGame({ onExit }: { onExit: () => void }) {
@@ -73,14 +73,16 @@ function Game({ onExit }: { onExit: () => void }) {
   }, []);
   const G = useSettings(); useEffect(() => { zilAudio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => { zilAudio.saver = saver; }, [saver]);
-  useEffect(() => () => { zilAudio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.05, goal: null, open: 0, morph: {} }); for (const k in U) U[k].value = 0; }, []);
+  useEffect(() => () => { zilAudio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.05, goal: null, open: 0, morph: {} }); live.opened.clear(); for (const k in U) U[k].value = 0; }, []);
 
   const close = useCallback(() => { useDb.getState().set({ card: null }); zilAudio.hush(); }, []);
+  /** Oyuncu isteyince tarih katmanı açılır (dönüşüm + kart); açıksa kart yeniden gösterilir */
+  const openLayer = useCallback(() => { const s = useDb.getState(), l = s.near; if (!l) return; if (live.opened.has(l.id) && (live.morph[l.id] ?? 0) > 0.6) { s.set({ card: l }); if (s.tts) zilAudio.speak(`${l.name}. ${l.pastText}`); } else live.opened.add(l.id); }, []);
   const goNext = useCallback(() => { const l = nextLayer(live.s, useDb.getState().seen); if (l) live.goal = l.s; }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (!s.started || e.repeat) return;
-      if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); if (e.code === 'KeyN') goNext(); };
+      if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'KeyE') openLayer(); if (e.code === 'KeyN') goNext(); };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
@@ -135,6 +137,7 @@ function Game({ onExit }: { onExit: () => void }) {
       {S.reveal && <p key={S.reveal} className="pointer-events-none absolute inset-x-0 top-[28%] text-center text-3xl font-bold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.6)] sm:text-4xl" style={{ animation: 'zkfade 4.2s ease-out forwards' }}>{S.reveal}<span className="mt-1 block text-sm font-normal text-white/85">sis aralanıyor</span></p>}
       <style>{'@keyframes zkfade{0%{opacity:0;transform:translateY(8px)}15%{opacity:1;transform:none}70%{opacity:1}100%{opacity:0}}'}</style>
       {S.started && !S.card && <Hint>{S.summit ? 'Zil Kale · geri yürümek için aşağı sürükle' : 'Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki tarih izi'}<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · N</span></Hint>}
+      {S.started && S.near && !S.card && <InteractPrompt label={live.opened.has(S.near.id) ? `Bilgi: ${S.near.name}` : `Tarih katmanı: ${S.near.name}`} onClick={openLayer} muted={S.seen.includes(S.near.id)} />}
       {S.card && <Card l={S.card} onClose={close} />}
       {!S.started && <TitleCard onExit={onExit} onStart={start} />}
       {S.started && S.summit && allSeen && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
@@ -239,7 +242,7 @@ function LightShafts({ count }: { count: number }) {
 }
 
 /* ---------- hareket, kamera, sis, tarih katmanı ---------- */
-const _e = new THREE.Euler(0, 0, 0, 'YXZ'), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _p2 = new THREE.Vector3(), _l = new THREE.Vector3(), _f = new THREE.Vector3();
+const _e = new THREE.Euler(0, 0, 0, 'YXZ'), _q = new THREE.Quaternion(), _m = new THREE.Matrix4(), _p = new THREE.Vector3(), _l = new THREE.Vector3(), _f = new THREE.Vector3();
 const wrapA = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 function Controller({ plan, wind: wu, sky, charRef }: { plan: FogPlan; wind: WindUniforms; sky: THREE.Color; charRef: React.RefObject<THREE.Group> }) {
   const { camera, scene } = useThree();
@@ -247,7 +250,6 @@ function Controller({ plan, wind: wu, sky, charRef }: { plan: FogPlan; wind: Win
   const fogs = useMemo(() => ({ exp: new THREE.FogExp2(FOG_COLOR.getHex(), BASE_DENSITY), lin: new THREE.Fog(FOG_COLOR.getHex(), 2, 60) }), []);
   useEffect(() => { scene.background = FOG_COLOR.clone(); return () => { scene.fog = null; scene.background = null; }; }, [scene]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __zilScene: unknown }).__zilScene = scene; }, [scene]);
-  const ys = useMemo(() => ({ cam: Math.max(castleBase() + SUMMIT_CAM.up, heightAt(SUMMIT_CAM.pos[0], SUMMIT_CAM.pos[2]) + 4), look: castleBase() + 6 }), []);
   const hills = useCallback((): V3 => { const z = camera.position.z + (Math.random() - 0.5) * 180, side = Math.random() < 0.5 ? -1 : 1, x = riverX(z) + side * (60 + Math.random() * 50); return [x, heightAt(x, z), z]; }, [camera]);
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState(), t = clock.elapsedTime;
@@ -268,9 +270,12 @@ function Controller({ plan, wind: wu, sky, charRef }: { plan: FogPlan; wind: Win
     sky.copy(FOG_COLOR).lerp(new THREE.Color('#9fb4c4'), summitClear(live.s) * 0.8); (scene.background as THREE.Color).copy(sky); fogs.exp.color.copy(sky); fogs.lin.color.copy(sky);
     wu.uTime.value = t; wu.uWind.value.set(w.dir[0], w.dir[1], 0); wu.uAmp.value = plan.windAnim ? 0.5 + w.speed : 0;
     // --- tarih katmanı
-    for (const l of LAYERS) { const prev = live.morph[l.id] ?? 0, tg = S.started ? morphTarget(live.s, l) : 0, next = plan.saver ? (tg > 0.5 ? 1 : 0) : stepMorph(prev, tg, dt); live.morph[l.id] = next; U[l.id].value = next;
+    let near: Layer | null = null;
+    for (const l of LAYERS) { const raw = S.started ? morphTarget(live.s, l) : 0; if (raw >= 0.5 && !near) near = l;   // istem yalnızca yapının yanında (kenarda değil) if (raw === 0) live.opened.delete(l.id);
+      const prev = live.morph[l.id] ?? 0, tg = live.opened.has(l.id) && raw > 0 ? 1 : 0, next = plan.saver ? (tg > 0.5 ? 1 : 0) : stepMorph(prev, tg, dt); live.morph[l.id] = next; U[l.id].value = next;
       if (activated(prev, next) && S.started) { zilAudio.history(); const s2 = useDb.getState(); s2.set({ card: l, seen: s2.seen.includes(l.id) ? s2.seen : [...s2.seen, l.id] }); if (s2.tts) zilAudio.speak(`${l.name}. ${l.pastText}`); }
       if (S.card?.id === l.id && tg === 0 && next < 0.4) S.set({ card: null }); }
+    if ((near?.id ?? null) !== (S.near?.id ?? null)) S.set({ near });
     // --- kamera: vadide birinci şahıs (rotaya kilitli, serbest bakış); kale tepesinde sabit geniş açı
     const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(st.current.head)) st.current.head = hd; st.current.head += wrapA(hd - st.current.head) * (1 - Math.exp(-dt * 3));
     const bob = Math.sin(st.current.bob) * 0.035 * Math.min(1, Math.abs(live.v) / 2);
@@ -278,13 +283,12 @@ function Controller({ plan, wind: wu, sky, charRef }: { plan: FogPlan; wind: Win
     _e.set(live.pitch + st.current.grade, st.current.head + live.yaw, 0); _q.setFromEuler(_e); _p.set(R.p[0], R.p[1] + EYE + bob, R.p[2]);
     if (!S.started) { _p.set(riverX(34), waterY(34) + 5, 34); _q.setFromRotationMatrix(_m.lookAt(_p, _l.set(riverX(-50), waterY(-50) + 9, -50), THREE.Object3D.DEFAULT_UP)); }   // açılış: dere üstünden vadiye
     const sw = THREE.MathUtils.smoothstep(live.s, SUMMIT_S - 2, SUMMIT_S + 5);
-    if (sw > 0) { _p2.set(SUMMIT_CAM.pos[0], ys.cam, SUMMIT_CAM.pos[2]); _q2.setFromRotationMatrix(_m.lookAt(_p2, _l.set(SUMMIT_CAM.look[0], ys.look, SUMMIT_CAM.look[2]), THREE.Object3D.DEFAULT_UP)); _p.lerp(_p2, sw); _q.slerp(_q2, sw); }
     camera.position.copy(_p); camera.quaternion.copy(_q);
     const summit = sw > 0.5; if (summit !== st.current.summit) { st.current.summit = summit; S.set({ summit }); }
     // oyuncu karakteri yalnız tepede görünür (birinci şahısta kendi gövdemizi görmeyiz)
     const r = live.rig; r.x = R.p[0]; r.y = R.p[1]; r.z = R.p[2]; r.speed = dt > 0 ? Math.abs(moved) / dt : 0; r.wind = w.speed;
     if (Math.abs(moved) > 1e-4) { const yw = Math.atan2(R.dir[0] * Math.sign(moved), R.dir[1] * Math.sign(moved)); r.yaw += wrapA(yw - r.yaw) * (1 - Math.exp(-dt * 8)); }
-    if (charRef.current) charRef.current.visible = sw > 0.3;
+    if (charRef.current) charRef.current.visible = false;   // birinci şahıs: kendi gövdemizi çizmeyiz
     // uzak dağlar yalnızca tepede açılır (sis içinden "parlamasınlar")
     { const v = summitClear(live.s); mountainMat.opacity = v; mountainMat.visible = v > 0.01; mountainMat.color.setScalar(1).lerp(sky, 0.45); }   // hava perspektifi: uzak sırtlar gökyüzü rengine çalar
     // --- ses (~10 Hz)
@@ -302,10 +306,10 @@ const THEME = { accent: '#3f8a5f' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
   { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
-  { icon: <ChevronsRight size={16} />, text: <>çift dokun: sıradaki tarih izine git</> },
+  { icon: <ChevronsRight size={16} />, text: <>izin yanında <b>E</b>: tarih katmanını aç · çift dokun ya da N: sıradaki ize git</> },
 ];
 function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
-  return <StartSheet kicker="Rize · Çamlıhemşin · Fırtına Vadisi" title="Zil Kale: Sis İçindeki İzler" intro={<>Sisli vadiye giren bir yolcusun. Dere kıyısından taş köprüye, şelaleye ve ormanın içinden Zil Kale’ye yürü. Sis bazı yerlerde birden aralanır. Eski taşlara ve ahşap evlere yaklaştıkça geçmişteki hâlleri belirir.</>} controls={CONTROLS} note="Vadi stilizedir, mesafeler kısaltılmıştır. Kalenin “sağlam hâli” bir canlandırmadır; yapım tarihi kesin bilinmiyor." cta="Vadiye gir" ctaIcon={<Mountain size={18} />} onStart={onStart} onExit={onExit} />;
+  return <StartSheet kicker="Rize · Çamlıhemşin · Fırtına Vadisi" title="Zil Kale: Sis İçindeki İzler" intro={<>Sisli vadiye giren bir yolcusun. Dere kıyısından taş köprüye, şelaleye ve ormanın içinden Zil Kale’ye yürü. Sis bazı yerlerde birden aralanır. Eski taşların ve ahşap evlerin yanında E’ye basınca geçmişteki hâlleri belirir.</>} controls={CONTROLS} note="Vadi stilizedir, mesafeler kısaltılmıştır. Kalenin “sağlam hâli” bir canlandırmadır; yapım tarihi kesin bilinmiyor." cta="Vadiye gir" ctaIcon={<Mountain size={18} />} onStart={onStart} onExit={onExit} />;
 }
 function EndCard({ onStay, onExit, onRestart }: { onStay: () => void; onExit: () => void; onRestart?: () => void }) {
   return <EndSheet kicker="Bütün izler bulundu" title="Sisin içinden kaleye" text="Ahşap evden serendere, kitabesi kaybolmuş köprüden Zil Kale’nin surlarına kadar vadinin beş tarih izini gördün." stayLabel="Manzaraya bak" onStay={onStay} onExit={onExit} onRestart={onRestart} />;

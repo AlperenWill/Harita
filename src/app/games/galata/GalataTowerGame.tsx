@@ -1,28 +1,33 @@
 /**
  * Galata Kulesi — "Zamanın Nefesi". Ana oyun bileşeni: bölüm akışı, girdiler ve arayüz.
  *
- * Kulenin hafızası dört bölümde, aşağıdan yukarıya yaşanır:
- *   Zindan (Ceneviz)  → fenerle gizli armaları bul           · kamera: birinci şahıs, kilitli; yalnızca ileri/geri
- *   Merdiven          → vuruşa göre yukarı kaydır, sahanlıkta nefes al · kamera: sarmal boyunca kilitli
- *   Sergi (Osmanlı)   → vitrinlere yaklaş, dinle               · kamera: kendiliğinden kilitlenen yakın yörünge
- *   Teras (bugün)     → 4 tarihi noktaya yatay kaydır          · kamera: panorama kaydırıcı, serbest dönüş yok
- * Kaybetme yok, süre baskısı yok. Serbest kamera hiçbir bölümde yok.
+ * Bütün bölümler BİRİNCİ ŞAHIS, bakış SERBEST (360°; yukarı-aşağı yalnızca boyun sınırı). Kule aşağıdan yukarıya:
+ *   Zindan (Ceneviz)  → odada dolaş; fener baktığın yere düşer, gizli armaları bakışınla bul, kapıya yürü
+ *   Merdiven          → sarmal merdiveni kendin yürüyerek çık; çıkmak nefes harcar, pencere önünde dinlen;
+ *                       pencerelerden bakınca kulenin tarihinden anlar (deprem, yangınlar, fırtına)
+ *   Sergi (Osmanlı)   → salonda dolaş, vitrine yaklaşıp bak, "İncele"; hepsi bitince terasa çıkan kapı açılır
+ *   Teras (bugün)     → balkonda kulenin çevresinde yürü, dört tarihi noktayı bul; dürbünle (yakınlaştır) bak
+ * Masaüstü: WASD/oklar yürü, tıkla → fareyle bak (Esc imleci bırakır), E incele, Z dürbün.
+ * Dokunmatik: sol joystick yürü, ekranın geri kalanında sürükle → bak. Kaybetme ve süre baskısı yok.
  */
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Sky } from '@react-three/drei';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Flashlight, Hand, RotateCw } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, HudTheme, InfoSheet, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { Binoculars, Eye, Flashlight, Footprints, MousePointer2, Play, Search, Wind } from 'lucide-react';
+import { ActionDock, Controls, EndSheet, GameMenu, Hint, HudTheme, InfoSheet, InteractPrompt, Objective, RoundAction, StartSheet, TopRow } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
-import { Play } from 'lucide-react';
+import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
+import { Joystick } from '../shared/Joystick';
 import { CHAPTERS, CHAPTER_LABEL, useGalata, type Chapter } from './store';
 import { galataAudio, type Floor } from './AudioManager';
 import { supportsWebGL, useDevice } from './device';
-import { CRESTS, FIND_SECONDS } from './dungeon';
-import { EXHIBITS, type Exhibit } from './exhibits';
-import { VIEWPOINTS } from './panorama';
-import * as Stair from './StaircaseMechanic';
+import { CRESTS } from './dungeon';
+import { EXHIBITS } from './exhibits';
+import { VIEWPOINTS, bearingOf } from './panorama';
+import { WINDOWS } from './StaircaseMechanic';
+import { clampPitch } from './firstPerson';
+import { Player, fp, move, type PlayerEvent } from './Player';
 import DungeonScene from './DungeonScene';
 import StaircaseScene from './StaircaseScene';
 import ExhibitScene from './ExhibitScene';
@@ -31,11 +36,13 @@ import { TowerExterior } from './TowerExterior';
 import Fallback from './Fallback';
 
 const FLOOR: Record<Chapter, Floor> = { giris: 'giris', zindan: 'zindan', merdiven: 'merdiven', sergi: 'sergi', teras: 'teras', son: 'teras' };
-const now = () => performance.now() / 1000;
-
-const INTRO_TEXT = 'Galata Kulesi 1348’de Cenevizliler tarafından yapıldı. Yüzyıllar boyunca gözetleme kulesi, zindan ve yangın kulesi oldu. Şimdi kulenin hafızasına aşağıdan yukarıya tırmanacaksın.';
-const STAIR_TEXT = 'Merdiven dar ve dönerek yükseliyor. Her vuruşta yukarı kaydır; sahanlıklarda dur ve nefes al.';
-const TERRACE_TEXT = 'Terasa ulaştın. Gün batıyor. Yatay kaydırarak kuleden görülen dört tarihi noktaya bak.';
+const isTouch = typeof window !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+const SRC = { title: 'Wikipedia — Galata Tower', url: 'https://en.wikipedia.org/wiki/Galata_Tower' };
+const INTRO_TEXT = 'Galata Kulesi 1348’de Cenevizliler tarafından yapıldı. Yüzyıllar boyunca gözetleme kulesi, zindan ve yangın kulesi oldu. Şimdi kulenin içinde, kendi gözlerinle aşağıdan yukarıya tırmanacaksın.';
+const STAIR_TEXT = 'Dar sarmal merdiveni yürüyerek çık. Yükseldikçe nefesin azalır; durunca, en çok da bir pencerenin önünde dinlenince yeniden dolar. Bir pencereye bakıp E’ye basarak dışarı bak.';
+const TERRACE_TEXT = 'Terasa ulaştın. Gün batıyor. Balkonda kulenin çevresinde yürü ve dört tarihi noktayı bul; birine bakınca E ile tanı. Dürbünle daha kolay seçersin.';
+const DIRS = ['kuzey', 'kuzeydoğu', 'doğu', 'güneydoğu', 'güney', 'güneybatı', 'batı', 'kuzeybatı'];
+const dirName = (b: number) => DIRS[Math.round(b / 45) % 8];
 
 export default function GalataTowerGame({ onExit }: { onExit: () => void }) {
   if (!supportsWebGL) return <Fallback onExit={onExit} />;
@@ -45,8 +52,9 @@ export default function GalataTowerGame({ onExit }: { onExit: () => void }) {
 function Game({ onExit }: { onExit: () => void }) {
   const device = useDevice();
   const g = useGalata();
-  const [fade, setFade] = useState(false);
+  const [fade, setFade] = useState(false), [paused, setPaused] = useState(false);
   const [card, setCard] = useState<{ title: string; era?: string; text: string; source?: { title: string; url: string } } | null>(null);
+  const [windows, setWindows] = useState<string[]>([]), [near, setNear] = useState<string | null>(null), [breath, setBreath] = useState(1), [zoom, setZoom] = useState(false);
 
   // ---------- ses ----------
   const G = useSettings(); useEffect(() => { galataAudio.setMuted(G.muted); }, [G.muted]);
@@ -54,168 +62,140 @@ function Game({ onExit }: { onExit: () => void }) {
   useEffect(() => () => galataAudio.dispose(), []);
 
   const go = useCallback((c: Chapter) => {
-    setFade(true); setCard(null); galataAudio.hush();
+    setFade(true); setCard(null); galataAudio.hush(); if (document.pointerLockElement) document.exitPointerLock?.();
     setTimeout(() => { useGalata.getState().setChapter(c); setTimeout(() => setFade(false), 120); }, 550);
   }, []);
-  // test/inceleme: ?debug ile bölümler arası atlama (window.__galata.setChapter('teras'))
-  useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __galata: unknown }).__galata = { setChapter: go }; }, [go]);
   const narrate = useCallback((title: string, text: string, extra?: { era?: string; source?: { title: string; url: string } }) => {
     setCard({ title, text, ...extra }); galataAudio.speak(text);
   }, []);
+  const closeCard = useCallback(() => { setCard(null); galataAudio.hush(); }, []);
+  // keşif kartları okunduktan sonra kendiliğinden kapanır (telefonda joystick'i uzun süre kapatmasın)
+  useEffect(() => { if (!card) return; const t = setTimeout(() => setCard(null), Math.max(9000, card.text.length * 75)); return () => clearTimeout(t); }, [card]);
 
-  // ---------- girdiler (paylaşılan referanslar; React durumu tetiklemez) ----------
-  const aim = useRef({ x: 0, y: 0 });
-  const move = useRef(0);
-  const keys = useRef(new Set<string>());
-  const climb = useRef(Stair.createClimb(now() + 1.6));
-  const steps = useRef(0), judgeRef = useRef(0);
-  const holds = useRef<Record<string, number>>({});
-  const [, force] = useState(0);
-  const [lastJudge, setLastJudge] = useState<{ j: Stair.Judgement; t: number } | null>(null);
-  const [locked, setLocked] = useState<Exhibit | null>(null);
-
-  // klavye: W/S/↑/↓ ileri-geri, boşluk/↑ basamak, ←/→ panorama
-  const onStairEvents = useCallback((evs: Stair.ClimbEvent[]) => {
-    for (const e of evs) {
-      if (e.type === 'step') { galataAudio.footstep(e.judgement === 'tam'); judgeRef.current = e.judgement === 'tam' ? 1 : 0.6; setLastJudge({ j: e.judgement, t: now() }); }
-      if (e.type === 'miss') setLastJudge({ j: e.judgement, t: now() });
-      if (e.type === 'landing') { galataAudio.chime(); setCard({ title: `${e.flight}. sahanlık`, text: 'Pencereden gelen ışığın önünde dur. Basılı tut ve nefes al.' }); }
-      if (e.type === 'breath-done') { setCard(null); galataAudio.breath(0.1); }
-      if (e.type === 'top') { galataAudio.chime(); setTimeout(() => go('sergi'), 900); }
-    }
-    steps.current = climb.current.steps; force((n) => n + 1);
-  }, [go]);
-  const stairStep = useCallback(() => { const r = Stair.stepInput(climb.current, now()); climb.current = r.state; onStairEvents(r.events); }, [onStairEvents]);
-  const breathDown = useCallback(() => { if (climb.current.phase === 'breath') { climb.current = Stair.holdStart(climb.current, now()); galataAudio.breath(Stair.BREATH_FULL); force((n) => n + 1); } }, []);
-  const breathUp = useCallback(() => { const r = Stair.holdEnd(climb.current, now()); climb.current = r.state; onStairEvents(r.events); }, [onStairEvents]);
-  const pan = useCallback((d: number) => {
-    const i = (useGalata.getState().viewpoint + d + VIEWPOINTS.length) % VIEWPOINTS.length;
-    useGalata.getState().setViewpoint(i, VIEWPOINTS[i].id);
-  }, []);
-
+  // ---------- bölüm girişleri ----------
   useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      const c = useGalata.getState().chapter;
-      if (['KeyW', 'ArrowUp', 'KeyS', 'ArrowDown'].includes(e.code)) keys.current.add(e.code);
-      if (c === 'merdiven' && (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') && !e.repeat) { e.preventDefault(); climb.current.phase === 'breath' ? breathDown() : stairStep(); }
-      if (c === 'teras' && !e.repeat) { if (e.code === 'ArrowLeft') pan(-1); if (e.code === 'ArrowRight') pan(1); }
-    };
-    const up = (e: KeyboardEvent) => { keys.current.delete(e.code); if (useGalata.getState().chapter === 'merdiven' && ['Space', 'ArrowUp', 'KeyW'].includes(e.code)) breathUp(); };
-    addEventListener('keydown', down); addEventListener('keyup', up);
-    return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); };
-  }, [stairStep, breathDown, breathUp, pan]);
-
-  // ileri/geri: klavye + ekrandaki basılı tutulan düğmeler
-  const btnMove = useRef(0);
-  useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      const k = keys.current, kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
-      move.current = THREE.MathUtils.clamp(kb + btnMove.current, -1, 1);
-      // merdiven: vuruş tıkı ve nefes halkasının kendiliğinden tamamlanması
-      if (useGalata.getState().chapter === 'merdiven') {
-        const t = now(), r = Stair.tick(climb.current, t); if (r.events.length) { climb.current = r.state; onStairEvents(r.events); }
-      }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [onStairEvents]);
-
-  // bölüm girişleri
-  useEffect(() => {
-    if (g.chapter === 'merdiven') { climb.current = Stair.createClimb(now() + 1.6); steps.current = 0; setCard({ title: 'Merdiven', text: STAIR_TEXT }); galataAudio.speak(STAIR_TEXT); }
-    if (g.chapter === 'zindan') { aim.current = { x: 0, y: 0 }; setCard({ title: 'Zindan', era: 'Ceneviz · 1348', text: 'Karanlıkta yalnızca fenerin var. Feneri ekranda sürükleyerek duvarları tara; gizli armaları bul.' }); }
-    if (g.chapter === 'teras') { useGalata.getState().setViewpoint(0, VIEWPOINTS[0].id); setCard(null); galataAudio.speak(TERRACE_TEXT); }
-    if (g.chapter === 'sergi') setLocked(null);
+    setNear(null); setZoom(false); fp.zoom = false;
+    if (g.chapter === 'zindan') galataAudio.speak('Karanlıkta yalnızca fenerin var; baktığın yere düşer. Duvarları tara; fener bir armayı aydınlatınca E ile incele.');
+    if (g.chapter === 'merdiven') { setWindows([]); setBreath(1); galataAudio.speak(STAIR_TEXT); }
+    if (g.chapter === 'sergi') galataAudio.speak('Salonda dolaş. Bir vitrine yaklaşıp ona bakınca İncele belirir.');
+    if (g.chapter === 'teras') { setCard(null); galataAudio.speak(TERRACE_TEXT); }
   }, [g.chapter]);
 
-  // teras: her yeni noktada kart + anlatım
-  useEffect(() => {
-    if (g.chapter !== 'teras') return;
-    const v = VIEWPOINTS[g.viewpoint];
-    const t = setTimeout(() => narrate(v.name, v.text, { era: v.era, source: v.source }), 1400);
-    return () => clearTimeout(t);
-  }, [g.chapter, g.viewpoint, narrate]);
-
-  // zindan: tutma ilerlemesini arayüze yansıt (10 Hz)
-  const [holdMax, setHoldMax] = useState(0);
-  useEffect(() => {
-    if (g.chapter !== 'zindan') return;
-    const id = setInterval(() => setHoldMax(Math.max(0, ...Object.values(holds.current)) / FIND_SECONDS), 100);
-    return () => clearInterval(id);
-  }, [g.chapter]);
-
+  // ---------- oyuncu olayları ----------
+  /** Oyuncu E'ye / düğmeye basınca: bakılan hedefin kartı (bölüme göre arma, pencere, vitrin, manzara). Hiçbiri kendiliğinden açılmaz. */
+  const inspect = useCallback((id: string | null) => {
+    if (!id) return; const c = useGalata.getState().chapter;
+    if (c === 'zindan') { onFindRef.current(id); setNear(null); return; }
+    if (c === 'merdiven') { const w = WINDOWS.find((x) => x.id === id); if (!w) return; setWindows((ws) => ws.includes(w.id) ? ws : [...ws, w.id]); setNear(null); galataAudio.chime(); narrate(w.title, w.text, { era: w.era, source: w.source }); return; }
+    if (c === 'teras') { const i = VIEWPOINTS.findIndex((x) => x.id === id); if (i < 0) return; const v = VIEWPOINTS[i]; useGalata.getState().setViewpoint(i, v.id); setNear(null); galataAudio.chime(); narrate(v.name, v.text, { era: v.era, source: v.source }); return; }
+    const e = EXHIBITS.find((x) => x.id === id); if (!e) return;
+    useGalata.getState().seeExhibit(e.id); galataAudio.chime(); narrate(e.name, e.text, { era: e.era, source: e.source });
+  }, [narrate]);
+  const onEvent = useCallback((e: PlayerEvent) => {
+    if (e.type === 'dungeon-door') go('merdiven');
+    if (e.type === 'stairs-top') { galataAudio.chime(); go('sergi'); }
+    if (e.type === 'exhibit-exit') go('teras');
+    if (e.type === 'breath') setBreath(e.value);
+    if (e.type === 'near') setNear(e.id);
+    if (e.type === 'window') { const w = WINDOWS.find((x) => x.id === e.id)!; setWindows((ws) => ws.includes(w.id) ? ws : [...ws, w.id]); galataAudio.chime(); narrate(w.title, w.text, { era: w.era, source: w.source }); }
+    if (e.type === 'viewpoint') { const v = VIEWPOINTS[e.index]; useGalata.getState().setViewpoint(e.index, v.id); galataAudio.chime(); narrate(v.name, v.text, { era: v.era, source: v.source }); }
+  }, [go, narrate]);
   const onFind = useCallback((id: string) => {
     const c = CRESTS.find((x) => x.id === id)!;
     useGalata.getState().findCrest(id); galataAudio.chime();
-    narrate(c.name, c.text, { era: 'Ceneviz · 14. yüzyıl', source: { title: 'Wikipedia — Galata Tower', url: 'https://en.wikipedia.org/wiki/Galata_Tower' } });
+    narrate(c.name, c.text, { era: 'Ceneviz · 14. yüzyıl', source: SRC });
   }, [narrate]);
-  const onLock = useCallback((e: Exhibit) => {
-    setLocked((cur) => { if (cur) return cur; narrate(e.name, e.text, { era: e.era, source: e.source }); return e; });
-  }, [narrate]);
+  const onFindRef = useRef(onFind); onFindRef.current = onFind;
 
-  // ---------- dokunma hareketleri ----------
-  const gesture = useRef<{ x: number; y: number; t: number; fired: boolean } | null>(null);
-  const toNdc = (e: React.PointerEvent) => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); return { x: ((e.clientX - r.left) / r.width) * 2 - 1, y: -(((e.clientY - r.top) / r.height) * 2 - 1) }; };
-  const onPointerDown = (e: React.PointerEvent) => {
-    galataAudio.unlock();
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    gesture.current = { x: e.clientX, y: e.clientY, t: now(), fired: false };
-    if (g.chapter === 'zindan') aim.current = toNdc(e);
-    if (g.chapter === 'merdiven' && climb.current.phase === 'breath') breathDown();
-  };
+  // ---------- girdiler ----------
+  const active = g.chapter !== 'giris' && !paused && !fade;
+  fp.frozen = !active;
+  const look = useMouseLook((dx, dy) => { const k = fp.zoom ? 0.35 : 1; fp.yaw -= dx * LOOK_YAW * k; fp.pitch = clampPitch(fp.pitch - dy * LOOK_PITCH * k); }, () => active);
+  const toggleZoom = useCallback(() => { fp.zoom = !fp.zoom; setZoom(fp.zoom); }, []);
+  const stick = useRef({ x: 0, y: 0 }), keys = useRef(new Set<string>());
+  const nearRef = useRef(near); nearRef.current = near; const cardRef = useRef(card); cardRef.current = card;
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); if (e.repeat) return;
+      const c = useGalata.getState().chapter;
+      if (e.code === 'KeyE') { if (cardRef.current) closeCard(); else if (c !== 'giris' && c !== 'son') inspect(nearRef.current); }
+      if (e.code === 'KeyZ' && (c === 'teras' || c === 'son')) toggleZoom();
+    };
+    const up = (e: KeyboardEvent) => keys.current.delete(e.code);
+    addEventListener('keydown', down); addEventListener('keyup', up);
+    let raf = 0;
+    const loop = () => {
+      const k = keys.current, kf = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0), ks = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
+      move.fwd = THREE.MathUtils.clamp(kf - stick.current.y, -1, 1); move.strafe = THREE.MathUtils.clamp(ks + stick.current.x, -1, 1);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
+  }, [closeCard, inspect, toggleZoom]);
+  // dokunmatik bakış: joystick dışındaki her sürükleme
+  const drag = useRef<{ id: number; x: number; y: number } | null>(null);
+  const onPointerDown = (e: React.PointerEvent) => { galataAudio.unlock(); look.lock(e); if (e.pointerType !== 'mouse' && active) drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY }; };
   const onPointerMove = (e: React.PointerEvent) => {
-    if (g.chapter === 'zindan' && (e.pointerType === 'mouse' || gesture.current)) aim.current = toNdc(e);
-    const gs = gesture.current; if (!gs || gs.fired) return;
-    const dx = e.clientX - gs.x, dy = e.clientY - gs.y;
-    // yukarı kaydırma = bir basamak (vuruş anı, kaydırmanın eşiği geçtiği an)
-    if (g.chapter === 'merdiven' && climb.current.phase === 'climb' && dy < -35 && Math.abs(dy) > Math.abs(dx)) { gs.fired = true; stairStep(); }
-    if (g.chapter === 'teras' && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) { gs.fired = true; pan(dx < 0 ? 1 : -1); }
+    const d = drag.current; if (!d || d.id !== e.pointerId) return;
+    const k = useSettings.getState().sensitivity * (fp.zoom ? 0.35 : 1);
+    fp.yaw += (e.clientX - d.x) * 0.006 * k; fp.pitch = clampPitch(fp.pitch + (e.clientY - d.y) * 0.005 * k); d.x = e.clientX; d.y = e.clientY;
   };
-  const onPointerUp = () => {
-    if (g.chapter === 'merdiven' && climb.current.phase === 'breath') breathUp();
-    gesture.current = null;
-  };
+  const onPointerUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) drag.current = null; };
+
+  // test/inceleme: ?debug
+  useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __galata: unknown }).__galata = { setChapter: go, fp, look: (yaw: number, pitch = 0) => { fp.yaw = yaw; fp.pitch = pitch; }, tp: (x: number, z: number, theta?: number) => { fp.x = x; fp.z = z; if (theta !== undefined) fp.theta = theta; }, state: () => ({ ...useGalata.getState(), windows, near, breath }) }; }, [go, windows, near, breath]);
 
   const start = (c: Chapter) => { galataAudio.unlock(); go(c); };
   const allCrests = g.crests.length >= CRESTS.length, allExhibits = g.exhibits.length >= EXHIBITS.length, allViews = g.viewed.length >= VIEWPOINTS.length;
-  const chapterIdx = CHAPTERS.indexOf(g.chapter);
+  const nextView = VIEWPOINTS.find((v) => !g.viewed.includes(v.id));
+  const objective = (() => {
+    if (g.chapter === 'zindan') return { icon: <Flashlight size={15} />, label: allCrests ? 'Armalar tamam · ışıklı kapıya yürü' : 'Fenerle gizli armaları bul', done: g.crests.length, total: CRESTS.length };
+    if (g.chapter === 'merdiven') return { icon: <Footprints size={15} />, label: 'Kulenin tepesine çık · pencerelerden bak', done: windows.length, total: WINDOWS.length };
+    if (g.chapter === 'sergi') return { icon: <Search size={15} />, label: allExhibits ? 'Vitrinler tamam · ışıklı kapıdan terasa çık' : 'Vitrinleri incele', done: g.exhibits.length, total: EXHIBITS.length };
+    if (g.chapter === 'teras') return { icon: <Binoculars size={15} />, label: nextView ? `Bul: ${nextView.name} (${dirName(bearingOf(nextView.coord))})` : 'Bütün noktalar bulundu', done: g.viewed.length, total: VIEWPOINTS.length };
+    return null;
+  })();
+  const hint = isTouch ? 'Sol joystick: yürü · ekranı sürükle: bak' : 'WASD: yürü · tıkla, fareyle bak (Esc: bırak)';
 
   return (
-    <div className="fixed inset-0 select-none overflow-hidden bg-black text-white" style={{ touchAction: 'none' }}>
+    <div className="fixed inset-0 select-none overflow-hidden bg-black" style={{ touchAction: 'none' }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
       <HudTheme theme={THEME}>
       <Canvas shadows={device.shadows} dpr={device.dpr} gl={{ antialias: device.antialias, powerPreference: 'high-performance' }}
         camera={{ fov: 50, near: 0.1, far: 40000, position: [60, 30, 60] }} onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}>
         <Suspense fallback={null}>
           {g.chapter === 'giris' && <Intro blocks={Math.round(device.cityBlocks / 2)} />}
-          {g.chapter === 'zindan' && <DungeonScene input={{ aim, move }} found={g.crests} open={allCrests} onHold={(h) => { holds.current = h; }} onFind={onFind} />}
-          {g.chapter === 'merdiven' && <StaircaseScene steps={steps} judge={judgeRef} />}
-          {g.chapter === 'sergi' && <ExhibitScene move={move} seen={g.exhibits} locked={locked} onLock={onLock} />}
-          {(g.chapter === 'teras' || g.chapter === 'son') && <TerracePanorama index={g.viewpoint} shadows={device.shadows} blocks={device.cityBlocks} />}
+          {g.chapter === 'zindan' && <DungeonScene found={g.crests} open={allCrests} onAim={setNear} />}
+          {g.chapter === 'merdiven' && <StaircaseScene />}
+          {g.chapter === 'sergi' && <ExhibitScene seen={g.exhibits} near={near} open={allExhibits} />}
+          {(g.chapter === 'teras' || g.chapter === 'son') && <TerracePanorama shadows={device.shadows} blocks={device.cityBlocks} />}
+          <Player chapter={g.chapter} done={{ crests: allCrests, windows, exhibits: g.exhibits, viewed: g.viewed, open: g.chapter === 'zindan' ? allCrests : allExhibits }} onEvent={onEvent} />
         </Suspense>
       </Canvas>
 
-      {/* hareket katmanı: fener yönlendirme, yukarı/yatay kaydırma, basılı tutma */}
-      {g.chapter !== 'giris' && g.chapter !== 'son' && (
-        <div className="absolute inset-0" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} />
+      <TopRow onExit={onExit} objective={objective ? <Objective icon={objective.icon} label={objective.label} done={objective.done} total={objective.total} /> : undefined}
+        right={<GameMenu onPause={setPaused} help={<Controls items={CONTROLS} />} onRestart={() => { g.restart(); go('zindan'); }} onExit={onExit} />} />
+      {g.chapter !== 'giris' && <LookCrosshair locked={look.locked} />}
+
+      {/* merdiven: nefes göstergesi */}
+      {g.chapter === 'merdiven' && <div className="pointer-events-none absolute left-1/2 top-[68px] z-20 w-44 -translate-x-1/2 rounded-full bg-[#f7f5f1]/85 px-3 py-1.5 text-[11px] font-semibold text-[#1f1b17] shadow ring-1 ring-black/5 backdrop-blur-md sm:top-[72px]" style={{ marginTop: 56 }}>
+        <div className="flex items-center gap-1.5"><Wind size={12} /> Nefes<div className="ml-1 h-1.5 flex-1 overflow-hidden rounded-full bg-black/10"><div className="h-full rounded-full transition-[width] duration-200" style={{ width: `${Math.round(breath * 100)}%`, background: breath < 0.3 ? '#c2453a' : THEME.accent }} /></div></div>
+      </div>}
+      {/* zindan: armanın üzerinde tutma ilerlemesi */}
+      {near && !card && (g.chapter === 'zindan' || g.chapter === 'merdiven' || g.chapter === 'teras' || (g.chapter === 'sergi' && !g.exhibits.includes(near))) && (
+        <InteractPrompt icon={<Eye size={18} />} label={g.chapter === 'zindan' ? 'Armayı incele' : g.chapter === 'merdiven' ? 'Pencereden bak' : g.chapter === 'teras' ? 'Bu yapıyı tanı' : `İncele: ${EXHIBITS.find((x) => x.id === near)?.name ?? ''}`} onClick={() => inspect(near)} />
       )}
 
-      <TopRow onExit={onExit} objective={g.chapter !== 'giris' ? <Objective icon={<Flashlight size={15} />} label={CHAPTER_LABEL[g.chapter]} done={Math.max(0, Math.min(4, chapterIdx - 1))} total={4} /> : undefined}
-        right={<GameMenu help={<Controls items={CONTROLS} />} onRestart={() => { g.restart(); go('zindan'); }} onExit={onExit} />} />
+      {g.chapter !== 'giris' && g.chapter !== 'son' && isTouch && <Joystick stick={stick} color="bg-[#b5582f]" />}
+      {(g.chapter === 'teras' || g.chapter === 'son') && <ActionDock>
+        {g.chapter === 'teras' && allViews && <RoundAction label="Turu bitir" primary size={68} onClick={() => { g.complete(); setCard(null); go('son'); }}><Play size={26} /></RoundAction>}
+        {(g.chapter === 'teras' || g.chapter === 'son') && <RoundAction label={zoom ? 'Dürbünü indir (Z)' : 'Dürbün (Z)'} primary={!allViews && g.chapter === 'teras'} size={58} onClick={toggleZoom}><Binoculars size={24} /></RoundAction>}
+      </ActionDock>}
+      {g.chapter !== 'giris' && g.chapter !== 'son' && !card && <Hint>{hint}{g.chapter === 'teras' ? ' · E: tanı · Z: dürbün' : ' · E: incele'}</Hint>}
 
       {g.chapter === 'giris' && <IntroCard reached={g.reached} completed={!!g.completedAt} onStart={start} />}
-      {g.chapter === 'zindan' && <DungeonHud found={g.crests.length} hold={holdMax} done={allCrests} onNext={() => go('merdiven')} btnMove={btnMove} />}
-      {g.chapter === 'merdiven' && <StairHud climb={climb} last={lastJudge} onStep={stairStep} />}
-      {g.chapter === 'sergi' && <ExhibitHud seen={g.exhibits.length} locked={!!locked} done={allExhibits} btnMove={btnMove}
-        onContinue={() => { if (locked) { useGalata.getState().seeExhibit(locked.id); setLocked(null); setCard(null); galataAudio.hush(); } }} onNext={() => go('teras')} />}
-      {g.chapter === 'teras' && <TerraceHud index={g.viewpoint} viewed={g.viewed} onPick={(i) => g.setViewpoint(i, VIEWPOINTS[i].id)} onPan={pan} done={allViews}
-        onFinish={() => { g.complete(); setCard(null); go('son'); }} />}
       {g.chapter === 'son' && <EndCard crests={g.crests.length} exhibits={g.exhibits.length} views={g.viewed.length} onReplay={() => { g.restart(); go('zindan'); }} onExit={onExit} />}
-
-      {card && g.chapter !== 'giris' && g.chapter !== 'son' && <StoryCard {...card} onClose={g.chapter === 'sergi' ? undefined : () => setCard(null)} />}
+      {card && g.chapter !== 'giris' && g.chapter !== 'son' && <StoryCard {...card} onClose={closeCard} />}
       <div className={`pointer-events-none absolute inset-0 bg-black transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`} aria-hidden />
-      <PortraitHint />
       </HudTheme>
     </div>
   );
@@ -243,125 +223,12 @@ function Intro({ blocks }: { blocks: number }) {
 }
 
 /* ================= Arayüz parçaları ================= */
-const glass = 'rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 shadow-[0_6px_24px_rgba(31,27,23,0.14)] backdrop-blur-md';
-
 function IntroCard({ reached, completed, onStart }: { reached: Chapter; completed: boolean; onStart: (c: Chapter) => void }) {
   const resume = CHAPTERS.indexOf(reached) > 1 && CHAPTERS.indexOf(reached) < 5 ? reached : null;
   return <StartSheet kicker="İstanbul · Beyoğlu · 1348" title="Galata Kulesi: Zamanın Nefesi" intro={INTRO_TEXT} controls={CONTROLS}
     cta={completed ? 'Yeniden başla' : 'Başla'} ctaIcon={<Play size={18} />} onStart={() => onStart('zindan')}
     secondary={resume ? <button onClick={() => onStart(resume)} className="h-12 flex-1 rounded-2xl px-3 text-sm font-semibold ring-1 ring-black/10">Devam: {CHAPTER_LABEL[resume]}</button> : undefined} />;
 }
-function HoldButton({ dir, btnMove, label, children }: { dir: number; btnMove: React.MutableRefObject<number>; label: string; children: React.ReactNode }) {
-  const set = (v: number) => (e: React.PointerEvent) => { e.stopPropagation(); btnMove.current = v; };
-  return (
-    <button aria-label={label} onPointerDown={set(dir)} onPointerUp={set(0)} onPointerLeave={set(0)} onPointerCancel={set(0)}
-      className="pointer-events-auto grid h-14 w-14 place-items-center rounded-full bg-black/5 backdrop-blur-md active:bg-white/35">{children}</button>
-  );
-}
-
-function DungeonHud({ found, hold, done, onNext, btnMove }: { found: number; hold: number; done: boolean; onNext: () => void; btnMove: React.MutableRefObject<number> }) {
-  return (
-    <>
-      <div className={`${glass} pointer-events-none absolute left-1/2 top-20 flex -translate-x-1/2 items-center gap-2 px-4 py-2 text-sm`}>
-        <Flashlight size={16} className="text-[#b5582f]" /> Arma {found}/{CRESTS.length}
-        {hold > 0 && <span className="ml-1 h-1.5 w-16 overflow-hidden rounded-full bg-black/5"><span className="block h-full bg-amber-300" style={{ width: `${hold * 100}%` }} /></span>}
-      </div>
-      <div className="pointer-events-none absolute bottom-5 left-5 flex flex-col gap-2">
-        <HoldButton dir={1} btnMove={btnMove} label="İleri"><ChevronUp /></HoldButton>
-        <HoldButton dir={-1} btnMove={btnMove} label="Geri"><ChevronDown /></HoldButton>
-      </div>
-      <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-xs text-[#857b70]">Feneri yönlendirmek için ekranı sürükle · W/S ile ileri-geri</p>
-      {done && <button onClick={onNext} className="absolute bottom-20 left-1/2 h-12 -translate-x-1/2 rounded-xl bg-brand px-6 font-semibold shadow-lg">Merdivene geç</button>}
-    </>
-  );
-}
-
-function StairHud({ climb, last, onStep }: { climb: React.MutableRefObject<Stair.ClimbState>; last: { j: Stair.Judgement; t: number } | null; onStep: () => void }) {
-  const ring = useRef<HTMLDivElement>(null), fill = useRef<SVGCircleElement>(null);
-  const lastBeat = useRef(-1);
-  useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      const s = climb.current, t = now();
-      if (s.phase === 'climb' && t >= s.origin) {
-        const ph = Stair.beatPhase(s, t), k = Math.floor((t - s.origin) / s.beat);
-        if (k !== lastBeat.current) { lastBeat.current = k; galataAudio.tick(k % 4 === 0); }
-        // nabız: vuruş anında büyük, arada küçülür
-        const p = Math.min(ph, 1 - ph) * 2;
-        if (ring.current) { ring.current.style.transform = `scale(${1.25 - p * 0.35})`; ring.current.style.opacity = String(1 - p * 0.6); }
-      }
-      if (fill.current) fill.current.style.strokeDashoffset = String(282.7 * (1 - Stair.breathFill(s, t)));
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [climb]);
-  const s = climb.current, fresh = last && now() - last.t < 0.7;
-  const LABEL: Record<Stair.Judgement, string> = { tam: 'Tam!', iyi: 'İyi', erken: 'Erken', gec: 'Geç' };
-  return (
-    <>
-      <div className="pointer-events-none absolute inset-0 grid place-items-center">
-        {s.phase === 'breath' ? (
-          <div className="flex flex-col items-center gap-3">
-            <svg width="110" height="110" viewBox="0 0 110 110"><circle cx="55" cy="55" r="45" fill="rgba(0,0,0,.45)" stroke="rgba(255,255,255,.2)" strokeWidth="6" />
-              <circle ref={fill} cx="55" cy="55" r="45" fill="none" stroke="#fcd34d" strokeWidth="6" strokeLinecap="round" strokeDasharray="282.7" strokeDashoffset="282.7" transform="rotate(-90 55 55)" /></svg>
-            <p className={`${glass} flex items-center gap-2 px-4 py-2 text-sm`}><Hand size={16} /> Basılı tut · nefes al</p>
-          </div>
-        ) : (
-          <div ref={ring} className="h-24 w-24 rounded-full border-4 border-amber-200/90 shadow-[0_0_30px_rgba(253,230,138,.5)]" />
-        )}
-      </div>
-      {fresh && <p className={`pointer-events-none absolute left-1/2 top-[38%] -translate-x-1/2 text-2xl font-bold ${last!.j === 'tam' ? 'text-[#b5582f]' : last!.j === 'iyi' ? 'text-white' : 'text-[#857b70]'}`}>{LABEL[last!.j]}</p>}
-      <div className={`${glass} pointer-events-none absolute bottom-5 right-5 px-4 py-2 text-right text-sm`}>
-        <p className="font-semibold">{s.steps}/{Stair.TOTAL_STEPS} basamak</p>
-        <p className="text-xs text-[#857b70]">Sahanlık {Stair.flightOf(s)}/{Stair.FLIGHTS} · tempo {Math.round(60 / s.beat)}/dk</p>
-      </div>
-      <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-xs text-[#857b70]">Halka büyüdüğünde yukarı kaydır · boşluk tuşu</p>
-      {/* erişilebilirlik: kaydıramayanlar için düğme */}
-      {s.phase === 'climb' && <button onPointerDown={(e) => { e.stopPropagation(); galataAudio.unlock(); onStep(); }} className="absolute bottom-5 left-5 grid h-16 w-16 place-items-center rounded-full bg-black/5 backdrop-blur" aria-label="Bir basamak çık"><ChevronUp size={28} /></button>}
-    </>
-  );
-}
-
-function ExhibitHud({ seen, locked, done, btnMove, onContinue, onNext }: { seen: number; locked: boolean; done: boolean; btnMove: React.MutableRefObject<number>; onContinue: () => void; onNext: () => void }) {
-  return (
-    <>
-      <div className={`${glass} pointer-events-none absolute left-1/2 top-20 -translate-x-1/2 px-4 py-2 text-sm`}>Vitrin {seen}/{EXHIBITS.length}</div>
-      {!locked && (
-        <div className="pointer-events-none absolute bottom-5 left-5 flex flex-col gap-2">
-          <HoldButton dir={1} btnMove={btnMove} label="İleri yürü"><ChevronUp /></HoldButton>
-          <HoldButton dir={-1} btnMove={btnMove} label="Geri yürü"><ChevronDown /></HoldButton>
-        </div>
-      )}
-      {locked && <button onClick={onContinue} className="absolute bottom-6 left-1/2 h-12 -translate-x-1/2 rounded-xl bg-brand px-6 font-semibold shadow-lg">Devam</button>}
-      {!locked && done && <button onClick={onNext} className="absolute bottom-6 left-1/2 h-12 -translate-x-1/2 rounded-xl bg-brand px-6 font-semibold shadow-lg">Terasa çık</button>}
-      {!locked && !done && <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-[#857b70]">Galeride yürü; bir vitrine yaklaşınca kamera kendiliğinden yakınlaşır</p>}
-    </>
-  );
-}
-
-function TerraceHud({ index, viewed, onPick, onPan, done, onFinish }: { index: number; viewed: string[]; onPick: (i: number) => void; onPan: (d: number) => void; done: boolean; onFinish: () => void }) {
-  return (
-    <>
-      <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 p-4">
-        <div className="flex items-center gap-2">
-          <button onClick={() => onPan(-1)} className="grid h-11 w-11 place-items-center rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 backdrop-blur" aria-label="Önceki nokta"><ChevronLeft /></button>
-          <div className={`${glass} flex gap-1 p-1`}>
-            {VIEWPOINTS.map((v, i) => (
-              <button key={v.id} onClick={() => onPick(i)} className={`h-10 rounded-xl px-3 text-xs font-semibold sm:text-sm ${i === index ? 'bg-white text-ink' : 'text-[#4a433c]'}`}>
-                {v.name}{viewed.includes(v.id) && i !== index ? ' ✓' : ''}
-              </button>
-            ))}
-          </div>
-          <button onClick={() => onPan(1)} className="grid h-11 w-11 place-items-center rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 backdrop-blur" aria-label="Sonraki nokta"><ChevronRight /></button>
-        </div>
-        {done ? <button onClick={onFinish} className="h-11 rounded-xl bg-brand px-6 text-sm font-semibold shadow-lg">Kulenin hafızasını tamamla</button>
-          : <p className="text-xs text-[#857b70]">Yatay kaydır ya da ←/→ · {viewed.length}/{VIEWPOINTS.length} nokta</p>}
-      </div>
-    </>
-  );
-}
-
 function StoryCard({ title, era, text, source, onClose }: { title: string; era?: string; text: string; source?: { title: string; url: string }; onClose?: () => void }) {
   return <InfoSheet kicker={era ?? 'Galata Kulesi'} title={title} text={text} source={source} onClose={onClose} />;
 }
@@ -370,17 +237,13 @@ function EndCard({ crests, exhibits, views, onReplay, onExit }: { crests: number
   useEffect(() => { galataAudio.speak(text); }, [text]);
   return <EndSheet kicker="Gün batımı · 51 metre" title="Kulenin hafızası" text={<>{text}<span className="mt-3 grid grid-cols-3 gap-2 text-sm">{[[crests, 'arma'], [exhibits, 'vitrin'], [views, 'manzara']].map(([n, l]) => <span key={l} className="rounded-xl bg-black/[0.04] p-2"><b className="block text-lg">{n}</b>{l}</span>)}</span></>} stayLabel="Yeniden oyna" onStay={onReplay} onExit={onExit} />;
 }
+
 const THEME = { accent: '#b5582f' };
 const CONTROLS = [
-  { icon: <Flashlight size={16} />, text: <>Zindan: feneri sürükleyerek yönlendir, armaları bul; basılı tut: incele</> },
-  { icon: <ChevronUp size={16} />, text: <>Merdiven: ritme uyarak dokun, nefesini koru</> },
-  { icon: <Hand size={16} />, text: <>Sergi: vitrinlere yaklaş, hikâyeyi dinle</> },
-  { icon: <RotateCw size={16} />, text: <>Teras: sağa-sola kaydır ya da oklarla manzaralar arasında geç</> },
+  { icon: <Footprints size={16} />, text: <><b>WASD</b> ya da oklar: yürü · telefonda sol joystick</> },
+  { icon: <MousePointer2 size={16} />, text: <>Tıkla, fareyle 360° bak (Esc imleci bırakır) · telefonda ekranı sürükle</> },
+  { icon: <Flashlight size={16} />, text: <>Zindan: fener baktığın yere düşer; armaya kısa süre tut</> },
+  { icon: <Wind size={16} />, text: <>Merdiven: yürüyerek çık; nefes azalınca dur, pencere önünde dinlen</> },
+  { icon: <Eye size={16} />, text: <>Sergi: vitrine yaklaşıp bak, <b>E</b> ile incele</> },
+  { icon: <Binoculars size={16} />, text: <>Teras: noktayı bul, <b>Z</b> ile dürbün</> },
 ];
-function PortraitHint() {
-  return (
-    <div className="pointer-events-none fixed inset-x-3 top-[176px] z-20 hidden items-center gap-2 rounded-xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 px-3 py-2 text-xs [@media(pointer:coarse)_and_(orientation:portrait)]:flex">
-      <RotateCw size={16} className="text-brand" /> Daha geniş görüş için telefonu yatay çevir.
-    </div>
-  );
-}

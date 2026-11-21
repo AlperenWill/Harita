@@ -1,8 +1,7 @@
 /**
  * Galata Kulesi — sergi katı: dört vitrin, her biri bir dönemi anlatır.
- * Neden bu mekanik: Müze katında oyuncudan bir beceri istemek yerine yavaşlamasını isteriz. Kamera halka
- * biçimli galeride yalnızca ileri/geri gider; bir vitrine yaklaşınca kendiliğinden kilitlenir, yavaşça
- * etrafında döner (auto-zoom orbit) ve anlatım başlar. Oyuncunun yapacağı tek şey dinlemek ve devam etmek.
+ * Mekanik: Oyuncu sergi katında birinci şahıs serbestçe dolaşır. Bir vitrine yaklaşıp ona bakınca "İncele"
+ * belirir (E / düğme); anlatım başlar. Dört vitrin dinlenince terasa çıkan merdivenin kapısı aydınlanır.
  */
 import { INNER_R } from './dungeon';
 
@@ -38,3 +37,12 @@ export function nearestExhibit(angle: number, seen: string[]): Exhibit | null {
   }
   return best && bd < LOCK_DIST ? best : null;
 }
+
+/** Birinci şahıs: vitrinlerin dünya konumu, çarpışma çemberleri, inceleme mesafesi, terasa çıkış kapısı */
+export const vitrinePos = (e: Exhibit): [number, number] => [Math.cos(e.angle) * VITRINE_R, Math.sin(e.angle) * VITRINE_R];
+export const VITRINE_CIRCLES = EXHIBITS.map((e) => { const [x, z] = vitrinePos(e); return { x, z, r: 0.95 }; });
+export const INSPECT_REACH = 2.0;
+export const EXHIBIT_AREA = { kind: 'ring' as const, rMin: 0, rMax: INNER_R - 0.45 };
+export const EXIT_ANGLE = 0.3 + Math.PI / 4;   // iki vitrinin arasında
+export const EXIT: [number, number] = [Math.cos(EXIT_ANGLE) * (INNER_R - 0.05), Math.sin(EXIT_ANGLE) * (INNER_R - 0.05)];
+export const EXIT_REACH = 1.4;

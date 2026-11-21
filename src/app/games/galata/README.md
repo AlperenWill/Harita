@@ -1,7 +1,7 @@
 # Galata Kulesi — "Zamanın Nefesi"
 
 Adres: `/oyun/galata-kulesi`. 3D haritada Galata Kulesi noktasının bilgi kartındaki **🏰 Galata Kulesi: Zamanın Nefesi** düğmesiyle de açılır.
-Bağımsız bir oyundur: kodu ayrı bir parça olarak yalnızca bu sayfada indirilir (~63 KB, gzip ~21 KB). Serbest kamera hiçbir bölümde yoktur.
+Bağımsız bir oyundur: kodu ayrı bir parça olarak yalnızca bu sayfada indirilir. Bütün bölümler birinci şahıstır ve bakış serbesttir (360°, yukarı-aşağı yalnızca boyun sınırı).
 
 ## Dosya yapısı
 ```
@@ -10,7 +10,9 @@ src/app/games/galata/
   store.ts              Zustand durumu (bölüm, bulunan armalar, dinlenen vitrinler, manzaralar; "tamamlandı" kalıcı)
   DungeonScene.tsx      1. zindan: fener spot ışığı + fener shader'ı (armalar yalnızca koninin içinde görünür)
   dungeon.ts            zindan ölçüleri, armalar, koni tespiti (saf, test edilir)
-  StaircaseMechanic.ts  2. merdiven ritim mantığı (saf, test edilir)
+  StaircaseMechanic.ts  2. merdiven: sarmal yükseklik, nefes, pencereler (saf, test edilir)
+  firstPerson.ts        birinci şahıs yürüme, alanlar, engeller, bakış ölçümü (saf, test edilir)
+  Player.tsx            birinci şahıs kamera ve bölüm kuralları
   StaircaseScene.tsx    sarmal merdiven, pencere aralıklarından süzülen ışık
   ExhibitScene.tsx      3. sergi katı: vitrinler, otomatik kilitlenen yörünge kamera
   exhibits.ts           vitrin içerikleri ve kilitlenme mantığı
@@ -25,14 +27,18 @@ src/app/pages/GalataPage.tsx   rota; tests/galata.test.ts
 ```
 
 ## Bölümler ve mekanik gerekçeleri
-| Bölüm | Mekanik | Kamera | Dokunma | Neden |
-|---|---|---|---|---|
-| Zindan (Ceneviz) | Fenerle 3 gizli armayı bul (1,2 sn üzerinde tut) | Birinci şahıs, kilitli bakış; yalnızca ileri/geri | Parmağı sürükle → fener | 16. yy'da kule zindandı; karanlık + tek ışık yavaş ve dikkatli bakmayı öğretir |
-| Merdiven | Vuruşta yukarı kaydır; her sahanlıkta basılı tutup nefes al | Sarmal boyunca kilitli | Yukarı kaydır, basılı tut | Dar sarmal merdiveni çıkmak ritmik ve yorucudur; nefes molası tempoyu yavaşlatır |
-| Sergi (Osmanlı → Cumhuriyet) | 4 vitrine yaklaş, dinle | Galeride ileri/geri; vitrine otomatik kilitlenen yakın yörünge | İleri/geri düğmeleri | Müze katında beceri değil dinleme istenir |
-| Teras (bugün) | 4 tarihi noktaya bak | Panorama kaydırıcı: yalnızca 4 önayar yön, sonra otomatik yakınlaşma | Yatay kaydır | Tırmanışın ödülü manzaradır; serbest dönüş yerine anlamlı noktalar |
+Kontroller her bölümde aynı: masaüstünde WASD/oklar yürür, tıklayınca imleç kilitlenir ve fareyle bakılır (Esc bırakır);
+telefonda sol joystick yürür, ekranın geri kalanında sürükleme bakar. Kamera, yürüme ve bölüm kuralları `Player.tsx`'te,
+saf hareket mantığı `firstPerson.ts`'te.
 
-Kaybetme ve süre baskısı yok. Merdivende kaçırılan vuruş yalnızca basamak saymaz; üst üste 3 kaçırmada tempo 75'ten en fazla ~52 vuruş/dk'ya kadar yavaşlar.
+| Bölüm | Mekanik | Neden |
+|---|---|---|
+| Zindan (Ceneviz) | Odada serbest dolaş; fener baktığın yere düşer; 3 gizli armaya feneri 1,2 sn tut; sonra ışıklı kapıya yürü | 16. yy'da kule zindandı; karanlık + tek ışık yavaş ve dikkatli bakmayı öğretir |
+| Merdiven | Sarmal merdiveni yürüyerek çık (konumun açısından basamak yüksekliği). Çıkmak nefes harcar; nefes azalınca adımlar ağırlaşır, durunca (pencere önünde daha hızlı) dolar. 3 sahanlık penceresinden bakınca kulenin tarihinden bir an anlatılır | Dar sarmalı çıkmak yorucudur; nefes molası tempoyu yavaşlatır, pencereler molayı ödüllendirir |
+| Sergi (Osmanlı → Cumhuriyet) | Salonda dolaş; vitrine yaklaşıp bakınca "İncele" (E); 4 vitrin bitince terasa çıkan kapıya yürü | Müze katında beceri değil dinleme istenir |
+| Teras (bugün) | Balkonda kulenin çevresinde yürü; dört tarihi noktayı bakışınla bul (görev rozeti yönü söyler); dürbün (Z) yakınlaştırır | Tırmanışın ödülü manzaradır; noktayı kendin aramak bakmayı anlamlı kılar |
+
+Kaybetme ve süre baskısı yok. Nefes tükenince oyuncu durmaz, yalnızca yavaşlar (hızın %30'u).
 Kısa tutulan nefes cezasız tekrarlanır. Kaydıramayanlar için ekranda "basamak çık" düğmesi de vardır.
 
 ## Şanlıurfa ile tutarlılık
@@ -64,9 +70,9 @@ Geliştirme ortamında yalnızca ekran kartsız tarayıcıda (swiftshader, ~9 FP
 - [ ] Teras en ağır bölüm: düşük kademede (`?q=low`) 500, orta kademede 1100 şehir bloğu — FPS düşükse sayı azaltılmalı
 - [ ] Zindanda gölge kapalı (spot ışığı `castShadow={false}`), terasta açık; `?q=low` ve pil < %20 iken terasta da kapalı
 - [ ] Zindan: parmakla sürükleme feneri yönlendiriyor, ileri/geri düğmeleri basılı tutulunca yürüyor
-- [ ] Merdiven: yukarı kaydırma vuruşa göre "Tam/İyi/Erken/Geç" veriyor; sahanlıkta basılı tutma halkayı dolduruyor
+- [ ] Merdiven: W ya da joystick ile basamaklar çıkılıyor; nefes azalınca yavaşlıyor, durunca ve pencere önünde doluyor; pencereye bakınca kart açılıyor
 - [ ] Sergi: vitrine yaklaşınca kamera kilitleniyor ve anlatım başlıyor; "Devam" kilidi açıyor
-- [ ] Teras: yatay kaydırma noktalar arasında geçiyor; dönüşten sonra yakınlaşma oluyor
+- [ ] Teras: balkonda yürünüyor; noktaya bakınca (dürbünle daha kolay) kart açılıyor; dördü bulununca "Turu bitir"
 - [ ] Ses ilk dokunuştan sonra başlıyor; sessize alma anlatımı da durduruyor; iOS'ta sessiz mod anahtarı
 - [ ] WebGL kapalı tarayıcıda fotoğraf + "Dinle" çalışıyor
 - [ ] Dikey tutulan telefonda yatay çevirme ipucu görünüyor

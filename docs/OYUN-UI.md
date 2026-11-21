@@ -3,19 +3,20 @@
 Bütün oyunlar aynı arayüzü kullanır: `src/app/games/shared/hud/Hud.tsx`. İlk örnek: Kapadokya (`src/app/games/kapadokya/BalloonGame.tsx`).
 
 Geçirilen oyunlar: Kapadokya, Ani, İshak Paşa, Akdamar, Troya, Efes, Pamukkale, Zil Kale, Ayasofya, Topkapı, Dolmabahçe, Nemrut, Hattuşa,
-Kapalıçarşı, Kız Kulesi, Galata, Yerebatan, Anıtkabir (anıt sayfası). Bağımsız Şanlıurfa oyununa aynı görünümde "← Harita" ve ≡ menü
+Kapalıçarşı, Kız Kulesi, Galata, Yerebatan, Anıtkabir (anıt sayfası). Bağımsız Şanlıurfa oyununa aynı görünümde ≡ menü
 `public/sanliurfa-oyun/index.html` sonunda eklendi. Konya ve Antalya oyunlarının kendi menüleri bu arayüzün örnek alındığı yapıdır.
 Oyuna özel paneller (konuşma kutuları, defter, kroki, ışık paneli…) aynı açık temaya boyandı; oyuna özel düğmeler sağ üstte ≡'in soluna konur.
 
 ## Yerleşim (önce telefon, dikey ekran)
 | Yer | Bileşen | Ne |
 |---|---|---|
-| Sol üst | `BackButton` (`TopBar` içinde) | "← Harita". Her oyunda aynı yerde, aynı biçimde |
+| — | (sol üstte geri düğmesi yok) | Haritaya dönüş yalnızca ≡ menüde ("Haritaya dön"); başlangıç kartında da "Haritaya dön" bağlantısı var |
 | Sağ üst | `GameMenu` | Tek "≡" düğmesi (Konya/Antalya oyunlarındaki gibi). Açılınca oyun durur: Devam et, Nasıl oynanır, Ayarlar, Baştan başla, Haritaya dön |
 | Üst orta (telefonda ikinci satır) | `Objective` | Sıradaki hedef + ilerleme çubukları + sayı |
 | Sol | `ToolPanel` | Oyuna özel gösterge (ör. rüzgâr katmanları); başlığa dokununca daralır |
 | Sağ alt | `ActionDock` + `RoundAction` | Ana kontrol (vurgu renginde) ve ikincil kontrol |
 | Alt orta | `Hint` | Kısa ipucu; birkaç saniye sonra kendiliğinden solar |
+| Alt orta (ipucunun üstü) | `InteractPrompt` | "İncele: …  [E]" istemi: oyuncu bir şeyin yanındayken / ona bakarken çıkar |
 | Üst orta | `Toast` | Doğru / yanlış gibi kısa bildirim |
 | Alt (masaüstünde sağ alt) | `InfoSheet` | Bilgi kartı: etiket, başlık, metin, "Dinle", kaynak |
 | Ortada | `StartSheet`, `EndSheet`, `Modal` | Başlangıç, bitiş, menü ve yardım pencereleri |
@@ -34,12 +35,22 @@ Oyuna özel paneller (konuşma kutuları, defter, kroki, ışık paneli…) ayn�
 
 Oyunda kullanımı: `const G = useSettings()`; kademe `initialTier(G)`, otomatik düşürme `adaptive(G) && <PerformanceMonitor …>`, ses `audio.setMuted(G.muted)`, `audio.setVolume(G.volume)`, anlatım `useSettings.getState().tts`, sürükleme hızı `× sensitivity`.
 
+## Etkileşim: kendiliğinden hiçbir şey açılmaz
+- Bilgi kartı, bulmaca, vizör, zaman penceresi, rehber konuşması ve inceleme yakınlaşması **asla kendiliğinden açılmaz**. Oyuncu yaklaşınca
+  ya da baktığında yalnızca `InteractPrompt` çıkar; kart oyuncu **E**'ye (dokunmatikte düğmeye) basınca açılır.
+- Rehberli oyunlarda (Ayasofya, Topkapı) rehber durakta bekler; "Konuş: … E" ile anlatır. Kız Kulesi'nde Can "anlatmak istiyor" der, E ile konuşur.
+- Kamera kendiliğinden hedefe dönmez ve yakınlaşmaz (yalnızca oyuncunun açtığı inceleme kipinde, ör. Yerebatan Medusa).
+
 ## Kamera ve kontroller (masaüstü)
+- **Bütün yürüyüş oyunları birinci şahıstır** (göz hizası ~1,62 m); oyuncunun kendi modeli çizilmez. Kapadokya'da sepetin içinden bakılır.
 - Kamera klavyeyle (A/D, sol/sağ oklar) **çevrilmez**.
-- Birinci şahıs oyunlar (Ani, İshak Paşa, Troya, Efes, Pamukkale, Zil Kale, Kapalıçarşı, Yerebatan): sahneye tıkla → imleç kilitlenir, fareyle bak; Esc imleci bırakır. Kart, bulmaca ya da menü açılınca kilit kendiliğinden bırakılır. Ortak kod: `src/app/games/shared/mouseLook.tsx` (`useMouseLook`, `LookCrosshair`).
-- W/S (ve oklar yukarı/aşağı) yürür. A/D yalnız serbest yürünen oyunlarda yana adımdır (Kapalıçarşı, Yerebatan, Kız Kulesi) ya da teknede dümendir (Akdamar).
-- Üçüncü şahıs ve yörünge kameraları (Kapadokya, Akdamar adası, Ayasofya, Topkapı, Nemrut, Hattuşa, Dolmabahçe): fareyle sürükleyerek döndür; Akdamar'da tekerlek yaklaştırır.
-- Dokunmatik değişmedi: dikey sürükleme yürür, yatay sürükleme bakar.
+- Sahneye tıkla → imleç kilitlenir, fareyle bak; Esc imleci bırakır. Kart, bulmaca ya da menü açılınca kilit kendiliğinden bırakılır.
+  Ortak kod: `src/app/games/shared/mouseLook.tsx` (`useMouseLook`, `LookCrosshair`) ve `src/app/games/shared/fpLook.tsx`
+  (`useFpLook`: fare kilidi + dokunmatik sürükleme, `applyFp`: kamerayı göz hizasına koyar).
+- W/S (ve oklar yukarı/aşağı) yürür; A/D serbest yürünen oyunlarda yana adımdır, Akdamar'da teknede dümendir.
+  Rotaya bağlı oyunlarda (Hattuşa, Dolmabahçe, Troya, Efes…) W bakılan yöne göre rotada ileri/geri götürür.
+- Dokunmatik: sol alttaki joystick yürür (rotalı eski oyunlarda dikey sürükleme), ekranın geri kalanında sürükleme bakar.
+- Akdamar adası yörünge kamerasıdır (yürüyüş değil): sürükleyerek döndür, tekerlek yaklaştırır.
 
 ## Bir oyunu geçirmek
 1. Eski üst sıra, kart, başlık ve bitiş bileşenlerini kaldır.

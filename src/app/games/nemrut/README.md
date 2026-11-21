@@ -3,7 +3,7 @@
 Rota: `/oyun/nemrut`. Giriş noktası `NemrutGame.tsx` (varsayılan dışa aktarım, `{ onExit }`). Rehber yok: rehberin yerini keşif defteri alır.
 
 ## Oynanış
-- **Serbest yürüyüş:** Joystick / WASD ile yürünür, Shift ile koşulur (3,5 m/sn). Kamera üçüncü şahıstan izler, sürükleyerek çevrilir; yukarı sürüklenince heykellerin tepesine bakılır. Tümülüsün, arazinin, kaidenin ve stellerin içine girmez. Tümülüse çıkılmaz; gerçekte de yasaktır.
+- **Serbest yürüyüş:** Joystick / WASD ile yürünür, Shift ile koşulur (3,5 m/sn). Kamera birinci şahıstır (göz hizası); tıkla + fareyle ya da sürükleyerek bakılır, yukarı bakınca heykellerin tepesi görünür. Yazıt parçaları kendiliğinden toplanmaz: yanındayken "Al" (E). Tümülüse çıkılmaz; gerçekte de yasaktır.
 - **Zaman akar:** 1 gerçek saniye 1 oyun dakikasıdır. T tuşu ya da ⏩ düğmesi zamanı 20 kat hızlandırır. Oyun şafaktan önce başlar.
 - **Keşif defteri (J):** yedi görev var.
   1. Doğu Terası'nda gün doğumunu izle (altın saatte terasta 4 sn bekle).

@@ -1,9 +1,8 @@
 /**
  * Galata Kulesi — 4. bölüm: teras (ödül). Gün batımında 360° İstanbul.
  *
- * Neden: Tırmanışın ödülü manzaradır; ama serbest kamera yerine dört tarihi bakış noktası sunulur.
- * Oyuncu yatay kaydırarak (ya da düğmelerle) sıradaki noktaya geçer; kamera terasta o yöne yürür, döner
- * ve hedefe yavaşça yakınlaşır (dürbünle bakar gibi). Yönler gerçek koordinatlardan hesaplanır.
+ * Tırmanışın ödülü manzaradır. Oyuncu balkonda kulenin çevresinde birinci şahıs yürür, serbestçe bakar ve
+ * dört tarihi noktayı kendisi bulur; dürbünle (yakınlaştırma) bakıp tanır. Yönler gerçek koordinatlardan hesaplanır.
  * Işık: prosedürel gün batımı gökyüzü (drei Sky) + yerelde üretilen ortam haritası (drei Environment +
  * Lightformer; HDRI dosyası indirilmez). Gölgeler yalnızca bu bölümde açıktır (cihaz izin verirse).
  */
@@ -11,9 +10,9 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer, Sky } from '@react-three/drei';
-import { VIEWPOINTS, bearingOf, distanceOf, isWater, toLocal } from './panorama';
+import { VIEWPOINTS, isWater, toLocal } from './panorama';
 import { TOWER } from './dungeon';
-import { BALCONY_R, TowerExterior } from './TowerExterior';
+import { TowerExterior } from './TowerExterior';
 
 const SUN_BEARING = 250, SUN_ELEV = 4;   // ekim–kasım gün batımına yakın (yaklaşık)
 const deg = Math.PI / 180;
@@ -112,32 +111,7 @@ function Ships() {
   );
 }
 
-/** Kamerayı terasta, bakış noktasının yönüne yürütüp o yöne çevirir; açıyı en kısa yoldan değiştirir */
-function PanoramaCamera({ index }: { index: number }) {
-  const { camera } = useThree();
-  const cur = useRef(bearingOf(VIEWPOINTS[index].coord) * deg);
-  const fov = useRef(55);
-  const v = useMemo(() => new THREE.Vector3(), []);
-  useFrame((_, raw) => {
-    const dt = Math.min(raw, 0.05), vp = VIEWPOINTS[index];
-    const want = bearingOf(vp.coord) * deg;
-    let d = ((want - cur.current + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
-    cur.current += d * (1 - Math.exp(-dt * 1.6));
-    const b = cur.current, r = BALCONY_R - 0.7;
-    camera.position.set(Math.sin(b) * r, TOWER.terraceY + 1.65, -Math.cos(b) * r);
-    const dist = distanceOf(vp.coord);
-    v.set(Math.sin(b) * dist, 18, -Math.cos(b) * dist);
-    camera.lookAt(v);
-    d = Math.abs(d);
-    // döndükten sonra hedefe yakınlaş (dürbün etkisi); dönerken geniş açı
-    const targetFov = d > 0.08 ? 55 : THREE.MathUtils.clamp((2 * Math.atan(150 / dist)) / deg, 9, 40);
-    fov.current += (targetFov - fov.current) * (1 - Math.exp(-dt * 1.2));
-    const pc = camera as THREE.PerspectiveCamera; pc.fov = fov.current; pc.updateProjectionMatrix();
-  });
-  return null;
-}
-
-export default function TerracePanorama({ index, shadows, blocks }: { index: number; shadows: boolean; blocks: number }) {
+export default function TerracePanorama({ shadows, blocks }: { shadows: boolean; blocks: number }) {
   const { scene, gl } = useThree();
   const ground = useMemo(groundTexture, []);
   const sun = useRef<THREE.DirectionalLight>(null!);
@@ -168,7 +142,6 @@ export default function TerracePanorama({ index, shadows, blocks }: { index: num
       <Landmarks />
       <Ships />
       <TowerExterior shadows={shadows} />
-      <PanoramaCamera index={index} />
     </group>
   );
 }

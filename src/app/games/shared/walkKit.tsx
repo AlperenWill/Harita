@@ -101,7 +101,7 @@ export function stepWalk(camera: THREE.Camera, live: Live, cs: CamState, route: 
 /* ---------- arayüz parçaları: ortak HUD'un (shared/hud/Hud.tsx) ince sarmalayıcıları ---------- */
 export interface Source { title: string; url: string }
 const stop = (e: React.PointerEvent) => e.stopPropagation();
-export { Hud, HudTheme, Objective, GameMenu, Controls } from './hud/Hud';
+export { Hud, HudTheme, Objective, GameMenu, Controls, InteractPrompt } from './hud/Hud';
 /** Üst sıra: sol üstte Harita, ortada görev, sağ üstte ≡ menü. <Hud> içinde kullanılır. */
 export function TopBar({ onExit, objective, menu }: { onExit: () => void; objective?: ReactNode; menu?: ReactNode }) {
   return <TopRow onExit={onExit} objective={objective} right={menu} />;
