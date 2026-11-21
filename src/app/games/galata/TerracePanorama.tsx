@@ -10,9 +10,10 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer, Sky } from '@react-three/drei';
-import { VIEWPOINTS, isWater, toLocal } from './panorama';
+import { isWater, toLocal } from './panorama';
 import { TOWER } from './dungeon';
 import { TowerExterior } from './TowerExterior';
+import { Skyline, Terrain, landHeight } from './Skyline';
 
 const SUN_BEARING = 250, SUN_ELEV = 4;   // ekim–kasım gün batımına yakın (yaklaşık)
 const deg = Math.PI / 180;
@@ -29,71 +30,48 @@ function groundTexture() {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.magFilter = THREE.LinearFilter; return t;
 }
 
-/** Şehir dokusu: tek InstancedMesh, su maskesinin dışında rastgele (tohumlu) bloklar */
+/** Cephe dokusu: 4 sütun × 5 kat pencere, zemin katı koyu bant (beyaz; örnek rengiyle çarpılır) */
+function facadeTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d')!;
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, 128, 128);
+  for (let f = 0; f < 5; f++) for (let k = 0; k < 4; k++) { const x = 9 + k * 30, y = 8 + f * 22; g.fillStyle = f === 4 ? '#5a5048' : '#4c5560'; g.fillRect(x, y, f === 4 ? 22 : 16, f === 4 ? 18 : 13); g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(x, y + (f === 4 ? 18 : 13), f === 4 ? 22 : 16, 2); }
+  g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(0, 104, 128, 3);   // kat silmesi
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+}
+/**
+ * Şehir dokusu: 3–6 katlı binalar (pencereli cephe, çoğunda kiremit kırma çatı). Gövde ve çatı ayrı InstancedMesh; tepeleri izler.
+ * Cephe dokusu yan yüzlerde, düz damlarda dokusuz gri: yukarıdan bakınca damda pencere görünmez.
+ */
 export function City({ count }: { count: number }) {
-  const mesh = useMemo(() => {
-    const m = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ roughness: 0.9 }), count);
+  const { body, roof } = useMemo(() => {
+    const tex = facadeTexture(), side = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }), top = new THREE.MeshStandardMaterial({ color: '#b8ada0', roughness: 0.95 });
+    const body = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), [side, side, top, top, side, side], count);
+    const roof = new THREE.InstancedMesh(new THREE.ConeGeometry(Math.SQRT1_2, 1, 4, 1).rotateY(Math.PI / 4).translate(0, 0.5, 0), new THREE.MeshStandardMaterial({ roughness: 0.8 }), count);
     let s = 3; const r = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-    const tones = ['#e9dcc5', '#d9c3a0', '#c98f6b', '#e6d2b0', '#b9a58e', '#f0e6d4'].map((c) => new THREE.Color(c));
-    const mat = new THREE.Matrix4(), q = new THREE.Quaternion(); let k = 0, guard = 0;
-    while (k < count && guard++ < count * 20) {
-      const d = 90 + Math.pow(r(), 0.7) * 3600, a = r() * Math.PI * 2, x = Math.cos(a) * d, z = Math.sin(a) * d;
-      if (isWater(x, z) || isWater(x + 25, z) || isWater(x, z + 25)) continue;
-      const w = 14 + r() * 22, h = 8 + r() * 16 + (d < 600 ? 6 : 0);
-      q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), r() * Math.PI);
-      m.setMatrixAt(k, mat.compose(new THREE.Vector3(x, 0, z), q, new THREE.Vector3(w, h, w * (0.6 + r() * 0.6))));
-      m.setColorAt(k, tones[Math.floor(r() * tones.length)]); k++;
+    const tones = ['#f1e7d6', '#e9d6b8', '#e3c7a1', '#d9b28e', '#efe3cf', '#cfc3b3', '#e8c9b0'].map((c) => new THREE.Color(c));
+    const tiles = ['#a4553f', '#b4644a', '#9a4e3a', '#b97355'].map((c) => new THREE.Color(c));
+    const mat = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0); let k = 0, rk = 0, guard = 0;
+    while (k < count && guard++ < count * 25) {
+      const d = 70 + Math.pow(r(), 0.75) * 3600, a = r() * Math.PI * 2, x = Math.cos(a) * d, z = Math.sin(a) * d;
+      if (isWater(x, z) || isWater(x + 14, z) || isWater(x, z + 14)) continue;
+      if (KEEP_CLEAR.some(([cx, cz, rr]) => Math.hypot(x - cx, z - cz) < rr)) continue;   // anıt yapıların çevresi açık
+      const w = 9 + r() * 10, dd = 8 + r() * 8, h = 9 + r() * 10 + (d < 500 ? 4 : 0), y = landHeight(x, z) - 1;
+      q.setFromAxisAngle(up, Math.round(r() * 4) * (Math.PI / 2) + (r() - 0.5) * 0.4);
+      body.setMatrixAt(k, mat.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(w, h, dd))); body.setColorAt(k, tones[Math.floor(r() * tones.length)]); k++;
+      if (r() < 0.68) { roof.setMatrixAt(rk, mat.compose(new THREE.Vector3(x, y + h, z), q, new THREE.Vector3(w * 1.06, 2.2 + r() * 1.6, dd * 1.06))); roof.setColorAt(rk, tiles[Math.floor(r() * tiles.length)]); rk++; }
     }
-    m.count = k; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true;
-    return m;
+    for (const [m, n] of [[body, k], [roof, rk]] as const) { m.count = n; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; m.computeBoundingSphere(); }
+    return { body, roof };
   }, [count]);
-  useEffect(() => () => { mesh.geometry.dispose(); (mesh.material as THREE.Material).dispose(); }, [mesh]);
-  return <primitive object={mesh} />;
+  useEffect(() => () => { for (const m of [body, roof]) { m.geometry.dispose(); (Array.isArray(m.material) ? m.material : [m.material]).forEach((x) => x.dispose()); } }, [body, roof]);
+  return <><primitive object={body} /><primitive object={roof} /></>;
 }
 
-const stoneM = new THREE.MeshStandardMaterial({ color: '#e7dccb', roughness: 0.85 });
-const leadM = new THREE.MeshStandardMaterial({ color: '#8e9aa1', roughness: 0.5, metalness: 0.2 });
-const ochreM = new THREE.MeshStandardMaterial({ color: '#cf9a6e', roughness: 0.85 });
-
-function Minaret({ p, h }: { p: [number, number]; h: number }) {
-  return (
-    <group position={[p[0], 0, p[1]]}>
-      <mesh material={stoneM} position={[0, h / 2, 0]}><cylinderGeometry args={[2, 2.4, h, 10]} /></mesh>
-      <mesh material={stoneM} position={[0, h * 0.72, 0]}><cylinderGeometry args={[3, 3, 1, 10]} /></mesh>
-      <mesh material={leadM} position={[0, h + 4, 0]}><coneGeometry args={[2.1, 8, 10]} /></mesh>
-    </group>
-  );
-}
-function Mosque({ at, w, d, domeR, domeY, minarets, minH, mat = stoneM }: { at: [number, number]; w: number; d: number; domeR: number; domeY: number; minarets: [number, number][]; minH: number; mat?: THREE.Material }) {
-  return (
-    <group position={[at[0], 0, at[1]]}>
-      <mesh material={mat} position={[0, domeY / 2, 0]}><boxGeometry args={[w, domeY, d]} /></mesh>
-      <mesh material={mat} position={[0, domeY + 2, 0]}><cylinderGeometry args={[domeR * 1.05, domeR * 1.1, 4, 24]} /></mesh>
-      <mesh material={leadM} position={[0, domeY + 4, 0]}><sphereGeometry args={[domeR, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
-      {[-1, 1].map((s) => <mesh key={s} material={leadM} position={[0, domeY - 2, s * domeR * 1.05]}><sphereGeometry args={[domeR * 0.75, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>)}
-      {minarets.map((m, i) => <Minaret key={i} p={m} h={minH} />)}
-    </group>
-  );
-}
-
-function Landmarks() {
-  const ay = toLocal(VIEWPOINTS[1].coord), su = toLocal(VIEWPOINTS[0].coord), kk = toLocal(VIEWPOINTS[2].coord);
-  return (
-    <group>
-      {/* Süleymaniye: ana kubbe ~26,5 m çap, ~53 m yükseklik; 4 minare */}
-      <Mosque at={su} w={58} d={60} domeR={13.3} domeY={36} minH={66} minarets={[[-38, -40], [38, -40], [-30, 30], [30, 30]]} />
-      {/* Ayasofya: ana kubbe ~31 m çap, ~55 m; 4 minare; aşı boyalı cephe */}
-      <Mosque at={ay} w={72} d={76} domeR={15.5} domeY={38} minH={58} mat={ochreM} minarets={[[-42, -44], [42, -44], [-42, 44], [42, 44]]} />
-      {/* Kız Kulesi: küçük ada ve kule */}
-      <group position={[kk[0], 0, kk[1]]}>
-        <mesh material={stoneM} position={[0, 1.2, 0]}><cylinderGeometry args={[22, 24, 2.4, 20]} /></mesh>
-        <mesh material={stoneM} position={[0, 9, 4]}><boxGeometry args={[14, 14, 20]} /></mesh>
-        <mesh material={stoneM} position={[0, 20, -4]}><cylinderGeometry args={[3.2, 3.6, 22, 12]} /></mesh>
-        <mesh material={leadM} position={[0, 33, -4]}><coneGeometry args={[3.8, 6, 12]} /></mesh>
-      </group>
-    </group>
-  );
-}
+/** Şehir blokları anıtların çevresine konmaz (yerel m: x, z, yarıçap) */
+const KEEP_CLEAR: [number, number, number][] = [
+  [...toLocal([28.96403, 41.01611]), 120], [...toLocal([28.98008, 41.00854]), 90], [...toLocal([28.97684, 41.00539]), 120],
+  [...toLocal([28.97197, 41.01702]), 80], [...toLocal([28.98339, 41.01153]), 160],
+] as [number, number, number][];
 
 function Ships() {
   const ref = useRef<THREE.Group>(null!);
@@ -134,12 +112,11 @@ export default function TerracePanorama({ shadows, blocks }: { shadows: boolean;
       <hemisphereLight args={['#ffd9b5', '#8a7f8f', 1.1]} />
       <directionalLight ref={sun} position={SUN_DIR.clone().multiplyScalar(90).add(new THREE.Vector3(0, TOWER.terraceY, 0)).toArray()} intensity={2.4} color="#ffb070"
         castShadow={shadows} shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow={false}>
-        <planeGeometry args={[EXTENT, EXTENT]} /><meshStandardMaterial map={ground} roughness={0.75} />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]}><planeGeometry args={[60000, 60000]} /><meshStandardMaterial color="#2e5670" roughness={0.6} /></mesh>
-      <City count={blocks} />
-      <Landmarks />
+      <Terrain texture={ground} extent={EXTENT} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]}><planeGeometry args={[60000, 60000]} /><meshStandardMaterial color="#4f7f97" roughness={0.22} metalness={0.35} /></mesh>
+      {/* binalar küçüldü (3–6 kat): sayısı kademeye göre 4 katı */}
+      <City count={Math.round(blocks * 4)} />
+      <Skyline />
       <Ships />
       <TowerExterior shadows={shadows} />
     </group>
