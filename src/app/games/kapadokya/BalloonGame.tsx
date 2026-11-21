@@ -12,7 +12,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { ArrowDown, ArrowLeft, ArrowUp, Captions, CaptionsOff, ExternalLink, Flame, MapPin, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Flame, MapPin, Move, Wind } from 'lucide-react';
+import { ActionDock, Controls, EndSheet, Hint, Hud, InfoSheet, Objective, RoundAction, SettingsCluster, StartSheet, ToolPanel, TopBar } from '../shared/hud/Hud';
 import { LAYERS, SPOTS, START, UCHISAR, heightAt, layerAt, nearSpot, step, wind, type Balloon, type Spot } from './flight';
 import { speakTr } from '../shared/voice';
 import { Polish, SkyEnvironment } from '../shared/Polish';
@@ -71,38 +72,38 @@ function Game({ onExit }: { onExit: () => void }) {
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) drag.current = null; };
   const btn = (v: number) => ({ onPointerDown: (e: React.PointerEvent) => { e.stopPropagation(); audio.unlock(); hold.current = v; }, onPointerUp: () => { hold.current = 0; }, onPointerLeave: () => { hold.current = 0; }, onPointerCancel: () => { hold.current = 0; } });
   const start = () => { audio.unlock(); S.set({ started: true }); };
+  const restart = () => { audio.hush(); Object.assign(live, { b: { ...START }, input: 0, t: 0, camYaw: 0, camPitch: 0.25 }); useDb.setState({ ...INITIAL, started: true }); };
+  const next = SPOTS.find((x) => !S.seen.includes(x.id));
   const L = LAYERS[Math.max(0, S.layer)];
 
   return (
-    <div className="fixed inset-0 select-none overflow-hidden bg-[#f3c9a0] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+    <div className="fixed inset-0 select-none overflow-hidden bg-[#f3c9a0]" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 55, near: 0.5, far: 2500, position: [60, 80, 220] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.95; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
         <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#f3c9a0'} sun={'#ffc98a'} ground={'#d9b896'} sunDir={[0.8, 0.1, -0.6]} /><Polish tier={tier} /></Suspense>
       </Canvas>
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { audio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) audio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-orange-300 text-black' : 'bg-black/45'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.started && <div className="mx-auto flex flex-col items-center gap-1 rounded-2xl bg-black/45 px-4 py-2"><div className="flex gap-1">{SPOTS.map((s) => <MapPin key={s.id} size={13} className={S.seen.includes(s.id) ? 'text-orange-300' : 'text-white/30'} />)}</div><p className="text-xs">{S.seen.length}/{SPOTS.length} nokta</p></div>}
-      </div>
-      {S.started && (
-        <>
+      <Hud theme={THEME}>
+        <TopBar onExit={onExit}
+          objective={S.started ? <Objective icon={<MapPin size={15} />} label={next ? `Sıradaki: ${next.name}` : 'Bütün noktalar görüldü'} done={S.seen.length} total={SPOTS.length} /> : undefined}
+          right={<SettingsCluster muted={S.muted} onMute={() => { audio.unlock(); S.set({ muted: !S.muted }); }} tts={S.tts} onTts={() => { S.set({ tts: !S.tts }); if (S.tts) audio.hush(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} />} />
+        {S.started && <>
           {/* rüzgâr katmanları: hangi yükseklikte rüzgâr nereye eser (oklar kameraya göre) */}
-          <div className="pointer-events-none absolute left-3 top-20 rounded-2xl bg-black/45 p-2.5 text-xs">
-            <p className="mb-1 font-semibold">{Math.round(S.agl)} m · {L.name} rüzgâr</p>
-            {[...LAYERS].map((l, i) => ({ l, i })).reverse().map(({ l, i }) => <WindRow key={l.name} name={l.name} dir={l.dir} on={i === S.layer} range={i === 0 ? `0–${l.top}` : i === LAYERS.length - 1 ? `${LAYERS[i - 1].top}+` : `${LAYERS[i - 1].top}–${l.top}`} />)}
-          </div>
-          <div className="absolute bottom-6 right-4 flex flex-col gap-3" onPointerDown={(e) => e.stopPropagation()}>
-            <button {...btn(1)} className="grid h-16 w-16 place-items-center rounded-full bg-orange-500 shadow-xl active:scale-95" aria-label="Brülör: yüksel"><Flame size={26} /><span className="sr-only">Yüksel</span></button>
-            <button {...btn(-1)} className="grid h-14 w-14 place-items-center self-center rounded-full bg-black/55 shadow-xl active:scale-95" aria-label="Kapak: alçal"><ArrowDown size={22} /></button>
-          </div>
-          {!S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[60vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">🔥 basılı tut: yüksel · ⬇: alçal · sürükle: etrafa bak<span className="hidden [@media(pointer:fine)]:inline"> · W/Boşluk · S</span></p>}
-        </>
-      )}
-      {S.card && <Card s={S.card} onClose={close} />}
-      {!S.started && <TitleCard onStart={start} />}
-      {S.started && S.seen.length === SPOTS.length && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+          <ToolPanel title={<><Wind size={14} className="mr-1" style={{ color: THEME.accent }} />{Math.round(S.agl)} m · {L.name}</>}>
+            <div className="grid gap-0.5 text-xs">{[...LAYERS].map((l, i) => ({ l, i })).reverse().map(({ l, i }) => <WindRow key={l.name} name={l.name} dir={l.dir} on={i === S.layer} range={i === 0 ? `0–${l.top}` : i === LAYERS.length - 1 ? `${LAYERS[i - 1].top}+` : `${LAYERS[i - 1].top}–${l.top}`} />)}</div>
+          </ToolPanel>
+          {!S.card && <ActionDock>
+            <RoundAction label="Brülör: yüksel" primary size={68} {...btn(1)}><Flame size={28} /></RoundAction>
+            <RoundAction label="Kapak: alçal" size={54} {...btn(-1)}><ArrowDown size={22} /></RoundAction>
+          </ActionDock>}
+          {!S.card && <Hint>Alevi basılı tut: yüksel · ok: alçal · sürükle: etrafa bak<span className="hidden [@media(pointer:fine)]:inline"> · W/Boşluk · S</span></Hint>}
+        </>}
+        {S.card && <InfoSheet kicker={`Kapadokya · ${S.seen.indexOf(S.card.id) + 1}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => audio.speak(`${S.card!.name}. ${S.card!.text}`)} />}
+        {!S.started && <StartSheet kicker="Nevşehir · Göreme · UNESCO Dünya Mirası" title="Gün Doğumunda Balon"
+          intro={<>Balonun dümeni yok: brülörle yüksel, kapakla alçal. Her yükseklikte rüzgâr başka yöne eser. Doğru katmanı yakala, beş noktanın üstünden geç.</>}
+          controls={CONTROLS} note="Arazi stilizedir, mesafeler kısaltılmıştır. Rüzgâr katmanları oyun için basitleştirilmiştir." cta="Havalan" ctaIcon={<Flame size={18} />} onStart={start} onExit={onExit} />}
+        {S.started && S.seen.length === SPOTS.length && !S.endShown && !S.card && <EndSheet kicker="Beş noktanın hepsi" title="Rüzgârı okumayı öğrendin" text="Dümensiz bir balonla vadileri gezdin. Gerçek pilotlar da yönü böyle, yüksekliği değiştirerek seçer." onStay={() => S.set({ endShown: true })} stayLabel="Uçmaya devam" onExit={onExit} onRestart={restart} badge={<Flame size={24} />} />}
+      </Hud>
     </div>
   );
 }
@@ -110,7 +111,7 @@ function Game({ onExit }: { onExit: () => void }) {
 function WindRow({ name, dir, on, range }: { name: string; dir: [number, number]; on: boolean; range: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => { let raf = 0; const f = () => { if (ref.current) { const a = Math.atan2(dir[0], -dir[1]) + live.camYaw; ref.current.style.transform = `rotate(${a}rad)`; } raf = requestAnimationFrame(f); }; raf = requestAnimationFrame(f); return () => cancelAnimationFrame(raf); }, [dir]);
-  return <div className={`flex items-center gap-2 rounded-lg px-1.5 py-0.5 ${on ? 'bg-orange-400/80 text-black' : 'opacity-80'}`}><span ref={ref} className="inline-block"><ArrowUp size={14} /></span><span className="w-12">{name}</span><span className="opacity-70">{range} m</span></div>;
+  return <div className={`flex items-center gap-2 rounded-lg px-1.5 py-1 font-semibold ${on ? '' : 'text-[#857b70]'}`} style={on ? { background: THEME.accent, color: '#fff' } : undefined}><span ref={ref} className="inline-block"><ArrowUp size={14} /></span><span className="w-12">{name}</span><span className="opacity-75">{range} m</span></div>;
 }
 
 /* ---------- 3B dünya ---------- */
@@ -221,44 +222,14 @@ function Controller() {
   return null;
 }
 
-/* ---------- arayüz ---------- */
-function Card({ s, onClose }: { s: Spot; onClose: () => void }) {
-  return (
-    <div className="absolute inset-x-3 bottom-28 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-24 sm:mx-0" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl border border-orange-100/30 bg-[#2b1d16]/90 p-5 shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-2"><div><p className="text-[11px] font-semibold uppercase tracking-wider text-orange-300">Kapadokya · balondan</p><h2 className="text-xl font-bold">{s.name}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={18} /></button></div>
-        <p className="mt-2 text-sm leading-relaxed text-white/85">{s.text}</p>
-        <a href={s.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-white/60 underline">{s.source.title} <ExternalLink size={12} /></a>
-      </div>
-    </div>
-  );
-}
-function TitleCard({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/60 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-orange-300">Nevşehir · Göreme · UNESCO Dünya Mirası</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Kapadokya: Gün Doğumunda Balon</h1>
-        <p className="mt-2 text-sm text-white/85">Balonun dümeni yok: brülörle yüksel, kapakla alçal. Her yükseklikte rüzgâr başka yöne eser. Doğru katmanı yakala ve beş noktanın üstünden geç: Göreme, Çavuşin, Paşabağı, Güvercinlik Vadisi ve Uçhisar.</p>
-        <p className="mt-2 text-xs text-white/60">🔥 basılı tut ya da W/Boşluk: yüksel · ⬇ ya da S: alçal · sürükle: etrafa bak · soldaki tablo: hangi yükseklikte rüzgâr nereye eser</p>
-        <p className="mt-1 text-[11px] text-white/45">Arazi stilizedir, mesafeler kısaltılmıştır. Rüzgâr katmanları oyun için basitleştirilmiştir.</p>
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-400 font-semibold text-black"><Flame size={18} /> Havalan</button>
-      </div>
-    </div>
-  );
-}
-function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/25 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-[#f6efe2] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-orange-700">Beş noktanın hepsi</p><h2 className="mt-1 text-2xl font-bold">Rüzgârı okumayı öğrendin</h2>
-        <p className="mt-2 text-sm text-slate-600">Dümensiz bir balonla vadileri gezdin. Gerçek pilotlar da yönü böyle, yüksekliği değiştirerek seçer.</p>
-        <div className="mt-5 flex gap-2"><button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Uçmaya devam</button><button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button></div>
-      </div>
-    </div>
-  );
-}
+/* ---------- arayüz: ortak HUD (shared/hud/Hud.tsx) ---------- */
+const THEME = { accent: '#e8702a' };   // gün doğumu turuncusu
+const CONTROLS = [
+  { icon: <Flame size={16} />, text: <>Alevi <b>basılı tut</b>: yüksel <span className="hidden [@media(pointer:fine)]:inline">(W / Boşluk)</span></> },
+  { icon: <ArrowDown size={16} />, text: <>Ok düğmesi: alçal <span className="hidden [@media(pointer:fine)]:inline">(S)</span></> },
+  { icon: <Move size={16} />, text: <>Sürükle: balonun çevresine bak</> },
+  { icon: <Wind size={16} />, text: <>Soldaki tablo: hangi yükseklikte rüzgâr nereye eser</> },
+];
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);
   useEffect(() => { fetch('https://tr.wikipedia.org/api/rest_v1/page/summary/Kapadokya').then((r) => r.json()).then((j) => setImg(j.originalimage?.source ?? j.thumbnail?.source ?? null)).catch(() => {}); }, []);
