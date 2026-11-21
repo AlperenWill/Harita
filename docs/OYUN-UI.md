@@ -6,7 +6,7 @@ Bütün oyunlar aynı arayüzü kullanır: `src/app/games/shared/hud/Hud.tsx`. �
 | Yer | Bileşen | Ne |
 |---|---|---|
 | Sol üst | `BackButton` (`TopBar` içinde) | "← Harita". Her oyunda aynı yerde, aynı biçimde |
-| Sağ üst | `GameMenu` | Tek "≡" düğmesi (Konya/Antalya oyunlarındaki gibi). Açılınca oyun durur: Devam et, Nasıl oynanır, Ayarlar (ses, sesli anlatım), Baştan başla, Haritaya dön |
+| Sağ üst | `GameMenu` | Tek "≡" düğmesi (Konya/Antalya oyunlarındaki gibi). Açılınca oyun durur: Devam et, Nasıl oynanır, Ayarlar, Baştan başla, Haritaya dön |
 | Üst orta (telefonda ikinci satır) | `Objective` | Sıradaki hedef + ilerleme çubukları + sayı |
 | Sol | `ToolPanel` | Oyuna özel gösterge (ör. rüzgâr katmanları); başlığa dokununca daralır |
 | Sağ alt | `ActionDock` + `RoundAction` | Ana kontrol (vurgu renginde) ve ikincil kontrol |
@@ -20,6 +20,14 @@ Bütün oyunlar aynı arayüzü kullanır: `src/app/games/shared/hud/Hud.tsx`. �
 - Oyuna özgü tek şey **vurgu rengi**: `<Hud theme={{ accent: '#e8702a' }}>`. Ana düğme, ilerleme ve etiketler bu rengi alır.
 - Dokunma hedefleri en az 44 px. Çentik ve ev çubuğu için güvenli alan payı otomatik.
 - HUD sahneye dokunuşu engellemez; yalnız düğme ve paneller tıklanır.
+
+## Ayarlar (ortak, tarayıcıda saklanır)
+`src/app/games/shared/hud/settings.ts` → `useSettings()`. Bir oyunda değiştirilen ayar bütün oyunlarda geçerlidir.
+- **Görüntü:** grafik kalitesi (Otomatik / Düşük / Orta / Yüksek), pil tasarrufu (düşük kaliteye kilitler). Otomatikte kare hızı düşünce kalite kendiliğinden iner. Adresteki `?q=` her zaman önceliklidir.
+- **Ses:** ses aç/kapa, ses seviyesi, sesli anlatım.
+- **Kontrol:** bakış hassasiyeti (0,4×–2×).
+
+Oyunda kullanımı: `const G = useSettings()`; kademe `initialTier(G)`, otomatik düşürme `adaptive(G) && <PerformanceMonitor …>`, ses `audio.setMuted(G.muted)`, `audio.setVolume(G.volume)`, anlatım `useSettings.getState().tts`, sürükleme hızı `× sensitivity`.
 
 ## Bir oyunu geçirmek
 1. Eski üst sıra, kart, başlık ve bitiş bileşenlerini kaldır.

@@ -13,8 +13,9 @@
  * Tema: sitenin açık dili. Sıcak beyaz cam (beyaz + bulanıklık), mürekkep rengi yazı, ince çizgi.
  * Oyuna özgü tek şey VURGU rengidir (accent): ana düğme, ilerleme, başlık üstü etiket.
  */
+import { useSettings, urlQuality, type Quality } from './settings';
 import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { ArrowLeft, BookOpen, ExternalLink, HelpCircle, Menu, RotateCcw, Settings, Volume2, VolumeX, X, Captions, CaptionsOff, Map as MapIcon, Play } from 'lucide-react';
+import { ArrowLeft, BatteryLow, BookOpen, ExternalLink, HelpCircle, Menu, RotateCcw, Settings, Volume2, VolumeX, X, Captions, CaptionsOff, Map as MapIcon, Play } from 'lucide-react';
 
 /* ---------- tema ---------- */
 export interface HudTheme { accent: string; accentInk?: string }
@@ -72,10 +73,10 @@ export function Objective({ label, done, total, icon }: { label: ReactNode; done
 /* ---------- menü (≡) ----------
  * Konya / Antalya oyunlarındaki duraklatma menüsü gibi: tek düğme, açılınca oyun durur; alt alta tam genişlikte seçenekler.
  * Ana görünüm: Devam et · Nasıl oynanır · Ayarlar · Baştan başla · Haritaya dön. Ayarlar ayrı sayfa: ses, sesli anlatım. */
-export function GameMenu({ muted, onMute, tts, onTts, help, onRestart, onExit, onPause }: { muted: boolean; onMute: () => void; tts?: boolean; onTts?: () => void; help?: ReactNode; onRestart?: () => void; onExit: () => void; onPause?: (paused: boolean) => void }) {
+export function GameMenu({ help, onRestart, onExit, onPause, tts = true, look = true }: { help?: ReactNode; onRestart?: () => void; onExit: () => void; onPause?: (paused: boolean) => void; /** sesli anlatım ayarı gösterilsin mi */ tts?: boolean; /** bakış hassasiyeti ayarı gösterilsin mi */ look?: boolean }) {
   const [view, setView] = useState<null | 'main' | 'settings' | 'help'>(null);
   const open = (v: typeof view) => { setView(v); onPause?.(v !== null); };
-  const t = useTheme();
+  const t = useTheme(), st = useSettings();
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Escape') open(view ? null : 'main'); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); });
   return (<>
     <IconButton label="Menü" onClick={() => open('main')}><Menu size={20} /></IconButton>
@@ -89,14 +90,36 @@ export function GameMenu({ muted, onMute, tts, onTts, help, onRestart, onExit, o
       </div>
     </Modal>}
     {view === 'settings' && <Modal title="Ayarlar" onClose={() => open(null)}>
-      <div className="grid gap-2">
-        <Toggle icon={muted ? <VolumeX size={18} /> : <Volume2 size={18} />} label="Ses" on={!muted} onClick={onMute} />
-        {onTts && <Toggle icon={tts ? <Captions size={18} /> : <CaptionsOff size={18} />} label="Sesli anlatım" on={!!tts} onClick={onTts} />}
+      <div className="grid gap-3">
+        <Section title="Görüntü">
+          <Segmented label="Grafik kalitesi" value={urlQuality() ?? st.quality} disabled={!!urlQuality()} options={[['auto', 'Otomatik'], ['low', 'Düşük'], ['medium', 'Orta'], ['high', 'Yüksek']]} onChange={(v) => st.set({ quality: v as Quality, battery: false })} />
+          <p className="px-1 text-[11px] leading-snug text-[#857b70]">{urlQuality() ? 'Kalite adresteki ?q= ile sabitlendi.' : st.quality === 'auto' ? 'Otomatik: cihaza göre seçilir, takılırsa kendiliğinden düşer.' : 'Seçtiğin kalite sabit kalır. Yüksek kalite pili daha çabuk tüketir.'}</p>
+          <Toggle icon={<BatteryLow size={18} />} label="Pil tasarrufu" on={st.battery} onClick={() => st.set({ battery: !st.battery })} />
+        </Section>
+        <Section title="Ses">
+          <Toggle icon={st.muted ? <VolumeX size={18} /> : <Volume2 size={18} />} label="Ses" on={!st.muted} onClick={() => st.set({ muted: !st.muted })} />
+          <Slider label="Ses seviyesi" value={st.volume} disabled={st.muted} onChange={(v) => st.set({ volume: v })} />
+          {tts && <Toggle icon={st.tts ? <Captions size={18} /> : <CaptionsOff size={18} />} label="Sesli anlatım" on={st.tts} onClick={() => st.set({ tts: !st.tts })} />}
+        </Section>
+        {look && <Section title="Kontrol"><Slider label="Bakış hassasiyeti" value={(st.sensitivity - 0.4) / 1.6} onChange={(v) => st.set({ sensitivity: 0.4 + v * 1.6 })} format={() => `${st.sensitivity.toFixed(1)}×`} /></Section>}
         <MenuRow icon={<ArrowLeft size={18} />} label="Geri" onClick={() => setView('main')} />
       </div>
     </Modal>}
     {view === 'help' && <Modal title="Nasıl oynanır" onClose={() => open(null)}>{help}<div className="mt-3"><MenuRow icon={<ArrowLeft size={18} />} label="Geri" onClick={() => setView('main')} /></div></Modal>}
   </>);
+}
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return <div><p className="mb-1.5 px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#857b70]">{title}</p><div className="grid gap-2">{children}</div></div>;
+}
+function Segmented({ label, value, options, onChange, disabled }: { label: string; value: string; options: [string, string][]; onChange: (v: string) => void; disabled?: boolean }) {
+  const t = useTheme();
+  return <div className={`rounded-xl px-3 py-2.5 ring-1 ring-black/5 ${disabled ? 'opacity-60' : ''}`}><p className="mb-2 text-sm font-semibold">{label}</p>
+    <div className="grid grid-cols-4 gap-1 rounded-lg bg-black/[0.05] p-1" role="radiogroup" aria-label={label}>{options.map(([v, l]) => <button key={v} role="radio" aria-checked={value === v} disabled={disabled} onClick={() => onChange(v)} className={`h-9 rounded-md text-xs font-semibold transition ${value === v ? 'shadow-sm' : 'text-[#4a433c]'}`} style={value === v ? { background: t.accent, color: t.accentInk ?? '#fff' } : undefined}>{l}</button>)}</div></div>;
+}
+function Slider({ label, value, onChange, disabled, format }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean; format?: () => string }) {
+  const t = useTheme();
+  return <label className={`block rounded-xl px-3 py-2.5 ring-1 ring-black/5 ${disabled ? 'opacity-50' : ''}`}><span className="flex text-sm font-semibold">{label}<span className="ml-auto text-xs text-[#857b70]">{format ? format() : `%${Math.round(value * 100)}`}</span></span>
+    <input type="range" min={0} max={1} step={0.05} value={value} disabled={disabled} onChange={(e) => onChange(Number(e.target.value))} className="mt-2 w-full" style={{ accentColor: t.accent }} /></label>;
 }
 function Toggle({ icon, label, on, onClick }: { icon: ReactNode; label: string; on: boolean; onClick: () => void }) {
   const t = useTheme();

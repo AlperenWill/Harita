@@ -17,11 +17,10 @@ import { ActionDock, Controls, EndSheet, Hint, Hud, InfoSheet, Objective, RoundA
 import { LAYERS, SPOTS, START, UCHISAR, heightAt, layerAt, nearSpot, step, wind, type Balloon, type Spot } from './flight';
 import { speakTr } from '../shared/voice';
 import { Polish, SkyEnvironment } from '../shared/Polish';
+import { adaptive, initialTier, useSettings } from '../shared/hud/settings';
 
 type Tier = 'low' | 'medium' | 'high';
 const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
-const pinned = (() => { const q = new URLSearchParams(location.search).get('q'); return q === 'low' || q === 'medium' || q === 'high' ? (q as Tier) : null; })();
-function detectTier(): Tier { if (pinned) return pinned; const nav = navigator as Navigator & { deviceMemory?: number }; if ((nav.deviceMemory ?? 8) <= 3 || (nav.hardwareConcurrency ?? 8) <= 4) return 'low'; return matchMedia('(pointer: coarse)').matches ? 'medium' : 'high'; }
 function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
 
 /* ---------- ses: brülör kükremesi + rüzgâr ---------- */
@@ -29,13 +28,15 @@ class BalloonAudio {
   private ctx: AudioContext | null = null; private master: GainNode | null = null; private burner: GainNode | null = null; muted = false;
   unlock() {
     if (this.ctx) { void this.ctx.resume(); return; } const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext; if (!AC) return;
-    const ctx = (this.ctx = new AC()); this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 0.7; this.master.connect(ctx.destination);
+    const ctx = (this.ctx = new AC()); this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 0.9 * this.vol; this.master.connect(ctx.destination);
     const n = ctx.sampleRate * 2, buf = ctx.createBuffer(1, n, ctx.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
     const mk = (type: BiquadFilterType, f: number, g: number) => { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; const fl = ctx.createBiquadFilter(); fl.type = type; fl.frequency.value = f; const gn = ctx.createGain(); gn.gain.value = g; s.connect(fl).connect(gn).connect(this.master!); s.start(0, Math.random()); return gn; };
     mk('lowpass', 300, 0.06); this.burner = mk('bandpass', 180, 0);
   }
   setBurner(on: boolean) { if (this.ctx && this.burner) this.burner.gain.setTargetAtTime(on && !this.muted ? 0.9 : 0, this.ctx.currentTime, 0.08); }
-  setMuted(m: boolean) { this.muted = m; if (m && 'speechSynthesis' in window) speechSynthesis.cancel(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.7, this.ctx.currentTime, 0.2); }
+  private vol = 0.8;
+  setVolume(v: number) { this.vol = v; this.setMuted(this.muted); }
+  setMuted(m: boolean) { this.muted = m; if (m && 'speechSynthesis' in window) speechSynthesis.cancel(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9 * this.vol, this.ctx.currentTime, 0.2); }
   speak(t: string) { if (!this.muted) speakTr(t); }
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
   dispose() { this.hush(); void this.ctx?.close(); this.ctx = null; this.master = null; this.burner = null; }
@@ -43,9 +44,9 @@ class BalloonAudio {
 const audio = new BalloonAudio();
 
 /* ---------- durum ---------- */
-interface S { started: boolean; paused: boolean; seen: string[]; card: Spot | null; agl: number; layer: number; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+interface S { started: boolean; paused: boolean; seen: string[]; card: Spot | null; agl: number; layer: number; endShown: boolean; set: (p: Partial<S>) => void }
 const INITIAL = { started: false, paused: false, seen: [] as string[], card: null, agl: 0, layer: 0, endShown: false };
-const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
+const useDb = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
 const live = { b: { ...START } as Balloon, input: 0, t: 0, camYaw: 0, camPitch: 0.25, burn: false };
 
 export default function BalloonGame({ onExit }: { onExit: () => void }) {
@@ -53,9 +54,10 @@ export default function BalloonGame({ onExit }: { onExit: () => void }) {
   return <Game onExit={onExit} />;
 }
 function Game({ onExit }: { onExit: () => void }) {
-  const [tier, setTier] = useState<Tier>(detectTier), S = useDb();
+  const G = useSettings(), [tier, setTier] = useState<Tier>(() => initialTier()), S = useDb();
+  useEffect(() => { setTier(initialTier(G)); }, [G.quality, G.battery]);   // ayarlardan kalite değişince sahne yeniden kurulur
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y: number } | null>(null), hold = useRef(0);
-  useEffect(() => { audio.setMuted(S.muted); }, [S.muted]);
+  useEffect(() => { audio.setMuted(G.muted); audio.setVolume(G.volume); if (!G.tts) audio.hush(); }, [G.muted, G.volume, G.tts]);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { b: { ...START }, input: 0, t: 0, camYaw: 0, camPitch: 0.25 }); }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
   useEffect(() => {
@@ -68,7 +70,7 @@ function Game({ onExit }: { onExit: () => void }) {
   }, [close]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __balon: unknown }).__balon = { tp: (x: number, z: number, agl = 60) => { live.b = { x, z, y: heightAt(x, z) + agl, vy: 0 }; useDb.getState().set({ started: true }); }, cam: (y: number, p = 0.25) => { live.camYaw = y; live.camPitch = p; }, state: () => ({ ...useDb.getState(), b: { ...live.b } }), SPOTS }; }, []);
   const onDown = (e: React.PointerEvent) => { audio.unlock(); drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY }; };
-  const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.camYaw -= (e.clientX - d.x) * 0.006; live.camPitch = THREE.MathUtils.clamp(live.camPitch + (e.clientY - d.y) * 0.004, -0.2, 1.2); d.x = e.clientX; d.y = e.clientY; };
+  const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; const k = useSettings.getState().sensitivity; live.camYaw -= (e.clientX - d.x) * 0.006 * k; live.camPitch = THREE.MathUtils.clamp(live.camPitch + (e.clientY - d.y) * 0.004 * k, -0.2, 1.2); d.x = e.clientX; d.y = e.clientY; };
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) drag.current = null; };
   const btn = (v: number) => ({ onPointerDown: (e: React.PointerEvent) => { e.stopPropagation(); audio.unlock(); hold.current = v; }, onPointerUp: () => { hold.current = 0; }, onPointerLeave: () => { hold.current = 0; }, onPointerCancel: () => { hold.current = 0; } });
   const start = () => { audio.unlock(); S.set({ started: true }); };
@@ -80,13 +82,13 @@ function Game({ onExit }: { onExit: () => void }) {
     <div className="fixed inset-0 select-none overflow-hidden bg-[#f3c9a0]" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 55, near: 0.5, far: 2500, position: [60, 80, 220] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.95; }}>
-        {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
+        {adaptive(G) && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
         <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#f3c9a0'} sun={'#ffc98a'} ground={'#d9b896'} sunDir={[0.8, 0.1, -0.6]} /><Polish tier={tier} /></Suspense>
       </Canvas>
       <Hud theme={THEME}>
         <TopBar onExit={onExit}
           objective={S.started ? <Objective icon={<MapPin size={15} />} label={next ? `Sıradaki: ${next.name}` : 'Bütün noktalar görüldü'} done={S.seen.length} total={SPOTS.length} /> : undefined}
-          right={<GameMenu onPause={(v) => S.set({ paused: v })} muted={S.muted} onMute={() => { audio.unlock(); S.set({ muted: !S.muted }); }} tts={S.tts} onTts={() => { S.set({ tts: !S.tts }); if (S.tts) audio.hush(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} />} />
+          right={<GameMenu onPause={(v) => S.set({ paused: v })} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} />} />
         {S.started && <>
           {/* rüzgâr katmanları: hangi yükseklikte rüzgâr nereye eser (oklar kameraya göre) */}
           <ToolPanel title={<><Wind size={14} className="mr-1" style={{ color: THEME.accent }} />{Math.round(S.agl)} m · {L.name}</>}>
@@ -211,7 +213,7 @@ function Controller() {
     const b = live.b, agl = b.y - heightAt(b.x, b.z), layer = Math.max(0, layerAt(agl));
     if (Math.abs(agl - st.current.agl) > 1 || layer !== st.current.layer) { st.current.agl = agl; st.current.layer = layer; S.set({ agl, layer }); }
     const sp = S.started ? nearSpot(b) : null;
-    if ((sp?.id ?? '') !== st.current.spot) { st.current.spot = sp?.id ?? ''; if (sp && !S.seen.includes(sp.id)) { S.set({ card: sp, seen: [...S.seen, sp.id] }); if (S.tts) audio.speak(`${sp.name}. ${sp.text}`); } }
+    if ((sp?.id ?? '') !== st.current.spot) { st.current.spot = sp?.id ?? ''; if (sp && !S.seen.includes(sp.id)) { S.set({ card: sp, seen: [...S.seen, sp.id] }); if (useSettings.getState().tts) audio.speak(`${sp.name}. ${sp.text}`); } }
     // kamera: balonun arkasından, gövdenin ortasına bakar; araziye girmez
     const D = 52, cp = Math.cos(live.camPitch);   // geniş çekim: balon + altındaki vadi kadrajda
     _c.set(b.x + Math.sin(live.camYaw) * cp * D, b.y + 12 + Math.sin(live.camPitch) * D, b.z + Math.cos(live.camYaw) * cp * D);
