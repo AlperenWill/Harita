@@ -209,7 +209,8 @@ export function Toast({ text, tone = 'info' }: { text: string | null; tone?: 'ok
 
 /* ---------- başlangıç ve bitiş ---------- */
 /** Başlangıç ekranı: alttan kart; üstte sahne görünür kalır */
-export function StartSheet({ kicker, title, intro, controls, note, cta, ctaIcon, onStart, onExit }: { kicker: string; title: string; intro: ReactNode; controls: { icon: ReactNode; text: ReactNode }[]; note?: string; cta: string; ctaIcon?: ReactNode; onStart: () => void; onExit?: () => void }) {
+export function StartSheet({ kicker, title, intro, controls, note, cta, ctaIcon, onStart, onExit, loading }: { kicker: ReactNode; title: ReactNode; intro: ReactNode; controls: { icon: ReactNode; text: ReactNode }[]; note?: ReactNode; cta: string; ctaIcon?: ReactNode; onStart: () => void; onExit?: () => void; /** 0..1: sahne yükleniyor; 1 olana kadar düğme kapalı */ loading?: number }) {
+  const busy = loading !== undefined && loading < 1;
   const t = useTheme();
   return (
     <div className="pointer-events-auto absolute inset-0 z-40 flex items-end justify-center bg-gradient-to-t from-[#1f1b17]/45 via-transparent to-transparent sm:items-center sm:bg-[#1f1b17]/20" onPointerDown={stop}>
@@ -219,14 +220,15 @@ export function StartSheet({ kicker, title, intro, controls, note, cta, ctaIcon,
         <div className="mt-2 text-[15px] leading-relaxed text-[#4a433c]">{intro}</div>
         <div className="mt-3"><Controls items={controls} /></div>
         {note && <p className="mt-3 text-[11px] text-[#857b70]">{note}</p>}
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-bold shadow-[0_8px_20px_rgba(31,27,23,0.18)] transition active:scale-[0.99]" style={{ background: t.accent, color: t.accentInk ?? '#fff' }}>{ctaIcon}{cta}</button>
+        {loading !== undefined && <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/10" role="progressbar" aria-valuenow={Math.round(loading * 100)} aria-valuemin={0} aria-valuemax={100}><div className="h-full transition-all duration-300" style={{ width: `${Math.round(loading * 100)}%`, background: t.accent }} /></div>}
+        <button onClick={onStart} disabled={busy} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-bold shadow-[0_8px_20px_rgba(31,27,23,0.18)] transition active:scale-[0.99] disabled:opacity-50" style={{ background: t.accent, color: t.accentInk ?? '#fff' }}>{ctaIcon}{busy ? 'Yükleniyor…' : cta}</button>
         {onExit && <button onClick={onExit} className="mt-2 inline-flex h-10 w-full items-center justify-center gap-1.5 text-sm font-semibold text-[#857b70]"><ArrowLeft size={15} /> Haritaya dön</button>}
       </div>
     </div>
   );
 }
 /** Bitiş penceresi */
-export function EndSheet({ kicker, title, text, onStay, stayLabel = 'Gezmeye devam', onExit, onRestart, badge }: { kicker: string; title: string; text: string; onStay: () => void; stayLabel?: string; onExit: () => void; onRestart?: () => void; badge?: ReactNode }) {
+export function EndSheet({ kicker, title, text, onStay, stayLabel = 'Gezmeye devam', onExit, onRestart, badge }: { kicker: ReactNode; title: ReactNode; text: ReactNode; onStay: () => void; stayLabel?: string; onExit: () => void; onRestart?: () => void; badge?: ReactNode }) {
   const t = useTheme();
   return (
     <Modal>

@@ -15,7 +15,10 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { ArrowLeft, Captions, CaptionsOff, DoorOpen, ExternalLink, Search, Shield, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { ChevronsRight, Footprints, Info } from 'lucide-react';
+import { ArrowLeft, DoorOpen, Search, Shield } from 'lucide-react';
 import { Character, newRig, type Palette, type RigState } from '../kiz-kulesi/NPCController';
 import { GATES, ROUTE_LEN, WALL, YAZILIKAYA, YAZ_S, distToWall, heightAt, routeAt, type Gate, type GateId } from './site';
 import { SPEECH, begin, canPerform, doorOpen, guard, newRitual, nextGate, tick, type RitualState } from './GateRitualMechanic';
@@ -71,6 +74,7 @@ const RELIEFS: Record<string, Relief> = {
 interface S { started: boolean; ritual: RitualState; dialog: { gate: GateId; i: number } | null; warn: string | null; inspect: string | null; seen: string[]; nearRelief: string | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
 const INITIAL = { started: false, ritual: newRitual(), dialog: null, warn: null, inspect: null, seen: [] as string[], nearRelief: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { s: 0, v: 0, input: 0, auto: null as number | null, rig: newRig(0, 0, 0), speechDone: false, warnT: 0 };
 
 export default function HattusaGame({ onExit }: { onExit: () => void }) {
@@ -82,7 +86,7 @@ function Game({ onExit }: { onExit: () => void }) {
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; y0: number } | null>(null), lastTap = useRef(0);
   useEffect(() => { type B = EventTarget & { level: number; charging: boolean }; let b: B | null = null; const check = () => b && setSaver(b.level < 0.2 && !b.charging);
     (navigator as Navigator & { getBattery?: () => Promise<B> }).getBattery?.().then((x) => { b = x; check(); x.addEventListener('levelchange', check); }).catch(() => {}); return () => b?.removeEventListener('levelchange', check); }, []);
-  useEffect(() => { audio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => { audio.saver = saver; }, [saver]);
   useEffect(() => () => { audio.dispose(); useDb.setState({ ...INITIAL, ritual: newRitual() }); Object.assign(live, { s: 0, v: 0, input: 0, auto: null, speechDone: false }); }, []);
 
@@ -106,27 +110,25 @@ function Game({ onExit }: { onExit: () => void }) {
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { drag.current = null; live.input = 0; } };
   const ng = nextGate(S.ritual), can = S.started && !S.dialog && !S.inspect && !!canPerform(S.ritual, live.s);
 
+  const nextG = GATES.find((g) => !S.ritual.passed.includes(g.id));
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#d9c9a8] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <HudTheme theme={THEME}>
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high', powerPreference: 'high-performance' }} camera={{ fov: 60, near: 0.2, far: 4000, position: [-200, 90, 160] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.9; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
         <Suspense fallback={null}><World tier={tier} saver={saver} /><SkyEnvironment sky="#e8d9bd" sun="#ffd9a0" ground="#a88f62" sunDir={[SUN.x, SUN.y, SUN.z]} /><Polish tier={tier} saver={saver} /></Suspense>
       </Canvas>
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { audio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) audio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-amber-300 text-black' : 'bg-black/45'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.started && <div className="mx-auto flex flex-col items-center gap-1 rounded-2xl bg-black/45 px-4 py-2"><div className="flex gap-1">{GATES.map((g) => <Shield key={g.id} size={14} className={S.ritual.passed.includes(g.id) ? 'text-amber-300' : 'text-white/30'} />)}</div><p className="text-xs">{ng ? `Sıradaki: ${ng.name}` : 'Yazılıkaya’ya'}</p></div>}
-      </div>
-      {S.warn && <p className="pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2 rounded-xl bg-[#5a2418]/90 px-4 py-2 text-center text-sm font-semibold shadow-xl">{S.warn}</p>}
-      {can && <button onPointerDown={(e) => e.stopPropagation()} onClick={perform} className="absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 animate-pulse items-center gap-2 rounded-full bg-amber-300 px-5 text-sm font-semibold text-black shadow-xl"><DoorOpen size={18} /> Ritüeli yap: {ng?.name}<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Shield size={15} />} label={nextG ? `Sıradaki: ${nextG.name}` : 'Yazılıkaya’ya ulaş'} done={S.ritual.passed.length} total={GATES.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
+      {S.warn && <p className="pointer-events-none absolute left-1/2 top-[124px] z-40 sm:top-[72px] -translate-x-1/2 rounded-xl bg-[#f7f5f1]/95 px-4 py-2 text-center text-sm font-semibold text-[#b5452f] shadow-[0_10px_30px_rgba(31,27,23,0.18)] ring-1 ring-black/5">{S.warn}</p>}
+      {can && <button onPointerDown={(e) => e.stopPropagation()} onClick={perform} className="absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 animate-pulse items-center gap-2 rounded-full px-5 text-sm font-semibold text-white shadow-xl" style={{ background: THEME.accent }}><DoorOpen size={18} /> Ritüeli yap: {ng?.name}<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
       {S.started && !can && !S.dialog && !S.inspect && S.nearRelief && <button onPointerDown={(e) => e.stopPropagation()} onClick={() => inspect(S.nearRelief)} className="absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 px-5 text-sm font-semibold shadow-xl"><Search size={18} /> Rölyefi incele<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
       {S.dialog && <Dialog d={S.dialog} onNext={advance} />}
       {S.inspect && <ReliefCard r={RELIEFS[S.inspect]} onClose={() => inspect(null)} />}
-      {S.started && !S.dialog && !S.inspect && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">Dikey sürükle: yürü · çift dokun: sıradaki kapıya git<span className="hidden [@media(pointer:fine)]:inline"> · W/S · E: ritüel/incele · N</span></p>}
-      {!S.started && <TitleCard onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
+      {S.started && !S.dialog && !S.inspect && <Hint>Dikey sürükle: yürü · çift dokun: sıradaki kapıya git<span className="hidden [@media(pointer:fine)]:inline"> · W/S · E: ritüel/incele · N</span></Hint>}
+      {!S.started && <TitleCard onExit={onExit} onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
       {S.started && S.seen.includes('alay') && S.seen.includes('ana') && !S.endShown && !S.inspect && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      </HudTheme>
     </div>
   );
 }
@@ -293,10 +295,10 @@ function Controller() {
     const dt = Math.min(raw, 0.05), S = useDb.getState();
     // ritüel zaman akışı + konuşma başlangıcı
     let rit = tick(S.ritual, Math.min(raw, 0.25), live.speechDone);   // ritüel süreleri gerçek zamanla (düşük kare hızında da 2 sn eğilme) if (live.speechDone) live.speechDone = false;
-    for (const g of GATES) if (S.ritual.phase[g.id] === 'bow' && rit.phase[g.id] === 'speech') { S.set({ dialog: { gate: g.id, i: 0 } }); if (S.tts) audio.speak(SPEECH[g.id].lines[0]); }
+    for (const g of GATES) if (S.ritual.phase[g.id] === 'bow' && rit.phase[g.id] === 'speech') { S.set({ dialog: { gate: g.id, i: 0 } }); if (useSettings.getState().tts) audio.speak(SPEECH[g.id].lines[0]); }
     // hareket (ritüel/konuşma/inceleme sırasında durur)
     const busy = !!S.dialog || !!S.inspect || GATES.some((g) => ['bow', 'speech', 'opening'].includes(rit.phase[g.id]));
-    let want = S.started && !busy ? live.input * WALK : 0;
+    let want = S.started && !busy && !pause.on ? live.input * WALK : 0;
     if (live.auto !== null && !busy) { const d = live.auto - live.s; if (Math.abs(d) < 0.4) live.auto = null; else want = Math.sign(d) * Math.min(AUTO, Math.abs(d) * 1.5 + 1); }
     live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
     const r = guard(rit, live.s, live.s + live.v * dt); rit = r.st; const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, r.s)); if (r.warn && Math.abs(live.v) > 0.3) { live.warnT = 2.5; if (S.warn !== r.warn.text) S.set({ warn: r.warn.text }); live.auto = null; }
@@ -340,49 +342,28 @@ function Controller() {
 function Dialog({ d, onNext }: { d: { gate: GateId; i: number }; onNext: () => void }) {
   const sp = SPEECH[d.gate];
   return (
-    <button onPointerDown={(e) => e.stopPropagation()} onClick={onNext} className="absolute inset-x-3 bottom-4 z-40 mx-auto block max-w-xl rounded-2xl border border-amber-200/30 bg-[#2a2016]/92 p-4 text-left shadow-2xl">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">{sp.who} · kurgusal söz</p>
+    <button onPointerDown={(e) => e.stopPropagation()} onClick={onNext} className="absolute inset-x-3 bottom-4 z-40 mx-auto block max-w-xl rounded-2xl bg-[#f7f5f1]/92 text-[#1f1b17] ring-1 ring-black/5 p-4 text-left shadow-[0_10px_30px_rgba(31,27,23,0.18)]">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#a8622f]">{sp.who} · kurgusal söz</p>
       <p className="mt-1 text-base leading-relaxed">{sp.lines[d.i]}</p>
-      <p className="mt-2 text-right text-xs text-white/50">dokun: devam</p>
+      <p className="mt-2 text-right text-xs text-[#857b70]">dokun: devam</p>
     </button>
   );
 }
 function ReliefCard({ r, onClose }: { r: Relief; onClose: () => void }) {
-  return (
-    <div className="absolute inset-x-3 bottom-4 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl border border-amber-100/30 bg-[#2a2016]/90 p-5 shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-2"><div><p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Rölyef inceleme · ışık açısı dönüyor</p><h2 className="text-xl font-bold">{r.name}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={18} /></button></div>
-        <p className="mt-2 text-sm leading-relaxed text-white/85">{r.text}</p>
-        <a href={r.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-white/60 underline">{r.source.title} <ExternalLink size={12} /></a>
-      </div>
-    </div>
-  );
+  return <InfoSheet kicker="Rölyef inceleme · ışık açısı dönüyor" title={r.name} text={r.text} source={r.source} onClose={onClose} onListen={() => audio.speak(`${r.name}. ${r.text}`)} />;
 }
-function TitleCard({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/60 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">Çorum · Boğazkale · MÖ 1300 · UNESCO Dünya Mirası</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Hattuşa: Kralın Yolu</h1>
-        <p className="mt-2 text-sm text-white/85">Hitit başkentinde bir elçisin. Saraydaki kabulden çıktın; yolun Yazılıkaya’ya. Her kapıda bekçiye saygını göster ve ritüeli yap: ritüelsiz kapı açılmaz, elçi geri dönmez.</p>
-        <p className="mt-2 text-xs text-white/60">Dikey sürükle ya da W/S: yürü · çift dokun: sıradaki kapıya git · kapıda “Ritüeli yap” · kabartmada “Rölyefi incele”</p>
-        <p className="mt-1 text-[11px] text-white/45">Kent planı stilizedir; rota ve bekçi sözleri kurgusaldır. Kaynaklar kartlarda.</p>
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 font-semibold text-black"><Shield size={18} /> Yola çık</button>
-      </div>
-    </div>
-  );
+const THEME = { accent: '#a8622f' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: yürü</> },
+  { icon: <ChevronsRight size={16} />, text: <>çift dokun: sıradaki kapıya git</> },
+  { icon: <Info size={16} />, text: <>kapıda “Ritüeli yap”</> },
+  { icon: <Info size={16} />, text: <>kabartmada “Rölyefi incele”</> },
+];
+function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="Çorum · Boğazkale · MÖ 1300 · UNESCO Dünya Mirası" title="Hattuşa: Kralın Yolu" intro={<>Hitit başkentinde bir elçisin. Saraydaki kabulden çıktın; yolun Yazılıkaya’ya. Her kapıda bekçiye saygını göster ve ritüeli yap: ritüelsiz kapı açılmaz, elçi geri dönmez.</>} controls={CONTROLS} note="Kent planı stilizedir; rota ve bekçi sözleri kurgusaldır. Kaynaklar kartlarda." cta="Yola çık" ctaIcon={<Shield size={18} />} onStart={onStart} onExit={onExit} />;
 }
-function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/25 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-[#f6efe2] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-amber-700">Yazılıkaya’ya ulaştın</p><h2 className="mt-1 text-2xl font-bold">Kralın yolu tamam</h2>
-        <p className="mt-2 text-sm text-slate-600">Üç kapının ritüelini yerine getirdin ve tanrıların kayasına saygıyla vardın.</p>
-        <div className="mt-5 flex gap-2"><button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Biraz daha kal</button><button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button></div>
-      </div>
-    </div>
-  );
+function EndCard({ onStay, onExit, onRestart }: { onStay: () => void; onExit: () => void; onRestart?: () => void }) {
+  return <EndSheet kicker="Yazılıkaya’ya ulaştın" title="Kralın yolu tamam" text="Üç kapının ritüelini yerine getirdin ve tanrıların kayasına saygıyla vardın." stayLabel="Biraz daha kal" onStay={onStay} onExit={onExit} onRestart={onRestart} />;
 }
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null);

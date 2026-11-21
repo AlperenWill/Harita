@@ -14,7 +14,10 @@ import { Sky } from '@react-three/drei';
 import { EffectComposer, GodRays, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
-import { ArrowLeft, BookOpen, Check, Captions, CaptionsOff, ExternalLink, FastForward, Search, Sparkles, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint as HudHint, HudTheme, IconButton, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { Footprints, Info, MousePointer2, Sunrise } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, ExternalLink, FastForward, Search, Sparkles, X } from 'lucide-react';
 import { Character, newRig, type Palette } from '../kiz-kulesi/NPCController';
 import { keys, readKeys, walk } from '../kiz-kulesi/input';
 import { Joystick } from '../shared/Joystick';
@@ -43,6 +46,7 @@ interface S extends Omit<Progress, 'area' | 'hour'> {
 }
 const INITIAL = { started: false, area: 'guney' as Area, hourShown: SUNRISE - 0.45, speed: 1 as const, card: null, prompt: null, puzzle: false, journal: false, toast: null, endShown: false, read: [] as string[], frags: [] as string[], placed: [] as string[], planets: [] as string[], seen: [] as string[], watched: [] as string[] };
 const useNem = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { player: newRig(START.at[0], START.at[1], START.yaw), cam: { yaw: START.yaw, pitch: 0.28, dist: 6, drag: 0 }, hour: SUNRISE - 0.45, restore: { current: 0 }, dragging: false };
 const progress = (s: S): Progress => ({ area: s.area, hour: live.hour, read: s.read, frags: s.frags, placed: s.placed, planets: s.planets, seen: s.seen, watched: s.watched });
 const toast = (text: string, ok = true) => { useNem.getState().set({ toast: { text, ok, t: performance.now() } }); nemrutAudio.chime(ok); };
@@ -64,7 +68,7 @@ function Game({ onExit }: { onExit: () => void }) {
     (navigator as Navigator & { getBattery?: () => Promise<B> }).getBattery?.().then((x) => { b = x; check(); x.addEventListener('levelchange', check); x.addEventListener('chargingchange', check); }).catch(() => {});
     return () => { b?.removeEventListener('levelchange', check); b?.removeEventListener('chargingchange', check); };
   }, []);
-  useEffect(() => { nemrutAudio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { nemrutAudio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => () => { nemrutAudio.dispose(); useNem.setState(INITIAL); Object.assign(live.player, newRig(START.at[0], START.at[1], START.yaw)); Object.assign(live.cam, { yaw: START.yaw, pitch: 0.28, dist: 6, drag: 0 }); live.hour = SUNRISE - 0.45; live.restore.current = 0; }, []);
   // tamamlanan görev bildirimi
   const prevDone = useRef<string[]>([]);
@@ -78,7 +82,7 @@ function Game({ onExit }: { onExit: () => void }) {
     const s = useNem.getState(), patch: Partial<S> = { card: th };
     if (th.kind === 'taht' && th.terrace === 'dogu' && th.god && !s.read.includes(th.god)) patch.read = [...s.read, th.god];
     if (th.kind === 'stel' && !s.seen.includes(th.id)) patch.seen = [...s.seen, th.id];
-    s.set(patch); if (s.tts) nemrutAudio.speak(th.text);
+    s.set(patch); if (useSettings.getState().tts) nemrutAudio.speak(th.text);
   }, []);
   const closeCard = useCallback(() => { useNem.getState().set({ card: null, puzzle: false }); nemrutAudio.hush(); }, []);
   const place = useCallback((f: Persian, th: Thing) => {
@@ -125,6 +129,7 @@ function Game({ onExit }: { onExit: () => void }) {
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#05070d] text-white" style={{ touchAction: 'none' }}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={onUp} onWheel={onWheel}>
+      <HudTheme theme={THEME}>
       <Canvas shadows={t !== 'low'} dpr={t === 'low' ? 1 : [1, 1.6]} gl={{ antialias: t === 'high', powerPreference: 'high-performance' }} camera={{ fov: 55, near: 0.3, far: 6000, position: [150, 60, 160] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}>
         <Suspense fallback={null}>
@@ -138,22 +143,8 @@ function Game({ onExit }: { onExit: () => void }) {
       </Canvas>
 
       {/* üst çubuk */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { nemrutAudio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) nemrutAudio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-amber-500 text-black' : 'bg-black/55'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.started && (
-          <button onClick={() => S.set({ journal: !S.journal })} className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full bg-black/55 px-4 text-sm font-semibold" aria-expanded={S.journal}>
-            <BookOpen size={17} /> Defter <span className="rounded-full bg-amber-400 px-2 text-xs text-black">{doneCount}/{QUESTS.length}</span>
-          </button>
-        )}
-        {S.started && (
-          <div className="pointer-events-auto ml-auto flex items-center gap-1 rounded-2xl bg-black/55 p-1 pl-3">
-            <div className="text-right leading-tight"><p className="text-sm font-bold tabular-nums">{clock(S.hourShown)}</p><p className="text-[10px] text-white/60">{PHASE_LABEL[ph]} · {AREA_LABEL[S.area]}</p></div>
-            <button onClick={() => S.set({ speed: S.speed === 1 ? 20 : 1 })} aria-pressed={S.speed === 20} className={`ml-1 grid h-9 w-11 place-items-center rounded-xl text-xs font-bold ${S.speed === 20 ? 'bg-amber-400 text-black' : 'bg-white/15'}`} aria-label="Zamanı hızlandır"><FastForward size={16} /></button>
-          </div>
-        )}
-      </div>
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<BookOpen size={15} />} label={`${clock(S.hourShown)} · ${PHASE_LABEL[ph]} · ${AREA_LABEL[S.area]}`} done={doneCount} total={QUESTS.length} /> : undefined}
+        right={<>{S.started && <IconButton label="Keşif defteri" active={S.journal} onClick={() => S.set({ journal: !S.journal })}><BookOpen size={18} /></IconButton>}{S.started && <IconButton label="Zamanı hızlandır" active={S.speed === 20} onClick={() => S.set({ speed: S.speed === 1 ? 20 : 1 })}><FastForward size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} /></>} />
       {S.journal && <Journal onClose={() => S.set({ journal: false })} />}
 
       {S.started && (
@@ -170,8 +161,9 @@ function Game({ onExit }: { onExit: () => void }) {
       {S.card && !S.puzzle && <Card th={S.card} onClose={closeCard} onPlace={place} onPuzzle={() => S.set({ puzzle: true })} />}
       {S.puzzle && <Horoscope onClose={() => S.set({ puzzle: false })} />}
       {S.toast && <Toast key={S.toast.t} />}
-      {!S.started && <TitleCard onStart={() => { nemrutAudio.unlock(); S.set({ started: true }); }} />}
+      {!S.started && <TitleCard onExit={onExit} onStart={() => { nemrutAudio.unlock(); S.set({ started: true }); }} />}
       {allDone && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      </HudTheme>
     </div>
   );
 }
@@ -198,7 +190,7 @@ function Controller() {
     live.hour = wrapHour(live.hour + (dt * S.speed) / 60);
     st.current.shown += dt; if (st.current.shown > 0.5) { st.current.shown = 0; S.set({ hourShown: live.hour }); }
     // yürüyüş (kameraya göre)
-    const frozen = !!S.card || S.puzzle;
+    const frozen = !!S.card || S.puzzle || pause.on;
     const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
     const mx = fx * -walk.y + rx * walk.x, mz = fz * -walk.y + rz * walk.x, ml = Math.hypot(mx, mz);
     const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 5.4 : 3.5) * Math.min(1, ml);
@@ -311,21 +303,21 @@ function Rays({ disc }: { disc: React.MutableRefObject<THREE.Mesh> }) {
 function NextHint() {
   const s = useNem(), q = QUESTS.find((x) => !x.done(progress(s)));
   if (!q) return null;
-  return <p className="pointer-events-none absolute bottom-6 left-1/2 z-30 max-w-[62vw] -translate-x-1/2 rounded-full bg-black/50 px-4 py-1.5 text-center text-xs backdrop-blur sm:text-sm"><b className="text-amber-300">Sıradaki:</b> {q.title}<span className="hidden [@media(pointer:fine)]:inline"> · WASD · sürükle: bak · J: defter · T: zaman</span></p>;
+  return <HudHint><b className="text-[#c0612b]">Sıradaki:</b> {q.title}<span className="hidden [@media(pointer:fine)]:inline"> · WASD · sürükle: bak · J: defter · T: zaman</span></HudHint>;
 }
 function Journal({ onClose }: { onClose: () => void }) {
   const s = useNem(), p = progress(s);
   return (
-    <div className="absolute left-3 top-16 z-40 w-[min(25rem,calc(100%-1.5rem))] rounded-2xl bg-[#1a140d]/92 p-4 shadow-2xl backdrop-blur" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="flex items-center"><h2 className="font-bold">Keşif defteri</h2><button onClick={onClose} className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={16} /></button></div>
+    <div className="absolute left-3 top-16 z-40 w-[min(25rem,calc(100%-1.5rem))] rounded-2xl bg-[#f7f5f1]/92 text-[#1f1b17] ring-1 ring-black/5 p-4 shadow-[0_10px_30px_rgba(31,27,23,0.18)] backdrop-blur" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex items-center"><h2 className="font-bold">Keşif defteri</h2><button onClick={onClose} className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-black/5" aria-label="Kapat"><X size={16} /></button></div>
       <ol className="mt-2 space-y-2">
         {QUESTS.map((q) => { const d = q.done(p), c = q.count?.(p); return (
           <li key={q.id} className={`rounded-xl p-2.5 ${d ? 'bg-amber-400/15' : 'bg-white/5'}`}>
-            <p className="flex items-center gap-2 text-sm font-semibold">{d ? <Check size={16} className="shrink-0 text-amber-300" /> : <span className="h-4 w-4 shrink-0 rounded-full border border-white/40" />}{q.title}{c && !d && <span className="ml-auto text-xs text-white/60">{c[0]}/{c[1]}</span>}</p>
-            {!d && <p className="mt-1 pl-6 text-xs text-white/65">{q.hint}</p>}
+            <p className="flex items-center gap-2 text-sm font-semibold">{d ? <Check size={16} className="shrink-0 text-[#c0612b]" /> : <span className="h-4 w-4 shrink-0 rounded-full border border-white/40" />}{q.title}{c && !d && <span className="ml-auto text-xs text-[#857b70]">{c[0]}/{c[1]}</span>}</p>
+            {!d && <p className="mt-1 pl-6 text-xs text-[#857b70]">{q.hint}</p>}
           </li>); })}
       </ol>
-      {s.frags.length > 0 && <p className="mt-3 text-xs text-white/70">Çantada: {FRAGMENTS.filter((f) => s.frags.includes(f.id) && !s.placed.includes(f.id)).map((f) => f.word).join(', ') || '—'}</p>}
+      {s.frags.length > 0 && <p className="mt-3 text-xs text-[#857b70]">Çantada: {FRAGMENTS.filter((f) => s.frags.includes(f.id) && !s.placed.includes(f.id)).map((f) => f.word).join(', ') || '—'}</p>}
     </div>
   );
 }
@@ -335,7 +327,7 @@ function Card({ th, onClose, onPlace, onPuzzle }: { th: Thing; onClose: () => vo
   const needs = th.kind === 'taht' && th.god && FRAGMENTS.some((f) => f.god === th.god), solved = th.god && FRAGMENTS.some((f) => f.god === th.god && s.placed.includes(f.id));
   return (
     <div className="absolute inset-x-3 bottom-3 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl bg-[#f6efe2] p-5 text-ink shadow-2xl">
+      <div className="rounded-2xl bg-[#f6efe2] p-5 text-ink shadow-[0_10px_30px_rgba(31,27,23,0.18)]">
         <div className="flex items-start gap-2">
           <div><p className="text-xs font-semibold uppercase tracking-wider text-amber-700">{th.terrace ? AREA_LABEL[th.terrace] : 'Nemrut Dağı'}</p><h2 className="text-xl font-bold">{th.name}</h2></div>
           <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/5" aria-label="Kapat"><X size={18} /></button>
@@ -344,10 +336,10 @@ function Card({ th, onClose, onPlace, onPuzzle }: { th: Thing; onClose: () => vo
         {needs && th.terrace === 'dogu' && (solved
           ? <p className="mt-3 rounded-lg bg-amber-100 p-2 text-sm font-semibold text-amber-900"><Check size={14} className="-mt-0.5 mr-1 inline" />Pers adı yerine konuldu.</p>
           : carried.length > 0
-            ? <div className="mt-3"><p className="text-xs font-semibold text-slate-500">Kırık yazıta bir parça yerleştir:</p><div className="mt-1.5 flex flex-wrap gap-2">{carried.map((f) => <button key={f.id} onClick={() => onPlace(f.id, th)} className="h-10 rounded-lg bg-amber-500 px-3 font-mono text-sm font-bold tracking-wider text-black">{f.word}</button>)}</div></div>
+            ? <div className="mt-3"><p className="text-xs font-semibold text-slate-500">Kırık yazıta bir parça yerleştir:</p><div className="mt-1.5 flex flex-wrap gap-2">{carried.map((f) => <button key={f.id} onClick={() => onPlace(f.id, th)} className="h-10 rounded-lg bg-[#c0612b] px-3 font-mono text-sm font-bold tracking-wider text-white">{f.word}</button>)}</div></div>
             : <p className="mt-3 text-xs text-slate-500">Yazıtın Pers adı eksik. Kırılan parçalar zirvenin çevresine dağılmış.</p>)}
         {needs && th.terrace === 'bati' && carried.length > 0 && <p className="mt-3 text-xs text-slate-500">Parçalar doğu terasındaki tahtlara ait.</p>}
-        {th.kind === 'aslan' && <button onClick={onPuzzle} className="mt-3 inline-flex h-11 items-center gap-2 rounded-xl bg-amber-500 px-4 font-semibold text-black"><Sparkles size={16} /> Gezegenleri bul ({s.planets.length}/3)</button>}
+        {th.kind === 'aslan' && <button onClick={onPuzzle} className="mt-3 inline-flex h-11 items-center gap-2 rounded-xl bg-[#c0612b] px-4 font-semibold text-white"><Sparkles size={16} /> Gezegenleri bul ({s.planets.length}/3)</button>}
         <p className="mt-3 text-[11px] text-slate-500">Oyun kurgusu: yazıt parçası bulmacası gerçek bir buluntuyu temsil etmez. Heykeller stilizedir.</p>
         <a href={th.source.url} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-amber-800 underline">{th.source.title} <ExternalLink size={12} /></a>
       </div>
@@ -365,9 +357,9 @@ function Horoscope({ onClose }: { onClose: () => void }) {
   };
   const star = (x: number, y: number, r: number, n: number) => Array.from({ length: n * 2 }, (_, i) => { const a = (i / (n * 2)) * Math.PI * 2, rr = i % 2 ? r * 0.4 : r; return `${x + Math.cos(a) * rr},${y + Math.sin(a) * rr}`; }).join(' ');
   return (
-    <div className="absolute inset-0 z-50 grid place-items-center bg-black/70 p-4" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-2xl bg-[#2a2118] p-4 shadow-2xl">
-        <div className="flex items-center"><h2 className="font-bold">Aslan Horoskobu · {s.planets.length}/3</h2><button onClick={onClose} className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={16} /></button></div>
+    <div className="absolute inset-0 z-50 grid place-items-center bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-2xl bg-[#2a2118] p-4 shadow-[0_10px_30px_rgba(31,27,23,0.18)]">
+        <div className="flex items-center"><h2 className="font-bold">Aslan Horoskobu · {s.planets.length}/3</h2><button onClick={onClose} className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-black/5" aria-label="Kapat"><X size={16} /></button></div>
         <svg viewBox="0 0 100 100" className="mt-3 w-full cursor-crosshair rounded-xl bg-[#c9b998]" onClick={tap} role="img" aria-label="Aslan kabartması">
           <g fill="#a8966f" stroke="#8a7852" strokeWidth={0.6}>
             <ellipse cx={50} cy={60} rx={36} ry={13} /><ellipse cx={83} cy={47} rx={11} ry={12} />
@@ -378,8 +370,8 @@ function Horoscope({ onClose }: { onClose: () => void }) {
           {HOROSCOPE.stars.map(([x, y], i) => <polygon key={i} points={star(x, y, 2.2, 8)} fill="#fff7e0" />)}
           {HOROSCOPE.planets.map((p) => <polygon key={p.id} points={star(p.at[0], p.at[1], 4.2, 12)} fill={s.planets.includes(p.id) ? '#ffcc55' : '#fff7e0'} />)}
         </svg>
-        <p className="mt-3 min-h-[2.5rem] text-sm text-white/85">{msg}</p>
-        <p className="mt-1 text-[11px] text-white/50">Yıldızların yeri stilize bir yerleşimdir. Yazıtlarda gezegenler Yunanca adlarıyla geçer.</p>
+        <p className="mt-3 min-h-[2.5rem] text-sm text-[#4a433c]">{msg}</p>
+        <p className="mt-1 text-[11px] text-[#857b70]">Yıldızların yeri stilize bir yerleşimdir. Yazıtlarda gezegenler Yunanca adlarıyla geçer.</p>
       </div>
     </div>
   );
@@ -388,36 +380,22 @@ function Toast() {
   const t = useNem((s) => s.toast); const [show, setShow] = useState(true);
   useEffect(() => { const id = setTimeout(() => setShow(false), t && !t.ok ? 5200 : 3000); return () => clearTimeout(id); }, [t]);
   if (!t || !show) return null;
-  return <div className={`pointer-events-none absolute left-1/2 top-20 z-50 max-w-[90vw] -translate-x-1/2 rounded-2xl px-4 py-2 text-center text-sm font-semibold shadow-xl ${t.ok ? 'bg-amber-400 text-black' : 'bg-[#5a2a20] text-white'}`}>{t.text}</div>;
+  return <div className={`pointer-events-none absolute left-1/2 top-20 z-50 max-w-[90vw] -translate-x-1/2 rounded-2xl px-4 py-2 text-center text-sm font-semibold shadow-xl ${t.ok ? 'bg-[#c0612b] text-white' : 'bg-[#5a2a20] text-white'}`}>{t.text}</div>;
 }
-function TitleCard({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/65 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">Adıyaman · UNESCO Dünya Mirası · ~2.134 m</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Nemrut Dağı: Tanrıların Tahtı</h1>
-        <p className="mt-2 text-sm text-white/85">Şafaktan önce zirvedesin. Kral I. Antiochos’un tanrılarla yan yana oturduğu teraslarda kendi başına dolaş: gün doğumunu izle, kırık yazıtların parçalarını bul, tanrıların Pers adlarını yerine koy, Aslan Horoskobu’nun gezegenlerini ara.</p>
-        <p className="mt-2 text-xs text-white/60">Joystick / WASD ile yürü (Shift: koş) · sürükle: bak · E: incele · J: defter · T: zamanı hızlandır</p>
-        <p className="mt-1 text-[11px] text-white/45">Arazi, heykeller ve yerleşim stilizedir; ölçüler yaklaşıktır. Tümülüse çıkılmaz (gerçekte de yasaktır).</p>
-        <button onClick={onStart} className="mt-4 h-12 w-full rounded-xl bg-amber-400 font-semibold text-black">Zirveye çık</button>
-      </div>
-    </div>
-  );
+const THEME = { accent: '#c0612b' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Joystick / WASD ile yürü (Shift: koş)</> },
+  { icon: <MousePointer2 size={16} />, text: <>sürükle: bak</> },
+  { icon: <Info size={16} />, text: <>E: incele</> },
+  { icon: <Info size={16} />, text: <>J: defter</> },
+  { icon: <Info size={16} />, text: <>T: zamanı hızlandır</> },
+];
+function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="Adıyaman · UNESCO Dünya Mirası · ~2.134 m" title="Nemrut Dağı: Tanrıların Tahtı" intro={<>Şafaktan önce zirvedesin. Kral I. Antiochos’un tanrılarla yan yana oturduğu teraslarda kendi başına dolaş: gün doğumunu izle, kırık yazıtların parçalarını bul, tanrıların Pers adlarını yerine koy, Aslan Horoskobu’nun gezegenlerini ara.</>}
+    controls={CONTROLS} note="Arazi, heykeller ve yerleşim stilizedir; ölçüler yaklaşıktır. Tümülüse çıkılmaz (gerçekte de yasaktır)." cta="Zirveye çık" ctaIcon={<Sunrise size={18} />} onStart={onStart} onExit={onExit} />;
 }
-function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/35 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-[#f6efe2] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-amber-700">Defter tamamlandı</p>
-        <h2 className="mt-1 text-2xl font-bold">Tanrıların tahtı yeniden okundu</h2>
-        <p className="mt-2 text-sm text-slate-600">Gün doğumundan gün batımına kadar zirveyi gezdin, yazıtları tamamladın ve Aslan Horoskobu’nun gezegenlerini buldun. Gece çökünce yıldızlar da çıkar.</p>
-        <div className="mt-5 flex gap-2">
-          <button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Zirvede kal</button>
-          <button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button>
-        </div>
-      </div>
-    </div>
-  );
+function EndCard({ onStay, onExit, onRestart }: { onStay: () => void; onExit: () => void; onRestart?: () => void }) {
+  return <EndSheet kicker="Defter tamamlandı" title="Tanrıların tahtı yeniden okundu" text="Gün doğumundan gün batımına kadar zirveyi gezdin, yazıtları tamamladın ve Aslan Horoskobu’nun gezegenlerini buldun. Gece çökünce yıldızlar da çıkar." stayLabel="Zirvede kal" onStay={onStay} onExit={onExit} onRestart={onRestart} />;
 }
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);

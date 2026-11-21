@@ -13,9 +13,11 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { Bloom, EffectComposer, N8AO, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { Effect, ToneMappingMode } from 'postprocessing';
-import { animated, useTransition } from '@react-spring/web';
 import { create } from 'zustand';
-import { ArrowLeft, Captions, CaptionsOff, DoorOpen, ExternalLink, Footprints, Music, Search, Settings2, Sun, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint as HudHint, HudTheme, IconButton, InfoSheet, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { Move } from 'lucide-react';
+import { ArrowLeft, DoorOpen, Footprints, Music, Search, Sun } from 'lucide-react';
 import { Character, newRig, type Palette } from '../kiz-kulesi/NPCController';
 import { keys, readKeys, walk } from '../kiz-kulesi/input';
 import { Joystick } from '../shared/Joystick';
@@ -76,18 +78,19 @@ interface S {
 }
 const INITIAL = { started: false, level: START.level, zone: 'avlu' as Zone, stop: 0, told: [] as string[], talk: null, card: null, seen: [] as string[], prompt: { door: null, poi: null }, fade: false, done: false, endShown: false };
 const useAya = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, music: false, hour: 10.5, panel: false, set: (p) => set(p) }));
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = {
   player: newRig(START.at[0], START.at[1], START.yaw), guide: newRig(START.at[0] + 4, START.at[1] + 1.6, START.yaw),
   cam: { yaw: START.yaw, pitch: 0.3, dist: 5, drag: 0 }, goal: null as V2 | null,
 };
 function resetLive() { Object.assign(live.player, newRig(START.at[0], START.at[1], START.yaw)); Object.assign(live.guide, newRig(START.at[0] + 4, START.at[1] + 1.6, START.yaw)); Object.assign(live.cam, { yaw: START.yaw, pitch: 0.3, dist: 5, drag: 0 }); live.goal = null; }
 const CPS = 40, lineTime = (s: string) => s.length / CPS + 1.6 + s.length * 0.03;
-function say(lines: string[], onDone?: () => void) { useAya.getState().set({ talk: { lines, i: 0, t0: performance.now(), onDone } }); if (useAya.getState().tts) hagiaAudio.speak(lines[0]); }
+function say(lines: string[], onDone?: () => void) { useAya.getState().set({ talk: { lines, i: 0, t0: performance.now(), onDone } }); if (useSettings.getState().tts) hagiaAudio.speak(lines[0]); }
 function advance() {
   const s = useAya.getState(), t = s.talk; if (!t) return;
   const el = (performance.now() - t.t0) / 1000, line = t.lines[t.i];
   if (el < line.length / CPS) { s.set({ talk: { ...t, t0: performance.now() - (line.length / CPS) * 1000 - 1 } }); return; }
-  if (t.i + 1 < t.lines.length) { s.set({ talk: { ...t, i: t.i + 1, t0: performance.now() } }); if (s.tts) hagiaAudio.speak(t.lines[t.i + 1]); return; }
+  if (t.i + 1 < t.lines.length) { s.set({ talk: { ...t, i: t.i + 1, t0: performance.now() } }); if (useSettings.getState().tts) hagiaAudio.speak(t.lines[t.i + 1]); return; }
   s.set({ talk: null }); hagiaAudio.hush(); t.onDone?.();
 }
 
@@ -113,7 +116,7 @@ function Game({ onExit }: { onExit: () => void }) {
     return () => { b?.removeEventListener('levelchange', check); b?.removeEventListener('chargingchange', check); };
   }, []);
   useEffect(() => { if (stage >= 2) return; const id = setTimeout(() => setStage((s) => s + 1), 350); return () => clearTimeout(id); }, [stage]);
-  useEffect(() => { hagiaAudio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { hagiaAudio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => { hagiaAudio.setMusic(S.music); }, [S.music]);
   useEffect(() => { hagiaAudio.setZone(S.zone); }, [S.zone]);
   useEffect(() => () => { hagiaAudio.dispose(); useAya.setState(INITIAL); resetLive(); }, []);
@@ -131,7 +134,7 @@ function Game({ onExit }: { onExit: () => void }) {
       setTimeout(() => useAya.getState().set({ fade: false }), 250);
     }, 450);
   }, []);
-  const inspect = useCallback((p: Poi) => { const s = useAya.getState(); s.set({ card: p, seen: s.seen.includes(p.id) ? s.seen : [...s.seen, p.id] }); hagiaAudio.chime(); if (s.tts && !s.talk) hagiaAudio.speak(p.text); }, []);
+  const inspect = useCallback((p: Poi) => { const s = useAya.getState(); s.set({ card: p, seen: s.seen.includes(p.id) ? s.seen : [...s.seen, p.id] }); hagiaAudio.chime(); if (useSettings.getState().tts && !s.talk) hagiaAudio.speak(p.text); }, []);
   const closeCard = useCallback(() => { useAya.getState().set({ card: null }); hagiaAudio.hush(); }, []);
 
   useEffect(() => {
@@ -178,6 +181,7 @@ function Game({ onExit }: { onExit: () => void }) {
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#0d0906] text-white" style={{ touchAction: 'none' }}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={onUp} onWheel={onWheel}>
+      <HudTheme theme={THEME}>
       <Canvas shadows={prof.shadows} dpr={prof.dpr} gl={{ antialias: prof.antialias, powerPreference: 'high-performance' }}
         camera={{ fov: 60, near: 0.1, far: 900, position: [-120, 14, 30] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = EXPOSURE.avlu; }}>
@@ -196,27 +200,14 @@ function Game({ onExit }: { onExit: () => void }) {
         </Suspense>
       </Canvas>
 
-      {/* üst çubuk */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { hagiaAudio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) hagiaAudio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-amber-500 text-black' : 'bg-black/55'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        <button onClick={() => S.set({ panel: !S.panel })} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label="Işık ve ayarlar" aria-expanded={S.panel}><Settings2 size={18} /></button>
-        {S.started && (
-          <div className="mx-auto flex flex-col items-center gap-1 rounded-2xl bg-black/55 px-3 py-2">
-            <div className="flex gap-1">{TOUR.map((t, i) => <span key={t.id} className={`h-1.5 w-3 rounded-full sm:w-6 ${S.told.includes(t.id) ? 'bg-amber-300' : i === S.stop ? 'bg-white' : 'bg-white/25'}`} />)}</div>
-            <p className="text-xs">{ZONE_LABEL[S.zone]} · Keşif {S.seen.length}/{POIS.length} · <Sun size={11} className="-mt-0.5 inline" /> {hh}:{mm}</p>
-          </div>
-        )}
-      </div>
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Sun size={15} />} label={`${ZONE_LABEL[S.zone]} · Keşif ${S.seen.length}/${POIS.length} · ${hh}:${mm}`} done={S.told.length} total={TOUR.length} /> : undefined} right={<><IconButton label="Işık ve müzik" active={S.panel} onClick={() => S.set({ panel: !S.panel })}><Sun size={18} /></IconButton><GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} /></>} />
       {S.panel && (
-        <div className="absolute left-3 top-16 z-40 w-80 max-w-[calc(100%-1.5rem)] rounded-2xl bg-black/85 p-4 text-sm" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="absolute right-3 top-[118px] z-40 w-80 sm:top-[68px] max-w-[calc(100%-1.5rem)] rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4 text-sm" onPointerDown={(e) => e.stopPropagation()}>
           <label htmlFor="hr" className="block font-semibold">Günün saati: {hh}:{mm}</label>
-          <input id="hr" type="range" min={7} max={18.5} step={0.5} value={S.hour} onChange={(e) => S.set({ hour: Number(e.target.value) })} className="mt-2 w-full accent-amber-400" />
-          <p className="mt-1 text-xs text-white/60">Güneş ekinoks gününe göre hesaplanır; huzmeler pencerelerden o saatin açısıyla girer.</p>
-          <button onClick={() => { hagiaAudio.unlock(); S.set({ music: !S.music }); }} aria-pressed={S.music} className={`mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg ${S.music ? 'bg-amber-500 text-black' : 'bg-white/15'}`}><Music size={16} /> Ortam müziği (sentez): {S.music ? 'açık' : 'kapalı'}</button>
-          <p className="mt-3 text-xs text-white/60">Kalite: {prof.tier}{saver ? ' · pil tasarrufu' : ''} — {prof.bloom ? 'bloom' : 'efekt yok'}{prof.ao ? ' + AO' : ''}{prof.shadows ? ' · gölge' : ''}{prof.rays ? ' · huzme' : ''}</p>
-          {!pinned && <div className="mt-2 flex gap-1">{(['low', 'medium', 'high'] as Tier[]).map((t) => <button key={t} onClick={() => setTier(t)} className={`h-9 flex-1 rounded-lg text-xs ${tier === t ? 'bg-white text-black' : 'bg-white/15'}`}>{t}</button>)}</div>}
+          <input id="hr" type="range" min={7} max={18.5} step={0.5} value={S.hour} onChange={(e) => S.set({ hour: Number(e.target.value) })} className="mt-2 w-full accent-[#b07a2a]" />
+          <p className="mt-1 text-xs text-[#857b70]">Güneş ekinoks gününe göre hesaplanır; huzmeler pencerelerden o saatin açısıyla girer.</p>
+          <button onClick={() => { hagiaAudio.unlock(); S.set({ music: !S.music }); }} aria-pressed={S.music} className={`mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg ${S.music ? 'bg-[#b07a2a] text-white' : 'bg-black/5'}`}><Music size={16} /> Ortam müziği (sentez): {S.music ? 'açık' : 'kapalı'}</button>
+          <p className="mt-3 text-xs text-[#857b70]">Grafik kalitesi: ≡ Menü › Ayarlar</p>
         </div>
       )}
 
@@ -230,9 +221,10 @@ function Game({ onExit }: { onExit: () => void }) {
       <DialogueBox />
       <InfoCard poi={S.card} onClose={closeCard} />
       {S.card && <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_200px_70px_rgba(0,0,0,.7)]" />}
-      {!S.started && <StartCard stage={stage} onEnter={start} />}
+      {!S.started && <StartCard stage={stage} onEnter={start} onExit={onExit} />}
       {S.done && !S.endShown && !S.talk && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
       <div className={`pointer-events-none absolute inset-0 z-50 bg-black transition-opacity duration-300 ${S.fade ? 'opacity-100' : 'opacity-0'}`} aria-hidden />
+      </HudTheme>
     </div>
   );
 }
@@ -303,7 +295,7 @@ function Controller({ playerRef, exposure, composer }: { playerRef: React.Mutabl
   const st = useRef({ key: '', zone: '' as Zone | '', exp: EXPOSURE.avlu, fov: 60, step: 0 });
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useAya.getState(), lv = S.level, p = live.player, g = live.guide, cam = live.cam, t = clock.elapsedTime, Y0 = LEVEL_Y[lv];
-    const frozen = S.fade || !!S.card;
+    const frozen = S.fade || !!S.card || pause.on;
 
     /* oyuncu */
     const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
@@ -388,7 +380,7 @@ function Prompts({ enter, inspect }: { enter: (d: Door) => void; inspect: (p: Po
   return (
     <div className={`absolute right-4 z-40 flex flex-col items-end gap-2 ${talk ? 'bottom-40' : 'bottom-24 sm:bottom-28'}`} onPointerDown={(e) => e.stopPropagation()}>
       {prompt.poi && (
-        <button onClick={() => inspect(prompt.poi!)} className={`flex h-12 max-w-[62vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg ${seen.includes(prompt.poi.id) ? 'bg-black/60' : 'bg-amber-400 text-black'}`}>
+        <button onClick={() => inspect(prompt.poi!)} className={`flex h-12 max-w-[62vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg ${seen.includes(prompt.poi.id) ? 'bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5' : 'bg-[#b07a2a] text-white'}`}>
           <Search size={18} className="shrink-0" /><span className="truncate">İncele: {prompt.poi.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· F</span>
         </button>
       )}
@@ -412,11 +404,11 @@ function DialogueBox() {
   const line = talk.lines[talk.i];
   return (
     <div className="absolute inset-x-3 bottom-3 z-40 mx-auto max-w-2xl sm:bottom-6" onPointerDown={(e) => { e.stopPropagation(); advance(); }}>
-      <div className="rounded-2xl border border-amber-200/20 bg-[#140f0a]/85 p-4 shadow-2xl backdrop-blur">
+      <div className="rounded-2xl bg-[#f7f5f1]/92 text-[#1f1b17] ring-1 ring-black/5 p-4 shadow-[0_10px_30px_rgba(31,27,23,0.18)] backdrop-blur">
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-xs font-bold text-black">{GUIDE.name}</span>
-          <span className="text-[11px] text-white/50">{GUIDE.role}</span>
-          <span className="ml-auto text-[11px] text-white/40">{talk.i + 1}/{talk.lines.length} · dokun: geç</span>
+          <span className="rounded-full bg-[#b07a2a] px-2.5 py-0.5 text-xs font-bold text-white">{GUIDE.name}</span>
+          <span className="text-[11px] text-[#857b70]">{GUIDE.role}</span>
+          <span className="ml-auto text-[11px] text-[#857b70]">{talk.i + 1}/{talk.lines.length} · dokun: geç</span>
         </div>
         <p className="mt-2 min-h-[3rem] text-[15px] leading-relaxed sm:text-base">{line.slice(0, n)}<span className="opacity-0">{line.slice(n)}</span></p>
       </div>
@@ -424,55 +416,29 @@ function DialogueBox() {
   );
 }
 function Hint({ text }: { text: string }) {
-  return <p className="pointer-events-none absolute bottom-6 left-1/2 z-30 max-w-[60vw] -translate-x-1/2 rounded-full bg-black/45 px-4 py-1.5 text-center text-xs backdrop-blur sm:text-sm">{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · sürükle: bak</span></p>;
+  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · sürükle: bak</span></HudHint>;
 }
 function InfoCard({ poi, onClose }: { poi: Poi | null; onClose: () => void }) {
-  const t = useTransition(poi, { keys: (p) => p?.id ?? 'x', from: { x: 40, opacity: 0 }, enter: { x: 0, opacity: 1 }, leave: { x: 40, opacity: 0 }, config: { tension: 230, friction: 24 } });
+  if (!poi) return null;
   const KIND = { mozaik: 'Mozaik', sutun: 'Sütun', mimari: 'Mimari', osmanli: 'Osmanlı eklemesi' } as const;
-  return t((style, p) => p && (
-    <animated.div style={{ transform: style.x.to((x) => `translateX(${x}px)`), opacity: style.opacity }} role="dialog" aria-label={p.name} onPointerDown={(e) => e.stopPropagation()}
-      className="absolute bottom-3 right-3 z-40 w-[min(24rem,calc(100%-1.5rem))] rounded-2xl bg-black/80 p-4 shadow-2xl backdrop-blur sm:bottom-auto sm:top-16">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-300">{KIND[p.kind]} · {p.era}</p>
-      <h3 className="text-lg font-bold">{p.name}</h3>
-      <p className="mt-1 text-sm text-white/85">{p.text}</p>
-      {p.kind === 'mozaik' && <p className="mt-2 text-xs text-white/55">Modeldeki pano stilize bir canlandırmadır; özgün mozaiğin kopyası değildir.</p>}
-      <a href={p.source.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-white/60 underline">{p.source.title} <ExternalLink size={12} /></a>
-      <button onClick={onClose} className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-white/15 text-sm font-semibold"><X size={16} /> Kapat <span className="text-white/50">(E)</span></button>
-    </animated.div>
-  ));
+  return <InfoSheet kicker={`${KIND[poi.kind]} · ${poi.era}`} title={poi.name} text={<><p>{poi.text}</p>{poi.kind === 'mozaik' && <p className="text-xs text-[#857b70]">Modeldeki pano stilize bir canlandırmadır; özgün mozaiğin kopyası değildir.</p>}</>} source={poi.source} onClose={onClose} onListen={() => hagiaAudio.speak(`${poi.name}. ${poi.text}`)} />;
 }
-function StartCard({ stage, onEnter }: { stage: number; onEnter: () => void }) {
-  const pct = Math.round(((stage + 1) / 3) * 100), ready = stage >= 2;
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto w-full max-w-xl rounded-2xl bg-black/70 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">İstanbul · UNESCO Dünya Mirası · 537</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Ayasofya: Işığın ve Taşın Dansı</h1>
-        <p className="mt-2 text-sm text-white/80">Avludan karanlık nartekse, kubbenin altına, mihraba ve rampadan üst galerideki mozaiklere serbestçe yürü. Sanat tarihçisi <b>{GUIDE.name}</b> yol gösterecek; yanına gidince anlatır.</p>
-        <p className="mt-2 text-xs text-white/60">Joystick / WASD ile yürü (Shift: koş) · sürükle: bak (yukarı sürükle: kubbeye bak) · iki parmak / tekerlek: yakınlaş · E: rampa · F: incele</p>
-        <p className="mt-1 text-[11px] text-white/45">Ölçüler yaklaşıktır, plan stilizedir; mozaikler canlandırmadır. Elif Hoca kurgusal bir karakterdir.</p>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/15" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><div className="h-full bg-amber-400 transition-all duration-300" style={{ width: `${pct}%` }} /></div>
-        <button onClick={onEnter} disabled={!ready} className="mt-3 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 font-semibold text-black disabled:opacity-50"><Footprints size={18} />Avluya gir</button>
-      </div>
-    </div>
-  );
+function StartCard({ stage, onEnter, onExit }: { stage: number; onEnter: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="İstanbul · UNESCO Dünya Mirası · 537" title="Ayasofya: Işığın ve Taşın Dansı" loading={(stage + 1) / 3}
+    intro={<>Avludan karanlık nartekse, kubbenin altına, mihraba ve rampadan üst galerideki mozaiklere serbestçe yürü. Sanat tarihçisi <b>{GUIDE.name}</b> yol gösterecek; yanına gidince anlatır.</>}
+    controls={CONTROLS} note="Ölçüler yaklaşıktır, plan stilizedir; mozaikler canlandırmadır. Elif Hoca kurgusal bir karakterdir." cta="Avluya gir" ctaIcon={<Footprints size={18} />} onStart={onEnter} onExit={onExit} />;
 }
 function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
   const seen = useAya((s) => s.seen.length);
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/30 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-white p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-brand">Tur tamamlandı</p>
-        <h2 className="mt-1 text-2xl font-bold">“Işık her saat başka düşer.”</h2>
-        <p className="mt-2 text-sm text-slate-600">Avludan galeriye kadar yürüdün; {seen}/{POIS.length} noktayı inceledin. Ayarlardan günün saatini değiştirip ışığın nasıl değiştiğine bakabilirsin.</p>
-        <div className="mt-5 flex gap-2">
-          <button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Dolaşmaya devam</button>
-          <button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button>
-        </div>
-      </div>
-    </div>
-  );
+  return <EndSheet kicker="Tur tamamlandı" title="“Işık her saat başka düşer.”" text={`Avludan galeriye kadar yürüdün; ${seen}/${POIS.length} noktayı inceledin. Güneş düğmesinden günün saatini değiştirip ışığın nasıl değiştiğine bakabilirsin.`} stayLabel="Dolaşmaya devam" onStay={onStay} onExit={onExit} />;
 }
+const THEME = { accent: '#b07a2a' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: koş)</> },
+  { icon: <Move size={16} />, text: <>Sürükle: bak (yukarı sürükle: kubbeye bak) · iki parmak ya da tekerlek: yakınlaş</> },
+  { icon: <Search size={16} />, text: <><b>F</b>: incele · <b>E</b>: rampa / kapı</> },
+  { icon: <Sun size={16} />, text: <>Güneş düğmesi: günün saatini ve müziği değiştir</> },
+];
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);
   useEffect(() => { fetch('https://tr.wikipedia.org/api/rest_v1/page/summary/Ayasofya').then((r) => r.json()).then((j) => setImg(j.originalimage?.source ?? j.thumbnail?.source ?? null)).catch(() => {}); }, []);
