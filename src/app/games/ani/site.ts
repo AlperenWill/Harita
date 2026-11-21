@@ -19,11 +19,12 @@ export function edgeDist(x: number, z: number) {
 export function heightAt(x: number, z: number): number {
   const e = edgeDist(x, z), n = (hash(Math.floor(x / 8), Math.floor(z / 8)) - 0.5) * 0.35 + Math.sin(x * 0.02) * Math.cos(z * 0.017) * 0.8;
   if (e >= 0) return n;
-  return n * 0.3 - GORGE_DEPTH * smooth(0, 9, -e) + Math.min(14, Math.max(0, -e - 50) * 0.06);   // dik kanyon duvarı, karşı yamaçta hafif yükseliş
+  const d = -e, bank = 2.2 * Math.min(1, Math.abs(d - 35) / 10);   // ortada ırmak yatağı (d≈25–45), iki yanda kıyı
+  return n * 0.3 - GORGE_DEPTH * smooth(0, 12, d) + bank * smooth(8, 14, d) + GORGE_DEPTH * smooth(56, 84, d);   // dik kanyon duvarı, karşı yakada yeniden plato
 }
 
 /* ---------- rota: kuzeydeki Aslanlı Kapı'dan güney ucundaki Kız Kalesi'ne ---------- */
-const WP: [number, number][] = [[0, -205], [0, -168], [0, -150], [0, -120], [-5, -60], [0, -24], [30, 20], [70, 40], [74, 90], [60, 130], [70, 165], [91, 186], [60, 220], [30, 262], [18, 292]];
+const WP: [number, number][] = [[0, -205], [0, -168], [0, -150], [0, -120], [-5, -60], [0, -24], [-6, 10], [30, 34], [70, 40], [74, 90], [60, 130], [70, 165], [91, 186], [60, 220], [30, 262], [18, 292]];
 export const { ROUTE_LEN, routeAt, closestS } = makeRoute(WP, heightAt);
 
 /* ---------- fotoğraf noktaları ---------- */
@@ -32,7 +33,7 @@ const W = { title: 'Wikipedia — Ani', url: 'https://tr.wikipedia.org/wiki/Ani'
 const RAW: Omit<Shot, 's'>[] = [
   { id: 'surlar', name: 'Surlar ve Aslanlı Kapı', stand: [0, -178], target: [0, 5, WALL_Z], source: W,
     text: 'Kente kuzeydeki çifte surlardan, Aslanlı Kapı’dan girilir. Kapının adı yanındaki aslan kabartmasından gelir. Surların öteki iki yanını kanyonlar korur: doğuda Arpaçay, batıda Alaca Çay.' },
-  { id: 'katedral', name: 'Ani Katedrali', stand: [0, -24], target: [20, 8, 6], source: W,
+  { id: 'katedral', name: 'Ani Katedrali', stand: [0, -24], target: [20, 8, 4], source: W,
     text: 'Katedral 10. yüzyılın sonunda başlanıp 1001 civarında bitirildi; mimarı Trdat olarak bilinir. Kubbesi 14. yüzyıldaki bir depremde çöktü, bir köşesi de 1988 depreminde yıkıldı. Cephelerdeki sivri kemerli kör nişler dikkat çeker.' },
   { id: 'menucehr', name: 'Ebul Menuçehr Camii', stand: [72, 50], target: [112, 6, 62], source: W,
     text: 'Arpaçay kanyonunun kenarındaki cami, 11. yüzyılda Şeddadi beyi Ebul Menuçehr döneminde yapıldı. Anadolu’da Türklerin inşa ettiği ilk camilerden biri sayılır. Sekizgen minaresi kentin silüetinde hemen fark edilir. Kemer ve tavanlarda iki renkli taş işçiliği vardır.' },
