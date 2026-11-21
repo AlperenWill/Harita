@@ -72,7 +72,7 @@ Geliştirme ortamında yalnızca ekran kartsız tarayıcıda (swiftshader, ~9 FP
 - [ ] Zindan: parmakla sürükleme feneri yönlendiriyor, ileri/geri düğmeleri basılı tutulunca yürüyor
 - [ ] Merdiven: W ya da joystick ile basamaklar çıkılıyor; nefes azalınca yavaşlıyor, durunca ve pencere önünde doluyor; pencereye bakınca kart açılıyor
 - [ ] Sergi: vitrine yaklaşınca kamera kilitleniyor ve anlatım başlıyor; "Devam" kilidi açıyor
-- [ ] Teras: yatay kaydırma noktalar arasında geçiyor; dönüşten sonra yakınlaşma oluyor
+- [ ] Teras: balkonda yürünüyor; noktaya bakınca (dürbünle daha kolay) kart açılıyor; dördü bulununca "Turu bitir"
 - [ ] Ses ilk dokunuştan sonra başlıyor; sessize alma anlatımı da durduruyor; iOS'ta sessiz mod anahtarı
 - [ ] WebGL kapalı tarayıcıda fotoğraf + "Dinle" çalışıyor
 - [ ] Dikey tutulan telefonda yatay çevirme ipucu görünüyor
