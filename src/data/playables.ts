@@ -65,6 +65,7 @@ export const PLAYABLES: Playable[] = [
   // ---- Doğu Anadolu ----
   { id: 'ani', name: 'Ani Ören Yeri', province: 'Kars', coord: [43.5730, 40.5070], title: 'Bin Bir Kilise Kenti', emoji: '📷', blurb: 'Kanyonlar arasındaki Ortaçağ kentini fotoğrafçı olarak belgele.', kind: 'route', path: 'oyun/ani', depth: 'detayli', wiki: 'Ani' },
   { id: 'ishakpasa', name: 'İshak Paşa Sarayı', province: 'Ağrı', coord: [44.1300, 39.5210], title: 'Taşın Nakışı', emoji: '🧩', blurb: 'Ağrı Dağı’na bakan sarayda aşınmış taş süslemeleri parça parça onar.', kind: 'route', path: 'oyun/ishakpasa', depth: 'detayli', wiki: 'İshak Paşa Sarayı' },
+  { id: 'akdamar', name: 'Akdamar Kilisesi', province: 'Van', coord: [43.0360, 38.3410], title: 'Taştaki Hikâyeler', emoji: '⛵', blurb: 'Tekneyle adaya geç, kilisenin duvarlarındaki kabartma hikâyeleri bul.', kind: 'route', path: 'oyun/akdamar', depth: 'detayli', wiki: 'Akdamar Kilisesi' },
   // ---- Karadeniz ----
   { id: 'hattusa', name: 'Hattuşa', province: 'Çorum', coord: [34.6150, 40.0140], title: 'Kralın Yolu', emoji: '🦁', blurb: 'Hitit başkentinde kapı ritüellerini yerine getir, Yazılıkaya’ya ulaş.', kind: 'route', path: 'oyun/hattusa', depth: 'detayli', wiki: 'Hattuşaş' },
   { id: 'zilkale', name: 'Zil Kale', province: 'Rize', coord: [41.0667, 40.9581], title: 'Sis İçindeki İzler', emoji: '🌫️', blurb: 'Sisli Fırtına Vadisi’nden kaleye yürü.', kind: 'route', path: 'oyun/zilkale', depth: 'detayli', wiki: 'Zilkale' },
