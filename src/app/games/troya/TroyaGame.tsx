@@ -12,7 +12,10 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { ArrowLeft, Captions, CaptionsOff, ExternalLink, Layers, Pickaxe, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { Footprints, Info, MousePointer2 } from 'lucide-react';
+import { ArrowLeft, Layers, Pickaxe } from 'lucide-react';
 import { LAYERS, ROUTE_LEN, STOPS, TRENCH, MOUND, heightAt, isCorrect, nearStop, routeAt, type Stop } from './site';
 import { speakTr } from '../shared/voice';
 import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
@@ -45,6 +48,7 @@ const audio = new TroyaAudio();
 interface S { started: boolean; solved: string[]; quiz: Stop | null; wrong: string | null; card: Stop | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
 const INITIAL = { started: false, solved: [] as string[], quiz: null, wrong: null, card: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: 0 };
 
 export default function TroyaGame({ onExit }: { onExit: () => void }) {
@@ -55,11 +59,11 @@ function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), S = useDb();
   const look = useMouseLook((dx, dy) => { live.yaw -= dx * LOOK_YAW; live.pitch = THREE.MathUtils.clamp(live.pitch - dy * LOOK_PITCH, -1, 0.9); }, () => { const s = useDb.getState(); return s.started && !s.card && !s.quiz; });
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y0: number; y: number; mouse: boolean } | null>(null);
-  useEffect(() => { audio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: 0 }); }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
   const answer = useCallback((pick: string) => { const s = useDb.getState(), q = s.quiz; if (!q) return;
-    if (isCorrect(q, pick)) { audio.tone(true); s.set({ quiz: null, wrong: null, card: q, solved: [...s.solved, q.id] }); if (s.tts) audio.speak(`${q.name}. ${q.text}`); }
+    if (isCorrect(q, pick)) { audio.tone(true); s.set({ quiz: null, wrong: null, card: q, solved: [...s.solved, q.id] }); if (useSettings.getState().tts) audio.speak(`${q.name}. ${q.text}`); }
     else { audio.tone(false); const L = LAYERS.find((l) => l.n === pick); s.set({ wrong: `${pick} değil: Troya ${pick} ${L?.era ?? ''}. Yapının malzemesine ve biçimine bir daha bak.` }); } }, []);
   useEffect(() => {
     const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (e.repeat) return; if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close();
@@ -77,28 +81,24 @@ function Game({ onExit }: { onExit: () => void }) {
   const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; };
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (!drag.current.mouse) live.input = 0; drag.current = null; } };
   const quizzes = STOPS.filter((s) => s.answer);
-  const solvedLayers = new Set(STOPS.filter((s) => S.solved.includes(s.id) && s.answer).map((s) => s.answer));
+  const nextQ = quizzes.find((q) => !S.solved.includes(q.id));
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dfe7ec] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <HudTheme theme={THEME}>
       <LookCrosshair locked={look.locked} />
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 1500, position: [120, 20, 110] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.85; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
         <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#dfe7ec'} sun={'#fff2df'} ground={'#a99a6c'} sunDir={[-0.7, 0.5, 0.4]} /><Polish tier={tier} /></Suspense>
       </Canvas>
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { audio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) audio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-amber-300 text-black' : 'bg-black/45'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.started && <div className="mx-auto rounded-2xl bg-black/45 px-3 py-2 text-xs"><p className="mb-1 flex items-center justify-center gap-1"><Layers size={12} /> Katmanlar · {S.solved.filter((id) => quizzes.some((q) => q.id === id)).length}/{quizzes.length}</p>
-          <div className="flex gap-0.5">{LAYERS.map((l) => <span key={l.n} className={`rounded px-1.5 py-0.5 font-semibold ${solvedLayers.has(l.n) ? 'text-black' : 'text-white/50'}`} style={{ background: solvedLayers.has(l.n) ? l.color : 'rgba(255,255,255,.08)' }}>{l.n}</span>)}</div></div>}
-      </div>
-      {S.started && !S.card && !S.quiz && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · 1/2/3: cevap</span></p>}
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Layers size={15} />} label={nextQ ? `Sıradaki: ${nextQ.name}` : 'Katman cetveli tamam'} done={S.solved.filter((id) => quizzes.some((q) => q.id === id)).length} total={quizzes.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
+      {S.started && !S.card && !S.quiz && <Hint>Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · 1/2/3: cevap</span></Hint>}
       {S.quiz && <Quiz q={S.quiz} wrong={S.wrong} onPick={answer} />}
       {S.card && <Card s={S.card} onClose={close} />}
-      {!S.started && <TitleCard onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
+      {!S.started && <TitleCard onExit={onExit} onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
       {S.started && S.solved.length === STOPS.length && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      </HudTheme>
     </div>
   );
 }
@@ -212,12 +212,12 @@ function Controller() {
   const { camera } = useThree(), st = useRef({ step: 0, bob: 0, head: NaN, stop: '' });
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState();
-    const back = Math.cos(live.yaw) < 0 ? -1 : 1, want = S.started && !S.card && !S.quiz ? live.input * WALK * back : 0;
+    const back = Math.cos(live.yaw) < 0 ? -1 : 1, want = S.started && !S.card && !S.quiz && !pause.on ? live.input * WALK * back : 0;
     live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
     const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt)); const moved = live.s - before, R = routeAt(live.s);
     st.current.step += Math.abs(moved); if (st.current.step > 0.78) { st.current.step = 0; audio.step(); } st.current.bob += Math.abs(moved) * 2.2;
     const sp = S.started ? nearStop(live.s) : null;
-    if ((sp?.id ?? '') !== st.current.stop) { st.current.stop = sp?.id ?? ''; if (sp && !S.solved.includes(sp.id)) { if (sp.answer) S.set({ quiz: sp, wrong: null, card: null }); else { S.set({ card: sp, solved: [...S.solved, sp.id] }); if (S.tts) audio.speak(`${sp.name}. ${sp.text}`); } } else if (!sp) { if (S.quiz) S.set({ quiz: null, wrong: null }); if (S.card) S.set({ card: null }); } }   // noktadan uzaklaşınca açık kart/bilmece kapanır
+    if ((sp?.id ?? '') !== st.current.stop) { st.current.stop = sp?.id ?? ''; if (sp && !S.solved.includes(sp.id)) { if (sp.answer) S.set({ quiz: sp, wrong: null, card: null }); else { S.set({ card: sp, solved: [...S.solved, sp.id] }); if (useSettings.getState().tts) audio.speak(`${sp.name}. ${sp.text}`); } } else if (!sp) { if (S.quiz) S.set({ quiz: null, wrong: null }); if (S.card) S.set({ card: null }); } }   // noktadan uzaklaşınca açık kart/bilmece kapanır
     const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(st.current.head)) st.current.head = hd; st.current.head += wrapA(hd - st.current.head) * (1 - Math.exp(-dt * 3));
     if (!S.started) { camera.position.set(110, 22, 100); camera.quaternion.copy(_q.setFromRotationMatrix(_m.lookAt(camera.position, _l.set(20, 4, 0), THREE.Object3D.DEFAULT_UP))); return; }
     _e.set(live.pitch - 0.05, st.current.head + live.yaw, 0); camera.quaternion.setFromEuler(_e);
@@ -230,51 +230,29 @@ function Controller() {
 function Quiz({ q, wrong, onPick }: { q: Stop; wrong: string | null; onPick: (p: string) => void }) {
   return (
     <div className="absolute inset-x-3 bottom-14 z-40 mx-auto max-w-md sm:bottom-6" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl border border-amber-100/30 bg-[#2a2016]/90 p-5 shadow-2xl backdrop-blur">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Katman bilmecesi</p>
+      <div className="rounded-2xl bg-[#f7f5f1] p-5 shadow-[0_18px_50px_rgba(31,27,23,0.25)] ring-1 ring-black/5 text-[#1f1b17]">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#a8782c]">Katman bilmecesi</p>
         <h2 className="text-lg font-bold">{q.name}: hangi Troya?</h2>
         <div className="mt-3 grid grid-cols-3 gap-2">{q.options.map((o, i) => { const L = LAYERS.find((l) => l.n === o)!; return <button key={o} onClick={() => onPick(o)} className="rounded-xl px-2 py-2.5 text-center font-bold text-black active:scale-95" style={{ background: L.color }}>Troya {o}<span className="block text-[10px] font-medium opacity-75">{L.era}</span><span className="hidden text-[10px] opacity-60 [@media(pointer:fine)]:block">{i + 1}</span></button>; })}</div>
-        {wrong && <p className="mt-2 text-xs text-amber-200">{wrong}</p>}
+        {wrong && <p className="mt-2 text-xs text-[#a8782c]">{wrong}</p>}
       </div>
     </div>
   );
 }
 function Card({ s, onClose }: { s: Stop; onClose: () => void }) {
-  return (
-    <div className="absolute inset-x-3 bottom-14 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl border border-amber-100/30 bg-[#2a2016]/90 p-5 shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-2"><div><p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">{s.answer ? `Troya ${s.answer} · ${LAYERS.find((l) => l.n === s.answer)!.era}` : 'Giriş'}</p><h2 className="text-xl font-bold">{s.name}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={18} /></button></div>
-        <p className="mt-2 text-sm leading-relaxed text-white/85">{s.text}</p>
-        <a href={s.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-white/60 underline">{s.source.title} <ExternalLink size={12} /></a>
-      </div>
-    </div>
-  );
+  return <InfoSheet kicker={`${s.answer ? `Troya ${s.answer} · $${LAYERS.find((l) => l.n === s.answer)!.era}` : 'Giriş'}`} title={s.name} text={s.text} source={s.source} onClose={onClose} />;
 }
-function TitleCard({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/60 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">Çanakkale · Hisarlık · UNESCO Dünya Mirası</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Troya: Dokuz Kent</h1>
-        <p className="mt-2 text-sm text-white/85">Troya tek bir kent değil: yaklaşık 4.000 yıl boyunca aynı tepede üst üste kurulmuş dokuz kent. Ören yerini gez, her yapının hangi katmana ait olduğunu bul ve katman cetvelini doldur.</p>
-        <p className="mt-2 text-xs text-white/60">Dikey sürükle ya da W/S: ileri/geri · yatay sürükle ya da fare: etrafa bak · yapının yanında doğru katmanı seç</p>
-        <p className="mt-1 text-[11px] text-white/45">Plan stilizedir. Katman tarihleri yaklaşıktır, kaynaklara göre değişir.</p>
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 font-semibold text-black"><Pickaxe size={18} /> Ören yerine gir</button>
-      </div>
-    </div>
-  );
+const THEME = { accent: '#b07a3c' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
+  { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
+  { icon: <Info size={16} />, text: <>yapının yanında doğru katmanı seç</> },
+];
+function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="Çanakkale · Hisarlık · UNESCO Dünya Mirası" title="Troya: Dokuz Kent" intro={<>Troya tek bir kent değil: yaklaşık 4.000 yıl boyunca aynı tepede üst üste kurulmuş dokuz kent. Ören yerini gez, her yapının hangi katmana ait olduğunu bul ve katman cetvelini doldur.</>} controls={CONTROLS} note="Plan stilizedir. Katman tarihleri yaklaşıktır, kaynaklara göre değişir." cta="Ören yerine gir" ctaIcon={<Pickaxe size={18} />} onStart={onStart} onExit={onExit} />;
 }
-function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/25 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-[#f6efe2] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-amber-700">Katman cetveli tamam</p><h2 className="mt-1 text-2xl font-bold">Dokuz kentin izinde</h2>
-        <p className="mt-2 text-sm text-slate-600">Troya I’in duvarlarından Roma odeonuna kadar, aynı tepede binlerce yıl üst üste kurulmuş kentleri ayırt ettin.</p>
-        <div className="mt-5 flex gap-2"><button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Gezmeye devam</button><button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button></div>
-      </div>
-    </div>
-  );
+function EndCard({ onStay, onExit, onRestart }: { onStay: () => void; onExit: () => void; onRestart?: () => void }) {
+  return <EndSheet kicker="Katman cetveli tamam" title="Dokuz kentin izinde" text="Troya I’in duvarlarından Roma odeonuna kadar, aynı tepede binlerce yıl üst üste kurulmuş kentleri ayırt ettin." stayLabel="Gezmeye devam" onStay={onStay} onExit={onExit} onRestart={onRestart} />;
 }
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);

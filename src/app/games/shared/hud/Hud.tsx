@@ -31,6 +31,13 @@ export function Hud({ theme, children }: { theme: HudTheme; children: ReactNode 
   return <ThemeCtx.Provider value={theme}><div className="pointer-events-none absolute inset-0 z-30 font-sans text-[#1f1b17]" style={style}>{children}</div></ThemeCtx.Provider>;
 }
 
+/** Yalnız tema sağlayıcı (kutu çizmez): oyunun bütün arayüzünü sarar, bileşenler vurgu rengini buradan alır */
+export function HudTheme({ theme, children }: { theme: HudTheme; children: ReactNode }) { return <ThemeCtx.Provider value={theme}>{children}</ThemeCtx.Provider>; }
+/** Ekranın üstüne yapışık üst sıra (güvenli alan payıyla); HudTheme içinde kullanılır */
+export function TopRow(props: { onExit: () => void; objective?: ReactNode; right?: ReactNode }) {
+  return <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-[max(12px,env(safe-area-inset-left))] pt-[max(12px,env(safe-area-inset-top))]"><TopBar {...props} /></div>;
+}
+
 /* ---------- temel düğmeler ---------- */
 export function IconButton({ label, onClick, active, children }: { label: string; onClick: () => void; active?: boolean; children: ReactNode }) {
   const t = useTheme();
@@ -174,7 +181,7 @@ export function ToolPanel({ title, children, defaultOpen = true }: { title: Reac
 
 /* ---------- bilgi paneli ---------- */
 /** Alttan açılan bilgi paneli; masaüstünde sağ altta kart */
-export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { kicker: string; title: string; text: string; source?: { title: string; url: string }; onClose: () => void; onListen?: () => void }) {
+export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { kicker: ReactNode; title: ReactNode; text: ReactNode; source?: { title: string; url: string }; onClose: () => void; onListen?: () => void }) {
   const t = useTheme();
   return (
     <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-40 flex justify-center sm:inset-x-auto sm:bottom-[max(16px,env(safe-area-inset-bottom))] sm:right-[max(96px,env(safe-area-inset-right))]" onPointerDown={stop}>
@@ -184,7 +191,7 @@ export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { 
           <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: t.accent }}>{kicker}</p><h2 className="mt-0.5 text-xl font-bold leading-snug">{title}</h2></div>
           <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/5" aria-label="Kapat"><X size={18} /></button>
         </div>
-        <p className="mt-2 text-[15px] leading-relaxed text-[#4a433c]">{text}</p>
+        <div className="mt-2 grid gap-1.5 text-[15px] leading-relaxed text-[#4a433c]">{typeof text === 'string' ? <p>{text}</p> : text}</div>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           {onListen && <button onClick={onListen} className="inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold ring-1 ring-black/10"><Play size={13} /> Dinle</button>}
           {source && <a href={source.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-[#857b70] underline underline-offset-2">{source.title} <ExternalLink size={12} /></a>}
@@ -202,7 +209,7 @@ export function Toast({ text, tone = 'info' }: { text: string | null; tone?: 'ok
 
 /* ---------- başlangıç ve bitiş ---------- */
 /** Başlangıç ekranı: alttan kart; üstte sahne görünür kalır */
-export function StartSheet({ kicker, title, intro, controls, note, cta, ctaIcon, onStart, onExit }: { kicker: string; title: string; intro: ReactNode; controls: { icon: ReactNode; text: ReactNode }[]; note?: string; cta: string; ctaIcon?: ReactNode; onStart: () => void; onExit: () => void }) {
+export function StartSheet({ kicker, title, intro, controls, note, cta, ctaIcon, onStart, onExit }: { kicker: string; title: string; intro: ReactNode; controls: { icon: ReactNode; text: ReactNode }[]; note?: string; cta: string; ctaIcon?: ReactNode; onStart: () => void; onExit?: () => void }) {
   const t = useTheme();
   return (
     <div className="pointer-events-auto absolute inset-0 z-40 flex items-end justify-center bg-gradient-to-t from-[#1f1b17]/45 via-transparent to-transparent sm:items-center sm:bg-[#1f1b17]/20" onPointerDown={stop}>
@@ -213,7 +220,7 @@ export function StartSheet({ kicker, title, intro, controls, note, cta, ctaIcon,
         <div className="mt-3"><Controls items={controls} /></div>
         {note && <p className="mt-3 text-[11px] text-[#857b70]">{note}</p>}
         <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-bold shadow-[0_8px_20px_rgba(31,27,23,0.18)] transition active:scale-[0.99]" style={{ background: t.accent, color: t.accentInk ?? '#fff' }}>{ctaIcon}{cta}</button>
-        <button onClick={onExit} className="mt-2 inline-flex h-10 w-full items-center justify-center gap-1.5 text-sm font-semibold text-[#857b70]"><ArrowLeft size={15} /> Haritaya dön</button>
+        {onExit && <button onClick={onExit} className="mt-2 inline-flex h-10 w-full items-center justify-center gap-1.5 text-sm font-semibold text-[#857b70]"><ArrowLeft size={15} /> Haritaya dön</button>}
       </div>
     </div>
   );

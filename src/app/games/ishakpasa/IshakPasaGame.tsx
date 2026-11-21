@@ -10,20 +10,21 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Puzzle, Sparkles, Volume2, VolumeX, X } from 'lucide-react';
+import { ChevronRight, Footprints, MousePointer2, Puzzle, Sparkles, X } from 'lucide-react';
 import { CENTER, GRID, ROUTE_LEN, STOPS, isSolved, nearStop, rotateTile, routeAt, scramble, type Stop } from './site';
 import { Polish, SkyEnvironment } from '../shared/Polish';
 import { Clouds, Sun } from '../shared/scenery';
 import { LookCrosshair } from '../shared/mouseLook';
 import { Boulders, Grass, Mountain, OldFortress, Palace, Panel, SUN_DIR, Terrain, useMats } from './IshakModels';
 import { motifURL } from './motif';
-import { EndCard, Hint, InfoCard, NavRail, StopList, TitleCard, TopBar, WalkAudio, WikiFallback, detectTier, dprFor, newLive, pinned, stepWalk, supportsWebGL, useWalkInput, wrapA, type CamState, type Tier } from '../shared/walkKit';
+import { Controls, EndCard, GameMenu, Hint, HudTheme, InfoCard, NavRail, Objective, StopList, TitleCard, TopBar, WalkAudio, useAudioSettings, WikiFallback, detectTier, dprFor, newLive, pinned, stepWalk, supportsWebGL, useWalkInput, wrapA, type CamState, type Tier } from '../shared/walkKit';
 
 const audio = new WalkAudio({ freq: 380, gain: 0.1 }, 'male');
 interface S { started: boolean; listOpen: boolean; done: string[]; near: Stop | null; puzzle: Stop | null; tiles: number[]; card: Stop | null; muted: boolean; endShown: boolean; set: (p: Partial<S>) => void }
 const INITIAL = { started: false, listOpen: false, done: [] as string[], near: null, puzzle: null, tiles: [] as number[], card: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, set: (p) => set(p) }));
 const live = newLive();
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 /** Duraklar arası otomatik yürüyüş (önceki / sonraki / listeden git) */
 const nav = { to: null as number | null, turn: 0, speed: 16 };
 const nextIdx = () => STOPS.findIndex((x) => x.s > live.s + 2), prevIdx = () => { for (let i = STOPS.length - 1; i >= 0; i--) if (STOPS[i].s < live.s - 2) return i; return -1; };
@@ -34,7 +35,7 @@ export default function IshakPasaGame({ onExit }: { onExit: () => void }) {
 }
 function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), S = useDb();
-  useEffect(() => { audio.setMuted(S.muted); }, [S.muted]);
+  useAudioSettings(audio);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, newLive()); nav.to = null; nav.turn = 0; }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
   const tap = useCallback((i: number) => { const s = useDb.getState(), p = s.puzzle; if (!p || i === CENTER) return; const tiles = rotateTile(s.tiles, i); audio.click();
@@ -47,30 +48,27 @@ function Game({ onExit }: { onExit: () => void }) {
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __ishak: unknown }).__ishak = { go: (s: number) => { live.s = s; useDb.getState().set({ started: true }); }, look: (y: number, p = 0) => { live.yaw = y; live.pitch = p; }, tap, solveAll, goTo, state: () => ({ ...useDb.getState(), s: live.s }), STOPS, ROUTE_LEN }; }, [tap, solveAll, goTo]);
   const lastTap = useRef(0);
   const onDown = (e: React.PointerEvent) => { input.onPointerDown(e); if (e.pointerType !== 'mouse' && useDb.getState().started) { const t = performance.now(); if (t - lastTap.current < 300) goTo(nextIdx()); lastTap.current = t; } };
-  const nI = S.started ? nextIdx() : -1, pI = S.started ? prevIdx() : -1;
+  const nI = S.started ? nextIdx() : -1, pI = S.started ? prevIdx() : -1, nextStop = STOPS.find((x) => !S.done.includes(x.id));
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#e3e8ec]" style={{ touchAction: 'none' }} {...input} onPointerDown={onDown} onPointerCancel={input.onPointerUp}>
+      <HudTheme theme={THEME}>
       <Canvas shadows={tier !== 'low' ? 'soft' : false} dpr={dprFor(tier)} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 6000, position: [120, 30, 90] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.72; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
         <Suspense fallback={null}><World tier={tier} done={S.done} /><SkyEnvironment sky="#d3e2ee" sun="#ffe6c6" ground="#a8956a" sunDir={[0.55, 0.5, 0.67]} /><Polish tier={tier} /></Suspense>
       </Canvas>
-      <TopBar onExit={onExit}>
-        <button onClick={() => { audio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45 text-white" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        {S.started && <div className="mx-auto flex items-center gap-2 rounded-full bg-black/45 px-3 py-2 text-xs text-white"><Sparkles size={14} /> Nakışlar · {S.done.length}/{STOPS.length}
-          <span className="flex gap-0.5">{STOPS.map((x) => <span key={x.id} className={`h-2 w-2 rounded-full ${S.done.includes(x.id) ? 'bg-amber-300' : 'bg-white/25'}`} />)}</span></div>}
-      </TopBar>
+      <TopBar onExit={onExit} objective={S.started ? <Objective icon={<Sparkles size={15} />} label={nextStop ? `Sıradaki: ${nextStop.name}` : 'Bütün nakışlar onarıldı'} done={S.done.length} total={STOPS.length} /> : undefined} menu={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} />} />
       {S.started && !S.listOpen && !S.puzzle && <NavRail onNext={() => goTo(nI)} onPrev={() => goTo(pI)} onTurn={() => { nav.turn += Math.PI; }} onList={() => S.set({ listOpen: true, card: null })} nextDisabled={nI < 0} prevDisabled={pI < 0} listLabel="Nakış listesi" />}
       {S.listOpen && <StopList title="Nakışlar" items={STOPS.map((x) => ({ id: x.id, name: x.name, done: S.done.includes(x.id) }))} doneLabel="Onarıldı" todoLabel="Henüz onarılmadı" onGo={goTo} onRead={(i) => { const x = STOPS[i]; S.set({ listOpen: false, card: x }); audio.speak(`${x.name}. ${x.text}`); }} onRestart={restart} onClose={() => S.set({ listOpen: false })} />}
       <LookCrosshair locked={input.locked} />
       {S.puzzle && <PuzzlePanel stop={S.puzzle} tiles={S.tiles} onTap={tap} onLeave={() => S.set({ puzzle: null })} />}
-      {S.started && !S.puzzle && !S.card && S.near && !S.done.includes(S.near.id) && <button onPointerDown={(e) => e.stopPropagation()} onClick={() => S.set({ puzzle: S.near })} className="absolute bottom-16 left-1/2 z-30 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full bg-amber-300 px-5 font-semibold text-black shadow-lg"><Puzzle size={18} /> Nakışı onar</button>}
+      {S.started && !S.puzzle && !S.card && S.near && !S.done.includes(S.near.id) && <button onPointerDown={(e) => e.stopPropagation()} onClick={() => S.set({ puzzle: S.near })} className="absolute bottom-20 left-1/2 z-30 inline-flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 font-bold text-white shadow-[0_10px_30px_rgba(31,27,23,0.3)]" style={{ background: THEME.accent }}><Puzzle size={18} /> Nakışı onar</button>}
       {S.started && !S.puzzle && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · W/S yürü · tıkla, fareyle bak (Esc: bırak)</span></Hint>}
       {S.card && !S.listOpen && <InfoCard kicker={`Nakış ${S.done.indexOf(S.card.id) + 1} / ${STOPS.length} · ${S.card.motifName}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} />}
-      {!S.started && <TitleCard kicker="Ağrı · Doğubayazıt · 18. yüzyıl" title="İshak Paşa Sarayı: Taşın Nakışı" note="Plan stilizedir; motifler saraydaki süslemelerden esinlenilmiş temsilî çizimlerdir." cta="Taç kapıdan gir" icon={<Puzzle size={18} />} onStart={() => { audio.unlock(); S.set({ started: true }); }}>
-        <p>Ağrı Dağı’na bakan sarayın avlularını gez. Her durakta yüzyıllar içinde aşınmış bir taş süsleme var: parçalara dokunarak çevir, motifi tamamla, panoyu yerine oturt.</p>
-        <p className="mt-2 text-xs text-white/60">Dikey sürükle ya da W/S: ileri/geri · yatay sürükle ya da fare: bak · parçaya dokun: çevir</p></TitleCard>}
-      {S.started && S.done.length === STOPS.length && !S.endShown && !S.card && <EndCard kicker="Bütün nakışlar tamam" title="Saray yeniden süslendi" text="Taç kapıdan terasa kadar altı süsleme panosunu tamamladın. Sarayda Osmanlı, Selçuklu ve İran ustalarının izleri yan yana durur." onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      {!S.started && <TitleCard kicker="Ağrı · Doğubayazıt · 18. yüzyıl" title="İshak Paşa Sarayı: Taşın Nakışı" note="Plan stilizedir; motifler saraydaki süslemelerden esinlenilmiş temsilî çizimlerdir." cta="Taç kapıdan gir" onExit={onExit} controls={CONTROLS} icon={<Puzzle size={18} />} onStart={() => { audio.unlock(); S.set({ started: true }); }}>
+        <p>Ağrı Dağı’na bakan sarayın avlularını gez. Her durakta yüzyıllar içinde aşınmış bir taş süsleme var: parçalara dokunarak çevir, motifi tamamla, panoyu yerine oturt.</p></TitleCard>}
+      {S.started && S.done.length === STOPS.length && !S.endShown && !S.card && <EndCard kicker="Bütün nakışlar tamam" title="Saray yeniden süslendi" text="Taç kapıdan terasa kadar altı süsleme panosunu tamamladın. Sarayda Osmanlı, Selçuklu ve İran ustalarının izleri yan yana durur." onStay={() => S.set({ endShown: true })} onExit={onExit} onRestart={restart} />}
+      </HudTheme>
     </div>
   );
 }
@@ -80,18 +78,27 @@ function PuzzlePanel({ stop, tiles, onTap, onLeave }: { stop: Stop; tiles: numbe
   const url = motifURL(stop.motif), size = 'min(72vw, 300px, 46vh)';
   return (
     <div className="absolute inset-x-3 bottom-4 z-40 mx-auto max-w-sm" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl border border-white/15 bg-[#2a2016]/90 p-4 text-white shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-2"><div><p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Nakış bulmacası · {stop.name}</p><h2 className="text-base font-bold">{stop.motifName}</h2></div>
-          <button onClick={onLeave} className="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10" aria-label="Bulmacayı kapat"><X size={16} /></button></div>
+      <div className="rounded-3xl bg-[#f7f5f1] p-4 text-[#1f1b17] shadow-[0_18px_50px_rgba(31,27,23,0.25)] ring-1 ring-black/5">
+        <div className="flex items-start gap-2"><div><p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: THEME.accent }}>Nakış bulmacası · {stop.name}</p><h2 className="text-base font-bold">{stop.motifName}</h2></div>
+          <button onClick={onLeave} className="ml-auto grid h-9 w-9 shrink-0 place-items-center rounded-full bg-black/5" aria-label="Bulmacayı kapat"><X size={16} /></button></div>
         <div className="mx-auto mt-3 grid gap-[3px] rounded-lg bg-[#5a4128] p-[3px]" style={{ width: size, height: size, gridTemplateColumns: `repeat(${GRID}, 1fr)` }}>
-          {tiles.map((r, i) => <button key={i} onClick={() => onTap(i)} aria-label={`Parça ${i + 1}${i === CENTER ? ' (sabit)' : ''}`} className={`relative overflow-hidden rounded-sm transition-transform duration-200 ${i === CENTER ? 'ring-2 ring-amber-300/70' : 'active:scale-95'}`}
+          {tiles.map((r, i) => <button key={i} onClick={() => onTap(i)} aria-label={`Parça ${i + 1}${i === CENTER ? ' (sabit)' : ''}`} className={`relative overflow-hidden rounded-sm transition-transform duration-200 ${i === CENTER ? 'ring-2 ring-black/30' : 'active:scale-95'}`}
             style={{ backgroundImage: `url(${url})`, backgroundSize: `${GRID * 100}% ${GRID * 100}%`, backgroundPosition: `${((i % GRID) / (GRID - 1)) * 100}% ${(Math.floor(i / GRID) / (GRID - 1)) * 100}%`, transform: `rotate(${r * 90}deg)` }} />)}
         </div>
-        <p className="mt-2 text-center text-xs text-white/60">Parçaya dokun: 90° döner. Ortadaki parça sabit; kemer yukarıda, ışık üstten gelir.</p>
+        <p className="mt-2 text-center text-xs text-[#857b70]">Parçaya dokun: 90° döner. Ortadaki parça sabit; kemer yukarıda, ışık üstten gelir.</p>
       </div>
     </div>
   );
 }
+
+/* ---------- arayüz teması ve kontroller (ortak HUD) ---------- */
+const THEME = { accent: '#a8782c' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da <b>W/S</b>: ileri / geri yürü</> },
+  { icon: <MousePointer2 size={16} />, text: <>Yatay sürükle ya da <b>tıkla, fareyle bak</b> (Esc imleci bırakır)</> },
+  { icon: <Puzzle size={16} />, text: <>Nakış parçasına dokun: 90° döner; motifi tamamla</> },
+  { icon: <ChevronRight size={16} />, text: <>Sağdaki oklar ya da çift dokunuş: sonraki / önceki durak</> },
+];
 
 /* ---------- 3B dünya (modeller: IshakModels.tsx) ---------- */
 function World({ tier, done }: { tier: Tier; done: string[] }) {
@@ -126,7 +133,7 @@ function Controller() {
     if (!S.started) { camera.position.set(110, 26, 70); camera.quaternion.copy(_q.setFromRotationMatrix(_m.lookAt(camera.position, _l.set(0, 6, -6), THREE.Object3D.DEFAULT_UP))); return; }
     if (nav.to !== null) { const d = nav.to - live.s, st = Math.sign(d) * Math.min(Math.abs(d), nav.speed * dt); live.s += st; live.v = 0; if (st) audio.step(800); if (Math.abs(nav.to - live.s) < 0.01) nav.to = null; }
     if (nav.turn) { const k = Math.sign(nav.turn) * Math.min(Math.abs(nav.turn), dt * 4); live.yaw += k; nav.turn -= k; }
-    if (stepWalk(camera, live, cs.current, { ROUTE_LEN, routeAt }, dt, !S.card && !S.puzzle && !S.listOpen && nav.to === null, 3.2)) audio.step(800);
+    if (stepWalk(camera, live, cs.current, { ROUTE_LEN, routeAt }, dt, !S.card && !S.puzzle && !S.listOpen && nav.to === null && !pause.on, 3.2)) audio.step(800);
     const n = nav.to === null ? nearStop(live.s) : null, id = n?.id ?? '';   // yolculuk sırasında aradaki duraklar bulmaca açmaz
     const focus = S.puzzle ?? S.card;   // bulmaca/kart açıkken kamera panoya döner: tamamlanan motif görünür
     if (focus) { const [px, py, pz] = focus.panel.at, dx = px - camera.position.x, dz = pz - camera.position.z, want = wrapA(Math.atan2(-dx, -dz) - cs.current.head);

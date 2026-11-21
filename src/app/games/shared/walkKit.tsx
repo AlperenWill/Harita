@@ -5,9 +5,13 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import * as THREE from 'three';
-import { ArrowLeft, BookOpen, Check, ChevronLeft, ChevronRight, ExternalLink, MapPin, RotateCcw, Undo2, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, ChevronLeft, ChevronRight, MapPin, RotateCcw, Undo2, X } from 'lucide-react';
+import { EndSheet, Hint as HudHint, InfoSheet, StartSheet, TopRow } from './hud/Hud';
 import { speakTr, type VoiceGender } from './voice';
 import { LOOK_PITCH, LOOK_YAW, useMouseLook } from './mouseLook';
+import { useSettings } from './hud/settings';
+/** Ortak ayarları (ses, ses seviyesi) bir WalkAudio'ya bağla */
+export function useAudioSettings(a: { setMuted: (m: boolean) => void }) { const G = useSettings(); useEffect(() => { a.setMuted(G.muted); }, [a, G.muted, G.volume]); }
 
 export type Tier = 'low' | 'medium' | 'high';
 export const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
@@ -41,14 +45,14 @@ export class WalkAudio {
   constructor(private wind = { freq: 500, gain: 0.09 }, private voice: VoiceGender = 'any') {}
   get context() { return this.ctx; } get out() { return this.master; }
   unlock() { if (this.ctx) { void this.ctx.resume(); return; } const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext; if (!AC) return;
-    const ctx = (this.ctx = new AC()); this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 0.7; this.master.connect(ctx.destination);
+    const ctx = (this.ctx = new AC()); this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 0.9 * useSettings.getState().volume; this.master.connect(ctx.destination);
     const n = ctx.sampleRate * 2; this.noise = ctx.createBuffer(1, n, ctx.sampleRate); const d = this.noise.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
     const s = ctx.createBufferSource(); s.buffer = this.noise; s.loop = true; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = this.wind.freq; f.Q.value = 0.7; const g = ctx.createGain(); g.gain.value = this.wind.gain; const lfo = ctx.createOscillator(); lfo.frequency.value = 0.11; const lg = ctx.createGain(); lg.gain.value = this.wind.gain * 0.55; lfo.connect(lg).connect(g.gain); s.connect(f).connect(g).connect(this.master); s.start(); lfo.start(); }
   step(freq = 700) { const ctx = this.ctx; if (!ctx || !this.noise || !this.master || this.muted) return; const t = ctx.currentTime, s = ctx.createBufferSource(); s.buffer = this.noise; const f = ctx.createBiquadFilter(), g = ctx.createGain(); f.type = 'lowpass'; f.frequency.value = freq; g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1); s.connect(f).connect(g).connect(this.master); s.start(t, Math.random()); s.stop(t + 0.12); }
   tone(ok: boolean) { const ctx = this.ctx; if (!ctx || !this.master || this.muted) return; const t = ctx.currentTime; (ok ? [523.3, 659.3, 784] : [220, 185]).forEach((fr, i) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = ok ? 'triangle' : 'sine'; o.frequency.value = fr; g.gain.setValueAtTime(0, t + i * 0.1); g.gain.linearRampToValueAtTime(0.08, t + i * 0.1 + 0.02); g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.1 + (ok ? 1.2 : 0.4)); o.connect(g).connect(this.master!); o.start(t + i * 0.1); o.stop(t + i * 0.1 + 1.3); }); }
   click() { const ctx = this.ctx; if (!ctx || !this.noise || !this.master || this.muted) return; const t = ctx.currentTime, s = ctx.createBufferSource(); s.buffer = this.noise; const f = ctx.createBiquadFilter(), g = ctx.createGain(); f.type = 'highpass'; f.frequency.value = 2500; g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.06); s.connect(f).connect(g).connect(this.master); s.start(t); s.stop(t + 0.08); }
-  setMuted(m: boolean) { this.muted = m; if (m) this.hush(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.7, this.ctx.currentTime, 0.2); }
-  speak(t: string) { if (!this.muted) speakTr(t, { gender: this.voice }); }
+  setMuted(m: boolean) { this.muted = m; if (m) this.hush(); if (this.ctx && this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9 * useSettings.getState().volume, this.ctx.currentTime, 0.2); }
+  speak(t: string) { if (!this.muted && useSettings.getState().tts) speakTr(t, { gender: this.voice }); }
   hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
   dispose() { this.hush(); void this.ctx?.close(); this.ctx = null; this.master = null; }
 }
@@ -94,52 +98,24 @@ export function stepWalk(camera: THREE.Camera, live: Live, cs: CamState, route: 
   return stepped;
 }
 
-/* ---------- arayüz parçaları ---------- */
+/* ---------- arayüz parçaları: ortak HUD'un (shared/hud/Hud.tsx) ince sarmalayıcıları ---------- */
 export interface Source { title: string; url: string }
 const stop = (e: React.PointerEvent) => e.stopPropagation();
-export function TopBar({ onExit, children }: { onExit: () => void; children?: ReactNode }) {
-  return <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start gap-2 p-3" onPointerDown={stop}>
-    <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-full bg-black/45 text-white" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>{children}</div>;
+export { Hud, HudTheme, Objective, GameMenu, Controls } from './hud/Hud';
+/** Üst sıra: sol üstte Harita, ortada görev, sağ üstte ≡ menü. <Hud> içinde kullanılır. */
+export function TopBar({ onExit, objective, menu }: { onExit: () => void; objective?: ReactNode; menu?: ReactNode }) {
+  return <TopRow onExit={onExit} objective={objective} right={menu} />;
 }
-export function InfoCard({ kicker, title, text, source, onClose, accent = 'text-amber-300' }: { kicker: string; title: string; text: string; source: Source; onClose: () => void; accent?: string }) {
-  return (
-    <div className="absolute inset-x-3 bottom-14 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0" onPointerDown={stop}>
-      <div className="max-h-[52vh] overflow-y-auto rounded-2xl border border-white/15 bg-[#1f1a17]/90 p-5 text-white shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-2"><div><p className={`text-[11px] font-semibold uppercase tracking-wider ${accent}`}>{kicker}</p><h2 className="text-xl font-bold">{title}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={18} /></button></div>
-        <p className="mt-2 text-sm leading-relaxed text-white/85">{text}</p>
-        <a href={source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-white/60 underline">{source.title} <ExternalLink size={12} /></a>
-      </div>
-    </div>
-  );
+export function InfoCard({ kicker, title, text, source, onClose, onListen }: { kicker: string; title: string; text: string; source: Source; onClose: () => void; onListen?: () => void }) {
+  return <InfoSheet kicker={kicker} title={title} text={text} source={source} onClose={onClose} onListen={onListen} />;
 }
-export function TitleCard({ kicker, title, children, note, cta, icon, onStart }: { kicker: string; title: string; children: ReactNode; note: string; cta: string; icon: ReactNode; onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 text-white sm:p-8" onPointerDown={stop}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/60 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">{kicker}</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">{title}</h1>
-        <div className="mt-2 text-sm text-white/85">{children}</div>
-        <p className="mt-1 text-[11px] text-white/45">{note}</p>
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 font-semibold text-black">{icon} {cta}</button>
-      </div>
-    </div>
-  );
+export function TitleCard({ kicker, title, children, note, cta, icon, onStart, onExit, controls = [] }: { kicker: string; title: string; children: ReactNode; note: string; cta: string; icon: ReactNode; onStart: () => void; onExit?: () => void; controls?: { icon: ReactNode; text: ReactNode }[] }) {
+  return <StartSheet kicker={kicker} title={title} intro={children} controls={controls} note={note} cta={cta} ctaIcon={icon} onStart={onStart} onExit={onExit} />;
 }
-export function EndCard({ kicker, title, text, onStay, onExit }: { kicker: string; title: string; text: string; onStay: () => void; onExit: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/25 p-5" onPointerDown={stop}>
-      <div className="w-full max-w-md rounded-3xl bg-[#f6efe2] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-amber-700">{kicker}</p><h2 className="mt-1 text-2xl font-bold">{title}</h2>
-        <p className="mt-2 text-sm text-slate-600">{text}</p>
-        <div className="mt-5 flex gap-2"><button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Gezmeye devam</button><button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button></div>
-      </div>
-    </div>
-  );
+export function EndCard({ kicker, title, text, onStay, onExit, onRestart }: { kicker: string; title: string; text: string; onStay: () => void; onExit: () => void; onRestart?: () => void }) {
+  return <EndSheet kicker={kicker} title={title} text={text} onStay={onStay} onExit={onExit} onRestart={onRestart} />;
 }
-export function Hint({ children }: { children: ReactNode }) {
-  return <p className="pointer-events-none absolute bottom-6 left-1/2 z-20 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs text-white">{children}</p>;
-}
+export function Hint({ children }: { children: ReactNode }) { return <HudHint>{children}</HudHint>; }
 /** WebGL yoksa: Vikipedi fotoğrafı + noktaların metinleri */
 export function WikiFallback({ wiki, alt, items, onExit, speak }: { wiki: string; alt: string; items: { name: string; text: string }[]; onExit: () => void; speak: (t: string) => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);
@@ -160,8 +136,8 @@ export function WikiFallback({ wiki, alt, items, onExit, speak }: { wiki: string
 
 /* ---------- gezinme: sağ kenar düğmeleri ve durak listesi (Ani, İshak Paşa) ---------- */
 export function NavRail({ onNext, onPrev, onTurn, onList, nextDisabled, prevDisabled, listLabel = 'Durak listesi' }: { onNext: () => void; onPrev: () => void; onTurn: () => void; onList: () => void; nextDisabled: boolean; prevDisabled: boolean; listLabel?: string }) {
-  const B = ({ label, disabled, onClick, children }: { label: string; disabled?: boolean; onClick: () => void; children: ReactNode }) => <button onClick={onClick} disabled={disabled} title={label} aria-label={label} className={`grid h-11 w-11 place-items-center rounded-full text-white shadow ${disabled ? 'bg-black/20 text-white/40' : 'bg-black/50 active:scale-95'}`}>{children}</button>;
-  return <div className="absolute right-3 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-2" onPointerDown={stop}>
+  const B = ({ label, disabled, onClick, children }: { label: string; disabled?: boolean; onClick: () => void; children: ReactNode }) => <button onClick={onClick} disabled={disabled} title={label} aria-label={label} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-[#f7f5f1]/85 text-[#1f1b17] shadow-[0_6px_24px_rgba(31,27,23,0.14)] ring-1 ring-black/5 backdrop-blur-md transition ${disabled ? 'opacity-40' : 'active:scale-95'}`}>{children}</button>;
+  return <div className="pointer-events-none absolute right-[max(12px,env(safe-area-inset-right))] top-1/2 z-30 flex -translate-y-1/2 flex-col gap-2" onPointerDown={stop}>
     <B label="Sonraki durak" disabled={nextDisabled} onClick={onNext}><ChevronRight size={20} /></B>
     <B label="Önceki durağa dön" disabled={prevDisabled} onClick={onPrev}><ChevronLeft size={20} /></B>
     <B label="Arkanı dön" onClick={onTurn}><Undo2 size={18} /></B>
@@ -170,8 +146,8 @@ export function NavRail({ onNext, onPrev, onTurn, onList, nextDisabled, prevDisa
 }
 export function StopList({ title, items, doneLabel, todoLabel, onGo, onRead, onRestart, onClose }: { title: string; items: { id: string; name: string; done: boolean }[]; doneLabel: string; todoLabel: string; onGo: (i: number) => void; onRead: (i: number) => void; onRestart: () => void; onClose: () => void }) {
   return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/30 p-4" onPointerDown={stop}>
-      <div className="max-h-[86vh] w-full max-w-md overflow-y-auto rounded-3xl bg-[#f6efe2] p-5 text-ink shadow-2xl">
+    <div className="pointer-events-auto absolute inset-0 z-50 grid place-items-center bg-[#1f1b17]/30 p-4 backdrop-blur-[2px]" onPointerDown={stop}>
+      <div className="max-h-[86vh] w-full max-w-md overflow-y-auto rounded-3xl bg-[#f7f5f1] p-5 text-[#1f1b17] shadow-[0_18px_50px_rgba(31,27,23,0.25)] ring-1 ring-black/5">
         <div className="flex items-center gap-2"><BookOpen size={18} className="text-amber-700" /><h2 className="text-lg font-bold">{title} · {items.filter((x) => x.done).length}/{items.length}</h2>
           <button onClick={onClose} className="ml-auto grid h-10 w-10 place-items-center rounded-full bg-black/5" aria-label="Listeyi kapat"><X size={18} /></button></div>
         <ol className="mt-3 space-y-2">{items.map((x, i) => (
