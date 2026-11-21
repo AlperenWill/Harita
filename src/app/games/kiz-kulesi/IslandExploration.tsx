@@ -215,7 +215,7 @@ export function TowerInterior({ onTop }: { onTop: () => void }) {
     { const K = useKiz.getState(); for (const st of stones) { const id = stoneDialogue(st.spot); if (K.heard.includes(id)) heardSpots.current.add(st.spot); }
       const near = stones.find((x) => !heardSpots.current.has(x.spot) && Math.abs(s.current - x.s) < 0.9), want = near ? stoneDialogue(near.spot) : null;
       const isStone = (id: string | null) => !!id && id.startsWith('tas-');
-      if (want && K.pending !== want && !K.playback) K.offer(want); else if (!want && isStone(K.pending)) K.offer(null); }
+      if (want && K.pending !== want && !K.playback && (!K.pending || isStone(K.pending))) K.offer(want); else if (!want && isStone(K.pending)) K.offer(null); }
     const pb = useKiz.getState().playback, line = pb?.dialogue.lines[pb.line];
     const spot = stones.find((x) => pb?.dialogue.trigger.type === 'reach' && 'spot' in pb.dialogue.trigger && pb.dialogue.trigger.spot === x.spot);
     applyDialogue(c, pl, { stone: spot?.pos }, dt);

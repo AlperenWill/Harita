@@ -108,6 +108,7 @@ function Game({ onExit }: { onExit: () => void }) {
       keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useBz.getState(); if (e.repeat) return;
       if (e.code === 'KeyE' && s.phase === 'street' && s.esnaf === null) { if (s.prompt.esnaf !== null) talk(s.prompt.esnaf); else if (s.prompt.shop !== null) enterShop(s.prompt.shop); }
+      if (e.code === 'Escape' && (s.esnaf !== null || s.picked !== null || s.phase !== 'street')) e.preventDefault();
       if (e.code === 'Escape') { if (s.esnaf !== null) s.set({ esnaf: null }); else if (s.picked !== null) s.set({ picked: null }); else exitShop(); }
       if (e.code === 'KeyJ') s.set({ notebook: !s.notebook });
     };

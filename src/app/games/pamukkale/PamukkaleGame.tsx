@@ -93,7 +93,7 @@ function Game({ onExit }: { onExit: () => void }) {
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
         <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#d6ecf3'} sun={'#fff6e6'} ground={'#f2f0ea'} sunDir={[0.7, 0.6, 0.5]} /><Polish tier={tier} /></Suspense>
       </Canvas>
-      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Droplets size={15} />} label={nextP ? 'Kuru havuzlara suyu yönlendir' : 'Bütün havuzlar dolu'} done={S.filled.length} total={DRY.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Droplets size={15} />} label={nextP ? 'Kuru havuzlara suyu yönlendir' : done ? 'Hepsi tamam' : 'Hierapolis: yapıları incele (E)'} done={nextP ? S.filled.length : S.seen.length} total={nextP ? DRY.length : SPOTS.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
       {S.started && !S.card && S.near && <InteractPrompt icon={<Droplets size={18} />} label="Suyu bu havuza yönlendir" onClick={pour} />}
       {S.started && !S.card && !S.near && S.spot && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.spot.name}`} onClick={inspect} muted={S.seen.includes(S.spot.id)} />}
       {S.started && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · E: suyu aç</span></Hint>}

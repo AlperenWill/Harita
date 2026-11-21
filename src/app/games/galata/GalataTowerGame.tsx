@@ -186,7 +186,7 @@ function Game({ onExit }: { onExit: () => void }) {
       )}
 
       {g.chapter !== 'giris' && g.chapter !== 'son' && isTouch && <Joystick stick={stick} color="bg-[#b5582f]" />}
-      {(g.chapter === 'sergi' || g.chapter === 'teras' || g.chapter === 'son') && <ActionDock>
+      {(g.chapter === 'teras' || g.chapter === 'son') && <ActionDock>
         {g.chapter === 'teras' && allViews && <RoundAction label="Turu bitir" primary size={68} onClick={() => { g.complete(); setCard(null); go('son'); }}><Play size={26} /></RoundAction>}
         {(g.chapter === 'teras' || g.chapter === 'son') && <RoundAction label={zoom ? 'Dürbünü indir (Z)' : 'Dürbün (Z)'} primary={!allViews && g.chapter === 'teras'} size={58} onClick={toggleZoom}><Binoculars size={24} /></RoundAction>}
       </ActionDock>}

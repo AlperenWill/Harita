@@ -20,9 +20,11 @@ export function useMouseLook(apply: (dx: number, dy: number) => void, enabled: (
     return () => { removeEventListener('mousemove', mv); document.removeEventListener('pointerlockchange', ch); clearInterval(id); if (document.pointerLockElement) document.exitPointerLock?.(); };
   }, []);
   /** Sahnenin onPointerDown'ında çağır: farenin sol tuşuyla tıklanınca kilitle */
-  const lock = (e: React.PointerEvent) => { if (e.pointerType === 'mouse' && e.button === 0 && en.current() && !document.pointerLockElement) { const el = e.currentTarget as HTMLElement; try { const p = el.requestPointerLock?.() as unknown; if (p && typeof (p as Promise<void>).catch === 'function') (p as Promise<void>).catch(() => {}); } catch { /* desteklenmiyor */ } } };
+  const lock = (e: React.PointerEvent) => { if (onUi(e)) return; if (e.pointerType === 'mouse' && e.button === 0 && en.current() && !document.pointerLockElement) { const el = e.currentTarget as HTMLElement; try { const p = el.requestPointerLock?.() as unknown; if (p && typeof (p as Promise<void>).catch === 'function') (p as Promise<void>).catch(() => {}); } catch { /* desteklenmiyor */ } } };
   return { locked, lock };
 }
+/** Tıklanan yer bir arayüz öğesi mi (düğme, bağlantı, form, kart): oraya tıklamak imleci kilitlemez, bakışı çevirmez */
+export const onUi = (e: React.PointerEvent) => !!(e.target as Element | null)?.closest?.('button,a,input,select,textarea,label,[role=dialog],[data-ui]');
 /** Kilitliyken ekranın ortasında küçük nişangâh */
 export function LookCrosshair({ locked }: { locked: boolean }) {
   if (!locked) return null;

@@ -5,7 +5,7 @@
  */
 import { useRef } from 'react';
 import * as THREE from 'three';
-import { LOOK_PITCH, LOOK_YAW, useMouseLook } from './mouseLook';
+import { LOOK_PITCH, LOOK_YAW, onUi, useMouseLook } from './mouseLook';
 import { useSettings } from './hud/settings';
 
 export const FP_PITCH = 1.35;
@@ -20,7 +20,7 @@ export function useFpLook(view: View | (() => View), enabled: () => boolean, onD
   return {
     locked: look.locked,
     handlers: {
-      onPointerDown: (e: React.PointerEvent) => { onDown?.(); if (!enabled()) return; look.lock(e); if (e.pointerType !== 'mouse') drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY }; },
+      onPointerDown: (e: React.PointerEvent) => { onDown?.(); if (!enabled() || onUi(e)) return; look.lock(e); if (e.pointerType !== 'mouse') drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY }; },
       onPointerMove: (e: React.PointerEvent) => {
         const d = drag.current; if (!d || d.id !== e.pointerId || !enabled()) return;
         const k = useSettings.getState().sensitivity * 1.6, v = get();

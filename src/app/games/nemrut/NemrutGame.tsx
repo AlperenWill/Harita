@@ -99,7 +99,7 @@ function Game({ onExit }: { onExit: () => void }) {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useNem.getState(); if (!s.started || e.repeat) return;
       if (e.code === 'KeyE' || e.code === 'KeyF') { if (s.card) closeCard(); else if (s.frag) pick(); else if (s.prompt) inspect(s.prompt); }
-      if (e.code === 'Escape') closeCard();
+      if (e.code === 'Escape' && (s.card || s.puzzle)) { e.preventDefault(); closeCard(); }
       if (e.code === 'KeyJ') s.set({ journal: !s.journal });
       if (e.code === 'KeyT') s.set({ speed: s.speed === 1 ? 20 : 1 });
     };

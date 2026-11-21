@@ -14,7 +14,7 @@
  * Oyuna özgü tek şey VURGU rengidir (accent): ana düğme, ilerleme, başlık üstü etiket.
  */
 import { useSettings, urlQuality, type Quality } from './settings';
-import { createContext, useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ArrowLeft, BatteryLow, BookOpen, ExternalLink, HelpCircle, Menu, RotateCcw, Settings, Volume2, VolumeX, X, Captions, CaptionsOff, Map as MapIcon, Play } from 'lucide-react';
 
 /* ---------- tema ---------- */
@@ -84,7 +84,9 @@ export function GameMenu({ help, onRestart, onExit, onPause, tts = true, look = 
   const [view, setView] = useState<null | 'main' | 'settings' | 'help'>(null);
   const open = (v: typeof view) => { if (v && document.pointerLockElement) document.exitPointerLock?.(); setView(v); onPause?.(v !== null); };   // menü açılınca imleç serbest kalır
   const t = useTheme(), st = useSettings();
-  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Escape') open(view ? null : 'main'); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); });
+  // Esc: menüyü aç/kapat. Oyun Esc'i bir kartı/bulmacayı kapatmak için kullandıysa (preventDefault) menü açılmaz.
+  // Dinleyici sırası her çizimde değiştiği için karar, bütün dinleyiciler çalıştıktan sonra (setTimeout) verilir.
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Escape' && !e.repeat) setTimeout(() => { if (!e.defaultPrevented || view) open(view ? null : 'main'); }, 0); }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); });
   return (<>
     <IconButton label="Menü" onClick={() => open('main')}><Menu size={20} /></IconButton>
     {view === 'main' && <Modal title="Duraklatıldı" onClose={() => open(null)}>
@@ -198,6 +200,9 @@ export function ToolPanel({ title, children, defaultOpen = true }: { title: Reac
 /** Alttan açılan bilgi paneli; masaüstünde sağ altta kart */
 export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { kicker: ReactNode; title: ReactNode; text: ReactNode; source?: { title: string; url: string }; onClose?: () => void; onListen?: () => void }) {
   const t = useTheme();
+  // Esc kartı kapatır (≡ menüyü açmaz)
+  const close = useRef(onClose); close.current = onClose;
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Escape' && close.current) { e.preventDefault(); close.current(); } }; addEventListener('keydown', k); return () => removeEventListener('keydown', k); }, []);
   return (
     <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-40 flex justify-center sm:inset-x-auto sm:bottom-[max(16px,env(safe-area-inset-bottom))] sm:right-[max(96px,env(safe-area-inset-right))]" onPointerDown={stop}>
       <div className={`max-h-[56vh] w-full overflow-y-auto rounded-t-3xl px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-2.5 sm:w-[400px] sm:rounded-3xl sm:pb-5 ${SOLID}`}>

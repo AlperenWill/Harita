@@ -37,9 +37,9 @@ function Game({ onExit }: { onExit: () => void }) {
   useAudioSettings(audio);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, newLive()); nav.to = null; nav.turn = 0; }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
-  const shoot = useCallback(() => { const s = useDb.getState(), n = s.near; if (!n || !s.framed || s.album.includes(n.id)) return;
+  const shoot = useCallback(() => { const s = useDb.getState(), n = s.near; if (!n || !s.vf || !s.framed || s.album.includes(n.id)) return;
     audio.click(); audio.tone(true); s.set({ album: [...s.album, n.id], card: n, flash: Date.now() }); audio.speak(`${n.name}. ${n.text}`); }, []);
-  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'Escape' && s.vf) s.set({ vf: false }); else if (e.code === 'KeyE' && s.near && !s.album.includes(s.near.id)) { if (s.vf) shoot(); else s.set({ vf: true }); } if (e.code === 'Space' || e.code === 'Enter') shoot(); }, () => audio.unlock(), () => { const s = useDb.getState(); return s.started && !s.card && !s.albumOpen; });
+  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'Escape' && s.vf) { e.preventDefault(); s.set({ vf: false }); } else if (e.code === 'KeyE' && s.near && !s.album.includes(s.near.id)) { if (s.vf) shoot(); else s.set({ vf: true }); } if (e.code === 'Space' || e.code === 'Enter') shoot(); }, () => audio.unlock(), () => { const s = useDb.getState(); return s.started && !s.card && !s.albumOpen; });
   const pending = S.near && !S.album.includes(S.near.id) && !S.card && !S.albumOpen;   // vizör yalnızca oyuncu açınca (E) görünür
   const goTo = useCallback((i: number) => { if (i < 0 || i >= SHOTS.length) return; nav.to = SHOTS[i].s; nav.speed = Math.max(18, Math.abs(nav.to - live.s) / 3); useDb.getState().set({ card: null, albumOpen: false }); audio.hush(); }, []);
   const restart = useCallback(() => { audio.hush(); Object.assign(live, newLive()); nav.to = null; useDb.setState({ ...INITIAL, started: true }); }, []);

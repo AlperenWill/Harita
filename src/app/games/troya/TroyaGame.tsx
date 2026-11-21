@@ -71,7 +71,7 @@ function Game({ onExit }: { onExit: () => void }) {
     if (isCorrect(q, pick)) { audio.tone(true); s.set({ quiz: null, wrong: null, card: q, solved: [...s.solved, q.id] }); if (useSettings.getState().tts) audio.speak(`${q.name}. ${q.text}`); }
     else { audio.tone(false); const L = LAYERS.find((l) => l.n === pick); s.set({ wrong: `${pick} değil: Troya ${pick} ${L?.era ?? ''}. Yapının malzemesine ve biçimine bir daha bak.` }); } }, []);
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (e.repeat) return; if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'Escape' && s.quiz) s.set({ quiz: null, wrong: null }); else if (e.code === 'KeyE' && s.started && !s.quiz) inspect();
+    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (e.repeat) return; if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'Escape' && s.quiz) { e.preventDefault(); s.set({ quiz: null, wrong: null }); } else if (e.code === 'KeyE' && s.started && !s.quiz) inspect();
       if (s.quiz && /^Digit[1-3]$/.test(e.code)) answer(s.quiz.options[Number(e.code.slice(5)) - 1]); };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
@@ -103,7 +103,7 @@ function Game({ onExit }: { onExit: () => void }) {
       {S.quiz && <Quiz q={S.quiz} wrong={S.wrong} onPick={answer} />}
       {S.card && <Card s={S.card} onClose={close} />}
       {!S.started && <TitleCard onExit={onExit} onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
-      {S.started && S.solved.length === STOPS.length && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      {S.started && !nextQ && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
       </HudTheme>
     </div>
   );
