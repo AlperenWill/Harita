@@ -36,7 +36,7 @@ Oyunda kullanımı: `const G = useSettings()`; kademe `initialTier(G)`, otomatik
 
 ## Kamera ve kontroller (masaüstü)
 - Kamera klavyeyle (A/D, sol/sağ oklar) **çevrilmez**.
-- Birinci şahıs oyunlar (Ani, İshak Paşa, Troya, Efes, Pamukkale, Zil Kale, Kapalıçarşı, Yerebatan): sahneye tıkla → imleç kilitlenir, fareyle bak; Esc imleci bırakır. Kart, bulmaca ya da menü açılınca kilit kendiliğinden bırakılır. Ortak kod: `src/app/games/shared/mouseLook.tsx` (`useMouseLook`, `LookCrosshair`).
+- Birinci şahıs oyunlar (Ani, İshak Paşa, Troya, Efes, Pamukkale, Zil Kale, Kapalıçarşı, Yerebatan, Galata): sahneye tıkla → imleç kilitlenir, fareyle bak; Esc imleci bırakır. Kart, bulmaca ya da menü açılınca kilit kendiliğinden bırakılır. Ortak kod: `src/app/games/shared/mouseLook.tsx` (`useMouseLook`, `LookCrosshair`).
 - W/S (ve oklar yukarı/aşağı) yürür. A/D yalnız serbest yürünen oyunlarda yana adımdır (Kapalıçarşı, Yerebatan, Kız Kulesi) ya da teknede dümendir (Akdamar).
 - Üçüncü şahıs ve yörünge kameraları (Kapadokya, Akdamar adası, Ayasofya, Topkapı, Nemrut, Hattuşa, Dolmabahçe): fareyle sürükleyerek döndür; Akdamar'da tekerlek yaklaştırır.
 - Dokunmatik değişmedi: dikey sürükleme yürür, yatay sürükleme bakar.

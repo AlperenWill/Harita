@@ -3,22 +3,16 @@
  *
  * Neden: Karanlık ve tek bir el feneri, oyuncuyu yavaş bakmaya ve mekânı "okumaya" zorlar. Armalar duvara
  * neredeyse görünmez biçimde işlenmiştir; yalnızca fenerin konisi içinde ortaya çıkar (özel fener shader'ı).
- * Kamera: birinci şahıs, kilitli bakış — yalnızca geçidin ekseninde ileri/geri; oyuncu kamerayı değil,
- * yalnızca feneri yönlendirir (fare / parmak sürükleme). Gölgeler kapalı: tek spot ışığı ve çok düşük ortam ışığı.
+ * Kamera: birinci şahıs, serbest bakış (Player.tsx). Fener oyuncunun elindedir ve baktığı yönü, hafif bir
+ * gecikmeyle izler. Gölgeler kapalı: tek spot ışığı ve çok düşük ortam ışığı.
  */
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { CRESTS, DUNGEON, BEAM_HALF_ANGLE, WALK_Z, trackBeam, type V3 } from './dungeon';
+import { CRESTS, DUNGEON, BEAM_HALF_ANGLE, trackBeam, type V3 } from './dungeon';
 import { crestTexture } from './textures';
 import { scaledUV, useStoneMaterial } from './TowerExterior';
 
-export interface DungeonInput {
-  /** Fenerin ekran üzerindeki hedefi (NDC, -1..1) */
-  aim: React.MutableRefObject<{ x: number; y: number }>;
-  /** İleri (+1) / geri (-1) */
-  move: React.MutableRefObject<number>;
-}
 
 /** Fener shader'ı: arma boyası yalnızca koninin içinde görünür, dışında duvar rengine karışır */
 function useRevealMaterial(id: string, beam: { pos: THREE.Vector3; dir: THREE.Vector3 }) {
@@ -58,8 +52,8 @@ function Crest({ id, pos, normal, found, beam }: { id: string; pos: V3; normal: 
   );
 }
 
-export default function DungeonScene({ input, found, open, onHold, onFind }: {
-  input: DungeonInput; found: string[]; open: boolean;
+export default function DungeonScene({ found, open, onHold, onFind }: {
+  found: string[]; open: boolean;
   onHold: (progress: Record<string, number>) => void; onFind: (id: string) => void;
 }) {
   const { camera, scene } = useThree();
@@ -68,7 +62,6 @@ export default function DungeonScene({ input, found, open, onHold, onFind }: {
   const vaultMat = useMemo(() => { const m = wall.clone(); m.side = THREE.BackSide; return m; }, [wall]);
   const beam = useMemo(() => ({ pos: new THREE.Vector3(), dir: new THREE.Vector3(0, 0, -1) }), []);
   const spot = useRef<THREE.SpotLight>(null!);
-  const z = useRef(WALK_Z[0]);
   const hold = useRef<Record<string, number>>({});
   const foundRef = useRef(found); foundRef.current = found;
   const W = DUNGEON.wid / 2, L = DUNGEON.len / 2, H = DUNGEON.h;
@@ -83,22 +76,18 @@ export default function DungeonScene({ input, found, open, onHold, onFind }: {
 
   useEffect(() => {
     scene.background = new THREE.Color('#050404'); scene.fog = new THREE.Fog('#050404', 4, 16);
-    camera.position.set(0, DUNGEON.eye, z.current); camera.rotation.set(0, 0, 0);
     (camera as THREE.PerspectiveCamera).fov = 62; (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
     return () => { scene.fog = null; };
   }, [camera, scene]);
 
-  const ray = useMemo(() => new THREE.Vector3(), []);
+  const ray = useMemo(() => new THREE.Vector3(), []), side = useMemo(() => new THREE.Vector3(), []);
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05);
-    // yalnızca ileri/geri; bakış sabit (-z)
-    z.current = THREE.MathUtils.clamp(z.current - input.move.current * dt * 1.6, WALK_Z[1], WALK_Z[0]);
-    camera.position.set(0, DUNGEON.eye + Math.sin(z.current * 2.2) * 0.025, z.current);
-    camera.rotation.set(0, 0, 0);
-    // fener: ekrandaki hedef noktadan çıkan ışın yönü
-    ray.set(input.aim.current.x, input.aim.current.y, 0.5).unproject(camera).sub(camera.position).normalize();
-    beam.dir.lerp(ray, 1 - Math.exp(-dt * 14)).normalize();
-    beam.pos.copy(camera.position).add(new THREE.Vector3(0.18, -0.25, 0));
+    // fener: kameranın baktığı yönü hafif gecikmeyle izler; elde, sağ altta tutulur
+    camera.getWorldDirection(ray);
+    beam.dir.lerp(ray, 1 - Math.exp(-dt * 12)).normalize();
+    side.set(-ray.z, 0, ray.x).normalize();
+    beam.pos.copy(camera.position).addScaledVector(side, 0.2).add(new THREE.Vector3(0, -0.25, 0));
     spot.current.position.copy(beam.pos);
     spot.current.target.position.copy(beam.pos).add(beam.dir);
     spot.current.target.updateMatrixWorld();

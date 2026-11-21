@@ -1,23 +1,16 @@
 /**
- * Galata Kulesi — 2. bölüm: sarmal merdiven (görsel kısım; ritim mantığı StaircaseMechanic.ts).
- * Kamera: birinci şahıs, kilitli. Basamaklar çıkıldıkça kamera sarmal boyunca kendiliğinden ilerler;
- * oyuncu bakış yönünü değiştiremez. Pencere aralıklarından süzülen ışık, sis + toplamalı (additive) ışık
- * hacimleriyle verilir (gerçek hacimsel ışık hesaplaması yerine mobil dostu taklit).
+ * Galata Kulesi — 2. bölüm: sarmal merdiven (görsel kısım; mantık StaircaseMechanic.ts, kamera Player.tsx).
+ * Oyuncu basamakları kendisi yürür, bakış serbesttir. Her sahanlıkta dışarı bakan bir pencere vardır: içeri
+ * gün ışığı süzülür (sis + toplamalı ışık hacmi; gerçek hacimsel ışık yerine mobil dostu taklit).
+ * En tepede sergi katına açılan aydınlık bir kapı bulunur.
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
-import { FLIGHTS, STEPS_PER_FLIGHT, TOTAL_STEPS } from './StaircaseMechanic';
-import { INNER_R } from './dungeon';
+import { useThree } from '@react-three/fiber';
+import { CORE_R, RISE, STEPS_PER_TURN, STEP_ANGLE, TOP_THETA, TOP_Y, TOTAL_STEPS, WALL_R, WINDOWS, floorAt, windowY } from './StaircaseMechanic';
 import { scaledUV, useStoneMaterial } from './TowerExterior';
 
-const RISE = 0.2, CORE_R = 0.95, WALK_R = 2.75, EYE = 1.6;
-const STEP_ANGLE = (Math.PI * 2) / STEPS_PER_FLIGHT;
-const TOP = (TOTAL_STEPS + 2) * RISE + 4;
-export const stairPoint = (p: number) => {
-  const a = p * STEP_ANGLE;
-  return { a, x: Math.cos(a) * WALK_R, z: Math.sin(a) * WALK_R, y: p * RISE };
-};
+const H = TOP_Y + 5;
 
 let fadeTex: THREE.CanvasTexture | null = null;
 const shaftAlpha = () => {
@@ -26,82 +19,81 @@ const shaftAlpha = () => {
   gr.addColorStop(0, 'rgba(255,255,255,.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 4, 64);
   return (fadeTex = new THREE.CanvasTexture(c));
 };
+/** Pencereden görünen gökyüzü ve şehir (düz resim) */
+let viewTex: THREE.CanvasTexture | null = null;
+const windowView = () => {
+  if (viewTex) return viewTex;
+  const c = document.createElement('canvas'); c.width = 64; c.height = 128; const g = c.getContext('2d')!;
+  const gr = g.createLinearGradient(0, 0, 0, 128); gr.addColorStop(0, '#9cc6e6'); gr.addColorStop(0.65, '#f3dcc0'); gr.addColorStop(1, '#c9a27e'); g.fillStyle = gr; g.fillRect(0, 0, 64, 128);
+  for (let i = 0; i < 14; i++) { g.fillStyle = `rgba(${150 + i * 4},${120 + i * 3},${100 + i * 2},.9)`; g.fillRect(i * 5, 92 - (i % 4) * 6, 6, 40); }
+  g.fillStyle = '#5d87a0'; g.fillRect(0, 108, 64, 20);
+  return (viewTex = new THREE.CanvasTexture(c));
+};
 
-export default function StaircaseScene({ steps, judge }: { steps: React.MutableRefObject<number>; judge: React.MutableRefObject<number> }) {
+export default function StaircaseScene() {
   const { camera, scene } = useThree();
   const wall = useStoneMaterial('#b3a792');
   const wallIn = useMemo(() => { const m = wall.clone(); m.side = THREE.BackSide; return m; }, [wall]);
   const stepMat = useStoneMaterial('#cbbfa8');
-  const outer = useMemo(() => scaledUV(new THREE.CylinderGeometry(INNER_R, INNER_R, TOP, 40, 1, true), 9, TOP / 3), []);
-  const core = useMemo(() => scaledUV(new THREE.CylinderGeometry(CORE_R, CORE_R, TOP, 20, 1, false), 2, TOP / 3), []);
+  const outer = useMemo(() => scaledUV(new THREE.CylinderGeometry(WALL_R, WALL_R, H, 48, 1, true), 9, H / 3), []);
+  const core = useMemo(() => scaledUV(new THREE.CylinderGeometry(CORE_R, CORE_R, H, 20, 1, false), 2, H / 3), []);
 
-  // basamaklar: tek InstancedMesh
+  // basamaklar: tek InstancedMesh (her basamak bir sonraki basamağın altına kadar uzanan kalın bir taş)
   const stairs = useMemo(() => {
-    const len = INNER_R - CORE_R - 0.05, geo = scaledUV(new THREE.BoxGeometry(len, RISE, 1.15), 1, 0.4);
-    const n = TOTAL_STEPS + 1 + FLIGHTS;
-    const m = new THREE.InstancedMesh(geo, stepMat, n);
+    const len = WALL_R - CORE_R - 0.04, geo = scaledUV(new THREE.BoxGeometry(len, 0.5, 1.1), 1, 0.4);
+    const m = new THREE.InstancedMesh(geo, stepMat, TOTAL_STEPS + 2);
     const q = new THREE.Quaternion(), v = new THREE.Vector3(), s = new THREE.Vector3(1, 1, 1);
-    let k = 0;
-    for (let i = 0; i <= TOTAL_STEPS; i++) {
-      const a = i * STEP_ANGLE, r = (CORE_R + INNER_R) / 2;
+    for (let i = 0; i <= TOTAL_STEPS + 1; i++) {
+      const a = (i + 0.5) * STEP_ANGLE, r = (CORE_R + WALL_R) / 2, landing = i % STEPS_PER_TURN === 0 && i > 0;
       q.setFromEuler(new THREE.Euler(0, -a, 0));
-      m.setMatrixAt(k++, new THREE.Matrix4().compose(v.set(Math.cos(a) * r, i * RISE + RISE / 2 - 0.02, Math.sin(a) * r), q, s.set(1, 1, 1)));
-      // sahanlık: biraz daha geniş bir basamak
-      if (i > 0 && i % STEPS_PER_FLIGHT === 0) m.setMatrixAt(k++, new THREE.Matrix4().compose(v.set(Math.cos(a) * r, i * RISE + RISE / 2 - 0.03, Math.sin(a) * r), q, s.set(1, 1, 2.4)));
+      m.setMatrixAt(i, new THREE.Matrix4().compose(v.set(Math.cos(a) * r, (i + 1) * RISE - 0.25, Math.sin(a) * r), q, s.set(1, 1, landing ? 1.6 : 1)));
     }
-    m.count = k; m.instanceMatrix.needsUpdate = true; return m;
+    m.instanceMatrix.needsUpdate = true; return m;
   }, [stepMat]);
-
-  // pencere aralıkları ve süzülen ışık hacimleri
-  const slits = useMemo(() => {
-    const out: { pos: THREE.Vector3; a: number; y: number }[] = [];
-    for (let f = 0; f <= FLIGHTS; f++) for (const da of [0, 2.1, 4.2]) {
-      const a = da + 0.15, y = f * STEPS_PER_FLIGHT * RISE + (da / (Math.PI * 2)) * STEPS_PER_FLIGHT * RISE + 2.2;
-      out.push({ pos: new THREE.Vector3(Math.cos(a) * (INNER_R - 0.02), y, Math.sin(a) * (INNER_R - 0.02)), a, y });
+  // alt yüz: sarmalın altını kapatan eğik tavan (yukarı bakınca boşluk görünmesin)
+  const underside = useMemo(() => {
+    const seg = TOTAL_STEPS * 4, pos: number[] = [], idx: number[] = [];
+    for (let i = 0; i <= seg; i++) {
+      const th = (i / seg) * TOP_THETA, y = floorAt(th) - 0.5;
+      for (const r of [CORE_R, WALL_R]) pos.push(Math.cos(th) * r, y, Math.sin(th) * r);
+      if (i > 0) { const k = i * 2; idx.push(k - 2, k, k - 1, k - 1, k, k + 1); }
     }
-    return out;
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
   }, []);
-  const shaftMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#ffe6b8', alphaMap: shaftAlpha(), transparent: true, opacity: 0.06, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }), []);
+  const shaftMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#ffe6b8', alphaMap: shaftAlpha(), transparent: true, opacity: 0.07, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }), []);
 
   useEffect(() => {
-    scene.background = new THREE.Color('#1b1611'); scene.fog = new THREE.FogExp2('#4a3d2e', 0.085);
-    (camera as THREE.PerspectiveCamera).fov = 70; (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+    scene.background = new THREE.Color('#1b1611'); scene.fog = new THREE.FogExp2('#4a3d2e', 0.07);
+    (camera as THREE.PerspectiveCamera).fov = 72; (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
     return () => { scene.fog = null; };
   }, [camera, scene]);
 
-  const p = useRef(steps.current), bob = useRef(0), lastSteps = useRef(steps.current);
-  const look = useMemo(() => new THREE.Vector3(), []);
-  useFrame(({ clock }, raw) => {
-    const dt = Math.min(raw, 0.05);
-    if (steps.current !== lastSteps.current) { bob.current = judge.current; lastSteps.current = steps.current; }
-    p.current += (steps.current - p.current) * (1 - Math.exp(-dt * 7));
-    bob.current *= Math.exp(-dt * 8);
-    const pt = stairPoint(p.current);
-    const breathe = Math.sin(clock.elapsedTime * 1.3) * 0.015;
-    camera.position.set(pt.x, pt.y + EYE + RISE - bob.current * 0.06 + breathe, pt.z);
-    // ileri (sarmal yönünde), hafif yukarı ve içe doğru bakış — oyuncu değiştiremez
-    look.set(pt.x - Math.sin(pt.a) * 2.2 - Math.cos(pt.a) * 0.35, camera.position.y + 0.55, pt.z + Math.cos(pt.a) * 2.2 - Math.sin(pt.a) * 0.35);
-    camera.lookAt(look);
-  });
-
+  const topA = TOP_THETA + 0.3;
   return (
     <group>
-      <ambientLight intensity={0.22} color="#d8c7ab" />
+      <ambientLight intensity={0.24} color="#d8c7ab" />
       <hemisphereLight args={['#ffe8c2', '#2a2118', 0.35]} />
-      <mesh geometry={outer} material={wallIn} position={[0, TOP / 2 - 1, 0]} />
-      <mesh geometry={core} material={wall} position={[0, TOP / 2 - 1, 0]} />
+      <mesh geometry={outer} material={wallIn} position={[0, H / 2 - 1, 0]} />
+      <mesh geometry={core} material={wall} position={[0, H / 2 - 1, 0]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.01, 0]}><circleGeometry args={[WALL_R, 40]} /><meshStandardMaterial color="#7d7062" roughness={1} /></mesh>
       <primitive object={stairs} />
-      {slits.map((s, i) => (
-        <group key={i}>
-          <mesh position={s.pos} rotation={[0, -s.a - Math.PI / 2, 0]}><planeGeometry args={[0.35, 1.3]} /><meshBasicMaterial color="#fff1d6" toneMapped={false} /></mesh>
-          {/* süzülen ışık: pencereden içeri ve aşağı doğru genişleyen hacim */}
-          <mesh material={shaftMat} position={[Math.cos(s.a) * (INNER_R - 1.6), s.y - 0.9, Math.sin(s.a) * (INNER_R - 1.6)]}
-            rotation={[0, -s.a, -(Math.PI / 2 - 0.55)]}>
-            <cylinderGeometry args={[0.2, 0.75, 3.4, 10, 1, true]} />
+      <mesh geometry={underside}><meshStandardMaterial color="#8f8370" roughness={1} side={THREE.DoubleSide} /></mesh>
+      {WINDOWS.map((w) => { const a = w.theta, y = windowY(w), px = Math.cos(a), pz = Math.sin(a); return (
+        <group key={w.id}>
+          <group position={[px * (WALL_R - 0.03), y, pz * (WALL_R - 0.03)]} rotation={[0, -a - Math.PI / 2, 0]}>
+            <mesh><planeGeometry args={[0.7, 1.4]} /><meshBasicMaterial map={windowView()} toneMapped={false} /></mesh>
+            <mesh position={[0, 0, -0.02]}><planeGeometry args={[1.0, 1.75]} /><meshStandardMaterial color="#6d6252" roughness={1} /></mesh>
+          </group>
+          <mesh material={shaftMat} position={[px * (WALL_R - 1.5), y - 0.9, pz * (WALL_R - 1.5)]} rotation={[0, -a, -(Math.PI / 2 - 0.55)]}>
+            <cylinderGeometry args={[0.25, 0.85, 3.4, 10, 1, true]} />
           </mesh>
-          <pointLight position={[Math.cos(s.a) * (INNER_R - 0.8), s.y, Math.sin(s.a) * (INNER_R - 0.8)]} intensity={5} distance={6} decay={2} color="#ffdcae" />
-        </group>
-      ))}
+          <pointLight position={[px * (WALL_R - 0.9), y, pz * (WALL_R - 0.9)]} intensity={7} distance={7} decay={2} color="#ffdcae" />
+        </group>); })}
+      {/* en tepede sergi katına açılan kapı */}
+      <group position={[Math.cos(topA) * (WALL_R - 0.03), TOP_Y + 1.1, Math.sin(topA) * (WALL_R - 0.03)]} rotation={[0, -topA - Math.PI / 2, 0]}>
+        <mesh><planeGeometry args={[1.1, 2.2]} /><meshBasicMaterial color="#f0c27a" toneMapped={false} /></mesh>
+      </group>
+      <pointLight position={[Math.cos(topA) * (WALL_R - 1), TOP_Y + 1.6, Math.sin(topA) * (WALL_R - 1)]} intensity={8} distance={7} color="#ffcf8a" />
     </group>
   );
 }
