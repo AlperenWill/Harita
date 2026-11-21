@@ -70,7 +70,7 @@ Geliştirme ortamında yalnızca ekran kartsız tarayıcıda (swiftshader, ~9 FP
 - [ ] Teras en ağır bölüm: düşük kademede (`?q=low`) 500, orta kademede 1100 şehir bloğu — FPS düşükse sayı azaltılmalı
 - [ ] Zindanda gölge kapalı (spot ışığı `castShadow={false}`), terasta açık; `?q=low` ve pil < %20 iken terasta da kapalı
 - [ ] Zindan: parmakla sürükleme feneri yönlendiriyor, ileri/geri düğmeleri basılı tutulunca yürüyor
-- [ ] Merdiven: yukarı kaydırma vuruşa göre "Tam/İyi/Erken/Geç" veriyor; sahanlıkta basılı tutma halkayı dolduruyor
+- [ ] Merdiven: W ya da joystick ile basamaklar çıkılıyor; nefes azalınca yavaşlıyor, durunca ve pencere önünde doluyor; pencereye bakınca kart açılıyor
 - [ ] Sergi: vitrine yaklaşınca kamera kilitleniyor ve anlatım başlıyor; "Devam" kilidi açıyor
 - [ ] Teras: yatay kaydırma noktalar arasında geçiyor; dönüşten sonra yakınlaşma oluyor
 - [ ] Ses ilk dokunuştan sonra başlıyor; sessize alma anlatımı da durduruyor; iOS'ta sessiz mod anahtarı
