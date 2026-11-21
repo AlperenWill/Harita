@@ -15,7 +15,7 @@ import { BookOpen, Camera, Check, ChevronLeft, ChevronRight, Images, MapPin, Rot
 import { ROUTE_LEN, SHOTS, AIM_TOL, aimError, nearShot, routeAt, type Shot } from './site';
 import { Polish, SkyEnvironment } from '../shared/Polish';
 import { EndCard, Hint, InfoCard, TitleCard, TopBar, WalkAudio, WikiFallback, detectTier, dprFor, newLive, pinned, stepWalk, supportsWebGL, useWalkInput, wrapA, type CamState, type Tier } from '../shared/walkKit';
-import { Bridge, Cathedral, Columns, FarHills, Grass, HalfChurch, MaidenCastle, Mosque, River, RoundChurch, Rubble, Ruins, Terrain, Tigran, Walls, useMats } from './AniModels';
+import { Bridge, Cathedral, Clouds, Columns, FarHills, Grass, Sun, HalfChurch, MaidenCastle, Mosque, River, RoundChurch, Rubble, Ruins, Terrain, Tigran, Walls, useMats } from './AniModels';
 
 const audio = new WalkAudio({ freq: 420, gain: 0.11 }, 'female');
 interface S { started: boolean; albumOpen: boolean; album: string[]; near: Shot | null; framed: boolean; card: Shot | null; flash: number; muted: boolean; endShown: boolean; set: (p: Partial<S>) => void }
@@ -48,10 +48,10 @@ function Game({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dfe6ea]" style={{ touchAction: 'none' }} {...input} onPointerDown={onDown} onPointerCancel={input.onPointerUp}>
-      <Canvas dpr={dprFor(tier)} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 2200, position: [60, 30, -260] }}
-        onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.9; }}>
+      <Canvas shadows={tier !== 'low' ? 'soft' : false} dpr={dprFor(tier)} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 2200, position: [60, 30, -260] }}
+        onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.72; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
-        <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky="#dfe6ea" sun="#fff3e0" ground="#a59a68" sunDir={[0.6, 0.55, -0.4]} /><Polish tier={tier} /></Suspense>
+        <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky="#cfdde6" sun="#ffe9cc" ground="#a59a68" sunDir={[-0.84, 0.42, -0.2]} /><Polish tier={tier} /></Suspense>
       </Canvas>
       <TopBar onExit={onExit}>
         <button onClick={() => { audio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45 text-white" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
@@ -117,19 +117,22 @@ function Flash() { const [o, setO] = useState(0.85); useEffect(() => { const t =
 
 /* ---------- 3B dünya (modeller: AniModels.tsx) ---------- */
 function World({ tier }: { tier: Tier }) {
-  const m = useMats();
+  const m = useMats(), g = useRef<THREE.Group>(null);
+  const { scene } = useThree(); useEffect(() => { scene.environmentIntensity = 0.28; }, [scene]);   // ortam yansıması gölgeleri silmesin
+  useEffect(() => { g.current?.traverse((o) => { const mesh = o as THREE.Mesh; if (!mesh.isMesh) return; let cast = true; for (let p: THREE.Object3D | null = o; p; p = p.parent) if (p.userData.noCast) { cast = false; break; } mesh.castShadow = cast; mesh.receiveShadow = true; }); }, [tier]);   // yapılar gölge düşürür, zemin ve otlar yalnızca alır
   return (
-    <group>
-      <Sky sunPosition={[300, 200, -200]} turbidity={3} rayleigh={1.1} />
-      <fog attach="fog" args={['#dfe6ea', 320, 1800]} />
-      <hemisphereLight args={['#eef4f8', '#8f8458', 0.95]} />
-      <directionalLight position={[300, 220, -200]} intensity={2.2} color="#fff3e0" />
-      <Terrain tier={tier} /><River /><FarHills />
+    <group ref={g}>
+      <group userData={{ noCast: true }}><Sky sunPosition={[-840, 420, -200]} turbidity={3} rayleigh={2.2} mieCoefficient={0.006} mieDirectionalG={0.85} /></group>
+      <fog attach="fog" args={['#d3dde4', 320, 1900]} />
+      <hemisphereLight args={['#cfe0ee', '#6f6545', 0.32]} />
+      <Sun tier={tier} />
+      {tier !== 'low' && <Clouds />}
+      <Terrain tier={tier} /><group userData={{ noCast: true }}><River /><FarHills /></group>
       <Walls m={m} /><Cathedral m={m} /><Mosque m={m} /><Tigran m={m} /><Bridge m={m} /><MaidenCastle m={m} />
       <HalfChurch m={m} /><RoundChurch m={m} /><Columns m={m} />
       <Ruins m={m} n={tier === 'low' ? 6 : 12} />
       <Rubble n={tier === 'low' ? 140 : 360} />
-      {tier !== 'low' && <Grass n={tier === 'high' ? 2200 : 1200} />}
+      {tier !== 'low' && <Grass n={tier === 'high' ? 9000 : 4500} />}
       <Controller />
     </group>
   );
@@ -138,7 +141,9 @@ function World({ tier }: { tier: Tier }) {
 /* ---------- hareket + kamera + vizör ---------- */
 const _f = new THREE.Vector3(), _m = new THREE.Matrix4(), _l = new THREE.Vector3(), _q = new THREE.Quaternion();
 function Controller() {
-  const { camera } = useThree(), cs = useRef<CamState>({ step: 0, bob: 0, head: NaN });
+  const three = useThree(), { camera } = three;
+  useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __aniGl: unknown }).__aniGl = three; }, [three]);
+  const cs = useRef<CamState>({ step: 0, bob: 0, head: NaN });
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState();
     if (!S.started) { camera.position.set(70, 30, -270); camera.quaternion.copy(_q.setFromRotationMatrix(_m.lookAt(camera.position, _l.set(0, 4, -120), THREE.Object3D.DEFAULT_UP))); return; }
