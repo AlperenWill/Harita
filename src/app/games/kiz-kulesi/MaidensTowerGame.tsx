@@ -9,11 +9,14 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ArrowLeft, Hand, Minus, Plus, Ship, Volume2, VolumeX, Captions, CaptionsOff } from 'lucide-react';
+import { ArrowLeft, Hand, Minus, Plus, Ship } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint as HudHint, HudTheme, IconButton, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { Footprints } from 'lucide-react';
 import { PHASE_LABEL, useKiz, type Phase } from './store';
 import { find, shuffle } from './dialogue';
 import { kizSound } from './sound';
-import { keys, readKeys } from './input';
+import { inputPause, keys, readKeys } from './input';
 import { DialogueBox, skip } from './DialogueSystem';
 import FerryScene from './FerryScene';
 import { DockScene, TerraceScene, TowerInterior } from './IslandExploration';
@@ -56,7 +59,7 @@ export default function MaidensTowerGame({ onExit }: { onExit: () => void }) {
 
 function Game({ onExit }: { onExit: () => void }) {
   const dev = useDevice();
-  const phase = useKiz((s) => s.phase), muted = useKiz((s) => s.muted), tts = useKiz((s) => s.tts), playing = useKiz((s) => !!s.playback);
+  const phase = useKiz((s) => s.phase), muted = useKiz((s) => s.muted), playing = useKiz((s) => !!s.playback);
   const heard = useKiz((s) => s.heard);
   const [fade, setFade] = useState(false);
   const [arrived, setArrived] = useState(false);
@@ -70,6 +73,7 @@ function Game({ onExit }: { onExit: () => void }) {
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __kiz: unknown }).__kiz = { go }; }, [go]);
 
   // ses
+  const G = useSettings(); useEffect(() => { useKiz.getState().setMuted(G.muted); useKiz.getState().setTts(G.tts); }, [G.muted, G.tts]);
   useEffect(() => { kizSound.setMuted(muted); }, [muted]);
   useEffect(() => { kizSound.mix(phase === 'vapur' ? 'vapur' : phase === 'kule' ? 'ic' : phase === 'baslangic' || phase === 'son' ? 'ada' : 'ada'); }, [phase]);
   useEffect(() => () => kizSound.dispose(), []);
@@ -141,6 +145,7 @@ function Game({ onExit }: { onExit: () => void }) {
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#bcd6e6] text-white" style={{ touchAction: 'none' }}
       onWheel={onWheel} onPointerDown={(e) => { kizSound.unlock(); onPtr(e, 'down'); }} onPointerMove={(e) => onPtr(e, 'move')} onPointerUp={(e) => onPtr(e, 'up')} onPointerCancel={(e) => onPtr(e, 'up')}>
+      <HudTheme theme={THEME}>
       <Canvas shadows={dev.shadows} dpr={dev.dpr} gl={{ antialias: dev.antialias, powerPreference: 'high-performance' }}
         camera={{ fov: 55, near: 0.1, far: 6000, position: [-60, 20, 60] }} onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}>
         <Suspense fallback={null}>
@@ -152,33 +157,19 @@ function Game({ onExit }: { onExit: () => void }) {
         </Suspense>
       </Canvas>
 
-      {/* üst çubuk */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3">
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/50 backdrop-blur" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => useKiz.getState().setMuted(!muted)} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/50 backdrop-blur" aria-label={muted ? 'Sesi aç' : 'Sesi kapat'}>{muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { useKiz.getState().setTts(!tts); if (tts) kizSound.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full backdrop-blur ${tts ? 'bg-brand' : 'bg-black/50'}`} aria-label={tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={tts}>
-          {tts ? <Captions size={18} /> : <CaptionsOff size={18} />}
-        </button>
-        {idx >= 0 && (
-          <div className="mx-auto flex flex-col items-center gap-1 rounded-2xl bg-black/50 px-4 py-2 backdrop-blur">
-            <div className="flex gap-1">{ORDER.map((p, i) => <span key={p} className={`h-1.5 w-8 rounded-full ${i < idx ? 'bg-amber-300' : i === idx ? 'bg-white' : 'bg-white/25'}`} />)}</div>
-            <p className="text-xs">{PHASE_LABEL[phase]}</p>
-          </div>
-        )}
-        {idx >= 0 && (
-          <div className="pointer-events-auto ml-auto flex flex-col gap-2">
-            <button onClick={() => useKiz.getState().zoomBy(-0.12)} className="grid h-11 w-11 place-items-center rounded-full bg-black/50 backdrop-blur" aria-label="Yakınlaştır"><Plus size={18} /></button>
-            <button onClick={() => useKiz.getState().zoomBy(0.12)} className="grid h-11 w-11 place-items-center rounded-full bg-black/50 backdrop-blur" aria-label="Uzaklaştır"><Minus size={18} /></button>
-          </div>
-        )}
-      </div>
+      <TopRow onExit={onExit} objective={idx >= 0 ? <Objective icon={<Ship size={15} />} label={PHASE_LABEL[phase]} done={idx} total={ORDER.length} /> : undefined}
+        right={<GameMenu onPause={(v) => { inputPause.on = v; }} help={<Controls items={CONTROLS} />} onRestart={start} onExit={onExit} />} />
+      {idx >= 0 && <div className="pointer-events-auto absolute right-[max(12px,env(safe-area-inset-right))] top-[124px] z-30 flex flex-col gap-2 sm:top-[72px]" onPointerDown={(e) => e.stopPropagation()}>
+        <IconButton label="Yakınlaştır" onClick={() => useKiz.getState().zoomBy(-0.12)}><Plus size={18} /></IconButton>
+        <IconButton label="Uzaklaştır" onClick={() => useKiz.getState().zoomBy(0.12)}><Minus size={18} /></IconButton>
+      </div>}
 
       {/* mobil: sol joystick, sağ etkileşim */}
       {idx >= 0 && (
         <>
           <Joystick stick={stick} />
           <button onPointerDown={(e) => { e.stopPropagation(); interact(); }} aria-label={playing ? 'Konuşmayı hızlandır' : 'Etkileşim'}
-            className={`absolute bottom-24 right-5 z-40 grid h-16 w-16 place-items-center rounded-full shadow-lg backdrop-blur sm:bottom-28 ${playing ? 'bg-brand' : 'bg-white/30'}`}>
+            className={`absolute bottom-24 right-5 z-40 grid h-16 w-16 place-items-center rounded-full shadow-lg backdrop-blur sm:bottom-28 ${playing ? 'bg-[#2f6f9a] text-white' : 'bg-[#f7f5f1]/85 text-[#1f1b17] ring-1 ring-black/5'}`}>
             <Hand size={26} />
           </button>
         </>
@@ -189,17 +180,18 @@ function Game({ onExit }: { onExit: () => void }) {
       {phase === 'kule' && !playing && <Hint text="Joystick’i yukarı it: merdivenden çık" />}
       {phase === 'teras' && !playing && heard.includes('teras') && (
         <div className="absolute bottom-24 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
-          <p className="rounded-full bg-black/50 px-3 py-1 text-xs backdrop-blur">Etkileşim düğmesi: Can’a soru sor</p>
-          <button onClick={() => go('donus')} className="inline-flex h-12 items-center gap-2 rounded-xl bg-brand px-5 font-semibold shadow-lg"><Ship size={18} /> Vapura dön</button>
+          <p className="rounded-full bg-[#f7f5f1]/90 px-3 py-1 text-xs text-[#1f1b17] ring-1 ring-black/5 backdrop-blur-md">Etkileşim düğmesi: Can’a soru sor</p>
+          <button onClick={() => go('donus')} className="inline-flex h-12 items-center gap-2 rounded-2xl px-5 font-bold text-white shadow-lg" style={{ background: THEME.accent }}><Ship size={18} /> Vapura dön</button>
         </div>
       )}
       {phase === 'donus' && !playing && heard.includes('donus') && <Hint text="İskele tahtasından vapura bin" />}
 
       <DialogueBox />
 
-      {phase === 'baslangic' && <TitleCard onStart={start} />}
+      {phase === 'baslangic' && <TitleCard onStart={start} onExit={onExit} />}
       {phase === 'son' && <EndCard onReplay={start} onExit={onExit} />}
       <div className={`pointer-events-none absolute inset-0 z-50 bg-white transition-opacity duration-500 ${fade ? 'opacity-100' : 'opacity-0'}`} aria-hidden />
+      </HudTheme>
     </div>
   );
 }
@@ -240,40 +232,23 @@ function Joystick({ stick }: { stick: React.MutableRefObject<{ x: number; y: num
   );
 }
 function Hint({ text }: { text: string }) {
-  return <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/45 px-4 py-1.5 text-center text-xs backdrop-blur sm:text-sm">{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD</span></p>;
+  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD</span></HudHint>;
 }
-function TitleCard({ onStart }: { onStart: () => void }) {
+function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
   const completed = useKiz((s) => !!s.completedAt);
-  return (
-    <div className="absolute inset-x-0 bottom-0 p-4 sm:p-8">
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/55 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">İstanbul · Üsküdar açıkları</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Kız Kulesi: Vapur Yolculuğu & Ada Keşfi</h1>
-        <p className="mt-2 text-sm text-white/85">Rehberin Can ile vapura bin, Kız Kulesi’ne yanaş, dar merdivenlerden terasa çık. Can yol boyunca kulenin hikâyesini anlatacak.</p>
-        <p className="mt-2 text-xs text-white/65">Joystick / WASD ile yürü · el düğmesi / Boşluk ile konuşmayı geç · + / − ile yakınlaştır</p>
-        <button onClick={onStart} className="mt-4 h-12 w-full rounded-xl bg-brand font-semibold">{completed ? 'Yeniden başla' : 'Vapura bin'}</button>
-      </div>
-    </div>
-  );
+  return <StartSheet kicker="İstanbul · Üsküdar açıkları" title="Kız Kulesi: Vapur Yolculuğu & Ada Keşfi" intro={<>Rehberin Can ile vapura bin, Kız Kulesi’ne yanaş, dar merdivenlerden terasa çık. Can yol boyunca kulenin hikâyesini anlatacak.</>}
+    controls={CONTROLS} cta={completed ? 'Yeniden başla' : 'Vapura bin'} ctaIcon={<Ship size={18} />} onStart={onStart} onExit={onExit} />;
 }
 function EndCard({ onReplay, onExit }: { onReplay: () => void; onExit: () => void }) {
   const heard = useKiz((s) => s.heard.length);
-  return (
-    <div className="absolute inset-0 grid place-items-center bg-black/30 p-5">
-      <div className="w-full max-w-md rounded-3xl bg-white p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-brand">Görüşmek üzere</p>
-        <h2 className="mt-1 text-2xl font-bold">“Bir dahaki sefere gün batımında!”</h2>
-        <p className="mt-2 text-sm text-slate-600">Can’dan {heard} hikâye dinledin: Bizans kulesinden 18. yüzyıl fenerine, karantina istasyonundan 2023’teki müzeye.</p>
-        <div className="mt-5 flex gap-2">
-          <button onClick={onReplay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Yeniden oyna</button>
-          <button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button>
-        </div>
-      </div>
-    </div>
-  );
+  return <EndSheet kicker="Görüşmek üzere" title="“Bir dahaki sefere gün batımında!”" text={`Can’dan ${heard} hikâye dinledin: Bizans kulesinden 18. yüzyıl fenerine, karantina istasyonundan 2023’teki müzeye.`} stayLabel="Yeniden oyna" onStay={onReplay} onExit={onExit} badge={<Ship size={24} />} />;
 }
-
-/** WebGL yoksa: fotoğraf + Can'ın anlatımı (sesli) */
+const THEME = { accent: '#2f6f9a' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b>: yürü</> },
+  { icon: <Hand size={16} />, text: <>El düğmesi ya da <b>Boşluk</b>: konuş / konuşmayı geç</> },
+  { icon: <Plus size={16} />, text: <><b>+ / −</b>: yakınlaştır, uzaklaştır</> },
+];
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null);
   const lines = useMemo(() => find('vapur', () => true).flatMap((d) => d.lines.map((l) => l.text)), []);

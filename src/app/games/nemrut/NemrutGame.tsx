@@ -151,7 +151,7 @@ function Game({ onExit }: { onExit: () => void }) {
         <>
           <Joystick stick={stick} onTouch={() => nemrutAudio.unlock()} />
           {S.prompt && !S.card && (
-            <button onPointerDown={(e) => e.stopPropagation()} onClick={() => inspect(S.prompt!)} className={`absolute bottom-24 right-4 z-40 flex h-12 max-w-[64vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg sm:bottom-28 ${S.seen.includes(S.prompt.id) || (S.prompt.god && S.read.includes(S.prompt.god)) ? 'bg-black/60' : 'bg-amber-400 text-black'}`}>
+            <button onPointerDown={(e) => e.stopPropagation()} onClick={() => inspect(S.prompt!)} className={`absolute bottom-24 right-4 z-40 flex h-12 max-w-[64vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg sm:bottom-28 ${S.seen.includes(S.prompt.id) || (S.prompt.god && S.read.includes(S.prompt.god)) ? 'bg-black/60' : 'bg-[#c0612b] text-white'}`}>
               <Search size={18} className="shrink-0" /><span className="truncate">İncele: {S.prompt.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· E</span>
             </button>
           )}

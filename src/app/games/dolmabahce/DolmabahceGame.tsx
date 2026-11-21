@@ -116,7 +116,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Gem size={15} />} label={S.found.length < SPARKLES.length ? 'Salonlarda parlayan nesneleri bul' : 'Hepsi bulundu'} done={S.found.length} total={SPARKLES.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
       {S.started && !S.card && S.near && (
-        <button onPointerDown={(e) => e.stopPropagation()} onClick={() => open(S.near!)} className={`absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-xl ${S.found.includes(S.near.id) ? 'bg-black/60' : 'animate-pulse bg-amber-300 text-black'}`}>
+        <button onPointerDown={(e) => e.stopPropagation()} onClick={() => open(S.near!)} className={`absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-xl ${S.found.includes(S.near.id) ? 'bg-black/60' : 'animate-pulse bg-[#b98b2e] text-white'}`}>
           <Search size={18} /> İncele: {S.near.name}<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span>
         </button>
       )}

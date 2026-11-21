@@ -17,7 +17,10 @@ import { PerformanceMonitor } from '@react-three/drei';
 import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
-import { ArrowLeft, BookOpen, Captions, CaptionsOff, Check, DoorOpen, LogOut, MessageCircle, Moon, RefreshCw, Search, Sun, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, GameMenu, HudTheme, IconButton, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { Footprints, MousePointer2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, DoorOpen, LogOut, MessageCircle, Moon, RefreshCw, Search, Sun, X } from 'lucide-react';
 import { TRADE_LABEL, freshSeed, generate, nearestEsnaf, nearestShop, nodeSquares, shopAtDoor, slide, streetAt, type Layout, type V2 } from './ProceduralStreetGenerator';
 import { createCrowd, crowdMesh, stepCrowd, writeInstances, type Static } from './CrowdSystem';
 import { Architecture, FACADE_H, OPEN_H } from './Architecture';
@@ -55,11 +58,12 @@ interface S {
 const seed0 = Number(new URLSearchParams(location.search).get('seed')) || freshSeed();
 const fresh = (seed: number) => ({ seed, L: generate(seed), phase: 'title' as Phase, shop: null, picked: null, esnaf: null, asked: {}, clues: [], visited: [], prompt: { shop: null, esnaf: null }, notebook: false, toast: null, t0: 0, tWin: 0 });
 const useBz = create<S>((set) => ({ ...fresh(seed0), night: false, muted: false, tts: true, set: (p) => set(p) }));
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { x: 0, z: 0, yaw: 0, pitch: 0, fwd: 0, strafe: 0, turn: 0, auto: null as V2 | null, autoYaw: null as number | null };
 function placeAtStart(L: Layout) { Object.assign(live, { x: L.start.at[0], z: L.start.at[1], yaw: L.start.yaw, pitch: 0, auto: null, autoYaw: null }); }   // yüz çarşının içine
 placeAtStart(useBz.getState().L);
 const toast = (text: string, ok = true) => { useBz.getState().set({ toast: { text, ok, t: performance.now() } }); bazaarAudio.chime(ok); };
-const speakIf = (t: string) => { if (useBz.getState().tts) bazaarAudio.speak(t); };
+const speakIf = (t: string) => { if (useSettings.getState().tts) bazaarAudio.speak(t); };
 
 export default function BazaarGame({ onExit }: { onExit: () => void }) {
   if (!supportsWebGL) return <Fallback onExit={onExit} />;
@@ -78,7 +82,7 @@ function Game({ onExit }: { onExit: () => void }) {
     (navigator as Navigator & { getBattery?: () => Promise<B> }).getBattery?.().then((x) => { b = x; check(); x.addEventListener('levelchange', check); x.addEventListener('chargingchange', check); }).catch(() => {});
     return () => { b?.removeEventListener('levelchange', check); b?.removeEventListener('chargingchange', check); };
   }, []);
-  useEffect(() => { bazaarAudio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { bazaarAudio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => { bazaarAudio.setNight(S.night); }, [S.night]);
   useEffect(() => { bazaarAudio.setDensity(prof.npc / 560); }, [prof.npc]);
   useEffect(() => () => { bazaarAudio.dispose(); }, []);
@@ -138,6 +142,7 @@ function Game({ onExit }: { onExit: () => void }) {
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#140e08] text-white" style={{ touchAction: 'none' }}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <HudTheme theme={THEME}>
       <LookCrosshair locked={look.locked} />
       <Canvas key={`${S.seed}-${S.night}`} dpr={prof.dpr} gl={{ antialias: prof.tier === 'high', powerPreference: 'high-performance' }} camera={{ fov: 70, near: 0.05, far: 160 }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}>
@@ -154,14 +159,9 @@ function Game({ onExit }: { onExit: () => void }) {
         </Suspense>
       </Canvas>
 
-      {/* üst çubuk */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { bazaarAudio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) bazaarAudio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-amber-500 text-black' : 'bg-black/55'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.phase !== 'title' && <button onClick={() => S.set({ notebook: !S.notebook })} className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-full bg-black/55 px-4 text-sm font-semibold" aria-expanded={S.notebook}><BookOpen size={17} /> Defter <span className="rounded-full bg-amber-400 px-2 text-xs text-black">{S.clues.length}</span></button>}
-        {S.phase === 'street' && <Compass />}
-      </div>
+      <TopRow onExit={onExit} objective={S.phase !== 'title' ? <Objective icon={<Search size={15} />} label={`Kayıp: ${p.item.name} · ${S.clues.length} ipucu · ${S.visited.length} dükkân`} /> : undefined}
+        right={<>{S.phase !== 'title' && <IconButton label="Defter" active={S.notebook} onClick={() => S.set({ notebook: !S.notebook })}><BookOpen size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onRestart={() => newBazaar()} onExit={onExit} /></>} />
+      {S.phase === 'street' && <div className="pointer-events-none absolute inset-x-0 top-[176px] z-20 flex justify-center sm:top-[124px]"><Compass /></div>}
       {S.notebook && S.phase !== 'title' && <Notebook onClose={() => S.set({ notebook: false })} />}
 
       {S.phase === 'street' && S.esnaf === null && <Prompts onTalk={talk} onEnter={enterShop} />}
@@ -171,8 +171,9 @@ function Game({ onExit }: { onExit: () => void }) {
       )}
       {S.phase === 'shop' && S.shop !== null && <ShopUI onExit={exitShop} onChoose={choose} />}
       {S.toast && <Toast key={S.toast.t} />}
-      {S.phase === 'title' && <TitleCard onStart={start} onReroll={() => newBazaar()} onNight={(n) => S.set({ night: n })} />}
+      {S.phase === 'title' && <TitleCard onStart={start} onReroll={() => newBazaar()} onNight={(n) => S.set({ night: n })} onExit={onExit} />}
       {S.phase === 'won' && <WinCard secs={el} onNew={() => newBazaar()} onExit={onExit} />}
+      </HudTheme>
     </div>
   );
 }
@@ -240,7 +241,7 @@ function Controller({ L }: { L: Layout }) {
   useEffect(() => { cam.current.p.set(live.x, 1.62, live.z); }, [L]);
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useBz.getState(), t = clock.elapsedTime;
-    if (S.phase === 'street' && S.esnaf === null) {
+    if (S.phase === 'street' && S.esnaf === null && !pause.on) {
       let fwd = live.fwd, strafe = live.strafe;
       if (live.auto) {   // çift dokunuş: en yakın dükkânın kapısına yürü, sonra dükkâna dön
         const dx = live.auto[0] - live.x, dz = live.auto[1] - live.z, d = Math.hypot(dx, dz);
@@ -287,9 +288,9 @@ function Compass() {
   useEffect(() => { const id = setInterval(() => setYaw(live.yaw), 100); return () => clearInterval(id); }, []);
   const deg = ((-yaw * 180) / Math.PI + 720) % 360, dirs = ['K', 'KD', 'D', 'GD', 'G', 'GB', 'B', 'KB'];
   return (
-    <div className="mx-auto w-44 overflow-hidden rounded-full bg-black/55 py-1 text-center sm:w-64" aria-label="Pusula">
+    <div className="mx-auto w-44 overflow-hidden rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 py-1 text-center sm:w-64" aria-label="Pusula">
       <div className="relative h-5">
-        {dirs.map((d, i) => { const off = ((i * 45 - deg + 540) % 360) - 180; return Math.abs(off) < 80 ? <span key={d} className={`absolute top-0 -translate-x-1/2 text-xs font-bold ${d === 'K' ? 'text-amber-300' : 'text-white/85'}`} style={{ left: `${50 + off * 0.6}%` }}>{d}</span> : null; })}
+        {dirs.map((d, i) => { const off = ((i * 45 - deg + 540) % 360) - 180; return Math.abs(off) < 80 ? <span key={d} className={`absolute top-0 -translate-x-1/2 text-xs font-bold ${d === 'K' ? 'text-[#b5652a]' : 'text-[#4a433c]'}`} style={{ left: `${50 + off * 0.6}%` }}>{d}</span> : null; })}
         <span className="absolute left-1/2 top-4 h-1 w-1 -translate-x-1/2 rounded-full bg-amber-300" />
       </div>
     </div>
@@ -300,13 +301,13 @@ function Prompts({ onTalk, onEnter }: { onTalk: (id: number) => void; onEnter: (
   const street = useStreet(L);
   return (
     <>
-      <p className="pointer-events-none absolute left-1/2 top-16 -translate-x-1/2 rounded-full bg-black/45 px-3 py-1 text-xs text-white/85">{street}</p>
+      <p className="pointer-events-none absolute left-1/2 top-16 -translate-x-1/2 rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 px-3 py-1 text-xs text-[#4a433c]">{street}</p>
       <div className="absolute bottom-6 right-4 z-30 flex flex-col items-end gap-2 sm:bottom-8" onPointerDown={(e) => e.stopPropagation()}>
-        {prompt.esnaf !== null && <button onClick={() => onTalk(prompt.esnaf!)} className="flex h-12 items-center gap-2 rounded-full bg-amber-400 px-4 text-sm font-semibold text-black shadow-lg"><MessageCircle size={18} /> Konuş: {esnafTitle(L.esnaf[prompt.esnaf])}<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
-        {prompt.shop !== null && <button onClick={() => onEnter(prompt.shop!)} className={`flex h-12 max-w-[70vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg ${visited.includes(prompt.shop) ? 'bg-black/60 text-white' : 'bg-white text-ink'}`}><DoorOpen size={18} className="shrink-0" /><span className="truncate">Dükkâna gir: {L.shops[prompt.shop].sign}</span><span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
+        {prompt.esnaf !== null && <button onClick={() => onTalk(prompt.esnaf!)} className="flex h-12 items-center gap-2 rounded-full bg-[#b5652a] px-4 text-sm font-semibold text-white shadow-lg"><MessageCircle size={18} /> Konuş: {esnafTitle(L.esnaf[prompt.esnaf])}<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
+        {prompt.shop !== null && <button onClick={() => onEnter(prompt.shop!)} className={`flex h-12 max-w-[70vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg ${visited.includes(prompt.shop) ? 'bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5' : 'bg-[#b5652a] text-white'}`}><DoorOpen size={18} className="shrink-0" /><span className="truncate">Dükkâna gir: {L.shops[prompt.shop].sign}</span><span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
       </div>
-      <p className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full bg-black/45 px-4 py-1.5 text-xs sm:block">WASD yürü · tıkla, fareyle bak (Esc: bırak) · çift tıkla: en yakın dükkân · E: konuş/gir · J: defter</p>
-      <p className="pointer-events-none absolute bottom-6 left-4 rounded-full bg-black/45 px-3 py-1.5 text-[11px] sm:hidden">Sürükle: yürü/dön · çift dokun: en yakın dükkân</p>
+      <p className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 px-4 py-1.5 text-xs sm:block">WASD yürü · tıkla, fareyle bak (Esc: bırak) · çift tıkla: en yakın dükkân · E: konuş/gir · J: defter</p>
+      <p className="pointer-events-none absolute bottom-6 left-4 rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 px-3 py-1.5 text-[11px] sm:hidden">Sürükle: yürü/dön · çift dokun: en yakın dükkân</p>
     </>
   );
 }
@@ -314,7 +315,7 @@ function useStreet(L: Layout) { const [s, set] = useState(''); useEffect(() => {
 function Notebook({ onClose }: { onClose: () => void }) {
   const { L, clues, visited } = useBz();
   return (
-    <div className="absolute left-3 top-16 z-40 max-h-[70vh] w-[min(26rem,calc(100%-1.5rem))] overflow-y-auto rounded-2xl bg-[#f3ead6] p-4 text-ink shadow-2xl" onPointerDown={(e) => e.stopPropagation()}>
+    <div className="absolute left-3 top-16 z-40 max-h-[70vh] w-[min(26rem,calc(100%-1.5rem))] overflow-y-auto rounded-2xl bg-[#f3ead6] p-4 text-ink shadow-[0_10px_30px_rgba(31,27,23,0.18)]" onPointerDown={(e) => e.stopPropagation()}>
       <div className="flex items-center"><h2 className="font-bold">Dedektif defteri</h2><button onClick={onClose} className="ml-auto grid h-9 w-9 place-items-center rounded-full bg-black/5" aria-label="Kapat"><X size={16} /></button></div>
       <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-amber-800">Kayıp eşya</p>
       <p className="text-sm"><b>{L.item.name[0].toLocaleUpperCase('tr') + L.item.name.slice(1)}</b>: {L.item.desc}</p>
@@ -330,21 +331,21 @@ function ShopUI({ onExit, onChoose }: { onExit: () => void; onChoose: () => void
   const { L, shop, picked, set } = useBz(), s = L.shops[shop!], items = counterItems(L, shop!);
   return (
     <>
-      <div className="pointer-events-none absolute inset-x-0 top-16 flex justify-center"><p className="rounded-full bg-black/55 px-4 py-1.5 text-sm font-semibold">{s.sign} · {TRADE_LABEL[s.trade].esnaf}</p></div>
+      <div className="pointer-events-none absolute inset-x-0 top-16 flex justify-center"><p className="rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 px-4 py-1.5 text-sm font-semibold">{s.sign} · {TRADE_LABEL[s.trade].esnaf}</p></div>
       <div className="absolute inset-x-3 bottom-3 z-40 mx-auto max-w-lg sm:bottom-6" onPointerDown={(e) => e.stopPropagation()}>
-        <div className="rounded-2xl bg-[#1b130c]/90 p-4 shadow-2xl backdrop-blur">
-          {picked === null ? <p className="text-sm text-white/85">Tezgâhta beş nesne var. İncelemek için birine dokun. Tarifi hatırla: <i>{L.item.desc}</i></p> : (
+        <div className="rounded-2xl bg-[#f7f5f1]/92 text-[#1f1b17] ring-1 ring-black/5 p-4 shadow-[0_10px_30px_rgba(31,27,23,0.18)] backdrop-blur">
+          {picked === null ? <p className="text-sm text-[#4a433c]">Tezgâhta beş nesne var. İncelemek için birine dokun. Tarifi hatırla: <i>{L.item.desc}</i></p> : (
             <>
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">İnceleniyor</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#b5652a]">İnceleniyor</p>
               <p className="mt-1 text-[15px]">{items[picked].label}</p>
               <div className="mt-3 flex gap-2">
-                <button onClick={onChoose} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-amber-400 font-semibold text-black"><Check size={18} /> Aradığım bu!</button>
-                <button onClick={() => set({ picked: null })} className="h-11 flex-1 rounded-xl bg-white/15 font-semibold">Geri koy</button>
+                <button onClick={onChoose} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#b5652a] font-semibold text-white"><Check size={18} /> Aradığım bu!</button>
+                <button onClick={() => set({ picked: null })} className="h-11 flex-1 rounded-xl bg-black/5 font-semibold">Geri koy</button>
               </div>
             </>
           )}
-          <div className="mt-3 flex flex-wrap gap-1.5">{items.map((_, i) => <button key={i} onClick={() => set({ picked: i })} className={`inline-flex h-9 items-center gap-1 rounded-lg px-2.5 text-xs ${picked === i ? 'bg-amber-400 text-black' : 'bg-white/10'}`}><Search size={12} />{i + 1}</button>)}</div>
-          <button onClick={onExit} className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold"><LogOut size={16} /> Dükkândan çık (Esc)</button>
+          <div className="mt-3 flex flex-wrap gap-1.5">{items.map((_, i) => <button key={i} onClick={() => set({ picked: i })} className={`inline-flex h-9 items-center gap-1 rounded-lg px-2.5 text-xs ${picked === i ? 'bg-[#b5652a] text-white' : 'bg-black/5'}`}><Search size={12} />{i + 1}</button>)}</div>
+          <button onClick={onExit} className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-black/5 text-sm font-semibold"><LogOut size={16} /> Dükkândan çık (Esc)</button>
         </div>
       </div>
     </>
@@ -354,46 +355,29 @@ function Toast() {
   const t = useBz((s) => s.toast), [show, setShow] = useState(true);
   useEffect(() => { const id = setTimeout(() => setShow(false), t && !t.ok ? 5500 : 3000); return () => clearTimeout(id); }, [t]);
   if (!t || !show) return null;
-  return <div className="pointer-events-none absolute left-1/2 top-24 z-50 max-w-[90vw] -translate-x-1/2 rounded-2xl px-4 py-2 text-center text-sm font-semibold shadow-xl" style={{ background: t.ok ? '#f2c230' : '#5a2a20', color: t.ok ? '#000' : '#fff' }}>{t.text}</div>;
+  return <div className="pointer-events-none absolute left-1/2 top-[124px] z-50 sm:top-[72px] max-w-[90vw] -translate-x-1/2 rounded-2xl px-4 py-2 text-center text-sm font-semibold shadow-xl" style={{ background: '#f7f5f1', color: t.ok ? '#1f9d63' : '#b5452f' }}>{t.text}</div>;
 }
-function TitleCard({ onStart, onReroll, onNight }: { onStart: () => void; onReroll: () => void; onNight: (n: boolean) => void }) {
+function TitleCard({ onStart, onReroll, onNight, onExit }: { onStart: () => void; onReroll: () => void; onNight: (n: boolean) => void; onExit?: () => void }) {
   const { L, night } = useBz();
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-end bg-gradient-to-t from-black/85 via-black/40 to-black/10 p-4 sm:place-items-center" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-xl rounded-2xl bg-black/70 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">İstanbul · Fatih · Kapalıçarşı</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Bin Dükkânın Sırrı</h1>
-        <p className="mt-2 text-sm text-white/85">Bir eşya kayboldu: <b>{L.item.name}</b>. {L.item.desc} Çarşıda biri onu bir dükkâna bırakmış. Esnafa sor, ipuçlarını defterine yaz, tezgâhları incele. Ama dikkat: her soru doğru yola çıkarmaz.</p>
-        <p className="mt-2 text-xs text-white/60">Giriş: {L.start.gate} · Çarşı no {L.seed} (her girişte yeni bir çarşı)</p>
-        <div className="mt-3 flex gap-2">
-          <button onClick={() => onNight(false)} aria-pressed={!night} className={`inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold ${!night ? 'bg-amber-400 text-black' : 'bg-white/10'}`}><Sun size={16} /> Gündüz</button>
-          <button onClick={() => onNight(true)} aria-pressed={night} className={`inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold ${night ? 'bg-indigo-300 text-black' : 'bg-white/10'}`}><Moon size={16} /> Gece (kepenkler kapalı)</button>
-        </div>
-        <p className="mt-2 text-[11px] text-white/45">Çarşı düzeni her seferinde yeniden üretilir; gerçek planın kopyası değildir. Bazı sokak ve kapı adları gerçektir, esnaf ve hikâye kurgudur.</p>
-        <div className="mt-3 flex gap-2">
-          <button onClick={onStart} className="h-12 flex-[2] rounded-xl bg-amber-400 font-semibold text-black">Çarşıya gir</button>
-          <button onClick={onReroll} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-white/10 text-sm font-semibold"><RefreshCw size={16} /> Başka çarşı</button>
-        </div>
-      </div>
-    </div>
-  );
+  const seg = (on: boolean) => `inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold ${on ? 'text-white' : 'ring-1 ring-black/10'}`;
+  return <StartSheet kicker="İstanbul · Fatih · Kapalıçarşı" title="Bin Dükkânın Sırrı"
+    intro={<>Bir eşya kayboldu: <b>{L.item.name}</b>. {L.item.desc} Çarşıda biri onu bir dükkâna bırakmış. Esnafa sor, ipuçlarını defterine yaz, tezgâhları incele. Ama dikkat: her soru doğru yola çıkarmaz.<span className="mt-1 block text-xs text-[#857b70]">Giriş: {L.start.gate} · Çarşı no {L.seed} (her girişte yeni bir çarşı)</span></>}
+    controls={CONTROLS} note="Çarşı düzeni her seferinde yeniden üretilir; gerçek planın kopyası değildir. Bazı sokak ve kapı adları gerçektir, esnaf ve hikâye kurgudur."
+    extra={<div className="flex gap-2"><button onClick={() => onNight(false)} aria-pressed={!night} className={seg(!night)} style={!night ? { background: THEME.accent } : undefined}><Sun size={16} /> Gündüz</button><button onClick={() => onNight(true)} aria-pressed={night} className={seg(night)} style={night ? { background: '#3b4a7a' } : undefined}><Moon size={16} /> Gece</button></div>}
+    secondary={<button onClick={onReroll} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl text-sm font-semibold ring-1 ring-black/10"><RefreshCw size={16} /> Başka çarşı</button>}
+    cta="Çarşıya gir" ctaIcon={<DoorOpen size={18} />} onStart={onStart} onExit={onExit} />;
 }
 function WinCard({ secs, onNew, onExit }: { secs: number; onNew: () => void; onExit: () => void }) {
-  const { L, visited, clues } = useBz(), s = L.shops[L.target];
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/40 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-[#f3ead6] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-amber-800">Bulundu!</p>
-        <h2 className="mt-1 text-2xl font-bold">{L.item.name[0].toLocaleUpperCase('tr') + L.item.name.slice(1)}</h2>
-        <p className="mt-2 text-sm text-slate-600">{s.owner}’in {TRADE_LABEL[s.trade].esnaf} dükkânında, {L.streets[L.edges[s.edge].street]?.name}. {Math.floor(secs / 60)} dk {Math.round(secs % 60)} sn · {visited.length} dükkân · {clues.length} ipucu.</p>
-        <div className="mt-5 flex gap-2">
-          <button onClick={onNew} className="h-11 flex-1 rounded-xl border border-line font-semibold">Yeni çarşı, yeni eşya</button>
-          <button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button>
-        </div>
-      </div>
-    </div>
-  );
+  const { L, visited, clues } = useBz(), sh = L.shops[L.target];
+  return <EndSheet kicker="Bulundu!" title={L.item.name[0].toLocaleUpperCase('tr') + L.item.name.slice(1)} text={`${sh.owner}’in ${TRADE_LABEL[sh.trade].esnaf} dükkânında, ${L.streets[L.edges[sh.edge].street]?.name}. ${Math.floor(secs / 60)} dk ${Math.round(secs % 60)} sn · ${visited.length} dükkân · ${clues.length} ipucu.`} stayLabel="Yeni çarşı, yeni eşya" onStay={onNew} onExit={onExit} badge={<Search size={24} />} />;
 }
+const THEME = { accent: '#b5652a' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <><b>WASD</b> ya da joystick: yürü (A/D yana adım)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Tıkla, fareyle bak (Esc imleci bırakır) · telefonda sürükle</> },
+  { icon: <MessageCircle size={16} />, text: <><b>E</b>: esnafla konuş / dükkâna gir · Esc: dükkândan çık</> },
+  { icon: <BookOpen size={16} />, text: <>Defter: topladığın ipuçları · çift dokunuş: en yakın dükkân</> },
+];
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null);
   useEffect(() => { fetch('https://tr.wikipedia.org/api/rest_v1/page/summary/Kapal%C4%B1%C3%A7ar%C5%9F%C4%B1').then((r) => r.json()).then((j) => setImg(j.originalimage?.source ?? j.thumbnail?.source ?? null)).catch(() => {}); }, []);

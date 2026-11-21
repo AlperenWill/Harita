@@ -59,12 +59,12 @@ export function DialogueBox() {
   return transitions((style) => (
     <animated.div style={{ transform: style.y.to((y) => `translateY(${y}px)`), opacity: style.opacity }}
       className="pointer-events-auto absolute inset-x-3 bottom-3 z-30 mx-auto max-w-2xl sm:bottom-5">
-      <button onClick={skip} className="block w-full rounded-2xl bg-black/75 p-4 pr-12 text-left text-white shadow-2xl backdrop-blur" aria-live="polite">
+      <button onClick={skip} className="block w-full rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4 pr-12 text-left shadow-[0_10px_30px_rgba(31,27,23,0.18)] backdrop-blur" aria-live="polite">
         <animated.span style={{ transform: bounce.scale.to((s) => `scale(${s})`) }} className="mb-1 inline-block origin-left rounded-full bg-brand px-2.5 py-0.5 text-xs font-bold">
           {CHARACTER.name}
         </animated.span>
         <p className="min-h-[3rem] text-[15px] leading-relaxed sm:text-base">{text}<span className={`ml-0.5 inline-block w-2 ${typing ? 'animate-pulse' : 'opacity-0'}`}>▍</span></p>
-        <ChevronsRight size={20} className="absolute bottom-4 right-4 text-white/70" aria-label={typing ? 'Satırı tamamla' : 'Devam'} />
+        <ChevronsRight size={20} className="absolute bottom-4 right-4 text-[#857b70]" aria-label={typing ? 'Satırı tamamla' : 'Devam'} />
       </button>
     </animated.div>
   ));

@@ -61,17 +61,17 @@ export function TopBar({ onExit, objective, right }: { onExit: () => void; objec
   );
 }
 /** Görev rozeti: şimdiki hedef + ilerleme (nokta ya da çubuk) */
-export function Objective({ label, done, total, icon }: { label: ReactNode; done: number; total: number; icon?: ReactNode }) {
+export function Objective({ label, done, total, icon }: { label: ReactNode; done?: number; total?: number; icon?: ReactNode }) {
   const t = useTheme();
   return (
     <div className={`pointer-events-none flex max-w-[92vw] items-center gap-2.5 rounded-2xl px-3.5 py-2 ${GLASS}`} role="status">
       {icon && <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full" style={{ background: `${t.accent}22`, color: t.accent }}>{icon}</span>}
       <div className="min-w-0">
         <p className="truncate text-[13px] font-semibold leading-tight">{label}</p>
-        <div className="mt-1 flex items-center gap-1.5">
+        {total !== undefined && done !== undefined && <div className="mt-1 flex items-center gap-1.5">
           <div className="flex gap-1">{Array.from({ length: total }, (_, i) => <span key={i} className="h-1.5 w-4 rounded-full transition-colors" style={{ background: i < done ? t.accent : 'rgba(31,27,23,0.14)' }} />)}</div>
           <span className="text-[11px] font-semibold text-[#857b70]">{done}/{total}</span>
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -181,7 +181,7 @@ export function ToolPanel({ title, children, defaultOpen = true }: { title: Reac
 
 /* ---------- bilgi paneli ---------- */
 /** Alttan açılan bilgi paneli; masaüstünde sağ altta kart */
-export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { kicker: ReactNode; title: ReactNode; text: ReactNode; source?: { title: string; url: string }; onClose: () => void; onListen?: () => void }) {
+export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { kicker: ReactNode; title: ReactNode; text: ReactNode; source?: { title: string; url: string }; onClose?: () => void; onListen?: () => void }) {
   const t = useTheme();
   return (
     <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-40 flex justify-center sm:inset-x-auto sm:bottom-[max(16px,env(safe-area-inset-bottom))] sm:right-[max(96px,env(safe-area-inset-right))]" onPointerDown={stop}>
@@ -189,7 +189,7 @@ export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { 
         <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-black/15 sm:hidden" />
         <div className="flex items-start gap-3">
           <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: t.accent }}>{kicker}</p><h2 className="mt-0.5 text-xl font-bold leading-snug">{title}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/5" aria-label="Kapat"><X size={18} /></button>
+          {onClose && <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/5" aria-label="Kapat"><X size={18} /></button>}
         </div>
         <div className="mt-2 grid gap-1.5 text-[15px] leading-relaxed text-[#4a433c]">{typeof text === 'string' ? <p>{text}</p> : text}</div>
         <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -209,19 +209,20 @@ export function Toast({ text, tone = 'info' }: { text: string | null; tone?: 'ok
 
 /* ---------- başlangıç ve bitiş ---------- */
 /** Başlangıç ekranı: alttan kart; üstte sahne görünür kalır */
-export function StartSheet({ kicker, title, intro, controls, note, cta, ctaIcon, onStart, onExit, loading }: { kicker: ReactNode; title: ReactNode; intro: ReactNode; controls: { icon: ReactNode; text: ReactNode }[]; note?: ReactNode; cta: string; ctaIcon?: ReactNode; onStart: () => void; onExit?: () => void; /** 0..1: sahne yükleniyor; 1 olana kadar düğme kapalı */ loading?: number }) {
+export function StartSheet({ kicker, title, intro, controls, note, cta, ctaIcon, onStart, onExit, loading, extra, secondary }: { kicker: ReactNode; title: ReactNode; intro: ReactNode; controls: { icon: ReactNode; text: ReactNode }[]; note?: ReactNode; cta: string; ctaIcon?: ReactNode; onStart: () => void; onExit?: () => void; /** 0..1: sahne yükleniyor; 1 olana kadar düğme kapalı */ loading?: number; /** başlat düğmesinin üstünde oyuna özel seçenekler */ extra?: ReactNode; /** başlat düğmesinin yanında ikincil düğme */ secondary?: ReactNode }) {
   const busy = loading !== undefined && loading < 1;
   const t = useTheme();
   return (
     <div className="pointer-events-auto absolute inset-0 z-40 flex items-end justify-center bg-gradient-to-t from-[#1f1b17]/45 via-transparent to-transparent sm:items-center sm:bg-[#1f1b17]/20" onPointerDown={stop}>
-      <div className={`w-full max-w-lg rounded-t-3xl px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-3xl sm:pb-6 ${SOLID}`}>
+      <div className={`max-h-[calc(100dvh-72px)] w-full max-w-lg overflow-y-auto rounded-t-3xl px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 sm:rounded-3xl sm:pb-6 ${SOLID}`}>
         <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: t.accent }}>{kicker}</p>
         <h1 className="mt-1 text-[26px] font-extrabold leading-tight tracking-tight">{title}</h1>
         <div className="mt-2 text-[15px] leading-relaxed text-[#4a433c]">{intro}</div>
         <div className="mt-3"><Controls items={controls} /></div>
         {note && <p className="mt-3 text-[11px] text-[#857b70]">{note}</p>}
         {loading !== undefined && <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/10" role="progressbar" aria-valuenow={Math.round(loading * 100)} aria-valuemin={0} aria-valuemax={100}><div className="h-full transition-all duration-300" style={{ width: `${Math.round(loading * 100)}%`, background: t.accent }} /></div>}
-        <button onClick={onStart} disabled={busy} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-bold shadow-[0_8px_20px_rgba(31,27,23,0.18)] transition active:scale-[0.99] disabled:opacity-50" style={{ background: t.accent, color: t.accentInk ?? '#fff' }}>{ctaIcon}{busy ? 'Yükleniyor…' : cta}</button>
+        {extra && <div className="mt-3">{extra}</div>}
+        <div className="mt-4 flex gap-2"><button onClick={onStart} disabled={busy} className="inline-flex h-12 flex-[2] items-center justify-center gap-2 rounded-2xl text-[15px] font-bold shadow-[0_8px_20px_rgba(31,27,23,0.18)] transition active:scale-[0.99] disabled:opacity-50" style={{ background: t.accent, color: t.accentInk ?? '#fff' }}>{ctaIcon}{busy ? 'Yükleniyor…' : cta}</button>{secondary}</div>
         {onExit && <button onClick={onExit} className="mt-2 inline-flex h-10 w-full items-center justify-center gap-1.5 text-sm font-semibold text-[#857b70]"><ArrowLeft size={15} /> Haritaya dön</button>}
       </div>
     </div>

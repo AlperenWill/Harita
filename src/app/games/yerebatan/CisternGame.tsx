@@ -9,12 +9,15 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ArrowLeft, Eye, Settings2, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, Eye } from 'lucide-react';
 import { DECK_Y, EYE, MEDUSA_IDS, POIS, SIZE, START, lookingAt, type Poi } from './cistern';
 import { MAX_SPEED, createFP, headBob, look, useLookInput, walk, type FPState, type LookInput } from './FirstPersonController';
 import { CisternFog, ColumnLights, Columns, HensEyeColumn, Vaults, Walkways, Walls, Water, FOG, type Tier } from './CisternScene';
 import { AUTO_DIST, INSPECT_FOV, InfoPanel, Medusas, NORMAL_FOV, inspectPose } from './MedusaInteraction';
 import { cisternAudio } from './AudioManager';
+import { Controls, GameMenu, HudTheme, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { Footprints, MousePointer2, Move } from 'lucide-react';
 
 /* ---------- cihaz ---------- */
 const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
@@ -59,7 +62,7 @@ function Game({ onExit }: { onExit: () => void }) {
   const [card, setCard] = useState<Poi | null>(null);
   const [inspect, setInspect] = useState<string | null>(null);
   const [seen, setSeen] = useState<string[]>([]);
-  const [muted, setMuted] = useState(false), [sens, setSens] = useState(loadSens), [settings, setSettings] = useState(false);
+  const G = useSettings(), muted = G.muted, sens = G.sensitivity * loadSens(), [settings, setSettings] = useState(false);   // settings: ≡ menü açık (oyun durur)
   const stick = useRef({ x: 0, y: 0 });
 
   const shared: Shared = {
@@ -73,7 +76,6 @@ function Game({ onExit }: { onExit: () => void }) {
   // test/inceleme: ?debug ile ışınlanma (window.__yer.tp(x, z, yaw))
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __yer: unknown }).__yer = { tp: (x: number, z: number, yaw = 0, pitch = 0) => { shared.fp.current = { ...shared.fp.current, x, z, yaw, pitch }; } }; });
   useLookInput(el, shared.lookAcc, { sens, enabled: started && !inspect, onLockChange: setLocked });
-  useEffect(() => { try { localStorage.setItem(SENS_KEY, String(sens)); } catch { /* yoksay */ } }, [sens]);
   useEffect(() => { cisternAudio.setMuted(muted); }, [muted]);
   useEffect(() => () => cisternAudio.dispose(), []);
 
@@ -112,6 +114,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
   return (
     <div ref={wrap} className="fixed inset-0 select-none overflow-hidden bg-[#140b07] text-white" style={{ touchAction: 'none' }}>
+      <HudTheme theme={THEME}>
       <Canvas shadows={dev.shadows} dpr={dev.dpr} gl={{ antialias: dev.antialias, powerPreference: 'high-performance' }}
         camera={{ fov: NORMAL_FOV, near: 0.05, far: FOG[dev.tier].far, position: [START.x, DECK_Y + EYE, START.z] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.1; }}>
@@ -137,30 +140,13 @@ function Game({ onExit }: { onExit: () => void }) {
         </div>
       )}
       {started && target && !card && (
-        <p className="pointer-events-none absolute left-1/2 top-[57%] -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-sm">
+        <p className="pointer-events-none absolute left-1/2 top-[57%] -translate-x-1/2 rounded-full bg-[#f7f5f1]/90 px-3 py-1 text-sm text-[#1f1b17] ring-1 ring-black/5">
           {target.name} · <b>{isTouch ? 'İncele’ye dokun' : 'E'}</b>
         </p>
       )}
 
-      {/* üst çubuk */}
-      <div className="absolute inset-x-0 top-0 flex items-start gap-2 p-3">
-        <button onClick={() => { document.exitPointerLock?.(); onExit(); }} className="grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => setMuted(!muted)} className="grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label={muted ? 'Sesi aç' : 'Sesi kapat'}>{muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { setSettings(!settings); document.exitPointerLock?.(); }} className="grid h-11 w-11 place-items-center rounded-full bg-black/55" aria-label="Ayarlar" aria-expanded={settings}><Settings2 size={18} /></button>
-        {started && (
-          <div className="mx-auto rounded-2xl bg-black/55 px-4 py-1.5 text-center text-xs">
-            Medusa {medusaSeen}/2 · Keşif {seen.length}/{POIS.length}
-          </div>
-        )}
-      </div>
-      {settings && (
-        <div className="absolute left-3 top-16 z-40 w-72 rounded-2xl bg-black/85 p-4 text-sm">
-          <label className="block font-semibold" htmlFor="sens">Bakış hassasiyeti: {sens.toFixed(1)}×</label>
-          <input id="sens" type="range" min={0.3} max={2.5} step={0.1} value={sens} onChange={(e) => setSens(Number(e.target.value))} className="mt-2 w-full accent-orange-400" />
-          <p className="mt-2 text-xs text-white/60">{isTouch ? 'Dokunmatikte tam ekran kaydırma ≈ 120° × ayar.' : 'Fare: piksel başına 0,0022 rad × ayar.'} Kademe: {dev.tier}{dev.shadows ? '' : ' (gölge kapalı)'}.</p>
-          <button onClick={() => { setSettings(false); if (!isTouch && started) wrap.current?.requestPointerLock?.(); }} className="mt-3 h-10 w-full rounded-lg bg-orange-500 font-semibold">Devam</button>
-        </div>
-      )}
+      <TopRow onExit={() => { document.exitPointerLock?.(); onExit(); }} objective={started ? <Objective icon={<Eye size={15} />} label={`Medusa ${medusaSeen}/2 · Keşif`} done={seen.length} total={POIS.length} /> : undefined}
+        right={<GameMenu tts={false} onPause={setSettings} help={<Controls items={CONTROLS} />} onExit={() => { document.exitPointerLock?.(); onExit(); }} />} />
 
       <InfoPanel poi={card} inspecting={!!inspect} onClose={closeCard} />
       {inspect && <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_180px_60px_rgba(0,0,0,.85)]" />}
@@ -168,16 +154,17 @@ function Game({ onExit }: { onExit: () => void }) {
       {/* mobil: sol joystick, sağ "İncele" */}
       {started && isTouch && <Joystick stick={stick} />}
       {started && isTouch && (target || card) && (
-        <button onClick={interact} className="absolute bottom-8 right-6 z-30 inline-flex h-14 items-center gap-2 rounded-full bg-orange-500 px-5 font-semibold shadow-lg"><Eye size={20} /> {card ? 'Kapat' : 'İncele'}</button>
+        <button onClick={interact} className="absolute bottom-8 right-6 z-30 inline-flex h-14 items-center gap-2 rounded-full px-5 font-semibold text-white shadow-lg" style={{ background: THEME.accent }}><Eye size={20} /> {card ? 'Kapat' : 'İncele'}</button>
       )}
 
-      {!started && <StartCard onEnter={enter} />}
+      {!started && <StartCard onEnter={enter} onExit={onExit} />}
       {started && !isTouch && !locked && !settings && !card && (
-        <button onClick={() => wrap.current?.requestPointerLock?.()} className="absolute inset-0 grid place-items-center bg-black/40">
-          <span className="rounded-xl bg-black/70 px-5 py-3 text-sm">Devam etmek için tıkla (fare bakışı)</span>
+        <button onClick={() => wrap.current?.requestPointerLock?.()} className="absolute inset-0 grid place-items-center bg-[#1f1b17]/20">
+          <span className="rounded-2xl bg-[#f7f5f1] px-5 py-3 text-sm font-semibold text-[#1f1b17] shadow-[0_10px_30px_rgba(31,27,23,0.2)]">Devam etmek için tıkla (fareyle bakış)</span>
         </button>
       )}
-      {medusaSeen === 2 && !card && <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-orange-500/90 px-4 py-1.5 text-sm font-semibold">İki Medusa’yı da buldun · Sarnıçta dolaşmaya devam edebilirsin</p>}
+      {medusaSeen === 2 && !card && <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-[#f7f5f1]/95 px-4 py-1.5 text-sm font-semibold text-[#1f9d63] ring-1 ring-black/5">İki Medusa’yı da buldun · Sarnıçta dolaşmaya devam edebilirsin</p>}
+      </HudTheme>
     </div>
   );
 }
@@ -266,21 +253,19 @@ function Joystick({ stick }: { stick: React.MutableRefObject<{ x: number; y: num
     </div>
   );
 }
-function StartCard({ onEnter }: { onEnter: () => void }) {
-  return (
-    <div className="absolute inset-0 grid place-items-end bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 sm:place-items-center">
-      <div className="w-full max-w-xl rounded-2xl bg-black/70 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-orange-300">İstanbul · Sultanahmet · 532</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Yerebatan Sarnıcı: Suyun Altındaki Işık</h1>
-        <p className="mt-2 text-sm text-white/80">336 sütunun arasında, platformlardan yavaşça yürü. Sütunları ve iki Medusa başını bul; nişangâh parladığında incele.</p>
-        <p className="mt-2 text-xs text-white/60">{isTouch ? 'Sol joystick: yürü · sağ yarıda sürükle: bak · İncele düğmesi' : 'WASD: yürü · fare: bak · E: incele · Esc: fareyi bırak'}</p>
-        <button onClick={onEnter} className="mt-4 h-12 w-full rounded-xl bg-orange-500 font-semibold">Sarnıca in</button>
-      </div>
-    </div>
-  );
+function StartCard({ onEnter, onExit }: { onEnter: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="İstanbul · Sultanahmet · 532" title="Yerebatan Sarnıcı: Suyun Altındaki Işık" intro="336 sütunun arasında, platformlardan yavaşça yürü. Sütunları ve iki Medusa başını bul; nişangâh parladığında incele." controls={CONTROLS} cta="Sarnıca in" ctaIcon={<Footprints size={18} />} onStart={onEnter} onExit={onExit} />;
 }
-
-/** WebGL yoksa: fotoğraf + sesli anlatım */
+const THEME = { accent: '#c0642a' };
+const CONTROLS = isTouch ? [
+  { icon: <Footprints size={16} />, text: <>Sol joystick: yürü</> },
+  { icon: <Move size={16} />, text: <>Sağ yarıda sürükle: bak</> },
+  { icon: <Eye size={16} />, text: <>İncele düğmesi: sütunu ya da Medusa’yı incele</> },
+] : [
+  { icon: <Footprints size={16} />, text: <><b>WASD</b>: yürü (A/D yana adım)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Tıkla, fareyle bak · Esc imleci bırakır</> },
+  { icon: <Eye size={16} />, text: <><b>E</b>: nişangâh parladığında incele</> },
+];
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);
   useEffect(() => { fetch('https://tr.wikipedia.org/api/rest_v1/page/summary/Yerebatan_Sarn%C4%B1c%C4%B1').then((r) => r.json()).then((j) => setImg(j.originalimage?.source ?? j.thumbnail?.source ?? null)).catch(() => {}); }, []);
