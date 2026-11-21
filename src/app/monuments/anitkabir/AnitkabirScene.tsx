@@ -172,13 +172,14 @@ function PlazaAndBuildings({ m, quality }: { m: Materials; quality: Quality }) {
       const L = alongX ? w : d, n = Math.round(L / 5);
       for (let i = 0; i <= n; i++) {
         const t = -L / 2 + (L * i) / n;
-        pillars.push({ pos: alongX ? [x + t, (h - 0.8) / 2, z + sgn * (d / 2 + PORCH - 0.5)] : [x + d / 2 + PORCH - 0.5, (h - 0.8) / 2, z + t], scale: [0.9, h - 0.8, 0.9] });
-        if (i < n) windows.push({ pos: alongX ? [x + t + L / n / 2, h * 0.55, z - sgn * (d / 2 + 0.03)] : [x - d / 2 - 0.03, h * 0.55, z + t + L / n / 2], scale: alongX ? [1.4, 2.4, 0.08] : [0.08, 2.4, 1.4] });
+        pillars.push({ pos: alongX ? [x + t, (h - 0.8) / 2, z + sgn * (d / 2 + PORCH - 0.5)] : [x + w / 2 + PORCH - 0.5, (h - 0.8) / 2, z + t], scale: [0.9, h - 0.8, 0.9] });
+        if (i < n) windows.push({ pos: alongX ? [x + t + L / n / 2, h * 0.55, z - sgn * (d / 2 + 0.03)] : [x - w / 2 - 0.03, h * 0.55, z + t + L / n / 2], scale: alongX ? [1.4, 2.4, 0.08] : [0.08, 2.4, 1.4] });
       }
-      porch.push({ pos: alongX ? [x, h - 0.4, z + sgn * (d / 2 + PORCH / 2)] : [x + d / 2 + PORCH / 2, h - 0.4, z], scale: alongX ? [w, 0.8, PORCH] : [PORCH, 0.8, d] });
-      recess.push({ pos: alongX ? [x, (h - 0.8) / 2, z + sgn * (d / 2 + 0.06)] : [x + d / 2 + 0.06, (h - 0.8) / 2, z], scale: alongX ? [w - 1, h - 1.4, 0.12] : [0.12, h - 1.4, d - 1] });
-      const rw = alongX ? w + 1 : d + PORCH + 1, rd = alongX ? d + PORCH + 1 : w + 1;
-      return { geo: hipRoof(alongX ? rw : rd, alongX ? rd : rw, 3.4), pos: (alongX ? [x, h, z + (sgn * PORCH) / 2] : [x + PORCH / 2, h, z]) as V3 };
+      porch.push({ pos: alongX ? [x, h - 0.4, z + sgn * (d / 2 + PORCH / 2)] : [x + w / 2 + PORCH / 2, h - 0.4, z], scale: alongX ? [w, 0.8, PORCH] : [PORCH, 0.8, d] });   // '+x' revakında binanın x derinliği w'dir (d meydan boyunca uzunluk)
+      recess.push({ pos: alongX ? [x, (h - 0.8) / 2, z + sgn * (d / 2 + 0.06)] : [x + w / 2 + 0.06, (h - 0.8) / 2, z], scale: alongX ? [w - 1, h - 1.4, 0.12] : [0.12, h - 1.4, d - 1] });
+      // çatı: x ve z boyunca ölçüler (revak dahil)
+      const sx = alongX ? w + 1 : w + PORCH + 1, sz = alongX ? d + PORCH + 1 : d + 1;
+      return { geo: hipRoof(sx, sz, 3.4), pos: (alongX ? [x, h, z + (sgn * PORCH) / 2] : [x + PORCH / 2, h, z]) as V3 };
     });
     return {
       roofs,

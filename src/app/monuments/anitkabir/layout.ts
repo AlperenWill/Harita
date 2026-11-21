@@ -96,7 +96,8 @@ export function lions(): { pos: V3; rotY: number }[] {
 }
 
 export const FLAGPOLE = { pos: [0, 0, PLAZA.d / 2 - 4] as V3, h: 29.53 };
-export const INONU = { pos: [SIDE_X + 2.5, 0, 0] as V3 };
+/** İnönü'nün lahdi: meydanın batı kenarındaki binanın revakı altında, meydana bakar */
+export const INONU = { pos: [SIDE_X + B_DEPTH / 2 + 2, 0, 0] as V3 };
 
 /** Gece yanan aydınlatma direkleri: yol boyunca ve meydanın çevresinde */
 export function lamps(): V3[] {
