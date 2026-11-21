@@ -1,5 +1,13 @@
 /** Paylaşılan yürüme girdisi (joystick + WASD), -1..1; y > 0 = geri, y < 0 = ileri (ekran yönü). React durumu değildir. */
 export const walk = { x: 0, y: 0 };
+/** Birinci şahıs bakış (yaw sınırsız, pitch boyun sınırı); sahneler kendi başlangıç yönünü verir */
+export const view = { yaw: 0, pitch: 0 };
+/** Bakış yönüne göre yürüme vektörü (dünya ya da vapur yerel düzleminde), uzunluk ≤ 1 */
+export function fpMove() {
+  const len = Math.hypot(walk.x, walk.y); if (len < 0.08) return null;
+  const k = Math.min(1, len) / len, f = -walk.y * k, s = walk.x * k, y = view.yaw;
+  return { x: -Math.sin(y) * f + Math.cos(y) * s, z: -Math.cos(y) * f - Math.sin(y) * s };
+}
 export const keys = new Set<string>();
 /** ≡ menü açıkken yürüme durur */
 export const inputPause = { on: false };

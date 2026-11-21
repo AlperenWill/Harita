@@ -24,10 +24,9 @@ src/app/pages/HattusaPage.tsx · tests/hattusa.test.ts
 - Kapalı bir halkada üç kapıdan geçip dışarıda bitmek için bu sıra gerekir. Kapıların sur üstündeki yerleri gerçeğe uygundur: batı, güney ucu, doğu.
 - Her kapıda ritüel yapılır. Ritüelsiz kapı kapalıdır (oyuncu durur, uyarı alır). Geçilmiş bir kapıdan 20 m'den fazla geri dönülemez.
 - **Kamera:**
-  - Kentte üçüncü şahıs, rotaya kilitli; omuz hizasında, hafif aşağı bakar.
-  - Yazılıkaya'da sabit geniş açı; kamera kabartmaların üst kenarından yükseğe çıkmaz.
-  - Rölyef İnceleme'de kamera kabartmanın karşısına geçer, güneş açısı döner (sıyırıcı ışık).
-- **Dokunmatik:** dikey sürükleme yürütür; çift dokunuş sıradaki kapıya ya da kabartmaya gider.
+  - Birinci şahıs, göz hizasında; yürüyüş rotaya bağlı (W/joystick bakılan yöne göre ileri/geri), bakış serbest. Ritüelde eğilince göz alçalır.
+  - Rölyef İnceleme yalnızca oyuncu E'ye / düğmeye basınca açılır; kamera kendiliğinden yer değiştirmez.
+- **Dokunmatik:** sol joystick yürütür, ekranı sürüklemek bakar; ≫ düğmesi (ya da N) sıradaki kapıya ya da kabartmaya götürür.
 
 ## Mobil performans test listesi (6 km sur + aşınma)
 Gerçek telefonda kare hızı ölçülmedi. Yazılımsal GPU'yla (swiftshader) yapılan denemede düşük kademede ~16 kare/sn görüldü. Bu sayı gerçek cihazı temsil etmez.

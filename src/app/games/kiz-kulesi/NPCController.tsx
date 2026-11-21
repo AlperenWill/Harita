@@ -60,14 +60,16 @@ export function Character({ rig, palette, castShadow = false }: { rig: React.Mut
     kaftan: new THREE.MeshStandardMaterial({ color: palette.kaftan ?? palette.top, roughness: 0.75, side: THREE.DoubleSide }),
     sash: new THREE.MeshStandardMaterial({ color: palette.sash ?? '#c9a24a', roughness: 0.6 }),
     trim: new THREE.MeshStandardMaterial({ color: palette.trim ?? '#d8b45a', roughness: 0.4, metalness: 0.4 }),
-    hat: new THREE.MeshStandardMaterial({ color: palette.hatColor ?? '#f2eee4', roughness: 0.85 }),
+    hat: new THREE.MeshStandardMaterial({ color: palette.hatColor ?? '#f2eee4', roughness: 0.85, side: THREE.DoubleSide }),
     beard: new THREE.MeshStandardMaterial({ color: palette.beard ?? palette.hair, roughness: 0.95 }),
     dark: new THREE.MeshBasicMaterial({ color: '#1b1210' }),
+    eyeW: new THREE.MeshStandardMaterial({ color: '#f1ece4', roughness: 0.4 }),
+    lips: new THREE.MeshStandardMaterial({ color: new THREE.Color(palette.skin).lerp(new THREE.Color('#9a3b3b'), 0.45), roughness: 0.6 }),
     mouth: new THREE.MeshBasicMaterial({ color: '#5a1d1d' }),
   }), [palette]);
 
   const root = useRef<THREE.Group>(null!), hips = useRef<THREE.Group>(null!), chest = useRef<THREE.Group>(null!), head = useRef<THREE.Group>(null!), jaw = useRef<THREE.Group>(null!);
-  const legL = useRef<THREE.Group>(null!), legR = useRef<THREE.Group>(null!);
+  const legL = useRef<THREE.Group>(null!), legR = useRef<THREE.Group>(null!), knL = useRef<THREE.Group>(null!), knR = useRef<THREE.Group>(null!);
   const shL = useRef<THREE.Group>(null!), shR = useRef<THREE.Group>(null!), elL = useRef<THREE.Group>(null!), elR = useRef<THREE.Group>(null!);
   const scarf = useRef<THREE.Group[]>([]);
   const w = useRef<Weights>({ ...ZERO });
@@ -88,7 +90,9 @@ export function Character({ rig, palette, castShadow = false }: { rig: React.Mut
     hips.current.rotation.z = W.idle * Math.sin(t * 0.5) * 0.02;
     chest.current.rotation.x = W.idle * Math.sin(t * 1.4) * 0.02 + W.walk * 0.04 + W.talk * Math.sin(t * 1.9) * 0.03;
     chest.current.rotation.y = W.walk * sw * 0.08;
-    legL.current.rotation.x = W.walk * sw * 0.6; legR.current.rotation.x = -W.walk * sw * 0.6;
+    legL.current.rotation.x = W.walk * sw * 0.55; legR.current.rotation.x = -W.walk * sw * 0.55;
+    // diz: bacak öne savrulurken bükülür (salınım evresi), basarken neredeyse düz
+    const cph = Math.cos(ph); knL.current.rotation.x = -W.walk * (0.08 + 0.75 * Math.max(0, cph)); knR.current.rotation.x = -W.walk * (0.08 + 0.75 * Math.max(0, -cph));
 
     // kollar: yürüme salınımı + konuşma el hareketleri
     const talkL = 0.35 + 0.25 * Math.sin(t * 2.3), talkR = 0.45 + 0.3 * Math.sin(t * 1.7 + 1);
@@ -117,68 +121,88 @@ export function Character({ rig, palette, castShadow = false }: { rig: React.Mut
     scarf.current.forEach((g, i) => { if (g) g.rotation.x = -0.35 - r.wind * (0.6 + Math.sin(t * 7 + i * 1.3) * 0.35) * (i + 1) * 0.5; });
   });
 
+  const cloth = palette.kaftan ? M.kaftan : M.top;
   return (
     <group ref={root}>
       <group ref={hips}>
+        {!palette.kaftan && <mesh geometry={G.pelvis} material={M.pants} castShadow={castShadow} />}
         {palette.kaftan && (
           <group>
             {/* uzun kaftan eteği: kalçadan ayak bileğine açılan, içi boş koni; bacaklar altında salınır */}
-            <mesh material={M.kaftan} position={[0, -0.42, 0]} castShadow={castShadow}><cylinderGeometry args={[0.2, 0.36, 0.86, 14, 1, true]} /></mesh>
-            <mesh material={M.trim} position={[0, -0.84, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.36, 0.012, 4, 20]} /></mesh>
-            <mesh material={M.trim} position={[0, -0.42, -0.21]} rotation={[0.21, 0, 0]}><boxGeometry args={[0.03, 0.86, 0.01]} /></mesh>
-            <mesh material={M.sash} position={[0, 0.06, 0]}><cylinderGeometry args={[0.185, 0.19, 0.1, 14]} /></mesh>
+            <mesh material={M.kaftan} position={[0, -0.42, 0]} scale={[1, 1, 0.82]} castShadow={castShadow}><cylinderGeometry args={[0.15, 0.34, 0.86, 16, 1, true]} /></mesh>
+            <mesh material={M.trim} position={[0, -0.84, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 0.82, 1]}><torusGeometry args={[0.34, 0.011, 4, 24]} /></mesh>
+            <mesh material={M.trim} position={[0, -0.42, -0.2]} rotation={[0.2, 0, 0]}><boxGeometry args={[0.028, 0.86, 0.01]} /></mesh>
+            <mesh material={M.sash} position={[0, 0.045, 0]} scale={[1, 1, 0.8]}><cylinderGeometry args={[0.158, 0.162, 0.12, 16]} /></mesh>
           </group>
         )}
-        <group ref={legL} position={[-0.1, 0, 0]}><mesh geometry={G.leg} material={M.pants} castShadow={castShadow} /><mesh geometry={G.shoe} material={M.shoes} /></group>
-        <group ref={legR} position={[0.1, 0, 0]}><mesh geometry={G.leg} material={M.pants} castShadow={castShadow} /><mesh geometry={G.shoe} material={M.shoes} /></group>
+        {([[legL, knL, -0.09], [legR, knR, 0.09]] as const).map(([leg, kn, x], i) => (
+          <group key={i} ref={leg} position={[x, 0, 0]}>
+            {!palette.kaftan && <mesh geometry={G.thigh} material={M.pants} castShadow={castShadow} />}
+            <group ref={kn} position={[0, -DIM.thigh, 0]}><mesh geometry={G.shin} material={M.pants} castShadow={castShadow} /><mesh geometry={G.shoe} material={M.shoes} /></group>
+          </group>
+        ))}
         <group ref={chest}>
-          <mesh geometry={G.torso} material={palette.kaftan ? M.kaftan : M.top} castShadow={castShadow} />
-          {palette.kaftan && <mesh material={M.trim} position={[0, DIM.torso * 0.55, -0.125]}><boxGeometry args={[0.03, DIM.torso * 0.9, 0.01]} /></mesh>}
-          <group position={[0, DIM.torso + 0.02, 0]}>
-            <mesh geometry={G.neck} material={M.skin} position={[0, 0.03, 0]} />
+          <mesh geometry={G.torso} material={cloth} castShadow={castShadow} />
+          {palette.kaftan && <mesh material={M.trim} position={[0, DIM.torso * 0.5, -0.1]}><boxGeometry args={[0.026, DIM.torso * 0.85, 0.01]} /></mesh>}
+          <group position={[0, DIM.torso, 0]}>
+            <mesh geometry={G.neck} material={M.skin} position={[0, 0.04, 0]} />
             {palette.scarf && (
               <>
-                <mesh geometry={G.collar} material={M.scarf} position={[0, -0.01, 0]} />
+                <mesh geometry={G.collar} material={M.scarf} position={[0, 0.0, 0]} />
                 {/* atkının uçları: üç halkalı zincir, sırtta rüzgârla dalgalanır */}
-                <group position={[0.04, -0.01, 0.07]}>
+                <group position={[0.035, -0.01, 0.07]}>
                   <group ref={(g) => { if (g) scarf.current[0] = g; }}><mesh geometry={G.scarf} material={M.scarf} />
-                    <group position={[0, -0.16, 0]} ref={(g) => { if (g) scarf.current[1] = g; }}><mesh geometry={G.scarf} material={M.scarf} />
-                      <group position={[0, -0.16, 0]} ref={(g) => { if (g) scarf.current[2] = g; }}><mesh geometry={G.scarf} material={M.scarf} /></group>
+                    <group position={[0, -0.15, 0]} ref={(g) => { if (g) scarf.current[1] = g; }}><mesh geometry={G.scarf} material={M.scarf} />
+                      <group position={[0, -0.15, 0]} ref={(g) => { if (g) scarf.current[2] = g; }}><mesh geometry={G.scarf} material={M.scarf} /></group>
                     </group>
                   </group>
                 </group>
               </>
             )}
-            <group ref={head} position={[0, 0.2, 0]}>
+            <group ref={head} position={[0, 0.185, 0]}>
               <mesh geometry={G.head} material={M.skin} castShadow={castShadow} />
-              {!palette.hat && <mesh geometry={G.hair} material={M.hair} position={[0, 0.02, 0.01]} rotation={[-0.25, 0, 0]} />}
-              {palette.hat === 'sarik' && <group position={[0, 0.06, 0.01]}><mesh material={M.hat} scale={[1, 0.62, 1]}><sphereGeometry args={[0.19, 16, 10]} /></mesh><mesh material={M.hat} position={[0, -0.02, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.165, 0.05, 8, 20]} /></mesh></group>}
-              {palette.hat === 'kavuk' && <group position={[0, 0.1, 0.01]}><mesh material={M.hat}><cylinderGeometry args={[0.13, 0.16, 0.34, 14]} /></mesh><mesh material={M.hat} position={[0, -0.12, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.17, 0.055, 8, 20]} /></mesh><mesh material={M.trim} position={[0, 0.17, 0]}><sphereGeometry args={[0.03, 8, 6]} /></mesh></group>}
-              {palette.hat === 'bork' && <group position={[0, 0.12, 0.02]}><mesh material={M.hat}><cylinderGeometry args={[0.1, 0.15, 0.36, 12]} /></mesh><mesh material={M.hat} position={[0, 0.12, 0.13]} rotation={[0.9, 0, 0]} scale={[1, 1, 0.3]}><cylinderGeometry args={[0.1, 0.12, 0.42, 10]} /></mesh><mesh material={M.trim} position={[0, -0.12, -0.15]}><boxGeometry args={[0.05, 0.1, 0.02]} /></mesh></group>}
-              {palette.hat === 'fes' && <mesh material={M.hat} position={[0, 0.13, 0.01]}><cylinderGeometry args={[0.1, 0.13, 0.16, 14]} /></mesh>}
-              {palette.hat === 'yemeni' && <mesh material={M.hat} position={[0, 0.02, 0.025]} scale={[1.08, 1.12, 1.1]}><sphereGeometry args={[0.155, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.62]} /></mesh>}
-              {palette.beard && <mesh material={M.beard} position={[0, -0.075, -0.09]} scale={[1, 1.15, 0.8]}><sphereGeometry args={[0.095, 10, 8]} /></mesh>}
-              {[-1, 1].map((s) => <mesh key={s} geometry={G.eye} material={M.dark} position={[s * 0.052, 0.025, -0.135]} />)}
-              {[-1, 1].map((s) => <mesh key={`b${s}`} geometry={G.brow} material={M.hair} position={[s * 0.052, 0.062, -0.14]} rotation={[0, 0, s * -0.12]} />)}
-              <mesh geometry={G.nose} material={M.skin} position={[0, -0.005, -0.155]} />
-              <mesh geometry={G.mouthTop} material={M.mouth} position={[0, -0.058, -0.142]} />
+              {[-1, 1].map((s) => <mesh key={`e${s}`} geometry={G.ear} material={M.skin} position={[s * 0.1, 0.0, 0.008]} />)}
+              {!palette.hat && <><mesh geometry={G.hair} material={M.hair} position={[0, 0.012, 0.01]} rotation={[0.3, 0, 0]} /><mesh geometry={G.hairBack} material={M.hair} position={[0, 0, 0.004]} /></>}
+              {/* başlıklar ve sakal eski (büyük) baş ölçüsüne göre çizildi: 0,78 ölçekle küçültülür */}
+              <group scale={0.78}>
+                {palette.hat === 'sarik' && <group position={[0, 0.06, 0.01]}><mesh material={M.hat} scale={[1, 0.62, 1]}><sphereGeometry args={[0.19, 16, 10]} /></mesh><mesh material={M.hat} position={[0, -0.02, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.165, 0.05, 8, 20]} /></mesh></group>}
+                {palette.hat === 'kavuk' && <group position={[0, 0.1, 0.01]}><mesh material={M.hat}><cylinderGeometry args={[0.13, 0.16, 0.34, 14]} /></mesh><mesh material={M.hat} position={[0, -0.12, 0]} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.17, 0.055, 8, 20]} /></mesh><mesh material={M.trim} position={[0, 0.17, 0]}><sphereGeometry args={[0.03, 8, 6]} /></mesh></group>}
+                {palette.hat === 'bork' && <group position={[0, 0.12, 0.02]}><mesh material={M.hat}><cylinderGeometry args={[0.1, 0.15, 0.36, 12]} /></mesh><mesh material={M.hat} position={[0, 0.12, 0.13]} rotation={[0.9, 0, 0]} scale={[1, 1, 0.3]}><cylinderGeometry args={[0.1, 0.12, 0.42, 10]} /></mesh><mesh material={M.trim} position={[0, -0.12, -0.15]}><boxGeometry args={[0.05, 0.1, 0.02]} /></mesh></group>}
+                {palette.hat === 'fes' && <mesh material={M.hat} position={[0, 0.13, 0.01]}><cylinderGeometry args={[0.1, 0.13, 0.16, 14]} /></mesh>}
+                {palette.beard && <mesh material={M.beard} position={[0, -0.095, -0.085]} scale={[0.95, 1.05, 0.75]}><sphereGeometry args={[0.09, 10, 8]} /></mesh>}
+              </group>
+              {palette.hat === 'yemeni' && (
+                /* yemeni (başörtüsü): tepe + yüzü açık bırakan yan/arka örtü + omuza inen etek */
+                <group position={[0, 0.004, 0.006]}>
+                  <mesh material={M.hat} rotation={[0.34, 0, 0]}><sphereGeometry args={[DIM.headR * 1.13, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.52]} /></mesh>
+                  <mesh material={M.hat} scale={[0.96, 1.16, 1.06]}><sphereGeometry args={[DIM.headR * 1.1, 16, 10, -Math.PI / 2 + 0.95, Math.PI * 2 - 1.9, Math.PI * 0.3, Math.PI * 0.5]} /></mesh>
+                  <mesh material={M.hat} position={[0, -0.16, 0.012]} scale={[1, 1, 0.8]}><cylinderGeometry args={[0.085, 0.17, 0.16, 16, 1, true, Math.PI + 0.85, Math.PI * 2 - 1.7]} /></mesh>
+                </group>
+              )}
+              {/* gözler: beyaz + koyu iris (konuşurken baş dönünce bakış da döner) */}
+              {[-1, 1].map((s) => <group key={s} position={[s * 0.036, 0.012, -0.098]}><mesh geometry={G.sclera} material={M.eyeW} /><mesh geometry={G.iris} material={M.dark} position={[0, 0, -0.006]} /></group>)}
+              {[-1, 1].map((s) => <mesh key={`b${s}`} geometry={G.brow} material={M.hair} position={[s * 0.037, 0.038, -0.103]} rotation={[0, 0, s * -0.12]} />)}
+              <mesh geometry={G.nose} material={M.skin} position={[0, -0.014, -0.11]} />
+              <mesh geometry={G.mouthTop} material={M.lips} position={[0, -0.05, -0.1]} />
               {/* çene "kemiği": dudak senkronunda aşağı döner, içi koyu ağız görünür */}
-              <group ref={jaw} position={[0, -0.06, -0.12]}>
-                <mesh geometry={G.mouthIn} material={M.mouth} position={[0, 0, -0.022]} />
-                <mesh geometry={G.jaw} material={M.skin} position={[0, -0.005, 0]} />
+              <group ref={jaw} position={[0, -0.055, -0.088]}>
+                <mesh geometry={G.mouthIn} material={M.mouth} position={[0, 0, -0.01]} />
+                <mesh geometry={G.jaw} material={M.skin} position={[0, -0.012, 0.004]} />
               </group>
             </group>
           </group>
           {/* omuz → dirsek → el */}
-          <group ref={shL} position={[-0.23, DIM.torso - 0.06, 0]}>
-            <mesh geometry={G.upper} material={palette.kaftan ? M.kaftan : M.top} />
-            <group ref={elL} position={[0, -DIM.upper, 0]}><mesh geometry={G.fore} material={M.skin} /><mesh geometry={G.hand} material={M.skin} position={[0, -DIM.fore, 0]} /></group>
+          <mesh geometry={G.shoulder} material={cloth} position={[-0.175, DIM.torso - 0.085, 0]} />
+          <mesh geometry={G.shoulder} material={cloth} position={[0.175, DIM.torso - 0.085, 0]} />
+          <group ref={shL} position={[-0.19, DIM.torso - 0.09, 0]}>
+            <mesh geometry={G.upper} material={cloth} />
+            <group ref={elL} position={[0, -DIM.upper, 0]}><mesh geometry={G.fore} material={palette.kaftan ? M.kaftan : M.skin} /><group position={[0, -DIM.fore, 0]}><mesh geometry={G.hand} material={M.skin} /><mesh geometry={G.thumb} material={M.skin} scale={[-1, 1, 1]} /></group></group>
           </group>
-          <group ref={shR} position={[0.23, DIM.torso - 0.06, 0]}>
-            <mesh geometry={G.upper} material={palette.kaftan ? M.kaftan : M.top} />
+          <group ref={shR} position={[0.19, DIM.torso - 0.09, 0]}>
+            <mesh geometry={G.upper} material={cloth} />
             <group ref={elR} position={[0, -DIM.upper, 0]}>
-              <mesh geometry={G.fore} material={M.skin} />
-              <group position={[0, -DIM.fore, 0]}><mesh geometry={G.hand} material={M.skin} /><mesh geometry={G.finger} material={M.skin} rotation={[-Math.PI / 2, 0, 0]} /></group>
+              <mesh geometry={G.fore} material={palette.kaftan ? M.kaftan : M.skin} />
+              <group position={[0, -DIM.fore, 0]}><mesh geometry={G.hand} material={M.skin} /><mesh geometry={G.thumb} material={M.skin} /><mesh geometry={G.finger} material={M.skin} rotation={[-Math.PI / 2, 0, 0]} /></group>
             </group>
           </group>
         </group>

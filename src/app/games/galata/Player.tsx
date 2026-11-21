@@ -5,9 +5,10 @@
  * fareyle bak (GalataTowerGame). Dokunmatik: sol joystick yürür, ekranın geri kalanında sürükleme bakar.
  * Bölüm kuralları:
  *   zindan   — dikdörtgen oda; fener bakışı izler (DungeonScene); armalar bulununca kapıya yürü
- *   merdiven — sarmal: konum açısından basamak yüksekliği; çıkmak nefes harcar; pencereden bak → tarih kartı
+ *   merdiven — sarmal: konum açısından basamak yüksekliği; çıkmak nefes harcar; pencereye bakınca "Pencereden bak (E)"
  *   sergi    — yuvarlak oda; vitrinlerin çevresinden dolan; yakındaki vitrine bakınca "İncele"
- *   teras    — balkon halkası; uzak tarihi noktaya bakınca (dürbünle daha kolay) tanınır
+ *   teras    — balkon halkası; uzak tarihi noktaya bakınca (dürbünle daha kolay) "Tanı (E)" çıkar
+ * Hiçbir kart kendiliğinden açılmaz: Player yalnızca bakılan hedefi 'near' olayıyla bildirir, kartı oyuncu E ile açar.
  */
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
@@ -17,7 +18,7 @@ import { DOOR, DOOR_REACH, DUNGEON, DUNGEON_AREA, TOWER } from './dungeon';
 import { EXHIBITS, EXHIBIT_AREA, EXIT, EXIT_REACH, INSPECT_REACH, VITRINE_CIRCLES, vitrinePos } from './exhibits';
 import { VIEWPOINTS, toLocal } from './panorama';
 import * as St from './StaircaseMechanic';
-import { WALK_SPEED, clampTo, dwell, lookError, pushOut, walk, yawError, type Area } from './firstPerson';
+import { WALK_SPEED, clampTo, lookError, pushOut, walk, yawError, type Area } from './firstPerson';
 import { BALCONY_R } from './TowerExterior';
 import { galataAudio } from './AudioManager';
 
@@ -73,12 +74,13 @@ export function Player({ chapter, done, onEvent }: { chapter: Chapter; done: { c
       fp.breath = St.breathStep(fp.breath, y - prevY, moving, atWin, dt);
       if (Math.abs(fp.breath - S.lastBreath) > 0.02) { S.lastBreath = fp.breath; ev.current({ type: 'breath', value: fp.breath }); }
       S.breathT -= dt; if (fp.breath < 0.3 && moving && S.breathT <= 0) { galataAudio.breath(1.4); S.breathT = 2.6; }
+      let nw: string | null = null;
       for (const w of St.WINDOWS) {
         if (D.windows.includes(w.id) || !St.atWindow(th, w)) continue;
         const wp: [number, number, number] = [Math.cos(w.theta) * St.WALL_R, St.windowY(w), Math.sin(w.theta) * St.WALL_R];
-        S.dwell[w.id] = dwell(S.dwell[w.id] ?? 0, lookError([x, y, z], fp.yaw, fp.pitch, wp) < 0.4, dt);
-        if (S.dwell[w.id] > 0.8 && !S.sent.has(w.id)) { S.sent.add(w.id); ev.current({ type: 'window', id: w.id }); }
+        if (lookError([x, y, z], fp.yaw, fp.pitch, wp) < 0.55) nw = w.id;
       }
+      if (nw !== S.near) { S.near = nw; ev.current({ type: 'near', id: nw }); }
       if (th >= St.TOP_THETA && !S.sent.has('top')) { S.sent.add('top'); ev.current({ type: 'stairs-top' }); }
     }
     if (chapter === 'sergi') {
@@ -93,12 +95,12 @@ export function Player({ chapter, done, onEvent }: { chapter: Chapter; done: { c
     }
     if (chapter === 'teras' || chapter === 'son') {
       [x, z] = clampTo(TERRACE_AREA, [x, z]); y = TERRACE_EYE;
-      if (chapter === 'teras') VIEWPOINTS.forEach((v, i) => {
-        if (D.viewed.includes(v.id)) return;
-        const ok = yawError([x, z], fp.yaw, toLocal(v.coord)) < (fp.zoom ? 0.09 : 0.06) && fp.pitch > -0.45 && fp.pitch < 0.35;
-        S.dwell[v.id] = dwell(S.dwell[v.id] ?? 0, ok, dt);
-        if (S.dwell[v.id] > (fp.zoom ? 0.6 : 1.2) && !S.sent.has(v.id)) { S.sent.add(v.id); ev.current({ type: 'viewpoint', index: i }); }
-      });
+      if (chapter === 'teras') {
+        let nv: string | null = null;
+        for (const v of VIEWPOINTS) { if (D.viewed.includes(v.id)) continue;
+          if (yawError([x, z], fp.yaw, toLocal(v.coord)) < (fp.zoom ? 0.09 : 0.06) && fp.pitch > -0.45 && fp.pitch < 0.35) nv = v.id; }
+        if (nv !== S.near) { S.near = nv; ev.current({ type: 'near', id: nv }); }
+      }
     }
 
     // adım sesi ve baş sallanması

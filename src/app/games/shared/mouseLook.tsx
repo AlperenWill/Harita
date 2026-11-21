@@ -12,7 +12,8 @@ import { useSettings } from './hud/settings';
 export function useMouseLook(apply: (dx: number, dy: number) => void, enabled: () => boolean) {
   const [locked, setLocked] = useState(false), a = useRef(apply), en = useRef(enabled); a.current = apply; en.current = enabled;
   useEffect(() => {
-    const mv = (e: MouseEvent) => { if (!document.pointerLockElement) return; if (!en.current()) { document.exitPointerLock?.(); return; } const k = useSettings.getState().sensitivity; a.current(e.movementX * k, e.movementY * k); };
+    const mv = (e: MouseEvent) => { if (!document.pointerLockElement) return; if (!en.current()) { document.exitPointerLock?.(); return; } if (Math.abs(e.movementX) > 250 || Math.abs(e.movementY) > 250) return;   // Chromium kilit sonrası bazen tek seferlik dev sıçrama verir
+      const k = useSettings.getState().sensitivity; a.current(e.movementX * k, e.movementY * k); };
     const ch = () => setLocked(!!document.pointerLockElement);
     const id = setInterval(() => { if (document.pointerLockElement && !en.current()) document.exitPointerLock?.(); }, 150);
     addEventListener('mousemove', mv); document.addEventListener('pointerlockchange', ch);

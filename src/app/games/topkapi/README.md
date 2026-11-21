@@ -4,8 +4,8 @@ Rota: `/oyun/topkapi` (3D haritada Topkapı kartındaki **Oyna** düğmesi). Gir
 
 ## Oynanış
 - **Serbest yürüyüş:** joystick (mobil) / WASD (masaüstü), Shift ile koşma. Hız 3,5 m/sn.
-- **Üçüncü şahıs kamera:** ekranı sürükleyerek çevrilir, iki parmak ya da tekerlek ile yakınlaşır. Oyuncu ileri yürürken kendiliğinden arkasına döner, duvar ve binaların içine girmez (`camClear`).
-- **Rehber Hasan Efendi** (kurgusal saray kâtibi) on duraklık turu yönetir (`TOUR`). Sıradaki durağa yürür, oyuncu çok geride kalırsa bekler. Oyuncu yanına gelince anlatır; yazı daktilo efektiyle gelir, sesli okuma açılıp kapatılabilir. Durak bir iç mekândaysa kapının önünde bekler ve oyuncuyla birlikte geçer. Tur bitince oyuncuyu izler.
+- **Birinci şahıs kamera:** göz hizası (1,62 m; alçak tavanda tavanın altında kalır). Masaüstünde tıkla + fareyle, telefonda sürükleyerek bakılır. Oyuncunun kendi modeli çizilmez.
+- **Rehber Hasan Efendi** (kurgusal saray kâtibi) on duraklık turu yönetir (`TOUR`). Sıradaki durağa yürür, oyuncu çok geride kalırsa bekler. Oyuncu yanına gelip **E**'ye (ya da "Konuş" düğmesine) basınca anlatır, kendiliğinden başlamaz; yazı daktilo efektiyle gelir, sesli okuma açılıp kapatılabilir. Durak bir iç mekândaysa kapının önünde bekler ve oyuncuyla birlikte geçer. Tur bitince oyuncuyu izler.
 - **Yol bulma:** her bölge için ızgara + hedef başına BFS akış alanı (`guideStep`, `nextWaypoint`). Görüş açıksa doğrudan yürür.
 - **İnceleme:** yakındaki yapı ya da nesne için "İncele" düğmesi (F) bilgi kartı açar; her kartta kaynak bağlantısı var. Hazinede vitrine yaklaşılır, nesne sürükleyerek çevrilir.
 - **Kapılar:** yaklaşınca "gir" düğmesi (E). Ekran kararır, bölge değişir.

@@ -3,7 +3,7 @@
  *
  * Oyuncu belgeleme ekibinin fotoğrafçısıdır. Aslanlı Kapı'dan girer, plato boyunca güneye yürür:
  * surlar → Katedral → Ebul Menuçehr Camii → Tigran Honents → Arpaçay Köprüsü kalıntısı → Kız Kalesi.
- * MEKANİK: her noktada vizör açılır; yapıyı ekranın ortasına (yatay yön) alınca deklanşör yanar, çekince albüme girer ve kart açılır.
+ * MEKANİK: her noktada "Vizörü aç (E)" çıkar (kendiliğinden açılmaz); vizörde yapıyı ekranın ortasına (yatay yön) alınca deklanşör yanar, çekince albüme girer ve kart açılır.
  * KAMERA: birinci şahıs, rotaya kilitli (Troya, Efes ile aynı şema).
  */
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
@@ -14,12 +14,12 @@ import { create } from 'zustand';
 import { Camera, ChevronRight, Footprints, MousePointer2 } from 'lucide-react';
 import { ROUTE_LEN, SHOTS, AIM_TOL, aimError, nearShot, routeAt, type Shot } from './site';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { Controls, EndCard, GameMenu, Hint, HudTheme, InfoCard, NavRail, Objective, StopList, TitleCard, TopBar, WalkAudio, useAudioSettings, WikiFallback, detectTier, dprFor, newLive, pinned, stepWalk, supportsWebGL, useWalkInput, wrapA, type CamState, type Tier } from '../shared/walkKit';
+import { Controls, EndCard, GameMenu, Hint, HudTheme, InfoCard, InteractPrompt, NavRail, Objective, StopList, TitleCard, TopBar, WalkAudio, useAudioSettings, WikiFallback, detectTier, dprFor, newLive, pinned, stepWalk, supportsWebGL, useWalkInput, wrapA, type CamState, type Tier } from '../shared/walkKit';
 import { Bridge, Cathedral, Clouds, Columns, FarHills, Grass, SUN_DIR, Sun, HalfChurch, MaidenCastle, Mosque, River, RoundChurch, Rubble, Ruins, Terrain, Tigran, Walls, useMats } from './AniModels';
 
 const audio = new WalkAudio({ freq: 420, gain: 0.11 }, 'female');
-interface S { started: boolean; albumOpen: boolean; album: string[]; near: Shot | null; framed: boolean; card: Shot | null; flash: number; muted: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, albumOpen: false, album: [] as string[], near: null, framed: false, card: null, flash: 0, endShown: false };
+interface S { started: boolean; albumOpen: boolean; album: string[]; near: Shot | null; framed: boolean; vf: boolean; card: Shot | null; flash: number; muted: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, albumOpen: false, album: [] as string[], near: null, framed: false, vf: false, card: null, flash: 0, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, set: (p) => set(p) }));
 const live = newLive();
 const pause = { on: false };   // ≡ menü açıkken oyun durur
@@ -39,8 +39,8 @@ function Game({ onExit }: { onExit: () => void }) {
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
   const shoot = useCallback(() => { const s = useDb.getState(), n = s.near; if (!n || !s.framed || s.album.includes(n.id)) return;
     audio.click(); audio.tone(true); s.set({ album: [...s.album, n.id], card: n, flash: Date.now() }); audio.speak(`${n.name}. ${n.text}`); }, []);
-  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); if (e.code === 'Space' || e.code === 'Enter') shoot(); }, () => audio.unlock(), () => { const s = useDb.getState(); return s.started && !s.card && !s.albumOpen; });
-  const pending = S.near && !S.album.includes(S.near.id) && !S.card && !S.albumOpen;
+  const input = useWalkInput(live, () => useDb.getState().started, (e) => { const s = useDb.getState(); if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'Escape' && s.vf) s.set({ vf: false }); else if (e.code === 'KeyE' && s.near && !s.album.includes(s.near.id)) { if (s.vf) shoot(); else s.set({ vf: true }); } if (e.code === 'Space' || e.code === 'Enter') shoot(); }, () => audio.unlock(), () => { const s = useDb.getState(); return s.started && !s.card && !s.albumOpen; });
+  const pending = S.near && !S.album.includes(S.near.id) && !S.card && !S.albumOpen;   // vizör yalnızca oyuncu açınca (E) görünür
   const goTo = useCallback((i: number) => { if (i < 0 || i >= SHOTS.length) return; nav.to = SHOTS[i].s; nav.speed = Math.max(18, Math.abs(nav.to - live.s) / 3); useDb.getState().set({ card: null, albumOpen: false }); audio.hush(); }, []);
   const restart = useCallback(() => { audio.hush(); Object.assign(live, newLive()); nav.to = null; useDb.setState({ ...INITIAL, started: true }); }, []);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __ani: unknown }).__ani = { go: (s: number) => { live.s = s; useDb.getState().set({ started: true }); }, look: (y: number, p = 0) => { live.yaw = y; live.pitch = p; }, shoot, goTo, state: () => ({ ...useDb.getState(), s: live.s, yaw: live.yaw, pitch: live.pitch }), SHOTS, ROUTE_LEN }; }, [shoot, goTo]);
@@ -59,7 +59,8 @@ function Game({ onExit }: { onExit: () => void }) {
       <TopBar onExit={onExit} objective={S.started ? <Objective icon={<Camera size={15} />} label={nextShot ? `Sıradaki: ${nextShot.name}` : 'Albüm tamam'} done={S.album.length} total={SHOTS.length} /> : undefined} menu={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} />} />
       {S.started && !S.albumOpen && <NavRail onNext={() => goTo(nI)} onPrev={() => goTo(pI)} onTurn={() => { nav.turn += Math.PI; }} onList={() => S.set({ albumOpen: true, card: null })} nextDisabled={nI < 0} prevDisabled={pI < 0} listLabel="Belge albümü" />}
       {S.albumOpen && <StopList title="Belge albümü" items={SHOTS.map((x) => ({ id: x.id, name: x.name, done: S.album.includes(x.id) }))} doneLabel="Fotoğraflandı" todoLabel="Henüz çekilmedi" onGo={goTo} onRead={(i) => { const x = SHOTS[i]; S.set({ albumOpen: false, card: x }); audio.speak(`${x.name}. ${x.text}`); }} onRestart={restart} onClose={() => S.set({ albumOpen: false })} />}
-      {pending && <Viewfinder name={S.near!.name} framed={S.framed} onShoot={shoot} />}
+      {pending && !S.vf && <InteractPrompt icon={<Camera size={18} />} label={`Vizörü aç: ${S.near!.name}`} onClick={() => S.set({ vf: true })} />}
+      {pending && S.vf && <Viewfinder name={S.near!.name} framed={S.framed} onShoot={shoot} />}
       {S.flash > 0 && <Flash key={S.flash} />}
       {S.started && !pending && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · W/S yürü · tıkla, fareyle bak (Esc: bırak) · Boşluk: çek</span></Hint>}
       {S.card && !S.albumOpen && <InfoCard kicker={`Fotoğraf ${S.album.indexOf(S.card.id) + 1} / ${SHOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} />}
@@ -92,7 +93,7 @@ const THEME = { accent: '#b5523b' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da <b>W/S</b>: ileri / geri yürü</> },
   { icon: <MousePointer2 size={16} />, text: <>Yatay sürükle ya da <b>tıkla, fareyle bak</b> (Esc imleci bırakır)</> },
-  { icon: <Camera size={16} />, text: <>Yapıyı vizörün ortasına al, deklanşöre bas (<b>Boşluk</b>)</> },
+  { icon: <Camera size={16} />, text: <><b>E</b>: vizörü aç · yapıyı ortaya al, deklanşöre bas (<b>E</b> / <b>Boşluk</b>)</> },
   { icon: <ChevronRight size={16} />, text: <>Sağdaki oklar ya da çift dokunuş: sonraki / önceki durak</> },
 ];
 
@@ -134,10 +135,10 @@ function Controller() {
     if (nav.turn) { const k = Math.sign(nav.turn) * Math.min(Math.abs(nav.turn), dt * 4); live.yaw += k; nav.turn -= k; }
     if (stepWalk(camera, live, cs.current, { ROUTE_LEN, routeAt }, dt, !S.card && !S.albumOpen && nav.to === null && !pause.on)) audio.step(650);
     const n = nearShot(live.s);
-    if (n && n.target[1] < -10) { const want = Math.max(-0.7, Math.atan2(n.target[1] - camera.position.y, Math.hypot(n.target[0] - camera.position.x, n.target[2] - camera.position.z)) + 0.05); live.pitch += (want - live.pitch) * (1 - Math.exp(-dt * 2)); }   // kanyon dibindeki hedef: dokunmatikte eğim olmadığı için kamera kendiliğinden aşağı bakar
+    if (n && S.vf && n.target[1] < -10) { const want = Math.max(-0.7, Math.atan2(n.target[1] - camera.position.y, Math.hypot(n.target[0] - camera.position.x, n.target[2] - camera.position.z)) + 0.05); live.pitch += (want - live.pitch) * (1 - Math.exp(-dt * 2)); }   // kanyon dibindeki hedef: dokunmatikte eğim olmadığı için kamera kendiliğinden aşağı bakar
     else if (n === null && live.pitch < -0.2) live.pitch += (0 - live.pitch) * (1 - Math.exp(-dt * 2));
     camera.getWorldDirection(_f); const framed = !!n && aimError([camera.position.x, camera.position.z], [_f.x, _f.z], [n.target[0], n.target[2]]) < AIM_TOL;
-    if ((n?.id ?? null) !== (S.near?.id ?? null) || framed !== S.framed) S.set({ near: n, framed, ...(n ? {} : { card: null }) });
+    if ((n?.id ?? null) !== (S.near?.id ?? null) || framed !== S.framed) S.set({ near: n, framed, ...(n ? {} : { card: null }), ...((n?.id ?? null) !== (S.near?.id ?? null) ? { vf: false } : {}) });
   });
   return null;
 }

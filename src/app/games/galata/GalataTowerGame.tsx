@@ -15,14 +15,14 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Sky } from '@react-three/drei';
 import { Binoculars, Eye, Flashlight, Footprints, MousePointer2, Play, Search, Wind } from 'lucide-react';
-import { ActionDock, Controls, EndSheet, GameMenu, Hint, HudTheme, InfoSheet, Objective, RoundAction, StartSheet, TopRow } from '../shared/hud/Hud';
+import { ActionDock, Controls, EndSheet, GameMenu, Hint, HudTheme, InfoSheet, InteractPrompt, Objective, RoundAction, StartSheet, TopRow } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
 import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
 import { Joystick } from '../shared/Joystick';
 import { CHAPTERS, CHAPTER_LABEL, useGalata, type Chapter } from './store';
 import { galataAudio, type Floor } from './AudioManager';
 import { supportsWebGL, useDevice } from './device';
-import { CRESTS, FIND_SECONDS } from './dungeon';
+import { CRESTS } from './dungeon';
 import { EXHIBITS } from './exhibits';
 import { VIEWPOINTS, bearingOf } from './panorama';
 import { WINDOWS } from './StaircaseMechanic';
@@ -39,8 +39,8 @@ const FLOOR: Record<Chapter, Floor> = { giris: 'giris', zindan: 'zindan', merdiv
 const isTouch = typeof window !== 'undefined' && matchMedia('(pointer: coarse)').matches;
 const SRC = { title: 'Wikipedia — Galata Tower', url: 'https://en.wikipedia.org/wiki/Galata_Tower' };
 const INTRO_TEXT = 'Galata Kulesi 1348’de Cenevizliler tarafından yapıldı. Yüzyıllar boyunca gözetleme kulesi, zindan ve yangın kulesi oldu. Şimdi kulenin içinde, kendi gözlerinle aşağıdan yukarıya tırmanacaksın.';
-const STAIR_TEXT = 'Dar sarmal merdiveni yürüyerek çık. Yükseldikçe nefesin azalır; durunca, en çok da bir pencerenin önünde dinlenince yeniden dolar. Pencerelerden dışarı bak.';
-const TERRACE_TEXT = 'Terasa ulaştın. Gün batıyor. Balkonda kulenin çevresinde yürü ve dört tarihi noktayı bul. Dürbünle daha kolay seçersin.';
+const STAIR_TEXT = 'Dar sarmal merdiveni yürüyerek çık. Yükseldikçe nefesin azalır; durunca, en çok da bir pencerenin önünde dinlenince yeniden dolar. Bir pencereye bakıp E’ye basarak dışarı bak.';
+const TERRACE_TEXT = 'Terasa ulaştın. Gün batıyor. Balkonda kulenin çevresinde yürü ve dört tarihi noktayı bul; birine bakınca E ile tanı. Dürbünle daha kolay seçersin.';
 const DIRS = ['kuzey', 'kuzeydoğu', 'doğu', 'güneydoğu', 'güney', 'güneybatı', 'batı', 'kuzeybatı'];
 const dirName = (b: number) => DIRS[Math.round(b / 45) % 8];
 
@@ -54,7 +54,7 @@ function Game({ onExit }: { onExit: () => void }) {
   const g = useGalata();
   const [fade, setFade] = useState(false), [paused, setPaused] = useState(false);
   const [card, setCard] = useState<{ title: string; era?: string; text: string; source?: { title: string; url: string } } | null>(null);
-  const [windows, setWindows] = useState<string[]>([]), [near, setNear] = useState<string | null>(null), [breath, setBreath] = useState(1), [hold, setHold] = useState(0), [zoom, setZoom] = useState(false);
+  const [windows, setWindows] = useState<string[]>([]), [near, setNear] = useState<string | null>(null), [breath, setBreath] = useState(1), [zoom, setZoom] = useState(false);
 
   // ---------- ses ----------
   const G = useSettings(); useEffect(() => { galataAudio.setMuted(G.muted); }, [G.muted]);
@@ -75,14 +75,19 @@ function Game({ onExit }: { onExit: () => void }) {
   // ---------- bölüm girişleri ----------
   useEffect(() => {
     setNear(null); setZoom(false); fp.zoom = false;
-    if (g.chapter === 'zindan') galataAudio.speak('Karanlıkta yalnızca fenerin var; baktığın yere düşer. Duvarları tara, gizli armalara feneri tut.');
+    if (g.chapter === 'zindan') galataAudio.speak('Karanlıkta yalnızca fenerin var; baktığın yere düşer. Duvarları tara; fener bir armayı aydınlatınca E ile incele.');
     if (g.chapter === 'merdiven') { setWindows([]); setBreath(1); galataAudio.speak(STAIR_TEXT); }
     if (g.chapter === 'sergi') galataAudio.speak('Salonda dolaş. Bir vitrine yaklaşıp ona bakınca İncele belirir.');
     if (g.chapter === 'teras') { setCard(null); galataAudio.speak(TERRACE_TEXT); }
   }, [g.chapter]);
 
   // ---------- oyuncu olayları ----------
+  /** Oyuncu E'ye / düğmeye basınca: bakılan hedefin kartı (bölüme göre arma, pencere, vitrin, manzara). Hiçbiri kendiliğinden açılmaz. */
   const inspect = useCallback((id: string | null) => {
+    if (!id) return; const c = useGalata.getState().chapter;
+    if (c === 'zindan') { onFindRef.current(id); setNear(null); return; }
+    if (c === 'merdiven') { const w = WINDOWS.find((x) => x.id === id); if (!w) return; setWindows((ws) => ws.includes(w.id) ? ws : [...ws, w.id]); setNear(null); galataAudio.chime(); narrate(w.title, w.text, { era: w.era, source: w.source }); return; }
+    if (c === 'teras') { const i = VIEWPOINTS.findIndex((x) => x.id === id); if (i < 0) return; const v = VIEWPOINTS[i]; useGalata.getState().setViewpoint(i, v.id); setNear(null); galataAudio.chime(); narrate(v.name, v.text, { era: v.era, source: v.source }); return; }
     const e = EXHIBITS.find((x) => x.id === id); if (!e) return;
     useGalata.getState().seeExhibit(e.id); galataAudio.chime(); narrate(e.name, e.text, { era: e.era, source: e.source });
   }, [narrate]);
@@ -100,8 +105,7 @@ function Game({ onExit }: { onExit: () => void }) {
     useGalata.getState().findCrest(id); galataAudio.chime();
     narrate(c.name, c.text, { era: 'Ceneviz · 14. yüzyıl', source: SRC });
   }, [narrate]);
-  const holds = useRef<Record<string, number>>({});
-  useEffect(() => { if (g.chapter !== 'zindan') return; const id = setInterval(() => setHold(Math.max(0, ...Object.values(holds.current)) / FIND_SECONDS), 120); return () => clearInterval(id); }, [g.chapter]);
+  const onFindRef = useRef(onFind); onFindRef.current = onFind;
 
   // ---------- girdiler ----------
   const active = g.chapter !== 'giris' && !paused && !fade;
@@ -114,7 +118,7 @@ function Game({ onExit }: { onExit: () => void }) {
     const down = (e: KeyboardEvent) => {
       keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); if (e.repeat) return;
       const c = useGalata.getState().chapter;
-      if (e.code === 'KeyE') { if (cardRef.current) closeCard(); else if (c === 'sergi') inspect(nearRef.current); }
+      if (e.code === 'KeyE') { if (cardRef.current) closeCard(); else if (c !== 'giris' && c !== 'son') inspect(nearRef.current); }
       if (e.code === 'KeyZ' && (c === 'teras' || c === 'son')) toggleZoom();
     };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
@@ -160,7 +164,7 @@ function Game({ onExit }: { onExit: () => void }) {
         camera={{ fov: 50, near: 0.1, far: 40000, position: [60, 30, 60] }} onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}>
         <Suspense fallback={null}>
           {g.chapter === 'giris' && <Intro blocks={Math.round(device.cityBlocks / 2)} />}
-          {g.chapter === 'zindan' && <DungeonScene found={g.crests} open={allCrests} onHold={(h) => { holds.current = h; }} onFind={onFind} />}
+          {g.chapter === 'zindan' && <DungeonScene found={g.crests} open={allCrests} onAim={setNear} />}
           {g.chapter === 'merdiven' && <StaircaseScene />}
           {g.chapter === 'sergi' && <ExhibitScene seen={g.exhibits} near={near} open={allExhibits} />}
           {(g.chapter === 'teras' || g.chapter === 'son') && <TerracePanorama shadows={device.shadows} blocks={device.cityBlocks} />}
@@ -177,15 +181,16 @@ function Game({ onExit }: { onExit: () => void }) {
         <div className="flex items-center gap-1.5"><Wind size={12} /> Nefes<div className="ml-1 h-1.5 flex-1 overflow-hidden rounded-full bg-black/10"><div className="h-full rounded-full transition-[width] duration-200" style={{ width: `${Math.round(breath * 100)}%`, background: breath < 0.3 ? '#c2453a' : THEME.accent }} /></div></div>
       </div>}
       {/* zindan: armanın üzerinde tutma ilerlemesi */}
-      {g.chapter === 'zindan' && hold > 0.05 && <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 translate-y-6 rounded-full bg-[#f7f5f1]/85 px-3 py-1 text-xs font-semibold text-[#1f1b17] ring-1 ring-black/5">Feneri tut… %{Math.round(Math.min(1, hold) * 100)}</div>}
+      {near && !card && (g.chapter === 'zindan' || g.chapter === 'merdiven' || g.chapter === 'teras' || (g.chapter === 'sergi' && !g.exhibits.includes(near))) && (
+        <InteractPrompt icon={<Eye size={18} />} label={g.chapter === 'zindan' ? 'Armayı incele' : g.chapter === 'merdiven' ? 'Pencereden bak' : g.chapter === 'teras' ? 'Bu yapıyı tanı' : `İncele: ${EXHIBITS.find((x) => x.id === near)?.name ?? ''}`} onClick={() => inspect(near)} />
+      )}
 
       {g.chapter !== 'giris' && g.chapter !== 'son' && isTouch && <Joystick stick={stick} color="bg-[#b5582f]" />}
       {(g.chapter === 'sergi' || g.chapter === 'teras' || g.chapter === 'son') && <ActionDock>
-        {g.chapter === 'sergi' && near && !g.exhibits.includes(near) && <RoundAction label="İncele (E)" primary size={68} onClick={() => inspect(near)}><Eye size={28} /></RoundAction>}
         {g.chapter === 'teras' && allViews && <RoundAction label="Turu bitir" primary size={68} onClick={() => { g.complete(); setCard(null); go('son'); }}><Play size={26} /></RoundAction>}
         {(g.chapter === 'teras' || g.chapter === 'son') && <RoundAction label={zoom ? 'Dürbünü indir (Z)' : 'Dürbün (Z)'} primary={!allViews && g.chapter === 'teras'} size={58} onClick={toggleZoom}><Binoculars size={24} /></RoundAction>}
       </ActionDock>}
-      {g.chapter !== 'giris' && g.chapter !== 'son' && !card && <Hint>{hint}{g.chapter === 'sergi' ? ' · E: incele' : g.chapter === 'teras' ? ' · Z: dürbün' : ''}</Hint>}
+      {g.chapter !== 'giris' && g.chapter !== 'son' && !card && <Hint>{hint}{g.chapter === 'teras' ? ' · E: tanı · Z: dürbün' : ' · E: incele'}</Hint>}
 
       {g.chapter === 'giris' && <IntroCard reached={g.reached} completed={!!g.completedAt} onStart={start} />}
       {g.chapter === 'son' && <EndCard crests={g.crests.length} exhibits={g.exhibits.length} views={g.viewed.length} onReplay={() => { g.restart(); go('zindan'); }} onExit={onExit} />}

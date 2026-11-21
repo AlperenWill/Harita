@@ -2,21 +2,22 @@
  * Bölüm 1 — Vapur yolculuğu (gidiş).
  * Vapur rotada kendiliğinden ilerler (ferry.ts → ferryPose), dalga üstünde sinüslerle sallanır (ferry.ts → bob).
  * Oyuncu ve Can vapurun yerel koordinatlarında, açık baş güvertesinde yürür; güverte sınırı denize düşmeyi engeller.
- * Kamera: sabit üçüncü şahıs — oyuncunun arkasında ve yukarısında, vapurun burnu yönüne (yani Kız Kulesi'ne) bakar.
+ * Kamera: birinci şahıs — oyuncunun göz hizasında; bakış serbest, başlangıçta vapurun burnuna (Kız Kulesi'ne) bakar.
  * Kamera, sallanmayan (yalnızca konum + yön) vapur dönüşümüne bağlıdır: dünya sallanır gibi görünmez, vapur sallanır;
- * bu, ekranda deniz tutmasını azaltır. Kullanıcı yalnızca yakınlaştırıp uzaklaştırabilir.
+ * bu, ekranda deniz tutmasını azaltır.
  */
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { DECK, FERRY_SECONDS, bob, clampDeck, ferryPose } from './ferry';
-import { Character, CAN, PLAYER, newRig, type RigState } from './NPCController';
+import { Character, CAN, newRig, type RigState } from './NPCController';
 import { followTarget, stepToward } from './npc';
 import { Water, type FoamRefs } from './Water';
 import { KizKulesi, Shores } from './TowerModel';
 import { useKiz } from './store';
 import { mouthOpen } from './dialogue';
-import { walk } from './input';
+import { fpMove, view } from './input';
+import { applyFp } from '../shared/fpLook';
 
 export { FerryModel } from './FerryModel';
 import { FerryModel } from './FerryModel';
@@ -30,13 +31,14 @@ export default function FerryScene({ device, onArrive }: { device: { shadows: bo
   const can = useRef<RigState>(newRig(0.6, -8.4, 0));
   const t0 = useRef<number | null>(null), arrived = useRef(false);
   const foam: FoamRefs = { bow: useRef(new THREE.Vector3()), bowDir: useRef(new THREE.Vector2(0, -1)), bowAmount: useRef(0) };
-  const pose = useMemo(() => new THREE.Object3D(), []), tmp = useMemo(() => new THREE.Vector3(), []), look = useMemo(() => new THREE.Vector3(), []);
+  const pose = useMemo(() => new THREE.Object3D(), []), tmp = useMemo(() => new THREE.Vector3(), []);
   const inv = useMemo(() => new THREE.Matrix4(), []);
   const camLocal = useRef(new THREE.Vector3(-0.7, DECK.y + 6.5, -1.5));
 
   useEffect(() => {
     scene.background = new THREE.Color('#bcd6e6'); scene.fog = new THREE.Fog('#cfe0ea', 300, 2600);
-    (camera as THREE.PerspectiveCamera).fov = 55; (camera as THREE.PerspectiveCamera).far = 6000; (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+    view.yaw = 0; view.pitch = 0.02;   // burna (kuleye) bakarak başla
+    (camera as THREE.PerspectiveCamera).fov = 66; (camera as THREE.PerspectiveCamera).far = 6000; (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
     return () => { scene.fog = null; };
   }, [camera, scene]);
 
@@ -53,13 +55,13 @@ export default function FerryScene({ device, onArrive }: { device: { shadows: bo
     foam.bowDir.current.set(-Math.sin(p.yaw), -Math.cos(p.yaw)); foam.bowAmount.current = Math.min(1, p.speed * 0.9);
     if (u >= 1 && !arrived.current) { arrived.current = true; onArrive(); }
 
-    // oyuncu: joystick → vapur yerel ekseni (kamera burna baktığı için yukarı = -z)
-    const pl = player.current, len = Math.hypot(walk.x, walk.y);
-    if (len > 0.08) {
-      const sp = 1.8 * Math.min(1, len);
-      const [nx, nz] = clampDeck(pl.x + (walk.x / Math.max(1, len)) * sp * dt, pl.z + (walk.y / Math.max(1, len)) * sp * dt);
-      pl.speed = dt > 0 ? Math.hypot(nx - pl.x, nz - pl.z) / dt : 0; if (pl.speed > 0.05) pl.yaw = Math.atan2(-(nx - pl.x), -(nz - pl.z)); pl.x = nx; pl.z = nz;
+    // oyuncu: bakış yönüne göre, vapurun yerel düzleminde yürür
+    const pl = player.current, m = fpMove();
+    if (m) {
+      const [nx, nz] = clampDeck(pl.x + m.x * 1.8 * dt, pl.z + m.z * 1.8 * dt);
+      pl.speed = dt > 0 ? Math.hypot(nx - pl.x, nz - pl.z) / dt : 0; pl.x = nx; pl.z = nz;
     } else pl.speed = 0;
+    pl.yaw = view.yaw;
     pl.y = DECK.y; pl.wind = 1;
 
     // Can: oyuncunun yanında (beside); konuşurken oyuncuya ya da kuleye döner
@@ -79,13 +81,9 @@ export default function FerryScene({ device, onArrive }: { device: { shadows: bo
     if (s.yaw !== null) c.yaw = s.yaw;
     else if (line) { const want = c.point ? face(towerLocal.x, towerLocal.z) : face(pl.x, pl.z); c.yaw += (((want - c.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI) * (1 - Math.exp(-dt * 4)); }
 
-    // kamera: oyuncunun arkasında ve köprüüstünün üzerinde (üst yapının içine girmez), burna (kuleye) bakar; yalnızca yakınlaştırma
-    const z = st.zoom;
-    // yumuşatma vapurun yerel uzayında yapılır: vapur hızlansa ya da kare hızı düşse de kamera güvertenin gerisinde kalmaz
-    camLocal.current.lerp(tmp.set(pl.x * 0.6, DECK.y + 5 + 1.5 * z, pl.z + 4 + 3.5 * z), 1 - Math.exp(-dt * 5));
-    camera.position.copy(camLocal.current).applyMatrix4(pose.matrixWorld);
-    look.set(pl.x * 0.4, DECK.y + 1.2, pl.z - 9).applyMatrix4(pose.matrixWorld);
-    camera.lookAt(look);
+    // kamera: birinci şahıs, güvertede göz hizası; bakış vapurun yönüne göre (vapur dönünce bakış da onunla döner)
+    camLocal.current.set(pl.x, DECK.y + 1.62, pl.z).applyMatrix4(pose.matrixWorld);
+    applyFp(camera, camLocal.current.x, camLocal.current.y, camLocal.current.z, { yaw: view.yaw + p.yaw, pitch: view.pitch });
   });
 
   return (
@@ -95,7 +93,6 @@ export default function FerryScene({ device, onArrive }: { device: { shadows: bo
       <Water foam={foam} segments={device.water} />
       <group ref={ferry}>
         <FerryModel />
-        <Character rig={player} palette={PLAYER} castShadow={device.shadows} />
         <Character rig={can} palette={CAN} castShadow={device.shadows} />
       </group>
       <KizKulesi shadows={device.shadows} />

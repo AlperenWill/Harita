@@ -12,10 +12,10 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, InteractPrompt, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
 import { Info, MousePointer2 } from 'lucide-react';
-import { ArrowLeft, Droplets, Footprints } from 'lucide-react';
+import { ArrowLeft, Droplets, Footprints, Search } from 'lucide-react';
 import { DRY, PLATEAU, poolY, ROUTE_LEN, SLOPE_Z0, SLOPE_Z1, SPOTS, heightAt, isTravertine, nearDry, nearSpot, routeAt, whiteness, type Pool, type Spot } from './terraces';
 import { speakTr } from '../shared/voice';
 import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
@@ -48,8 +48,8 @@ class PamukAudio {
 const audio = new PamukAudio();
 
 /* ---------- durum ---------- */
-interface S { started: boolean; filled: string[]; seen: string[]; card: Spot | null; near: Pool | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, filled: [] as string[], seen: [] as string[], card: null, near: null, endShown: false };
+interface S { started: boolean; filled: string[]; seen: string[]; card: Spot | null; near: Pool | null; spot: Spot | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, filled: [] as string[], seen: [] as string[], card: null, near: null, spot: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: 0.12, fill: {} as Record<string, number> };
@@ -65,9 +65,10 @@ function Game({ onExit }: { onExit: () => void }) {
   const G = useSettings(); useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: 0.12, fill: {} }); }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
+  const inspect = useCallback(() => { const s = useDb.getState(), sp = s.spot; if (!sp) return; s.set({ card: sp, seen: s.seen.includes(sp.id) ? s.seen : [...s.seen, sp.id] }); if (useSettings.getState().tts) audio.speak(`${sp.name}. ${sp.text}`); }, []);
   const pour = useCallback(() => { const s = useDb.getState(), p = s.near; if (!p || s.filled.includes(p.id)) return; s.set({ filled: [...s.filled, p.id], near: null }); if (useSettings.getState().tts) audio.speak(s.filled.length === 0 ? 'Su havuza akıyor. Kalsiyum karbonat yeniden çökelecek ve havuz zamanla beyazlayacak.' : 'Bir havuz daha doldu.'); }, []);
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (!s.started || e.repeat) return; if (e.code === 'KeyE') { if (s.card) close(); else pour(); } if (e.code === 'Escape' && s.card) close(); };
+    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (!s.started || e.repeat) return; if (e.code === 'KeyE') { if (s.card) close(); else if (s.near) pour(); else inspect(); } if (e.code === 'Escape' && s.card) close(); };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
@@ -75,7 +76,7 @@ function Game({ onExit }: { onExit: () => void }) {
       void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
-  }, [close, pour]);
+  }, [close, pour, inspect]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __pamuk: unknown }).__pamuk = { go: (s: number) => { live.s = s; useDb.getState().set({ started: true }); }, look: (y: number, p = 0) => { live.yaw = y; live.pitch = p; }, pour, state: () => ({ ...useDb.getState(), s: live.s }), DRY, SPOTS, ROUTE_LEN }; }, [pour]);
   const onDown = (e: React.PointerEvent) => { audio.unlock(); look.lock(e); if (!useDb.getState().started) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
   const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; };
@@ -93,7 +94,8 @@ function Game({ onExit }: { onExit: () => void }) {
         <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#d6ecf3'} sun={'#fff6e6'} ground={'#f2f0ea'} sunDir={[0.7, 0.6, 0.5]} /><Polish tier={tier} /></Suspense>
       </Canvas>
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Droplets size={15} />} label={nextP ? 'Kuru havuzlara suyu yönlendir' : 'Bütün havuzlar dolu'} done={S.filled.length} total={DRY.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
-      {S.started && !S.card && S.near && <button onPointerDown={(e) => e.stopPropagation()} onClick={pour} className="absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 animate-pulse items-center gap-2 rounded-full bg-cyan-300 px-5 text-sm font-semibold text-black shadow-xl"><Droplets size={18} /> Suyu bu havuza yönlendir<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
+      {S.started && !S.card && S.near && <InteractPrompt icon={<Droplets size={18} />} label="Suyu bu havuza yönlendir" onClick={pour} />}
+      {S.started && !S.card && !S.near && S.spot && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.spot.name}`} onClick={inspect} muted={S.seen.includes(S.spot.id)} />}
       {S.started && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · E: suyu aç</span></Hint>}
       {S.card && <Card s={S.card} onClose={close} />}
       {!S.started && <TitleCard onExit={onExit} onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
@@ -221,7 +223,7 @@ function Controller() {
     const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt)); const moved = live.s - before, R = routeAt(live.s);
     st.current.step += Math.abs(moved); if (st.current.step > 0.75) { st.current.step = 0; audio.step(R.barefoot); } st.current.bob += Math.abs(moved) * 2.2;
     const np = S.started ? nearDry(live.s, S.filled) : null; if ((np?.id ?? '') !== st.current.near) { st.current.near = np?.id ?? ''; S.set({ near: np }); }
-    const sp = S.started ? nearSpot(live.s) : null; if ((sp?.id ?? '') !== st.current.spot) { st.current.spot = sp?.id ?? ''; if (sp && !S.seen.includes(sp.id)) { S.set({ card: sp, seen: [...S.seen, sp.id] }); if (useSettings.getState().tts) audio.speak(`${sp.name}. ${sp.text}`); } }
+    const sp = S.started ? nearSpot(live.s) : null; if ((sp?.id ?? '') !== st.current.spot) { st.current.spot = sp?.id ?? ''; S.set({ spot: sp }); }   // kart kendiliğinden açılmaz: "İncele" (E)
     const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(st.current.head)) st.current.head = hd; st.current.head += wrapA(hd - st.current.head) * (1 - Math.exp(-dt * 3));
     const grade = (routeAt(live.s + 3).p[1] - routeAt(live.s - 3).p[1]) / 6; st.current.grade += (Math.atan(grade) * 0.5 - st.current.grade) * (1 - Math.exp(-dt * 2));
     if (!S.started) { camera.position.set(40, 22, 175); camera.quaternion.copy(_q.setFromRotationMatrix(_m.lookAt(camera.position, _l.set(0, 38, 40), THREE.Object3D.DEFAULT_UP))); return; }
@@ -239,7 +241,7 @@ const THEME = { accent: '#2a9bb0' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
   { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
-  { icon: <Info size={16} />, text: <>kuru havuzun yanında “Suyu yönlendir”</> },
+  { icon: <Info size={16} />, text: <>kuru havuzun yanında <b>E</b>: suyu yönlendir · yapıların yanında <b>E</b>: incele</> },
 ];
 function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
   return <StartSheet kicker="Denizli · UNESCO Dünya Mirası" title="Pamukkale: Beyaz Basamaklar" intro={<>Ayakkabılarını çıkar: travertenlerde çıplak ayakla yürünür. Yukarı tırmanırken kurumuş, kararmış beş havuza suyu yönlendir; havuzlar dolup yeniden beyazlasın. Tepede Hierapolis seni bekliyor.</>} controls={CONTROLS} note="Plan stilizedir, mesafeler kısaltılmıştır. Havuzların dolup beyazlaması hızlandırılmıştır; gerçekte uzun zaman alır." cta="Ayakkabılarını çıkar, başla" ctaIcon={<Footprints size={18} />} onStart={onStart} onExit={onExit} />;

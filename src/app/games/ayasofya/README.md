@@ -18,7 +18,7 @@ projedeki diğer oyunlarla aynı gerçek teknolojiyle yapıldı: **React Three F
 ## Dosya yapısı
 ```
 src/app/games/ayasofya/
-  HagiaSophiaGame.tsx  ana yönetici: serbest yürüyüş, üçüncü şahıs kamera, rehber Elif Hoca, inceleme, göz uyumu, kalite, post-processing, arayüz
+  HagiaSophiaGame.tsx  ana yönetici: serbest yürüyüş, birinci şahıs kamera, rehber Elif Hoca, inceleme, göz uyumu, kalite, post-processing, arayüz
   walk.ts              yürünebilir alan (zemin + güney galeri), rampa, rehber turu, figürler, kamera çarpışması (saf, test edilir)
   Outside.tsx          dış mekân: avlu, dış narteks revakı, payandalar, pencereli kasnak + kubbe, şerefeli minareler, şadırvan, bahçe
   HagiaScene.tsx       kabuk (kubbe, pandantif, yarım kubbeler, apsis, narteks), galeriler, sütunlar, pencereler, ışık huzmeleri,
@@ -76,9 +76,9 @@ o bölgenin yankısına gider. Ortam: hafif rüzgâr, şehir uğultusu, narteks 
 | | Şanlıurfa | Ayasofya |
 |---|---|---|
 | Bağımsız oyun, şiddetsiz keşif | ✓ | ✓ |
-| Kamera | birinci şahıs, serbest bakış | üçüncü şahıs, serbest yürüyüş (v5) |
+| Kamera | birinci şahıs, serbest bakış | birinci şahıs, serbest yürüyüş (v6) |
 | Görsel | düz renkli low-poly, post-processing yok | PBR, ortam haritası, bloom/AO, dinamik güneş |
-| Etkileşim | E / el düğmesi | yakınlık düğmesi + F / İncele, rehber diyaloğu |
+| Etkileşim | E / el düğmesi | E: konuş / incele / rampa; rehber E ile anlatır |
 | Yükleme | Three.js CDN'den | uygulama içinde, aşamalı |
 Görsel düzey Şanlıurfa'nın üstünde; üslup (stilize figürler, Türkçe arayüz, sakin tempo) aynı ailede kalır.
 

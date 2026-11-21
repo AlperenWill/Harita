@@ -51,8 +51,8 @@ Düşük kademede yansıma geçişi kapatılır; yalnızca normal haritalı, par
 - **Gölge:** yalnızca Medusa başları (gölgeli iki spot) ve giriş kapısı (gölgeli bir spot) gölge üretir/alır; sütunlar gölge hesabına girmez.
 
 ## Medusa inceleme modu
-Kuzeybatı köşede iki baş: biri **ters**, biri **yan yatık** (iki baş da ters değildir). Oyuncu başlardan birine 3,2 m'den yakınken ona bakarsa
-inceleme kendiliğinden açılır: kamera platform kenarındaki sabit bir bakış noktasına süzülür, başa kilitlenir ve görüş 70°'den 36°'ye yavaşça daralır.
+Kuzeybatı köşede iki baş: biri **ters**, biri **yan yatık** (iki baş da ters değildir). Oyuncu başlardan birine bakıp E'ye / İncele'ye basınca
+inceleme açılır (kendiliğinden açılmaz): kamera platform kenarındaki sabit bir bakış noktasına süzülür, başa kilitlenir ve görüş 70°'den 36°'ye yavaşça daralır.
 Bu sırada bakış ve yürüme durur; E / İncelemeden çık ile göze geri süzülür. Bas tonu Medusa'ya bakarken yükselir.
 
 ## Ses

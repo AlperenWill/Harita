@@ -18,6 +18,8 @@ interface KizState {
   playback: Playback | null;
   heard: string[];
   queue: string[];          // sırada bekleyen diyaloglar
+  pending: string | null;   // Can'ın anlatmak istediği (oyuncu E'ye basınca başlar)
+  offer: (id: string | null) => void;
   tts: boolean; muted: boolean; zoom: number;
   completedAt: number | null;
   setPhase: (p: Phase) => void;
@@ -33,8 +35,9 @@ export const ZOOM = { min: 0.65, max: 1.6 } as const;
 export const useKiz = create<KizState>()(
   persist(
     (set, get) => ({
-      phase: 'baslangic', playback: null, heard: [], queue: [], tts: true, muted: false, zoom: 1, completedAt: null,
-      setPhase: (phase) => set({ phase, playback: null, queue: [] }),
+      phase: 'baslangic', playback: null, heard: [], queue: [], pending: null, tts: true, muted: false, zoom: 1, completedAt: null,
+      setPhase: (phase) => set({ phase, playback: null, queue: [], pending: null }),
+      offer: (pending) => set({ pending }),
       play: (id, queueIfBusy = true) => {
         const d = byId(id); if (!d) return false;
         if (get().playback) { if (queueIfBusy && !get().queue.includes(id)) set((s) => ({ queue: [...s.queue, id] })); return false; }
@@ -54,7 +57,7 @@ export const useKiz = create<KizState>()(
       setTts: (tts) => set({ tts }), setMuted: (muted) => set({ muted }),
       zoomBy: (d) => set((s) => ({ zoom: Math.min(ZOOM.max, Math.max(ZOOM.min, +(s.zoom + d).toFixed(2))) })),
       complete: () => set((s) => ({ completedAt: s.completedAt ?? Date.now() })),
-      reset: () => set({ phase: 'baslangic', playback: null, heard: [], queue: [] }),
+      reset: () => set({ phase: 'baslangic', playback: null, heard: [], queue: [], pending: null }),
     }),
     { name: 'miras-kiz-kulesi-v1', partialize: (s) => ({ tts: s.tts, muted: s.muted, zoom: s.zoom, completedAt: s.completedAt }) },
   ),

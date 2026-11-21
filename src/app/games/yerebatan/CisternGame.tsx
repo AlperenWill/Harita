@@ -4,7 +4,7 @@
  * Tamamen birinci şahıs: kamera her zaman oyuncunun gözündedir (platformun 1,62 m üstü); serbest kamera yoktur.
  * Bakış: masaüstünde Pointer Lock + fare, mobilde sağ yarıda parmak sürükleme; yukarı/aşağı ±45°.
  * Yürüme: WASD / sol joystick; koşma yok. Nişangâh ortada sabit; bir ilgi noktasına bakınca parlar → E / "İncele".
- * Medusa başlarına yaklaşıp bakınca inceleme modu kendiliğinden açılır (MedusaInteraction.tsx).
+ * Medusa başlarında da inceleme yalnızca E / İncele ile açılır (MedusaInteraction.tsx).
  */
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
@@ -13,7 +13,7 @@ import { ArrowLeft, Eye } from 'lucide-react';
 import { DECK_Y, EYE, MEDUSA_IDS, POIS, SIZE, START, lookingAt, type Poi } from './cistern';
 import { MAX_SPEED, createFP, headBob, look, useLookInput, walk, type FPState, type LookInput } from './FirstPersonController';
 import { CisternFog, ColumnLights, Columns, HensEyeColumn, Vaults, Walkways, Walls, Water, FOG, type Tier } from './CisternScene';
-import { AUTO_DIST, INSPECT_FOV, InfoPanel, Medusas, NORMAL_FOV, inspectPose } from './MedusaInteraction';
+import { INSPECT_FOV, InfoPanel, Medusas, NORMAL_FOV, inspectPose } from './MedusaInteraction';
 import { cisternAudio } from './AudioManager';
 import { Controls, GameMenu, HudTheme, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
@@ -129,7 +129,7 @@ function Game({ onExit }: { onExit: () => void }) {
           <ColumnLights tier={dev.tier} player={shared.fp as unknown as React.MutableRefObject<{ x: number; z: number }>} />
           <Medusas shadows={dev.shadows} />
           <Entrance shadows={dev.shadows} />
-          <Player s={shared} onTarget={setTarget} onAutoInspect={(id) => { const p = POIS.find((x) => x.id === id)!; if (!seen.includes(id)) openPoi(p); }} card={card} onLeave={() => setCard(null)} />
+          <Player s={shared} onTarget={setTarget} card={card} onLeave={() => setCard(null)} />
         </Suspense>
       </Canvas>
 
@@ -170,9 +170,9 @@ function Game({ onExit }: { onExit: () => void }) {
 }
 
 /* ---------- oyuncu: kamera, hareket, bakış, etkileşim algılama ---------- */
-function Player({ s, onTarget, onAutoInspect, card, onLeave }: { s: Shared; onTarget: (p: Poi | null) => void; onAutoInspect: (id: string) => void; card: Poi | null; onLeave: () => void }) {
+function Player({ s, onTarget, card, onLeave }: { s: Shared; onTarget: (p: Poi | null) => void; card: Poi | null; onLeave: () => void }) {
   const { camera } = useThree();
-  const last = useRef<string | null>(null), lastInspect = useRef('medusa-ters'), auto = useRef(new Set<string>());
+  const last = useRef<string | null>(null), lastInspect = useRef('medusa-ters');
   const fwd = useMemo(() => new THREE.Vector3(), []), euler = useMemo(() => new THREE.Euler(0, 0, 0, 'YXZ'), []);
   const blend = useRef(0);   // 0 = oyuncu gözü, 1 = inceleme bakış noktası
   const tmpPos = useMemo(() => new THREE.Vector3(), []), q = useMemo(() => new THREE.Quaternion(), []), q2 = useMemo(() => new THREE.Quaternion(), []);
@@ -207,8 +207,7 @@ function Player({ s, onTarget, onAutoInspect, card, onLeave }: { s: Shared; onTa
     camera.getWorldDirection(fwd);
     const hit = insp ? null : lookingAt([eye.x, eye.y, eye.z], [fwd.x, fwd.y, fwd.z]);
     const id = hit?.id ?? null; if (id !== last.current) { last.current = id; onTarget(hit); }
-    // Medusa: yaklaşıp bakınca inceleme kendiliğinden açılır (her baş için bir kez)
-    if (hit?.kind === 'medusa' && !auto.current.has(hit.id) && Math.hypot(hit.pos[0] - eye.x, hit.pos[2] - eye.z) < AUTO_DIST) { auto.current.add(hit.id); onAutoInspect(hit.id); }
+    // Medusa dahil hiçbir inceleme kendiliğinden açılmaz: nişangâh parlar, oyuncu E'ye / İncele'ye basar
     // kartın konusundan uzaklaşınca kart kapanır
     if (card && !insp && Math.hypot(card.pos[0] - eye.x, card.pos[2] - eye.z) > 6) onLeave();
 

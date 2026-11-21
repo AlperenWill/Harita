@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { CRESTS, DUNGEON, BEAM_HALF_ANGLE, trackBeam, type V3 } from './dungeon';
+import { CRESTS, DUNGEON, BEAM_HALF_ANGLE, aimedCrest, type V3 } from './dungeon';
 import { crestTexture } from './textures';
 import { scaledUV, useStoneMaterial } from './TowerExterior';
 
@@ -52,9 +52,10 @@ function Crest({ id, pos, normal, found, beam }: { id: string; pos: V3; normal: 
   );
 }
 
-export default function DungeonScene({ found, open, onHold, onFind }: {
+export default function DungeonScene({ found, open, onAim }: {
   found: string[]; open: boolean;
-  onHold: (progress: Record<string, number>) => void; onFind: (id: string) => void;
+  /** fenerin aydınlattığı arma (yoksa null); bulma oyuncunun E'sine bağlı */
+  onAim: (id: string | null) => void;
 }) {
   const { camera, scene } = useThree();
   const wall = useStoneMaterial('#8a8173');
@@ -62,7 +63,7 @@ export default function DungeonScene({ found, open, onHold, onFind }: {
   const vaultMat = useMemo(() => { const m = wall.clone(); m.side = THREE.BackSide; return m; }, [wall]);
   const beam = useMemo(() => ({ pos: new THREE.Vector3(), dir: new THREE.Vector3(0, 0, -1) }), []);
   const spot = useRef<THREE.SpotLight>(null!);
-  const hold = useRef<Record<string, number>>({});
+  const aimed = useRef<string | null>(null);
   const foundRef = useRef(found); foundRef.current = found;
   const W = DUNGEON.wid / 2, L = DUNGEON.len / 2, H = DUNGEON.h;
 
@@ -91,9 +92,8 @@ export default function DungeonScene({ found, open, onHold, onFind }: {
     spot.current.position.copy(beam.pos);
     spot.current.target.position.copy(beam.pos).add(beam.dir);
     spot.current.target.updateMatrixWorld();
-    const r = trackBeam(hold.current, foundRef.current, beam.pos.toArray() as V3, beam.dir.toArray() as V3, dt);
-    hold.current = r.hold; onHold(r.hold);
-    r.newly.forEach(onFind);
+    const a = aimedCrest(foundRef.current, beam.pos.toArray() as V3, beam.dir.toArray() as V3);
+    if (a !== aimed.current) { aimed.current = a; onAim(a); }
   });
 
   return (

@@ -1,8 +1,8 @@
 /**
  * Topkapı Sarayı — serbest yürüyüş + rehber. Ana oyun yöneticisi.
  *
- * Oyuncu sarayda serbestçe yürür (joystick / WASD), kamerayı sürükleyerek çevirir (üçüncü şahıs takip kamerası; duvara girmez).
- * Rehber Hasan Efendi (kurgusal saray kâtibi) sıradaki durağa yürür, oyuncuyu bekler; oyuncu yanına gelince anlatır (yazı + isteğe bağlı
+ * Oyuncu sarayda serbestçe yürür (joystick / WASD), birinci şahıstan bakar (fare kilidi ya da sürükleme).
+ * Rehber Hasan Efendi (kurgusal saray kâtibi) sıradaki durağa yürür, oyuncuyu bekler; oyuncu yanına gelip E'ye basınca anlatır (yazı + isteğe bağlı
  * sesli okuma). Durak bir iç mekândaysa rehber kapının önünde bekler; kapıdan oyuncuyla birlikte geçer. Tur bitince oyuncuyu izler.
  * Yakındaki yapı ve nesneler "İncele" ile bilgi kartı açar (kaynak bağlantılı). Hazine vitrinlerinde nesne sürükleyerek çevrilir.
  * Kapılar: yaklaşınca "gir" düğmesi; ekran kararır, bölge değişir. Aynı anda yalnızca bir bölge çizilir.
@@ -17,20 +17,21 @@ import { ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
 import { Controls, EndSheet, GameMenu, Hint as HudHint, HudTheme, IconButton, InfoSheet, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
-import { Move } from 'lucide-react';
-import { ArrowLeft, DoorOpen, Footprints, Map as MapIcon, Search } from 'lucide-react';
+import { ArrowLeft, DoorOpen, Footprints, Map as MapIcon, MessageCircle, Move, Search } from 'lucide-react';
+import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
+import { LookCrosshair } from '../shared/mouseLook';
 import { Character, newRig } from '../kiz-kulesi/NPCController';
 import { keys, readKeys, walk } from '../kiz-kulesi/input';
 import { makeMats } from './kit';
 import { Courtyards } from './Courtyards';
 import { DivanHall, Harem } from './Interiors';
 import { TreasureRoom } from './TreasureRoom';
-import { Extras, HASAN, VISITOR } from './people';
+import { Extras, HASAN } from './people';
 import { Joystick } from '../shared/Joystick';
 import { topkapiAudio } from './AudioManager';
 import {
   BUILDINGS, CEILING, DOORS, GATE1_X, GATE2_X, GATE3_X, GUIDE, START, STOP_RADIUS, THINGS, TOUR, ZONE_LABEL,
-  camClear, guideGoal, guideStep, nearestDoor, nearestThing, slide, subZone, walkable, type Door, type Thing, type V2, type Zone,
+  guideGoal, guideStep, nearestDoor, nearestThing, slide, subZone, walkable, type Door, type Thing, type V2, type Zone,
 } from './world';
 
 /* ---------- cihaz profili ---------- */
@@ -51,23 +52,23 @@ type Prof = ReturnType<typeof profile>;
 
 /* ---------- durum ---------- */
 interface Talk { who: string; lines: string[]; i: number; t0: number; onDone?: () => void }
-interface Prompt { door: Door | null; thing: Thing | null }
+interface Prompt { door: Door | null; thing: Thing | null; guide: boolean }
 interface S {
   started: boolean; zone: Zone; stop: number; told: string[]; talk: Talk | null; card: Thing | null; seen: string[]; prompt: Prompt; muted: boolean; tts: boolean; fade: boolean; done: boolean; endShown: boolean; map: boolean;
   set: (p: Partial<S>) => void;
 }
-const INITIAL = { started: false, zone: START.zone, stop: 0, told: [] as string[], talk: null, card: null, seen: [] as string[], prompt: { door: null, thing: null }, fade: false, done: false, endShown: false };
+const INITIAL = { started: false, zone: START.zone, stop: 0, told: [] as string[], talk: null, card: null, seen: [] as string[], prompt: { door: null, thing: null, guide: false }, fade: false, done: false, endShown: false };
 const useTop = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, map: true, set: (p) => set(p) }));
 /** Kare döngüsü ile arayüz arasında paylaşılan canlı durum (React durumu değil) */
 const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = {
   player: newRig(START.at[0], START.at[1], START.yaw), guide: newRig(START.at[0] + 4, START.at[1] + 2.6, START.yaw),
-  cam: { yaw: START.yaw, pitch: 0.32, dist: 5.2, drag: 0 }, spin: { current: 0 } as React.MutableRefObject<number>, active: { current: null } as React.MutableRefObject<string | null>,
+  cam: { yaw: START.yaw, pitch: 0 }, spin: { current: 0 } as React.MutableRefObject<number>, active: { current: null } as React.MutableRefObject<string | null>,
   goal: null as V2 | null,
 };
 function resetLive() {
   Object.assign(live.player, newRig(START.at[0], START.at[1], START.yaw)); Object.assign(live.guide, newRig(START.at[0] + 4, START.at[1] + 2.6, START.yaw));
-  Object.assign(live.cam, { yaw: START.yaw, pitch: 0.32, dist: 5.2, drag: 0 }); live.active.current = null; live.goal = null;
+  Object.assign(live.cam, { yaw: START.yaw, pitch: 0 }); live.active.current = null; live.goal = null;
 }
 const CPS = 40;   // daktilo hızı (harf/sn)
 const lineTime = (s: string) => s.length / CPS + 1.6 + s.length * 0.03;
@@ -115,7 +116,7 @@ function Game({ onExit }: { onExit: () => void }) {
       const cand: V2[] = [[d.spawn[0] - fz * 1.1 - fx * 0.6, d.spawn[1] + fx * 1.1 - fz * 0.6], [d.spawn[0] + fz * 1.1 - fx * 0.6, d.spawn[1] - fx * 1.1 - fz * 0.6], [d.spawn[0] - fx * 1.2, d.spawn[1] - fz * 1.2], [d.spawn[0] + fx * 1.2, d.spawn[1] + fz * 1.2]];
       const ok = cand.find((c) => walkable(d.to, c[0], c[1])) ?? ([...d.spawn] as V2);
       g.x = ok[0]; g.z = ok[1]; g.yaw = d.yaw; g.speed = 0;
-      live.cam.yaw = d.yaw; live.cam.pitch = d.to === 'avlu' ? 0.32 : 0.22; live.cam.dist = d.to === 'avlu' ? 5.2 : d.to === 'harem' ? 2.6 : 3.4;
+      live.cam.yaw = d.yaw; live.cam.pitch = 0;
       useTop.getState().set({ zone: d.to });
       setTimeout(() => useTop.getState().set({ fade: false }), 250);
     }, 450);
@@ -125,6 +126,15 @@ function Game({ onExit }: { onExit: () => void }) {
     live.active.current = t.id; live.spin.current = 0; topkapiAudio.chime(); if (useSettings.getState().tts && !s.talk) topkapiAudio.speak(t.text);
   }, []);
   const closeCard = () => { useTop.getState().set({ card: null }); live.active.current = null; topkapiAudio.hush(); };
+  /** Rehberin yanındayken E / Konuş: durağın anlatımı başlar (kendiliğinden başlamaz) */
+  const talkGuide = useCallback(() => {
+    const s = useTop.getState(); if (s.talk || s.done || !s.prompt.guide) return;
+    const st = TOUR[s.stop], idx = s.stop; live.guide.point = _pt.set(...st.look); s.set({ prompt: { ...s.prompt, guide: false } });
+    say(GUIDE.name, st.lines, () => {
+      const s2 = useTop.getState(), told = [...s2.told, st.id]; live.guide.point = null;
+      if (idx + 1 >= TOUR.length) s2.set({ told, done: true }); else s2.set({ told, stop: idx + 1 });
+    });
+  }, []);
 
   // klavye
   useEffect(() => {
@@ -132,7 +142,7 @@ function Game({ onExit }: { onExit: () => void }) {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useTop.getState(); if (!s.started) return;
       if (e.code === 'Space' || e.code === 'Enter') { if (s.talk) advance(); else if (s.card) closeCard(); }
-      if (e.code === 'KeyE') { if (s.talk) advance(); else if (s.prompt.door) enter(s.prompt.door); else if (s.prompt.thing) inspect(s.prompt.thing); }
+      if (e.code === 'KeyE') { if (s.talk) advance(); else if (s.card) closeCard(); else if (s.prompt.guide) talkGuide(); else if (s.prompt.door) enter(s.prompt.door); else if (s.prompt.thing) inspect(s.prompt.thing); }
       if (e.code === 'KeyF' && s.prompt.thing) inspect(s.prompt.thing);
       if (e.code === 'Escape' && s.card) closeCard();
       if (e.code === 'KeyM') s.set({ map: !s.map });
@@ -141,7 +151,7 @@ function Game({ onExit }: { onExit: () => void }) {
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0; const loop = () => { readKeys(stick.current); raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); keys.clear(); };
-  }, [enter, inspect]);
+  }, [enter, inspect, talkGuide]);
 
   // ses; çıkışta durumu sıfırla (yeniden girişte baştan başlasın)
   const G = useSettings(); useEffect(() => { topkapiAudio.setMuted(G.muted); }, [G.muted]);
@@ -151,7 +161,7 @@ function Game({ onExit }: { onExit: () => void }) {
   useEffect(() => {
     if (!location.search.includes('debug')) return;
     (window as unknown as { __topkapi: unknown }).__topkapi = {
-      tp: (zone: Zone, x: number, z: number, yaw = 0, pitch = 0.3, dist = 5) => { live.player.x = x; live.player.z = z; live.player.yaw = yaw; live.guide.x = x + 1.2; live.guide.z = z + 1; Object.assign(live.cam, { yaw, pitch, dist, drag: 3 }); useTop.getState().set({ zone, started: true, talk: null }); },
+      tp: (zone: Zone, x: number, z: number, yaw = 0, pitch = 0) => { live.player.x = x; live.player.z = z; live.player.yaw = yaw; live.guide.x = x + 1.2; live.guide.z = z + 1; Object.assign(live.cam, { yaw, pitch }); useTop.getState().set({ zone, started: true, talk: null }); },
       guide: (x: number, z: number) => { live.guide.x = x; live.guide.z = z; },
       stop: (i: number) => useTop.getState().set({ stop: i, told: TOUR.slice(0, i).map((s) => s.id) }),
       inspect: (id: string) => { const t = THINGS.find((x) => x.id === id); if (t) inspect(t); },
@@ -159,24 +169,19 @@ function Game({ onExit }: { onExit: () => void }) {
     };
   }, [inspect]);
 
-  // sürükleyerek kamera / hazinede nesne çevirme, tekerlek ve iki parmakla yakınlaştırma
-  const ptr = useRef(new Map<number, { x: number; y: number }>()), pinch = useRef<number | null>(null);
-  const onDown = (e: React.PointerEvent) => { topkapiAudio.unlock(); ptr.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); };
-  const onMove = (e: React.PointerEvent) => {
-    const p = ptr.current.get(e.pointerId); if (!p) return;
-    const dx = e.clientX - p.x, dy = e.clientY - p.y; ptr.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptr.current.size === 2) { const [a, b] = [...ptr.current.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch.current) live.cam.dist = THREE.MathUtils.clamp(live.cam.dist * (pinch.current / d), 1.6, 9); pinch.current = d; return; }
-    if (useTop.getState().card && live.active.current && ['kasikci', 'hancer'].includes(live.active.current)) { live.spin.current += dx * 0.012; return; }
-    live.cam.yaw -= dx * 0.006; live.cam.pitch = THREE.MathUtils.clamp(live.cam.pitch + dy * 0.004, -0.15, 1.1); live.cam.drag = 1.5;
-  };
-  const onUp = (e: React.PointerEvent) => { ptr.current.delete(e.pointerId); if (ptr.current.size < 2) pinch.current = null; };
-  const onWheel = (e: React.WheelEvent) => { live.cam.dist = THREE.MathUtils.clamp(live.cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 1.6, 9); };
+  // birinci şahıs bakış (fare kilidi / sürükleme); hazinede kart açıkken sürükleme nesneyi çevirir
+  const spinning = () => { const a = useTop.getState(); return !!a.card && !!live.active.current && ['kasikci', 'hancer'].includes(live.active.current); };
+  const fpl = useFpLook(live.cam, () => { const a = useTop.getState(); return a.started && !a.card && !a.fade && !pause.on; }, () => topkapiAudio.unlock());
+  const spinPtr = useRef<{ id: number; x: number } | null>(null);
+  const onDown = (e: React.PointerEvent) => { fpl.handlers.onPointerDown(e); if (spinning()) spinPtr.current = { id: e.pointerId, x: e.clientX }; };
+  const onMove = (e: React.PointerEvent) => { fpl.handlers.onPointerMove(e); const sp = spinPtr.current; if (sp && sp.id === e.pointerId && spinning()) { live.spin.current += (e.clientX - sp.x) * 0.012; sp.x = e.clientX; } };
+  const onUp = (e: React.PointerEvent) => { fpl.handlers.onPointerUp(e); spinPtr.current = null; };
 
   const start = () => { topkapiAudio.unlock(); topkapiAudio.setMix('dis'); S.set({ started: true }); };
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#cfd9df] text-white" style={{ touchAction: 'none' }}
-      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={onUp} onWheel={onWheel}>
+      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
       <HudTheme theme={THEME}>
       <Canvas shadows={prof.shadows ? { type: THREE.PCFSoftShadowMap } : false} dpr={prof.dpr} gl={{ antialias: prof.antialias, powerPreference: 'high-performance' }}
         camera={{ fov: 58, near: 0.1, far: 700, position: [-90, 14, 22] }}
@@ -201,7 +206,8 @@ function Game({ onExit }: { onExit: () => void }) {
       {S.started && (
         <>
           <Joystick stick={stick} onTouch={() => topkapiAudio.unlock()} />
-          <Prompts enter={enter} inspect={inspect} />
+          <Prompts enter={enter} inspect={inspect} talkGuide={talkGuide} />
+          <LookCrosshair locked={fpl.locked} />
           {!S.talk && !S.card && <Hint text={hintText(S)} />}
         </>
       )}
@@ -218,7 +224,7 @@ function hintText(S: S) {
   if (S.done) return 'Sarayda dilediğin gibi dolaş';
   const g = guideGoal(S.zone, S.stop);
   if (g.door) return `${GUIDE.name} kapıda bekliyor: ${g.door.label}`;
-  return `${GUIDE.name}’nin yanına yürü`;
+  return `${GUIDE.name}’nin yanına yürü, konuşmak için E`;
 }
 
 /* ---------- 3B dünya: bölge, ışık, oyuncu, rehber, kamera ---------- */
@@ -227,7 +233,7 @@ function World({ prof }: { prof: Prof }) {
   const zone = useTop((s) => s.zone), started = useTop((s) => s.started);
   const m = useMemo(() => makeMats(prof.tier === 'high'), [prof.tier]);
   const playerXZ = useRef({ x: live.player.x, z: live.player.z });
-  const playerRig = useMemo(() => ({ current: live.player }), []), guideRig = useMemo(() => ({ current: live.guide }), []);
+  const guideRig = useMemo(() => ({ current: live.guide }), []);
   const { scene, camera } = useThree();
   useEffect(() => {
     if (zone === 'avlu') { scene.fog = new THREE.Fog('#d6dfe3', 80, 330); scene.background = null; }
@@ -247,7 +253,6 @@ function World({ prof }: { prof: Prof }) {
       {zone === 'harem' && <Harem m={m} low={prof.low} />}
       {zone === 'hazine' && <TreasureRoom spin={live.spin} active={live.active} fancy={!prof.low} />}
       <Extras zone={zone} low={prof.low} player={playerXZ} />
-      <Character rig={playerRig} palette={VISITOR} castShadow={prof.shadows} />
       <Character rig={guideRig} palette={HASAN} castShadow={prof.shadows} />
       <GoalMarker />
       {started && <Controller playerXZ={playerXZ} />}
@@ -284,12 +289,11 @@ function GoalMarker() {
   return <mesh ref={ref} rotation-x={-Math.PI / 2}><ringGeometry args={[0.55, 0.7, 40]} /><meshBasicMaterial color={new THREE.Color('#ffd27a').multiplyScalar(2)} toneMapped={false} transparent opacity={0.8} /></mesh>;
 }
 
-const _t = new THREE.Vector3(), _c = new THREE.Vector3(), _look = new THREE.Vector3(), _lk = new THREE.Vector3(), _pt = new THREE.Vector3();
+const _look = new THREE.Vector3(), _pt = new THREE.Vector3();
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 function Controller({ playerXZ }: { playerXZ: React.MutableRefObject<{ x: number; z: number }> }) {
   const { camera } = useThree();
-  const lookAt = useRef(new THREE.Vector3(live.player.x, 1.5, live.player.z)), camPos = useRef(camera.position.clone());
-  const promptKey = useRef(''), mixKey = useRef(''), audioT = useRef(0);
+  const promptKey = useRef(''), mixKey = useRef(''), audioT = useRef(0), bob = useRef(0);
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useTop.getState(), zone = S.zone, p = live.player, g = live.guide, cam = live.cam, t = clock.elapsedTime;
     const frozen = S.fade || !!S.card || pause.on;
@@ -300,12 +304,9 @@ function Controller({ playerXZ }: { playerXZ: React.MutableRefObject<{ x: number
     const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 5.2 : 3.5) * Math.min(1, ml);
     if (!frozen && ml > 0.08) {
       const [nx, nz] = slide(zone, [p.x, p.z], (mx / ml) * speed * dt, (mz / ml) * speed * dt);
-      p.speed = dt > 0 ? Math.hypot(nx - p.x, nz - p.z) / dt : 0; p.x = nx; p.z = nz;
-      p.yaw += wrap(Math.atan2(-mx, -mz) - p.yaw) * (1 - Math.exp(-dt * 12));
-      // kamera kendiliğinden oyuncunun arkasına döner (oyuncu sürüklemiyorsa ve ileri yürüyorsa)
-      if (cam.drag <= 0 && Math.abs(walk.x) < 0.5 && walk.y < -0.3) cam.yaw += wrap(p.yaw - cam.yaw) * (1 - Math.exp(-dt * 0.8));
+      const moved = Math.hypot(nx - p.x, nz - p.z); p.speed = dt > 0 ? moved / dt : 0; p.x = nx; p.z = nz; bob.current += moved * 3.1;
     } else p.speed = 0;
-    cam.drag -= dt;
+    p.yaw = cam.yaw;
     playerXZ.current.x = p.x; playerXZ.current.z = p.z;
 
     /* rehber: sıradaki durağa / kapıya yürür, oyuncu geride kalırsa bekler; tur bitince oyuncuyu izler */
@@ -323,17 +324,11 @@ function Controller({ playerXZ }: { playerXZ: React.MutableRefObject<{ x: number
     }
     if (S.done && pd > 30) { g.x = p.x; g.z = p.z; }   // çok uzak kaldıysa yanına gelir
     g.look = pd < 9 ? _look.set(p.x, 1.6, p.z) : null;
-    // durak anlatımı: rehber durağa varmış, oyuncu yakında, sıra bu durakta
+    // durak: rehber durağa varmış, oyuncu yakında → "Konuş" düğmesi (anlatım E'ye basınca başlar)
+    let guideReady = false;
     if (!S.done && !S.talk && !S.fade && !S.card) {
       const st = TOUR[S.stop], at = st.zone === zone && Math.hypot(st.at[0] - g.x, st.at[1] - g.z) < 0.6;
-      if (at && pd < STOP_RADIUS && !S.told.includes(st.id)) {
-        g.point = _pt.set(...st.look);
-        const idx = S.stop;
-        say(GUIDE.name, st.lines, () => {
-          const s2 = useTop.getState(), told = [...s2.told, st.id]; live.guide.point = null;
-          if (idx + 1 >= TOUR.length) s2.set({ told, done: true }); else s2.set({ told, stop: idx + 1 });
-        });
-      }
+      guideReady = at && pd < STOP_RADIUS && !S.told.includes(st.id);
     }
     // konuşma: dudak senkronu (daktilo sürerken); satırlar kendiliğinden ilerler
     const tk = useTop.getState().talk;
@@ -344,57 +339,35 @@ function Controller({ playerXZ }: { playerXZ: React.MutableRefObject<{ x: number
     } else { g.talking = false; g.mouth = 0; }
 
     /* yakındaki kapı / nesne → düğmeler */
-    const door = frozen ? null : nearestDoor(zone, p.x, p.z), thing = frozen ? null : nearestThing(zone, p.x, p.z);
-    const k = `${door?.id ?? ''}|${thing?.id ?? ''}`;
-    if (k !== promptKey.current) { promptKey.current = k; S.set({ prompt: { door, thing } }); if (thing && !S.seen.includes(thing.id)) topkapiAudio.whisper(); }
+    const door = frozen ? null : nearestDoor(zone, p.x, p.z), thing = frozen ? null : nearestThing(zone, p.x, p.z), guide = !frozen && guideReady;
+    const k = `${door?.id ?? ''}|${thing?.id ?? ''}|${guide}`;
+    if (k !== promptKey.current) { promptKey.current = k; S.set({ prompt: { door, thing, guide } }); if (thing && !S.seen.includes(thing.id)) topkapiAudio.whisper(); }
 
-    /* kamera */
-    const card = S.card, headY = 1.55; let blocked = false;
-    _t.set(p.x, headY, p.z);
-    if (card && card.zone === zone) {
-      // inceleme: nesneye dön; hazinede vitrine yaklaş
-      const dx = card.pos[0] - p.x, dz = card.pos[2] - p.z, want = Math.atan2(-dx, -dz);
-      cam.yaw += wrap(want - cam.yaw) * (1 - Math.exp(-dt * 3));
-      if (card.zone === 'hazine') {
-        const d = Math.hypot(dx, dz) || 1; _c.set(card.pos[0] - (dx / d) * 0.95, card.pos[1] + 0.22, card.pos[2] - (dz / d) * 0.95); _lk.set(...card.pos);
-      } else {
-        _lk.set(card.pos[0], card.pos[1], card.pos[2]).lerp(_t, 0.25);
-        const h = Math.min(CEILING[zone] - 0.4, headY + 1.2); let D = Math.max(cam.dist, zone === 'avlu' ? 6 : 2.5);
-        while (D > 1 && !camClear(zone, p.x + Math.sin(cam.yaw) * D, p.z + Math.cos(cam.yaw) * D)) D -= 0.25;
-        _c.set(p.x + Math.sin(cam.yaw) * D, h, p.z + Math.cos(cam.yaw) * D);
-      }
-    } else {
-      const D = cam.dist, cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
-      _c.set(p.x + Math.sin(cam.yaw) * cp * D, headY + sp * D, p.z + Math.cos(cam.yaw) * cp * D);
-      // çarpışma: hedeften kameraya doğru ilerle, engelde dur
-      const n = Math.ceil(D / 0.2); let ok = 0;
-      for (let i = 1; i <= n; i++) { const f = i / n, x = p.x + (_c.x - p.x) * f, z = p.z + (_c.z - p.z) * f; if (!camClear(zone, x, z)) break; ok = f; }
-      if (ok < 1) { blocked = true; const f = Math.max(0.12, ok - 0.06); _c.set(p.x + (_c.x - p.x) * f, headY + (_c.y - headY) * f, p.z + (_c.z - p.z) * f); }
-      _c.y = Math.max(0.35, Math.min(_c.y, CEILING[zone] - 0.3));
-      _lk.copy(_t);
-      if (S.talk && pd < 6) _lk.lerp(_look.set(g.x, 1.5, g.z), 0.35);   // konuşurken rehber de kadrajda
-    }
-    const kk = 1 - Math.exp(-dt * (card ? 3 : 10));
-    // duvar araya girince kamera yumuşatılmadan içeri alınır (yumuşak geçişte duvarın içinden görünmesin)
-    if (camPos.current.distanceTo(_c) > 25) { camPos.current.copy(_c); lookAt.current.copy(_lk); } else { if (blocked && _c.distanceTo(_t) < camPos.current.distanceTo(_t)) camPos.current.copy(_c); else camPos.current.lerp(_c, kk); lookAt.current.lerp(_lk, kk); }
-    camera.position.copy(camPos.current); camera.lookAt(lookAt.current);
+    /* kamera: birinci şahıs, göz hizasında; inceleme kartı açılınca kamera kendiliğinden dönmez/yakınlaşmaz */
+    const eyeY = Math.min(1.62, CEILING[zone] - 0.25), sway = p.speed > 0.1 ? Math.sin(bob.current) * 0.03 : 0;
+    applyFp(camera, p.x, eyeY, p.z, cam, sway); easeFov(camera, 66, dt);
 
     /* ses */
     const sz = subZone(zone, p.x); if (sz !== mixKey.current) { mixKey.current = sz; topkapiAudio.setMix(sz); }
-    audioT.current += dt; if (audioT.current > 0.1) { audioT.current = 0; topkapiAudio.listener([camera.position.x, camera.position.y, camera.position.z], [lookAt.current.x - camera.position.x, 0, lookAt.current.z - camera.position.z]); }
+    audioT.current += dt; if (audioT.current > 0.1) { audioT.current = 0; topkapiAudio.listener([camera.position.x, camera.position.y, camera.position.z], [-Math.sin(cam.yaw), 0, -Math.cos(cam.yaw)]); }
   });
   return null;
 }
 
 /* ---------- arayüz ---------- */
-function Prompts({ enter, inspect }: { enter: (d: Door) => void; inspect: (t: Thing) => void }) {
+function Prompts({ enter, inspect, talkGuide }: { enter: (d: Door) => void; inspect: (t: Thing) => void; talkGuide: () => void }) {
   const prompt = useTop((s) => s.prompt), talk = useTop((s) => !!s.talk), card = useTop((s) => !!s.card), seen = useTop((s) => s.seen);
   if (card) return null;
   return (
     <div className={`absolute right-4 z-40 flex flex-col items-end gap-2 ${talk ? 'bottom-40' : 'bottom-24 sm:bottom-28'}`} onPointerDown={(e) => e.stopPropagation()}>
+      {prompt.guide && !talk && (
+        <button onClick={talkGuide} className="flex h-14 max-w-[62vw] items-center gap-2 rounded-full bg-[#b0413e] px-5 text-sm font-bold text-white shadow-xl">
+          <MessageCircle size={20} className="shrink-0" /><span className="truncate">Konuş: {GUIDE.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· E</span>
+        </button>
+      )}
       {prompt.thing && (
         <button onClick={() => inspect(prompt.thing!)} className={`flex h-12 max-w-[62vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg backdrop-blur-md ${seen.includes(prompt.thing.id) ? 'bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5' : 'bg-[#b0413e] text-white'}`}>
-          <Search size={18} className="shrink-0" /><span className="truncate">İncele: {prompt.thing.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· F</span>
+          <Search size={18} className="shrink-0" /><span className="truncate">İncele: {prompt.thing.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· {prompt.guide || prompt.door ? 'F' : 'E'}</span>
         </button>
       )}
       {prompt.door && (
@@ -452,7 +425,7 @@ function MiniMap() {
   );
 }
 function Hint({ text }: { text: string }) {
-  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · sürükle: bak</span></HudHint>;
+  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · tıkla, fareyle bak</span></HudHint>;
 }
 function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
   return <StartSheet kicker="İstanbul · Sarayburnu" title="Topkapı Sarayı" intro={<>Sarayın avlularında, Divan’da, Harem’de ve Hazine’de serbestçe dolaş. Kâtip <b>{GUIDE.name}</b> sana yol gösterecek; yanına gidince anlatır. Parlayan düğmelerle yapıları ve hazineleri incele.</>}
@@ -465,8 +438,8 @@ function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void })
 const THEME = { accent: '#b0413e' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: koş)</> },
-  { icon: <Move size={16} />, text: <>Sürükle: bak · iki parmak ya da tekerlek: yakınlaş</> },
-  { icon: <DoorOpen size={16} />, text: <><b>E</b>: kapı · <b>F</b>: incele</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda sahneye tıkla, fareyle bak (Esc bırakır) · telefonda ekranı sürükle</> },
+  { icon: <DoorOpen size={16} />, text: <><b>E</b>: konuş / incele / kapı · <b>F</b>: incele</> },
   { icon: <MapIcon size={16} />, text: <>Kroki düğmesi: avlu planını aç / kapat</> },
 ];
 function Fallback({ onExit }: { onExit: () => void }) {

@@ -2,21 +2,23 @@
  * Kız Kulesi — "Vapur Yolculuğu & Ada Keşfi". Ana oyun yöneticisi: bölüm geçişleri, girdiler, diyalog tetikleyicileri, arayüz.
  *
  * Akış: başlangıç → vapur (gidiş) → yanaşma (ada) → kule içi → teras → dönüş (veda) → son.
- * NPC odaklı: Can her bölümde oyuncunun yanındadır; bölüme girince (enter), vapurda rastgele sırayla (random),
- * merdivende taşlara varınca (reach) ve etkileşim düğmesine basınca (interact) konuşur (dialogues.json).
- * Kamera hiçbir bölümde serbest değildir: otomatik takip eder, oyuncu yalnızca yakınlaştırır (+/−, tekerlek, iki parmak).
+ * NPC odaklı: Can her bölümde oyuncunun yanındadır. Kendiliğinden konuşmaz: bölüme girince (enter), vapurda arada bir (random) ve
+ * merdivende taşların yanında (reach) "Can anlatmak istiyor" çıkar; konuşma oyuncu E'ye / el düğmesine basınca başlar (dialogues.json).
+ * Kamera birinci şahıstır (göz hizası); masaüstünde tıkla + fareyle, dokunmatikte sürükleyerek bakılır.
  */
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ArrowLeft, Hand, Minus, Plus, Ship } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, Hint as HudHint, HudTheme, IconButton, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { ArrowLeft, Hand, MessageCircle, Move, Ship } from 'lucide-react';
+import { useFpLook } from '../shared/fpLook';
+import { LookCrosshair } from '../shared/mouseLook';
+import { Controls, EndSheet, GameMenu, Hint as HudHint, HudTheme, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
 import { Footprints } from 'lucide-react';
 import { PHASE_LABEL, useKiz, type Phase } from './store';
 import { find, shuffle } from './dialogue';
 import { kizSound } from './sound';
-import { inputPause, keys, readKeys } from './input';
+import { inputPause, keys, readKeys, view } from './input';
 import { DialogueBox, skip } from './DialogueSystem';
 import FerryScene from './FerryScene';
 import { DockScene, TerraceScene, TowerInterior } from './IslandExploration';
@@ -60,7 +62,7 @@ export default function MaidensTowerGame({ onExit }: { onExit: () => void }) {
 function Game({ onExit }: { onExit: () => void }) {
   const dev = useDevice();
   const phase = useKiz((s) => s.phase), muted = useKiz((s) => s.muted), playing = useKiz((s) => !!s.playback);
-  const heard = useKiz((s) => s.heard);
+  const pending = useKiz((s) => s.pending);
   const [fade, setFade] = useState(false);
   const [arrived, setArrived] = useState(false);
   const stick = useRef({ x: 0, y: 0 });
@@ -70,7 +72,7 @@ function Game({ onExit }: { onExit: () => void }) {
     setFade(true); kizSound.hush();
     setTimeout(() => { useKiz.getState().setPhase(p); setTimeout(() => setFade(false), 150); }, 600);
   }, []);
-  useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __kiz: unknown }).__kiz = { go }; }, [go]);
+  useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __kiz: unknown }).__kiz = { go, view }; }, [go]);
 
   // ses
   const G = useSettings(); useEffect(() => { useKiz.getState().setMuted(G.muted); useKiz.getState().setTts(G.tts); }, [G.muted, G.tts]);
@@ -80,17 +82,21 @@ function Game({ onExit }: { onExit: () => void }) {
 
   // girdi: klavye + joystick → walk (her karede)
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { keys.add(e.code); if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault(); if (e.code === 'Equal' || e.code === 'NumpadAdd') useKiz.getState().zoomBy(-0.1); if (e.code === 'Minus' || e.code === 'NumpadSubtract') useKiz.getState().zoomBy(0.1); };
+    const down = (e: KeyboardEvent) => {
+      keys.add(e.code); if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+      // konuşma sürerken E/Boşluk'u DialogueSystem işler (preventDefault); konuşma yoksa etkileşim
+      if ((e.code === 'KeyE' || e.code === 'Space') && !e.repeat && !e.defaultPrevented && !useKiz.getState().playback && ORDER.includes(useKiz.getState().phase)) interactRef.current();
+    };
     const up = (e: KeyboardEvent) => keys.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0; const loop = () => { readKeys(stick.current); raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); keys.clear(); };
   }, []);
 
-  // bölüme girişte konuşma
+  // bölüme girişte: Can'ın anlatacağı var (oyuncu E'ye basınca başlar)
   useEffect(() => {
     const id = ENTER[phase]; if (!id) return;
-    const t = setTimeout(() => useKiz.getState().play(id), phase === 'vapur' ? 1500 : 900);
+    const t = setTimeout(() => useKiz.getState().offer(id), phase === 'vapur' ? 1200 : 700);
     return () => clearTimeout(t);
   }, [phase]);
 
@@ -101,10 +107,10 @@ function Game({ onExit }: { onExit: () => void }) {
     let i = 0, quiet = 0;
     const id = setInterval(() => {
       const st = useKiz.getState();
-      if (st.playback) { quiet = 0; return; }
+      if (st.playback || st.pending) { quiet = 0; return; }
       if (!st.heard.includes('vapur-giris')) return;
       quiet += 1;
-      if (quiet >= 5 && i < pool.length) { st.play(pool[i++]); quiet = 0; }   // ~5 sn sessizlik
+      if (quiet >= 6 && i < pool.length) { st.offer(pool[i++]); quiet = 0; }   // ~6 sn sessizlikten sonra yeni bir hikâye teklifi
     }, 1000);
     return () => clearInterval(id);
   }, [phase]);
@@ -119,32 +125,24 @@ function Game({ onExit }: { onExit: () => void }) {
   // etkileşim düğmesi: konuşma varsa hızlandır/geç; yoksa bu bölümün etkileşim replikleri
   const interact = () => {
     kizSound.unlock();
-    if (useKiz.getState().playback) { skip(); return; }
+    const K = useKiz.getState();
+    if (K.playback) { skip(); return; }
+    if (K.pending) { const id = K.pending; K.offer(null); K.play(id); return; }
     const opts = find(phase as never, (t) => t.type === 'interact');
     const d = opts.find((x) => !useKiz.getState().heard.includes(x.id)) ?? opts[0];
     if (d) useKiz.getState().play(d.id);
   };
 
-  // yakınlaştırma: tekerlek ve iki parmak
-  const pinch = useRef<{ d: number } | null>(null), touches = useRef(new Map<number, { x: number; y: number }>());
-  const onWheel = (e: React.WheelEvent) => useKiz.getState().zoomBy(Math.sign(e.deltaY) * 0.08);
-  const onPtr = (e: React.PointerEvent, type: 'down' | 'move' | 'up') => {
-    if (e.pointerType !== 'touch') return;
-    if (type === 'up') { touches.current.delete(e.pointerId); pinch.current = null; return; }
-    touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (touches.current.size === 2) {
-      const [a, b] = [...touches.current.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (pinch.current && type === 'move') { useKiz.getState().zoomBy((pinch.current.d - d) * 0.004); }
-      pinch.current = { d };
-    }
-  };
+  const interactRef = useRef(interact); interactRef.current = interact;
+  // birinci şahıs bakış: fare kilidi / sürükleme
+  const fpl = useFpLook(view, () => ORDER.includes(useKiz.getState().phase) && !inputPause.on, () => kizSound.unlock());
 
   const idx = ORDER.indexOf(phase);
   const start = () => { kizSound.unlock(); useKiz.getState().reset(); setArrived(false); go('vapur'); };
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#bcd6e6] text-white" style={{ touchAction: 'none' }}
-      onWheel={onWheel} onPointerDown={(e) => { kizSound.unlock(); onPtr(e, 'down'); }} onPointerMove={(e) => onPtr(e, 'move')} onPointerUp={(e) => onPtr(e, 'up')} onPointerCancel={(e) => onPtr(e, 'up')}>
+      {...fpl.handlers}>
       <HudTheme theme={THEME}>
       <Canvas shadows={dev.shadows} dpr={dev.dpr} gl={{ antialias: dev.antialias, powerPreference: 'high-performance' }}
         camera={{ fov: 55, near: 0.1, far: 6000, position: [-60, 20, 60] }} onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}>
@@ -159,32 +157,30 @@ function Game({ onExit }: { onExit: () => void }) {
 
       <TopRow onExit={onExit} objective={idx >= 0 ? <Objective icon={<Ship size={15} />} label={PHASE_LABEL[phase]} done={idx} total={ORDER.length} /> : undefined}
         right={<GameMenu onPause={(v) => { inputPause.on = v; }} help={<Controls items={CONTROLS} />} onRestart={start} onExit={onExit} />} />
-      {idx >= 0 && <div className="pointer-events-auto absolute right-[max(12px,env(safe-area-inset-right))] top-[124px] z-30 flex flex-col gap-2 sm:top-[72px]" onPointerDown={(e) => e.stopPropagation()}>
-        <IconButton label="Yakınlaştır" onClick={() => useKiz.getState().zoomBy(-0.12)}><Plus size={18} /></IconButton>
-        <IconButton label="Uzaklaştır" onClick={() => useKiz.getState().zoomBy(0.12)}><Minus size={18} /></IconButton>
-      </div>}
 
       {/* mobil: sol joystick, sağ etkileşim */}
       {idx >= 0 && (
         <>
           <Joystick stick={stick} />
-          <button onPointerDown={(e) => { e.stopPropagation(); interact(); }} aria-label={playing ? 'Konuşmayı hızlandır' : 'Etkileşim'}
-            className={`absolute bottom-24 right-5 z-40 grid h-16 w-16 place-items-center rounded-full shadow-lg backdrop-blur sm:bottom-28 ${playing ? 'bg-[#2f6f9a] text-white' : 'bg-[#f7f5f1]/85 text-[#1f1b17] ring-1 ring-black/5'}`}>
+          <LookCrosshair locked={fpl.locked} />
+          {pending && !playing && <p className="pointer-events-none absolute bottom-44 right-4 z-40 flex max-w-[60vw] items-center gap-1.5 rounded-full bg-[#2f6f9a] px-3 py-1.5 text-xs font-semibold text-white shadow-lg sm:bottom-48"><MessageCircle size={14} /> Can anlatmak istiyor<span className="hidden [@media(pointer:fine)]:inline"> · E</span></p>}
+          <button onPointerDown={(e) => { e.stopPropagation(); interact(); }} aria-label={playing ? 'Konuşmayı hızlandır' : pending ? 'Can ile konuş' : 'Etkileşim'}
+            className={`absolute bottom-24 right-5 z-40 grid h-16 w-16 place-items-center rounded-full shadow-lg backdrop-blur sm:bottom-28 ${playing || pending ? 'bg-[#2f6f9a] text-white' : 'bg-[#f7f5f1]/85 text-[#1f1b17] ring-1 ring-black/5'} ${pending && !playing ? 'animate-pulse' : ''}`}>
             <Hand size={26} />
           </button>
         </>
       )}
 
-      {phase === 'vapur' && !playing && <Hint text={arrived ? 'Yanaştık…' : 'Güvertede dolaş · Can seninle konuşacak'} />}
+      {phase === 'vapur' && !playing && <Hint text={arrived ? 'Yanaştık…' : 'Güvertede dolaş · Can’la konuşmak için E'} />}
       {phase === 'yanasma' && !playing && <Hint text="Can’ı takip et — kapıya yürü" />}
-      {phase === 'kule' && !playing && <Hint text="Joystick’i yukarı it: merdivenden çık" />}
-      {phase === 'teras' && !playing && heard.includes('teras') && (
+      {phase === 'kule' && !playing && <Hint text="Merdivene bak, ileri yürü: yukarı çık" />}
+      {phase === 'teras' && !playing && !pending && (
         <div className="absolute bottom-24 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
           <p className="rounded-full bg-[#f7f5f1]/90 px-3 py-1 text-xs text-[#1f1b17] ring-1 ring-black/5 backdrop-blur-md">Etkileşim düğmesi: Can’a soru sor</p>
           <button onClick={() => go('donus')} className="inline-flex h-12 items-center gap-2 rounded-2xl px-5 font-bold text-white shadow-lg" style={{ background: THEME.accent }}><Ship size={18} /> Vapura dön</button>
         </div>
       )}
-      {phase === 'donus' && !playing && heard.includes('donus') && <Hint text="İskele tahtasından vapura bin" />}
+      {phase === 'donus' && !playing && !pending && <Hint text="İskele tahtasından vapura bin" />}
 
       <DialogueBox />
 
@@ -246,8 +242,8 @@ function EndCard({ onReplay, onExit }: { onReplay: () => void; onExit: () => voi
 const THEME = { accent: '#2f6f9a' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b>: yürü</> },
-  { icon: <Hand size={16} />, text: <>El düğmesi ya da <b>Boşluk</b>: konuş / konuşmayı geç</> },
-  { icon: <Plus size={16} />, text: <><b>+ / −</b>: yakınlaştır, uzaklaştır</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda tıkla, fareyle bak (Esc bırakır) · telefonda ekranı sürükle</> },
+  { icon: <Hand size={16} />, text: <>El düğmesi ya da <b>E</b> / <b>Boşluk</b>: Can’la konuş / konuşmayı geç</> },
 ];
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null);

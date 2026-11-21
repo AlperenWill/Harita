@@ -1,8 +1,8 @@
 /**
  * Medusa başları — model, vurgu ışığı, yaklaşma algılama, inceleme (yakınlaşma) modu ve bilgi paneli.
  *
- * Neden: Medusa başları sarnıcın "ödül" anı. Oyuncu kuzeybatı köşeye yürüdüğünde başlardan birine 3,2 m'den
- * yakın ve ona bakıyorsa (ışın küreye çarpıyor) inceleme modu kendiliğinden açılır: kamera platformun kenarındaki
+ * Neden: Medusa başları sarnıcın "ödül" anı. Oyuncu kuzeybatı köşede bir başa bakınca nişangâh parlar; E'ye / İncele'ye
+ * basınca (kendiliğinden değil) inceleme modu açılır: kamera platformun kenarındaki
  * sabit bir bakış noktasına süzülür, başa kilitlenir ve görüş açısı 70°'den 36°'ye yavaşça daralır (zoom).
  * Oyuncu bu sırada kamerayı çeviremez (serbest kamera yok); E / dokunma / Kapat ile çıkar ve kaldığı yerden yürür.
  * Gölge: sahnede yalnızca başlar ve giriş kapısı gölge üretir/alır; başların vurgu ışıkları gölgeli spot ışığıdır.
@@ -15,7 +15,7 @@ import { ExternalLink, X } from 'lucide-react';
 import { DECK_Y, MEDUSA, MEDUSA_Y, POIS, colX, rowZ, type Poi } from './cistern';
 import { stoneTextures } from './CisternScene';
 
-export const INSPECT_FOV = 36, NORMAL_FOV = 70, AUTO_DIST = 3.2;
+export const INSPECT_FOV = 36, NORMAL_FOV = 70;
 /** İnceleme bakış noktası: başın doğusundaki platform kenarı, baş hizasının biraz üstü */
 export function inspectPose(id: string) {
   const m = MEDUSA.find((x) => x.id === id)!, hx = colX(m.col[0]), hz = rowZ(m.col[1]);

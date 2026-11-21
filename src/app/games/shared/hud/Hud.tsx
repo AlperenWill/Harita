@@ -159,6 +159,21 @@ export function Hint({ children, fadeAfter = 7000 }: { children: ReactNode; fade
   useEffect(() => { setOn(true); const t = setTimeout(() => setOn(false), fadeAfter); return () => clearTimeout(t); }, [children, fadeAfter]);
   return <div className={`pointer-events-none absolute inset-x-0 bottom-[max(16px,env(safe-area-inset-bottom))] flex justify-center px-24 transition-opacity duration-700 ${on ? 'opacity-100' : 'opacity-0'}`}><p className={`rounded-full px-4 py-2 text-center text-xs font-medium ${GLASS}`}>{children}</p></div>;
 }
+/**
+ * Etkileşim istemi: oyuncu bir şeyin yanındayken çıkar ("İncele: …  E"). Bilgi kartı, bulmaca ya da konuşma ASLA kendiliğinden açılmaz;
+ * oyuncu E'ye basar ya da bu düğmeye dokunur. Alt ortada, ipucunun üstünde; dokunmatikte başparmakla erişilir.
+ */
+export function InteractPrompt({ label, onClick, icon, keyLabel = 'E', muted }: { label: ReactNode; onClick: () => void; icon?: ReactNode; keyLabel?: string; muted?: boolean }) {
+  const t = useTheme();
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-[calc(max(16px,env(safe-area-inset-bottom))+92px)] z-40 flex justify-center px-4 sm:bottom-[calc(max(16px,env(safe-area-inset-bottom))+56px)] sm:px-20">
+      <button onPointerDown={stop} onClick={onClick} className={`pointer-events-auto flex h-12 max-w-full items-center gap-2 rounded-full pl-4 pr-2 text-sm font-semibold transition active:scale-95 ${muted ? GLASS : 'shadow-[0_10px_30px_rgba(31,27,23,0.3)]'}`} style={muted ? undefined : { background: t.accent, color: t.accentInk ?? '#fff' }}>
+        {icon}<span className="truncate">{label}</span>
+        <kbd className={`ml-1 grid h-8 min-w-8 place-items-center rounded-full px-2 font-sans text-xs font-bold ${muted ? 'bg-black/5' : 'bg-white/25'}`}>{keyLabel}</kbd>
+      </button>
+    </div>
+  );
+}
 /** Sağ alt ana kontrol yuvası (başparmak bölgesi) */
 export function ActionDock({ children }: { children: ReactNode }) {
   return <div className="pointer-events-auto absolute bottom-[max(16px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] flex flex-col items-center gap-3" onPointerDown={stop}>{children}</div>;

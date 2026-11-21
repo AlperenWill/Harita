@@ -1,7 +1,7 @@
 /**
  * Nemrut Dağı — "Tanrıların Tahtı": rehbersiz keşif oyunu. Ana yönetici.
  *
- * Oyuncu zirvede serbestçe yürür (joystick / WASD), kamera üçüncü şahıstan izler ve sürükleyerek çevrilir. Rehber yoktur; defterdeki
+ * Oyuncu zirvede serbestçe yürür (joystick / WASD), kamera birinci şahıstır (fareyle ya da sürükleyerek bakılır). Rehber yoktur; defterdeki
  * yedi görev yol gösterir: doğu terasında gün doğumu, tahtların yazıtları, kırılıp düşmüş üç yazıt parçası, Pers adlarını doğru tanrıların
  * tahtına yerleştirme (çözülünce doğu terasının başları sanal olarak gövdelerine kalkar), Aslan Horoskobu'nda üç gezegen, dört el sıkışma
  * steli ve batı terasında gün batımı. Zaman akar (1 gerçek saniye = 1 dakika; ×20 hızlandırılabilir); güneş, sis, yıldızlar ve tanrı
@@ -16,16 +16,18 @@ import { ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
 import { Controls, EndSheet, GameMenu, Hint as HudHint, HudTheme, IconButton, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
-import { Footprints, Info, MousePointer2, Sunrise } from 'lucide-react';
+import { Footprints, Hand, Info, MousePointer2, Sunrise } from 'lucide-react';
+import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
+import { LookCrosshair } from '../shared/mouseLook';
 import { ArrowLeft, BookOpen, Check, ExternalLink, FastForward, Search, Sparkles, X } from 'lucide-react';
-import { Character, newRig, type Palette } from '../kiz-kulesi/NPCController';
+import { newRig } from '../kiz-kulesi/NPCController';
 import { keys, readKeys, walk } from '../kiz-kulesi/input';
 import { Joystick } from '../shared/Joystick';
 import { PHASE_LABEL, SUNRISE, WIND_DIR, approach, atmosphere, phaseOf, shouldUpdate } from './DynamicLightingSystem';
 import { FIGURES, TERRACE_X, heightAt } from './terrain';
-import { AREA_LABEL, FRAGMENTS, HOROSCOPE, PODIUM, QUESTS, START, THINGS, RING, areaAt, hitPlanet, matches, nearFragment, nearestThing, slide, walkable, watching, type Area, type Fragment, type Persian, type Progress, type Thing } from './site';
+import { AREA_LABEL, FRAGMENTS, HOROSCOPE, QUESTS, START, THINGS, areaAt, hitPlanet, matches, nearFragment, nearestThing, slide, watching, type Area, type Fragment, type Persian, type Progress, type Thing } from './site';
 import { Scatter, Terrain, type Tier } from './ProceduralTerrain';
-import { Monuments, PODIUM_TOP } from './Monuments';
+import { Monuments } from './Monuments';
 import { clock, wrapHour } from './time';
 import { nemrutAudio } from './AudioManager';
 
@@ -36,18 +38,17 @@ function detectTier(): Tier {
   if (nav.connection?.saveData || (nav.deviceMemory ?? 8) <= 3 || (nav.hardwareConcurrency ?? 8) <= 4) return 'low';
   return matchMedia('(pointer: coarse)').matches ? 'medium' : 'high';
 }
-const HIKER: Palette = { skin: '#c99272', hair: '#151515', top: '#b5452f', pants: '#3a3a42', shoes: '#5a4a3a', scarf: '#2f5f8f' };
 
 /* ---------- durum ---------- */
 interface S extends Omit<Progress, 'area' | 'hour'> {
-  started: boolean; area: Area; hourShown: number; speed: 1 | 20; card: Thing | null; prompt: Thing | null; puzzle: boolean; journal: boolean;
+  started: boolean; area: Area; hourShown: number; speed: 1 | 20; card: Thing | null; prompt: Thing | null; frag: Fragment | null; puzzle: boolean; journal: boolean;
   toast: { text: string; ok: boolean; t: number } | null; muted: boolean; tts: boolean; endShown: boolean;
   set: (p: Partial<S>) => void;
 }
-const INITIAL = { started: false, area: 'guney' as Area, hourShown: SUNRISE - 0.45, speed: 1 as const, card: null, prompt: null, puzzle: false, journal: false, toast: null, endShown: false, read: [] as string[], frags: [] as string[], placed: [] as string[], planets: [] as string[], seen: [] as string[], watched: [] as string[] };
+const INITIAL = { started: false, area: 'guney' as Area, hourShown: SUNRISE - 0.45, speed: 1 as const, card: null, prompt: null, frag: null, puzzle: false, journal: false, toast: null, endShown: false, read: [] as string[], frags: [] as string[], placed: [] as string[], planets: [] as string[], seen: [] as string[], watched: [] as string[] };
 const useNem = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
-const live = { player: newRig(START.at[0], START.at[1], START.yaw), cam: { yaw: START.yaw, pitch: 0.28, dist: 6, drag: 0 }, hour: SUNRISE - 0.45, restore: { current: 0 }, dragging: false };
+const live = { player: newRig(START.at[0], START.at[1], START.yaw), cam: { yaw: START.yaw, pitch: 0 }, hour: SUNRISE - 0.45, restore: { current: 0 }, dragging: false };
 const progress = (s: S): Progress => ({ area: s.area, hour: live.hour, read: s.read, frags: s.frags, placed: s.placed, planets: s.planets, seen: s.seen, watched: s.watched });
 const toast = (text: string, ok = true) => { useNem.getState().set({ toast: { text, ok, t: performance.now() } }); nemrutAudio.chime(ok); };
 
@@ -69,7 +70,7 @@ function Game({ onExit }: { onExit: () => void }) {
     return () => { b?.removeEventListener('levelchange', check); b?.removeEventListener('chargingchange', check); };
   }, []);
   const G = useSettings(); useEffect(() => { nemrutAudio.setMuted(G.muted); }, [G.muted]);
-  useEffect(() => () => { nemrutAudio.dispose(); useNem.setState(INITIAL); Object.assign(live.player, newRig(START.at[0], START.at[1], START.yaw)); Object.assign(live.cam, { yaw: START.yaw, pitch: 0.28, dist: 6, drag: 0 }); live.hour = SUNRISE - 0.45; live.restore.current = 0; }, []);
+  useEffect(() => () => { nemrutAudio.dispose(); useNem.setState(INITIAL); Object.assign(live.player, newRig(START.at[0], START.at[1], START.yaw)); Object.assign(live.cam, { yaw: START.yaw, pitch: 0 }); live.hour = SUNRISE - 0.45; live.restore.current = 0; }, []);
   // tamamlanan görev bildirimi
   const prevDone = useRef<string[]>([]);
   useEffect(() => {
@@ -84,6 +85,8 @@ function Game({ onExit }: { onExit: () => void }) {
     if (th.kind === 'stel' && !s.seen.includes(th.id)) patch.seen = [...s.seen, th.id];
     s.set(patch); if (useSettings.getState().tts) nemrutAudio.speak(th.text);
   }, []);
+  /** Yazıt parçası yalnızca oyuncu isteyince alınır (E / Al) */
+  const pick = useCallback(() => { const s = useNem.getState(), fr = s.frag; if (!fr || s.frags.includes(fr.id)) return; s.set({ frags: [...s.frags, fr.id], frag: null }); toast(`Yazıt parçası bulundu: “${fr.word}”`); }, []);
   const closeCard = useCallback(() => { useNem.getState().set({ card: null, puzzle: false }); nemrutAudio.hush(); }, []);
   const place = useCallback((f: Persian, th: Thing) => {
     const s = useNem.getState(); if (!th.god) return;
@@ -95,7 +98,7 @@ function Game({ onExit }: { onExit: () => void }) {
     const down = (e: KeyboardEvent) => {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useNem.getState(); if (!s.started || e.repeat) return;
-      if (e.code === 'KeyE' || e.code === 'KeyF') { if (s.card) closeCard(); else if (s.prompt) inspect(s.prompt); }
+      if (e.code === 'KeyE' || e.code === 'KeyF') { if (s.card) closeCard(); else if (s.frag) pick(); else if (s.prompt) inspect(s.prompt); }
       if (e.code === 'Escape') closeCard();
       if (e.code === 'KeyJ') s.set({ journal: !s.journal });
       if (e.code === 'KeyT') s.set({ speed: s.speed === 1 ? 20 : 1 });
@@ -104,31 +107,22 @@ function Game({ onExit }: { onExit: () => void }) {
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0; const loop = () => { readKeys(stick.current); raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); keys.clear(); };
-  }, [inspect, closeCard]);
+  }, [inspect, closeCard, pick]);
   useEffect(() => {
     if (!location.search.includes('debug')) return;
     (window as unknown as { __nem: unknown }).__nem = {
-      tp: (x: number, z: number, yaw = 0, pitch = 0.28, dist = 6) => { Object.assign(live.player, { x, z, yaw }); Object.assign(live.cam, { yaw, pitch, dist, drag: 3 }); useNem.getState().set({ started: true }); },
+      tp: (x: number, z: number, yaw = 0, pitch = 0) => { Object.assign(live.player, { x, z, yaw }); Object.assign(live.cam, { yaw, pitch }); useNem.getState().set({ started: true }); },
       hour: (h: number) => { live.hour = h; }, inspect: (id: string) => { const th = THINGS().find((x) => x.id === id); if (th) inspect(th); },
       give: (p: Partial<S>) => useNem.getState().set(p), state: () => ({ ...useNem.getState(), player: { ...live.player }, hour: live.hour }),
     };
   }, [inspect]);
 
-  const ptr = useRef(new Map<number, { x: number; y: number }>()), pinch = useRef<number | null>(null);
-  const onDown = (e: React.PointerEvent) => { nemrutAudio.unlock(); ptr.current.set(e.pointerId, { x: e.clientX, y: e.clientY }); };
-  const onMove = (e: React.PointerEvent) => {
-    const p = ptr.current.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; ptr.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (ptr.current.size === 2) { const [a, b] = [...ptr.current.values()], d = Math.hypot(a.x - b.x, a.y - b.y); if (pinch.current) live.cam.dist = THREE.MathUtils.clamp(live.cam.dist * (pinch.current / d), 2, 14); pinch.current = d; return; }
-    if (useNem.getState().card) return;
-    live.cam.yaw -= dx * 0.006; live.cam.pitch = THREE.MathUtils.clamp(live.cam.pitch + dy * 0.004, -0.7, 1.25); live.cam.drag = 1.5;
-  };
-  const onUp = (e: React.PointerEvent) => { ptr.current.delete(e.pointerId); if (ptr.current.size < 2) pinch.current = null; };
-  const onWheel = (e: React.WheelEvent) => { live.cam.dist = THREE.MathUtils.clamp(live.cam.dist * (1 + Math.sign(e.deltaY) * 0.1), 2, 14); };
+  const fpl = useFpLook(live.cam, () => { const a = useNem.getState(); return a.started && !a.card && !a.puzzle && !a.journal && !pause.on; }, () => nemrutAudio.unlock());
   const ph = phaseOf(S.hourShown);
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#05070d] text-white" style={{ touchAction: 'none' }}
-      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={onUp} onWheel={onWheel}>
+      {...fpl.handlers}>
       <HudTheme theme={THEME}>
       <Canvas shadows={t !== 'low'} dpr={t === 'low' ? 1 : [1, 1.6]} gl={{ antialias: t === 'high', powerPreference: 'high-performance' }} camera={{ fov: 55, near: 0.3, far: 6000, position: [150, 60, 160] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}>
@@ -137,7 +131,6 @@ function Game({ onExit }: { onExit: () => void }) {
           <Terrain tier={t} />
           <Scatter tier={t} />
           <Monuments restoreEast={live.restore} collected={S.frags} placed={S.placed} shadows={t !== 'low'} hi={t !== 'low'} />
-          <Player />
           {S.started ? <Controller /> : <TitleCam />}
         </Suspense>
       </Canvas>
@@ -150,6 +143,12 @@ function Game({ onExit }: { onExit: () => void }) {
       {S.started && (
         <>
           <Joystick stick={stick} onTouch={() => nemrutAudio.unlock()} />
+          <LookCrosshair locked={fpl.locked} />
+          {S.frag && !S.card && (
+            <button onPointerDown={(e) => e.stopPropagation()} onClick={pick} className="absolute bottom-40 right-4 z-40 flex h-12 max-w-[64vw] items-center gap-2 rounded-full bg-[#c0612b] px-4 text-sm font-semibold text-white shadow-lg sm:bottom-44">
+              <Hand size={18} className="shrink-0" /><span className="truncate">Al: yazıt parçası</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· E</span>
+            </button>
+          )}
           {S.prompt && !S.card && (
             <button onPointerDown={(e) => e.stopPropagation()} onClick={() => inspect(S.prompt!)} className={`absolute bottom-24 right-4 z-40 flex h-12 max-w-[64vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg sm:bottom-28 ${S.seen.includes(S.prompt.id) || (S.prompt.god && S.read.includes(S.prompt.god)) ? 'bg-black/60' : 'bg-[#c0612b] text-white'}`}>
               <Search size={18} className="shrink-0" /><span className="truncate">İncele: {S.prompt.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· E</span>
@@ -169,21 +168,15 @@ function Game({ onExit }: { onExit: () => void }) {
 }
 
 /* ---------- oyuncu ve kamera ---------- */
-function Player() { const rig = useMemo(() => ({ current: live.player }), []); return <Character rig={rig} palette={HIKER} castShadow />; }
 function TitleCam() {
   const { camera } = useThree();
   useFrame(({ clock: c }) => { const a = c.elapsedTime * 0.03 + 0.4; camera.position.set(TERRACE_X + 40 + Math.cos(a) * 18, 9 + Math.sin(a) * 2, Math.sin(a) * 30); camera.lookAt(TERRACE_X, 6, 0); });
   return null;
 }
-const _c = new THREE.Vector3(), _l = new THREE.Vector3(), _f = new THREE.Vector3();
-const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
-/** Kamera noktası açık mı: tümülüsün/arazinin ve heykel kaidesinin içinde değil */
-const camOk = (x: number, y: number, z: number) => y > heightAt(x, z) + 0.4 && !(Math.abs(x) > PODIUM.x0 - 0.5 && Math.abs(x) < PODIUM.x1 + 0.5 && Math.abs(z) < PODIUM.z && y < PODIUM_TOP + 9.8)
-  && !(y < 4.2 && Math.hypot(x, z) > RING.r0 && Math.hypot(x, z) < RING.r1 && !walkable(x, z));   // baş, stel, sunak
+const _f = new THREE.Vector3();
 function Controller() {
   const { camera } = useThree();
-  const camPos = useRef(camera.position.clone()), look = useRef(new THREE.Vector3(live.player.x, 1.5, live.player.z));
-  const st = useRef({ key: '', area: '', step: 0, shown: 0, watchT: 0 });
+  const st = useRef({ key: '', fkey: '', area: '', step: 0, shown: 0, watchT: 0, bob: 0 });
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), S = useNem.getState(), p = live.player, cam = live.cam;
     // zaman
@@ -196,43 +189,22 @@ function Controller() {
     const speed = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 5.4 : 3.5) * Math.min(1, ml);
     if (!frozen && ml > 0.08) {
       const [nx, nz] = slide([p.x, p.z], (mx / ml) * speed * dt, (mz / ml) * speed * dt), moved = Math.hypot(nx - p.x, nz - p.z);
-      p.speed = dt > 0 ? moved / dt : 0; p.x = nx; p.z = nz; p.yaw += wrap(Math.atan2(-mx, -mz) - p.yaw) * (1 - Math.exp(-dt * 12));
+      p.speed = dt > 0 ? moved / dt : 0; p.x = nx; p.z = nz; st.current.bob += moved * 3.1;
       st.current.step += moved; if (st.current.step > 0.8) { st.current.step = 0; nemrutAudio.step(); }
-      if (cam.drag <= 0 && Math.abs(walk.x) < 0.5 && walk.y < -0.3) cam.yaw += wrap(p.yaw - cam.yaw) * (1 - Math.exp(-dt * 0.8));
     } else p.speed = 0;
-    cam.drag -= dt; p.y = Math.max(0, heightAt(p.x, p.z));
+    p.yaw = cam.yaw; p.y = Math.max(0, heightAt(p.x, p.z));
     p.wind = atmosphere(live.hour).wind;
     // bölüm, parça toplama, yakındaki nesne, gün doğumu/batımı
     const area = areaAt(p.x, p.z); if (area !== st.current.area) { st.current.area = area; S.set({ area }); }
-    const fr = nearFragment(p.x, p.z, S.frags); if (fr && !frozen) { S.set({ frags: [...S.frags, fr.id] }); toast(`Yazıt parçası bulundu: “${fr.word}”`); }
+    const fr = frozen ? null : nearFragment(p.x, p.z, S.frags); if ((fr?.id ?? '') !== st.current.fkey) { st.current.fkey = fr?.id ?? ''; S.set({ frag: fr }); }
     const th = frozen ? null : nearestThing(p.x, p.z); if ((th?.id ?? '') !== st.current.key) { st.current.key = th?.id ?? ''; S.set({ prompt: th }); }
     const w = watching(area, live.hour);
     if (w && !S.watched.includes(w)) { st.current.watchT += Math.min(raw, 0.5);   // gerçek süre (düşük kare hızında da 4 sn)
       if (st.current.watchT > 4) { st.current.watchT = 0; S.set({ watched: [...S.watched, w] }); } } else st.current.watchT = 0;
     live.restore.current = approach(live.restore.current, S.placed.length >= 3 ? 1 : 0, dt, 1.4);
 
-    // kamera
-    const head = p.y + 1.6, card = S.card; let blocked = false;
-    if (card) {
-      const dx = card.at[0] - p.x, dz = card.at[1] - p.z; if (Math.hypot(dx, dz) > 0.6) cam.yaw += wrap(Math.atan2(-dx, -dz) - cam.yaw) * (1 - Math.exp(-dt * 3));
-      _c.set(p.x + Math.sin(cam.yaw) * 4.2, head + 1.2, p.z + Math.cos(cam.yaw) * 4.2);
-      { const n = 17; let ok = 0; for (let i = 1; i <= n; i++) { const f = i / n; if (!camOk(p.x + (_c.x - p.x) * f, head + (_c.y - head) * f, p.z + (_c.z - p.z) * f)) break; ok = f; }   // inceleme kamerası da heykel/kayaya girmesin
-        if (ok < 1) { blocked = true; const f = Math.max(0.1, ok - 0.05); _c.set(p.x + (_c.x - p.x) * f, head + (_c.y - head) * f, p.z + (_c.z - p.z) * f); } }
-      _c.y = Math.max(_c.y, heightAt(_c.x, _c.z) + 0.5); _l.set(card.at[0], Math.max(card.y, 1), card.at[1]).lerp(_f.set(p.x, head, p.z), 0.2);
-    } else {
-      const D = cam.dist, cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
-      _c.set(p.x + Math.sin(cam.yaw) * cp * D, head + sp * D, p.z + Math.cos(cam.yaw) * cp * D);
-      const n = Math.ceil(D / 0.25); let ok = 0;
-      for (let i = 1; i <= n; i++) { const f = i / n; if (!camOk(p.x + (_c.x - p.x) * f, head + (_c.y - head) * f, p.z + (_c.z - p.z) * f)) break; ok = f; }
-      if (ok < 1) { blocked = true; const f = Math.max(0.1, ok - 0.05); _c.set(p.x + (_c.x - p.x) * f, head + (_c.y - head) * f, p.z + (_c.z - p.z) * f); }
-      _c.y = Math.max(_c.y, heightAt(_c.x, _c.z) + 0.5);
-      _l.set(p.x, head, p.z); if (cam.pitch < 0) _l.y += -cam.pitch * 12;   // yukarı bakış: heykellerin tepesi
-    }
-    const k = 1 - Math.exp(-dt * (card ? 3 : 9));
-    // engel araya girince kamera yumuşatılmadan içeri alınır (heykelin/kayanın içinden görünmesin)
-    _f.set(p.x, head, p.z);
-    if (camPos.current.distanceTo(_c) > 40) { camPos.current.copy(_c); look.current.copy(_l); } else { if (blocked && _c.distanceTo(_f) < camPos.current.distanceTo(_f)) camPos.current.copy(_c); else camPos.current.lerp(_c, k); look.current.lerp(_l, k); }
-    camera.position.copy(camPos.current); camera.lookAt(look.current);
+    // kamera: birinci şahıs, göz hizasında (inceleme kartı kamerayı oynatmaz)
+    applyFp(camera, p.x, p.y + 1.62, p.z, cam, p.speed > 0.1 ? Math.sin(st.current.bob) * 0.03 : 0); easeFov(camera, 64, dt);
     camera.getWorldDirection(_f);
     nemrutAudio.update(atmosphere(live.hour).wind, [camera.position.x, camera.position.y, camera.position.z], [_f.x, _f.y, _f.z], p.x < 0 ? -TERRACE_X : TERRACE_X);
   });
@@ -303,7 +275,7 @@ function Rays({ disc }: { disc: React.MutableRefObject<THREE.Mesh> }) {
 function NextHint() {
   const s = useNem(), q = QUESTS.find((x) => !x.done(progress(s)));
   if (!q) return null;
-  return <HudHint><b className="text-[#c0612b]">Sıradaki:</b> {q.title}<span className="hidden [@media(pointer:fine)]:inline"> · WASD · sürükle: bak · J: defter · T: zaman</span></HudHint>;
+  return <HudHint><b className="text-[#c0612b]">Sıradaki:</b> {q.title}<span className="hidden [@media(pointer:fine)]:inline"> · WASD · fareyle bak · J: defter · T: zaman</span></HudHint>;
 }
 function Journal({ onClose }: { onClose: () => void }) {
   const s = useNem(), p = progress(s);
@@ -385,8 +357,8 @@ function Toast() {
 const THEME = { accent: '#c0612b' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick / WASD ile yürü (Shift: koş)</> },
-  { icon: <MousePointer2 size={16} />, text: <>sürükle: bak</> },
-  { icon: <Info size={16} />, text: <>E: incele</> },
+  { icon: <MousePointer2 size={16} />, text: <>Bilgisayarda tıkla, fareyle bak (Esc bırakır) · telefonda sürükle</> },
+  { icon: <Info size={16} />, text: <>E: incele / parçayı al</> },
   { icon: <Info size={16} />, text: <>J: defter</> },
   { icon: <Info size={16} />, text: <>T: zamanı hızlandır</> },
 ];

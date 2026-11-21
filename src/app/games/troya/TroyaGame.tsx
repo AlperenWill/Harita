@@ -3,7 +3,8 @@
  *
  * Ören yerinin ziyaretçi yolunda yürü: girişteki tahta at (modern kopya) → Troya VI surları → Troya II megaronları ve rampası →
  * Schliemann yarması (duvarlarında üst üste binen kentlerin renkli bantları) → Athena Tapınağı (Troya VIII) → Odeon (Troya IX).
- * BİLMECE: her yapının yanında “Bu yapı hangi katmana ait?” sorusu; doğru katmanı seçince kart açılır, katman cetvelinde işaretlenir.
+ * BİLMECE: her yapının yanında “İncele (E)” çıkar; basınca “Bu yapı hangi katmana ait?” sorusu açılır (kendiliğinden açılmaz);
+ *   doğru katmanı seçince kart açılır, katman cetvelinde işaretlenir.
  * KAMERA: birinci şahıs, rotaya kilitli (W/S ya da dikey sürükleme), bakış serbest (Efes, Pamukkale ile aynı şema).
  * Öteki oyunlarla tutarlılık: ?q=, ?debug (__troya), tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek.
  */
@@ -12,10 +13,10 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, InteractPrompt, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
 import { useSettings } from '../shared/hud/settings';
 import { Footprints, Info, MousePointer2 } from 'lucide-react';
-import { ArrowLeft, Layers, Pickaxe } from 'lucide-react';
+import { ArrowLeft, Layers, Pickaxe, Search } from 'lucide-react';
 import { LAYERS, ROUTE_LEN, STOPS, TRENCH, MOUND, heightAt, isCorrect, nearStop, routeAt, type Stop } from './site';
 import { speakTr } from '../shared/voice';
 import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
@@ -45,8 +46,8 @@ class TroyaAudio {
 const audio = new TroyaAudio();
 
 /* ---------- durum ---------- */
-interface S { started: boolean; solved: string[]; quiz: Stop | null; wrong: string | null; card: Stop | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, solved: [] as string[], quiz: null, wrong: null, card: null, endShown: false };
+interface S { started: boolean; solved: string[]; quiz: Stop | null; wrong: string | null; card: Stop | null; near: Stop | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, solved: [] as string[], quiz: null, wrong: null, card: null, near: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: 0 };
@@ -62,11 +63,15 @@ function Game({ onExit }: { onExit: () => void }) {
   const G = useSettings(); useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: 0 }); }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
+  /** Oyuncu isteyince: bilmeceli durakta soru, öbüründe bilgi kartı */
+  const inspect = useCallback(() => { const s = useDb.getState(), sp = s.near; if (!sp || s.card || s.quiz) return;
+    if (sp.answer && !s.solved.includes(sp.id)) s.set({ quiz: sp, wrong: null });
+    else { s.set({ card: sp, solved: s.solved.includes(sp.id) ? s.solved : [...s.solved, sp.id] }); if (useSettings.getState().tts) audio.speak(`${sp.name}. ${sp.text}`); } }, []);
   const answer = useCallback((pick: string) => { const s = useDb.getState(), q = s.quiz; if (!q) return;
     if (isCorrect(q, pick)) { audio.tone(true); s.set({ quiz: null, wrong: null, card: q, solved: [...s.solved, q.id] }); if (useSettings.getState().tts) audio.speak(`${q.name}. ${q.text}`); }
     else { audio.tone(false); const L = LAYERS.find((l) => l.n === pick); s.set({ wrong: `${pick} değil: Troya ${pick} ${L?.era ?? ''}. Yapının malzemesine ve biçimine bir daha bak.` }); } }, []);
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (e.repeat) return; if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close();
+    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (e.repeat) return; if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'Escape' && s.quiz) s.set({ quiz: null, wrong: null }); else if (e.code === 'KeyE' && s.started && !s.quiz) inspect();
       if (s.quiz && /^Digit[1-3]$/.test(e.code)) answer(s.quiz.options[Number(e.code.slice(5)) - 1]); };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
@@ -75,7 +80,7 @@ function Game({ onExit }: { onExit: () => void }) {
       void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
-  }, [close, answer]);
+  }, [close, answer, inspect]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __troya: unknown }).__troya = { go: (s: number) => { live.s = s; useDb.getState().set({ started: true }); }, look: (y: number, p = 0) => { live.yaw = y; live.pitch = p; }, answer, state: () => ({ ...useDb.getState(), s: live.s }), STOPS, ROUTE_LEN }; }, [answer]);
   const onDown = (e: React.PointerEvent) => { audio.unlock(); look.lock(e); if (!useDb.getState().started) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
   const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; };
@@ -94,6 +99,7 @@ function Game({ onExit }: { onExit: () => void }) {
       </Canvas>
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Layers size={15} />} label={nextQ ? `Sıradaki: ${nextQ.name}` : 'Katman cetveli tamam'} done={S.solved.filter((id) => quizzes.some((q) => q.id === id)).length} total={quizzes.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
       {S.started && !S.card && !S.quiz && <Hint>Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · 1/2/3: cevap</span></Hint>}
+      {S.started && S.near && !S.card && !S.quiz && <InteractPrompt icon={<Search size={18} />} label={`${S.near.answer && !S.solved.includes(S.near.id) ? 'Bilmece' : 'İncele'}: ${S.near.name}`} onClick={inspect} muted={S.solved.includes(S.near.id)} />}
       {S.quiz && <Quiz q={S.quiz} wrong={S.wrong} onPick={answer} />}
       {S.card && <Card s={S.card} onClose={close} />}
       {!S.started && <TitleCard onExit={onExit} onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
@@ -217,7 +223,7 @@ function Controller() {
     const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt)); const moved = live.s - before, R = routeAt(live.s);
     st.current.step += Math.abs(moved); if (st.current.step > 0.78) { st.current.step = 0; audio.step(); } st.current.bob += Math.abs(moved) * 2.2;
     const sp = S.started ? nearStop(live.s) : null;
-    if ((sp?.id ?? '') !== st.current.stop) { st.current.stop = sp?.id ?? ''; if (sp && !S.solved.includes(sp.id)) { if (sp.answer) S.set({ quiz: sp, wrong: null, card: null }); else { S.set({ card: sp, solved: [...S.solved, sp.id] }); if (useSettings.getState().tts) audio.speak(`${sp.name}. ${sp.text}`); } } else if (!sp) { if (S.quiz) S.set({ quiz: null, wrong: null }); if (S.card) S.set({ card: null }); } }   // noktadan uzaklaşınca açık kart/bilmece kapanır
+    if ((sp?.id ?? '') !== st.current.stop) { st.current.stop = sp?.id ?? ''; S.set(sp ? { near: sp } : { near: null, quiz: null, wrong: null, card: null }); }   // yaklaşınca yalnızca "İncele" çıkar; uzaklaşınca açık kart/bilmece kapanır
     const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(st.current.head)) st.current.head = hd; st.current.head += wrapA(hd - st.current.head) * (1 - Math.exp(-dt * 3));
     if (!S.started) { camera.position.set(110, 22, 100); camera.quaternion.copy(_q.setFromRotationMatrix(_m.lookAt(camera.position, _l.set(20, 4, 0), THREE.Object3D.DEFAULT_UP))); return; }
     _e.set(live.pitch - 0.05, st.current.head + live.yaw, 0); camera.quaternion.setFromEuler(_e);
@@ -246,7 +252,7 @@ const THEME = { accent: '#b07a3c' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
   { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
-  { icon: <Info size={16} />, text: <>yapının yanında doğru katmanı seç</> },
+  { icon: <Info size={16} />, text: <>yapının yanında <b>E</b> / İncele: bilmeceyi aç, doğru katmanı seç</> },
 ];
 function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
   return <StartSheet kicker="Çanakkale · Hisarlık · UNESCO Dünya Mirası" title="Troya: Dokuz Kent" intro={<>Troya tek bir kent değil: yaklaşık 4.000 yıl boyunca aynı tepede üst üste kurulmuş dokuz kent. Ören yerini gez, her yapının hangi katmana ait olduğunu bul ve katman cetvelini doldur.</>} controls={CONTROLS} note="Plan stilizedir. Katman tarihleri yaklaşıktır, kaynaklara göre değişir." cta="Ören yerine gir" ctaIcon={<Pickaxe size={18} />} onStart={onStart} onExit={onExit} />;

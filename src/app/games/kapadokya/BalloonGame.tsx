@@ -3,7 +3,8 @@
  *
  * Gün doğarken sıcak hava balonuyla Göreme vadilerinin üstünde uç. Dümen yok: brülörle yüksel, kapakla alçal; her yükseklikte
  * rüzgâr başka yöne eser (flight.ts). Beş noktayı (Göreme, Çavuşin, Paşabağı, Güvercinlik Vadisi, Uçhisar) ziyaret et.
- * KAMERA: balonun arkasında üçüncü şahıs; sürükleyerek etrafında döndür. Kamera araziye girmez (zeminden ≥ 3 m).
+ * KAMERA: birinci şahıs, sepetin içinde göz hizası; bakış serbest (tıkla + fare / sürükle), aşağı bakınca vadi görünür.
+ * Bir noktanın üstündeyken "İncele" çıkar; bilgi kartı yalnızca oyuncu E'ye ya da düğmeye basınca açılır.
  * GÖRSEL: prosedürel tüf arazisi, instanced peribacaları (şapkalı), Uçhisar kayası ve oyukları, sürüklenen başka balonlar, gün doğumu göğü.
  * Öteki oyunlarla tutarlılık: ?q=, ?debug (__balon), pil tasarrufu, tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek.
  */
@@ -12,7 +13,9 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { ArrowDown, ArrowLeft, ArrowUp, Flame, MapPin, Move, Wind } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Flame, MapPin, Move, Search, Wind } from 'lucide-react';
+import { applyFp, useFpLook } from '../shared/fpLook';
+import { LookCrosshair } from '../shared/mouseLook';
 import { ActionDock, Controls, EndSheet, Hint, Hud, InfoSheet, Objective, RoundAction, GameMenu, StartSheet, ToolPanel, TopBar } from '../shared/hud/Hud';
 import { LAYERS, SPOTS, START, UCHISAR, heightAt, layerAt, nearSpot, step, wind, type Balloon, type Spot } from './flight';
 import { speakTr } from '../shared/voice';
@@ -44,10 +47,10 @@ class BalloonAudio {
 const audio = new BalloonAudio();
 
 /* ---------- durum ---------- */
-interface S { started: boolean; paused: boolean; seen: string[]; card: Spot | null; agl: number; layer: number; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, paused: false, seen: [] as string[], card: null, agl: 0, layer: 0, endShown: false };
+interface S { started: boolean; paused: boolean; seen: string[]; card: Spot | null; near: Spot | null; agl: number; layer: number; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, paused: false, seen: [] as string[], card: null, near: null, agl: 0, layer: 0, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
-const live = { b: { ...START } as Balloon, input: 0, t: 0, camYaw: 0, camPitch: 0.25, burn: false };
+const live = { b: { ...START } as Balloon, input: 0, t: 0, view: { yaw: 0, pitch: -0.15 }, burn: false };
 
 export default function BalloonGame({ onExit }: { onExit: () => void }) {
   if (!supportsWebGL) return <Fallback onExit={onExit} />;
@@ -56,29 +59,28 @@ export default function BalloonGame({ onExit }: { onExit: () => void }) {
 function Game({ onExit }: { onExit: () => void }) {
   const G = useSettings(), [tier, setTier] = useState<Tier>(() => initialTier()), S = useDb();
   useEffect(() => { setTier(initialTier(G)); }, [G.quality, G.battery]);   // ayarlardan kalite değişince sahne yeniden kurulur
-  const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y: number } | null>(null), hold = useRef(0);
+  const keys = useRef(new Set<string>()), hold = useRef(0);
   useEffect(() => { audio.setMuted(G.muted); audio.setVolume(G.volume); if (!G.tts) audio.hush(); }, [G.muted, G.volume, G.tts]);
-  useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { b: { ...START }, input: 0, t: 0, camYaw: 0, camPitch: 0.25 }); }, []);
+  useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { b: { ...START }, input: 0, t: 0 }); Object.assign(live.view, { yaw: 0, pitch: -0.15 }); }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
+  const open = useCallback((sp: Spot) => { const s = useDb.getState(); s.set({ card: sp, seen: s.seen.includes(sp.id) ? s.seen : [...s.seen, sp.id] }); if (useSettings.getState().tts) audio.speak(`${sp.name}. ${sp.text}`); }, []);
   useEffect(() => {
-    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); if ((e.code === 'Escape' || e.code === 'KeyE') && useDb.getState().card) close(); };
+    const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (e.repeat || !s.started) return; if ((e.code === 'Escape' || e.code === 'KeyE') && s.card) close(); else if (e.code === 'KeyE' && s.near) open(s.near); };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0; const loop = () => { const k = keys.current, kb = (k.has('KeyW') || k.has('ArrowUp') || k.has('Space') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); live.input = hold.current || kb; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: sürükle ya da tekerlekle raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
-  }, [close]);
-  useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __balon: unknown }).__balon = { tp: (x: number, z: number, agl = 60) => { live.b = { x, z, y: heightAt(x, z) + agl, vy: 0 }; useDb.getState().set({ started: true }); }, cam: (y: number, p = 0.25) => { live.camYaw = y; live.camPitch = p; }, state: () => ({ ...useDb.getState(), b: { ...live.b } }), SPOTS }; }, []);
-  const onDown = (e: React.PointerEvent) => { audio.unlock(); drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY }; };
-  const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; const k = useSettings.getState().sensitivity; live.camYaw -= (e.clientX - d.x) * 0.006 * k; live.camPitch = THREE.MathUtils.clamp(live.camPitch + (e.clientY - d.y) * 0.004 * k, -0.2, 1.2); d.x = e.clientX; d.y = e.clientY; };
-  const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) drag.current = null; };
+  }, [close, open]);
+  useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __balon: unknown }).__balon = { tp: (x: number, z: number, agl = 60) => { live.b = { x, z, y: heightAt(x, z) + agl, vy: 0 }; useDb.getState().set({ started: true }); }, cam: (y: number, p = -0.15) => { live.view.yaw = y; live.view.pitch = p; }, state: () => ({ ...useDb.getState(), b: { ...live.b } }), SPOTS }; }, []);
+  const fpl = useFpLook(live.view, () => { const a = useDb.getState(); return a.started && !a.card && !a.paused; }, () => audio.unlock());
   const btn = (v: number) => ({ onPointerDown: (e: React.PointerEvent) => { e.stopPropagation(); audio.unlock(); hold.current = v; }, onPointerUp: () => { hold.current = 0; }, onPointerLeave: () => { hold.current = 0; }, onPointerCancel: () => { hold.current = 0; } });
   const start = () => { audio.unlock(); S.set({ started: true }); };
-  const restart = () => { audio.hush(); Object.assign(live, { b: { ...START }, input: 0, t: 0, camYaw: 0, camPitch: 0.25 }); useDb.setState({ ...INITIAL, started: true }); };
+  const restart = () => { audio.hush(); Object.assign(live, { b: { ...START }, input: 0, t: 0 }); Object.assign(live.view, { yaw: 0, pitch: -0.15 }); useDb.setState({ ...INITIAL, started: true }); };
   const next = SPOTS.find((x) => !S.seen.includes(x.id));
   const L = LAYERS[Math.max(0, S.layer)];
 
   return (
-    <div className="fixed inset-0 select-none overflow-hidden bg-[#f3c9a0]" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+    <div className="fixed inset-0 select-none overflow-hidden bg-[#f3c9a0]" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 55, near: 0.5, far: 2500, position: [60, 80, 220] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.95; }}>
         {adaptive(G) && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
@@ -93,11 +95,13 @@ function Game({ onExit }: { onExit: () => void }) {
           <ToolPanel title={<><Wind size={14} className="mr-1" style={{ color: THEME.accent }} />{Math.round(S.agl)} m · {L.name}</>}>
             <div className="grid gap-0.5 text-xs">{[...LAYERS].map((l, i) => ({ l, i })).reverse().map(({ l, i }) => <WindRow key={l.name} name={l.name} dir={l.dir} on={i === S.layer} range={i === 0 ? `0–${l.top}` : i === LAYERS.length - 1 ? `${LAYERS[i - 1].top}+` : `${LAYERS[i - 1].top}–${l.top}`} />)}</div>
           </ToolPanel>
+          <LookCrosshair locked={fpl.locked} />
+          {!S.card && S.near && <button onPointerDown={(e) => e.stopPropagation()} onClick={() => open(S.near!)} className="absolute bottom-[164px] left-1/2 z-40 flex h-12 max-w-[70vw] -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold text-white shadow-xl" style={{ background: THEME.accent }}><Search size={18} className="shrink-0" /><span className="truncate">İncele: {S.near.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· E</span></button>}
           {!S.card && <ActionDock>
             <RoundAction label="Brülör: yüksel" primary size={68} {...btn(1)}><Flame size={28} /></RoundAction>
             <RoundAction label="Kapak: alçal" size={54} {...btn(-1)}><ArrowDown size={22} /></RoundAction>
           </ActionDock>}
-          {!S.card && <Hint>Alevi basılı tut: yüksel · ok: alçal · sürükle: etrafa bak<span className="hidden [@media(pointer:fine)]:inline"> · W/Boşluk · S</span></Hint>}
+          {!S.card && <Hint>Alevi basılı tut: yüksel · ok: alçal · sürükle: etrafa bak<span className="hidden [@media(pointer:fine)]:inline"> · W/Boşluk · S · tıkla, fareyle bak · E: incele</span></Hint>}
         </>}
         {S.card && <InfoSheet kicker={`Kapadokya · ${S.seen.indexOf(S.card.id) + 1}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => audio.speak(`${S.card!.name}. ${S.card!.text}`)} />}
         {!S.started && <StartSheet kicker="Nevşehir · Göreme · UNESCO Dünya Mirası" title="Gün Doğumunda Balon"
@@ -111,7 +115,7 @@ function Game({ onExit }: { onExit: () => void }) {
 /** Katman satırı: rüzgâr yönü oku kameranın bakışına göre döndürülür */
 function WindRow({ name, dir, on, range }: { name: string; dir: [number, number]; on: boolean; range: string }) {
   const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => { let raf = 0; const f = () => { if (ref.current) { const a = Math.atan2(dir[0], -dir[1]) + live.camYaw; ref.current.style.transform = `rotate(${a}rad)`; } raf = requestAnimationFrame(f); }; raf = requestAnimationFrame(f); return () => cancelAnimationFrame(raf); }, [dir]);
+  useEffect(() => { let raf = 0; const f = () => { if (ref.current) { const a = Math.atan2(dir[0], -dir[1]) + live.view.yaw; ref.current.style.transform = `rotate(${a}rad)`; } raf = requestAnimationFrame(f); }; raf = requestAnimationFrame(f); return () => cancelAnimationFrame(raf); }, [dir]);
   return <div className={`flex items-center gap-2 rounded-lg px-1.5 py-1 font-semibold ${on ? '' : 'text-[#857b70]'}`} style={on ? { background: THEME.accent, color: '#fff' } : undefined}><span ref={ref} className="inline-block"><ArrowUp size={14} /></span><span className="w-12">{name}</span><span className="opacity-75">{range} m</span></div>;
 }
 
@@ -186,7 +190,10 @@ function PlayerBalloon() {
     <group ref={g}>
       <mesh geometry={ENV} position={[0, 4.2, 0]}><meshStandardMaterial map={tex} roughness={0.7} side={THREE.DoubleSide} /></mesh>
       {[0, 1, 2, 3].map((i) => { const a = (i / 4) * Math.PI * 2 + 0.78; return <mesh key={i} position={[Math.cos(a) * 1.3, 3.1, Math.sin(a) * 1.3]} rotation={[Math.sin(a) * 0.25, 0, -Math.cos(a) * 0.25]}><cylinderGeometry args={[0.03, 0.03, 2.6, 4]} /><meshStandardMaterial color="#3a2a1a" /></mesh>; })}
-      <mesh position={[0, 0.6, 0]}><boxGeometry args={[1.8, 1.2, 1.8]} /><meshStandardMaterial color="#8a6a3e" roughness={1} /></mesh>
+      {/* sepet: açık üst (içinden bakılır), dört hasır duvar + taban + deri kenar */}
+      {[[0, 0.55, 0.88, 1.8, 0.06], [0, 0.55, -0.88, 1.8, 0.06], [0.88, 0.55, 0, 0.06, 1.8], [-0.88, 0.55, 0, 0.06, 1.8]].map(([x, y, z, w, d], i) => <mesh key={i} position={[x, y, z]}><boxGeometry args={[w, 1.1, d]} /><meshStandardMaterial color="#8a6a3e" roughness={1} /></mesh>)}
+      <mesh position={[0, 0.04, 0]}><boxGeometry args={[1.8, 0.08, 1.8]} /><meshStandardMaterial color="#6e5230" roughness={1} /></mesh>
+      {[[0, 1.12, 0.9, 1.9, 0.1], [0, 1.12, -0.9, 1.9, 0.1], [0.9, 1.12, 0, 0.1, 1.9], [-0.9, 1.12, 0, 0.1, 1.9]].map(([x, y, z, w, d], i) => <mesh key={`r${i}`} position={[x, y, z]}><boxGeometry args={[w, 0.08, d]} /><meshStandardMaterial color="#4a3020" roughness={0.8} /></mesh>)}
       <mesh ref={flame} position={[0, 3.6, 0]}><coneGeometry args={[0.35, 1.6, 8]} /><meshBasicMaterial color="#ffb347" toneMapped={false} /></mesh>
     </group>
   );
@@ -212,13 +219,10 @@ function Controller() {
     const b = live.b, agl = b.y - heightAt(b.x, b.z), layer = Math.max(0, layerAt(agl));
     if (Math.abs(agl - st.current.agl) > 1 || layer !== st.current.layer) { st.current.agl = agl; st.current.layer = layer; S.set({ agl, layer }); }
     const sp = S.started ? nearSpot(b) : null;
-    if ((sp?.id ?? '') !== st.current.spot) { st.current.spot = sp?.id ?? ''; if (sp && !S.seen.includes(sp.id)) { S.set({ card: sp, seen: [...S.seen, sp.id] }); if (useSettings.getState().tts) audio.speak(`${sp.name}. ${sp.text}`); } }
-    // kamera: balonun arkasından, gövdenin ortasına bakar; araziye girmez
-    const D = 52, cp = Math.cos(live.camPitch);   // geniş çekim: balon + altındaki vadi kadrajda
-    _c.set(b.x + Math.sin(live.camYaw) * cp * D, b.y + 12 + Math.sin(live.camPitch) * D, b.z + Math.cos(live.camYaw) * cp * D);
-    _c.y = Math.max(_c.y, heightAt(_c.x, _c.z) + 3);
-    if (!S.started) _c.set(b.x + 30, b.y + 14, b.z + 40);
-    cam.current.lerp(_c, 1 - Math.exp(-dt * 3)); camera.position.copy(cam.current); camera.lookAt(_t.set(b.x, b.y + 4, b.z));
+    if ((sp?.id ?? '') !== st.current.spot) { st.current.spot = sp?.id ?? ''; S.set({ near: sp }); }   // kart kendiliğinden açılmaz: "İncele" (E)
+    // kamera: başlıkta dışarıdan; uçuşta sepetin içinden birinci şahıs
+    if (!S.started) { _c.set(b.x + 30, b.y + 14, b.z + 40); cam.current.lerp(_c, 1 - Math.exp(-dt * 3)); camera.position.copy(cam.current); camera.lookAt(_t.set(b.x, b.y + 4, b.z)); }
+    else applyFp(camera, b.x + 0.25, b.y + 1.55, b.z + 0.2, live.view, Math.sin(live.t * 0.6) * 0.03);
   });
   return null;
 }
@@ -228,7 +232,8 @@ const THEME = { accent: '#e8702a' };   // gün doğumu turuncusu
 const CONTROLS = [
   { icon: <Flame size={16} />, text: <>Alevi <b>basılı tut</b>: yüksel <span className="hidden [@media(pointer:fine)]:inline">(W / Boşluk)</span></> },
   { icon: <ArrowDown size={16} />, text: <>Ok düğmesi: alçal <span className="hidden [@media(pointer:fine)]:inline">(S)</span></> },
-  { icon: <Move size={16} />, text: <>Sürükle: balonun çevresine bak</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda tıkla, fareyle bak · telefonda sürükle</> },
+  { icon: <Search size={16} />, text: <>Noktanın üstündeyken <b>E</b> / İncele: bilgi kartı</> },
   { icon: <Wind size={16} />, text: <>Soldaki tablo: hangi yükseklikte rüzgâr nereye eser</> },
 ];
 function Fallback({ onExit }: { onExit: () => void }) {
