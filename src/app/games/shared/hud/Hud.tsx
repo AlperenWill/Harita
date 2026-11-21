@@ -45,18 +45,15 @@ export function IconButton({ label, onClick, active, children }: { label: string
     className={`pointer-events-auto grid h-11 w-11 shrink-0 place-items-center rounded-full transition active:scale-95 ${GLASS}`} style={active ? { background: t.accent, color: t.accentInk ?? '#fff' } : undefined}>{children}</button>;
 }
 /** Sol üst: haritaya dön — her oyunda aynı yerde, aynı biçimde */
-export function BackButton({ onClick }: { onClick: () => void }) {
-  return <button onClick={onClick} onPointerDown={stop} aria-label="Haritaya dön" className={`pointer-events-auto inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full pl-3 pr-4 text-sm font-semibold transition active:scale-95 ${GLASS}`}><ArrowLeft size={18} /><span>Harita</span></button>;
-}
 
 /* ---------- üst sıra ---------- */
 /** Üst sıra: sol geri, orta görev, sağ ses + menü. Telefonda görev ikinci satıra iner. */
-export function TopBar({ onExit, objective, right }: { onExit: () => void; objective?: ReactNode; right?: ReactNode }) {
+/** Üst çubuk: ortada görev, sağda ≡ menü (haritaya dönüş menünün içinde; sol üstte ayrı geri düğmesi yok). onExit uyumluluk için kalır. */
+export function TopBar({ objective, right }: { onExit?: () => void; objective?: ReactNode; right?: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-start gap-2">
-      <BackButton onClick={onExit} />
-      {objective && <div className="order-3 flex w-full justify-center sm:order-none sm:w-auto sm:flex-1">{objective}</div>}
-      <div className="ml-auto flex gap-2">{right}</div>
+    <div className="flex items-start gap-2">
+      <div className="flex min-w-0 flex-1 justify-center">{objective}</div>
+      <div className="flex shrink-0 gap-2">{right}</div>
     </div>
   );
 }
@@ -189,7 +186,7 @@ export function RoundAction({ label, primary, size = 64, children, ...handlers }
 export function ToolPanel({ title, children, defaultOpen = true }: { title: ReactNode; children: ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className={`pointer-events-auto absolute left-[max(12px,env(safe-area-inset-left))] top-[118px] w-max max-w-[46vw] rounded-2xl p-2.5 sm:top-[72px] ${GLASS}`} onPointerDown={stop}>
+    <div className={`pointer-events-auto absolute left-[max(12px,env(safe-area-inset-left))] top-[68px] w-max max-w-[46vw] rounded-2xl p-2.5 sm:top-[72px] ${GLASS}`} onPointerDown={stop}>
       <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-1 text-left text-xs font-bold" aria-expanded={open}>{title}<span className="ml-auto pl-2 text-[#857b70]">{open ? '−' : '+'}</span></button>
       {open && <div className="mt-1.5">{children}</div>}
     </div>
@@ -224,7 +221,7 @@ export function InfoSheet({ kicker, title, text, source, onClose, onListen }: { 
 export function Toast({ text, tone = 'info' }: { text: string | null; tone?: 'ok' | 'bad' | 'info' }) {
   if (!text) return null;
   const c = tone === 'ok' ? '#1f9d63' : tone === 'bad' ? '#d14343' : '#1f1b17';
-  return <div className="pointer-events-none absolute inset-x-0 top-[124px] flex justify-center px-4 sm:top-[72px]"><p className={`rounded-full px-4 py-2 text-center text-sm font-semibold ${GLASS}`} style={{ color: c }}>{text}</p></div>;
+  return <div className="pointer-events-none absolute inset-x-0 top-[68px] flex justify-center px-4 sm:top-[72px]"><p className={`rounded-full px-4 py-2 text-center text-sm font-semibold ${GLASS}`} style={{ color: c }}>{text}</p></div>;
 }
 
 /* ---------- başlangıç ve bitiş ---------- */

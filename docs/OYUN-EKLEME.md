@@ -26,7 +26,7 @@ Zip'teki her yer haritada **ayrı bir nokta** olur. Her biri oyunun o bölümün
 - Yer miras verisinde yoksa önce oraya eklenir: `src/data/heritage/<bölge>.ts`, `src/app/data/turkiye.json`, `src/data/districts.ts`.
 
 ### Haritaya dönüş düğmesi
-Zip'li oyunlara mutlaka "haritaya dön" düğmesi eklenir: `href="../harita"`, oyunun kendi arayüz diline uygun biçimde.
+Zip'li oyunlara mutlaka "haritaya dön" seçeneği eklenir: `href="../harita"`. Sol üste ayrı düğme konmaz; seçenek oyunun menüsüne (≡ ya da duraklatma menüsü ve ana menü) eklenir.
 
 ## Kayıt satırı
 ```ts

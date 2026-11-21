@@ -52,7 +52,7 @@ export default function MonumentPage() {
       <ExhibitCard />
 
       {isMobile && portrait && !hintClosed && (
-        <div className="absolute inset-x-3 top-[124px] z-40 flex items-center gap-3 rounded-xl bg-[#f7f5f1]/95 px-3 py-2.5 text-sm text-[#1f1b17] shadow-lg ring-1 ring-black/5" role="status">
+        <div className="absolute inset-x-3 top-[68px] z-40 flex items-center gap-3 rounded-xl bg-[#f7f5f1]/95 px-3 py-2.5 text-sm text-[#1f1b17] shadow-lg ring-1 ring-black/5" role="status">
           <RotateCw size={18} className="shrink-0 text-brand" />
           <span className="flex-1">Daha geniş bir görüş için telefonunu yatay çevir.</span>
           <button onClick={() => setHintClosed(true)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label="Kapat"><X size={16} /></button>

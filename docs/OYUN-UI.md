@@ -3,14 +3,14 @@
 Bütün oyunlar aynı arayüzü kullanır: `src/app/games/shared/hud/Hud.tsx`. İlk örnek: Kapadokya (`src/app/games/kapadokya/BalloonGame.tsx`).
 
 Geçirilen oyunlar: Kapadokya, Ani, İshak Paşa, Akdamar, Troya, Efes, Pamukkale, Zil Kale, Ayasofya, Topkapı, Dolmabahçe, Nemrut, Hattuşa,
-Kapalıçarşı, Kız Kulesi, Galata, Yerebatan, Anıtkabir (anıt sayfası). Bağımsız Şanlıurfa oyununa aynı görünümde "← Harita" ve ≡ menü
+Kapalıçarşı, Kız Kulesi, Galata, Yerebatan, Anıtkabir (anıt sayfası). Bağımsız Şanlıurfa oyununa aynı görünümde ≡ menü
 `public/sanliurfa-oyun/index.html` sonunda eklendi. Konya ve Antalya oyunlarının kendi menüleri bu arayüzün örnek alındığı yapıdır.
 Oyuna özel paneller (konuşma kutuları, defter, kroki, ışık paneli…) aynı açık temaya boyandı; oyuna özel düğmeler sağ üstte ≡'in soluna konur.
 
 ## Yerleşim (önce telefon, dikey ekran)
 | Yer | Bileşen | Ne |
 |---|---|---|
-| Sol üst | `BackButton` (`TopBar` içinde) | "← Harita". Her oyunda aynı yerde, aynı biçimde |
+| — | (sol üstte geri düğmesi yok) | Haritaya dönüş yalnızca ≡ menüde ("Haritaya dön"); başlangıç kartında da "Haritaya dön" bağlantısı var |
 | Sağ üst | `GameMenu` | Tek "≡" düğmesi (Konya/Antalya oyunlarındaki gibi). Açılınca oyun durur: Devam et, Nasıl oynanır, Ayarlar, Baştan başla, Haritaya dön |
 | Üst orta (telefonda ikinci satır) | `Objective` | Sıradaki hedef + ilerleme çubukları + sayı |
 | Sol | `ToolPanel` | Oyuna özel gösterge (ör. rüzgâr katmanları); başlığa dokununca daralır |

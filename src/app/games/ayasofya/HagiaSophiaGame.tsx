@@ -198,7 +198,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Sun size={15} />} label={`${ZONE_LABEL[S.zone]} · Keşif ${S.seen.length}/${POIS.length} · ${hh}:${mm}`} done={S.told.length} total={TOUR.length} /> : undefined} right={<><IconButton label="Işık ve müzik" active={S.panel} onClick={() => S.set({ panel: !S.panel })}><Sun size={18} /></IconButton><GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} /></>} />
       {S.panel && (
-        <div className="absolute right-3 top-[118px] z-40 w-80 sm:top-[68px] max-w-[calc(100%-1.5rem)] rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4 text-sm" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="absolute right-3 top-[68px] z-40 w-80 sm:top-[68px] max-w-[calc(100%-1.5rem)] rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4 text-sm" onPointerDown={(e) => e.stopPropagation()}>
           <label htmlFor="hr" className="block font-semibold">Günün saati: {hh}:{mm}</label>
           <input id="hr" type="range" min={7} max={18.5} step={0.5} value={S.hour} onChange={(e) => S.set({ hour: Number(e.target.value) })} className="mt-2 w-full accent-[#b07a2a]" />
           <p className="mt-1 text-xs text-[#857b70]">Güneş ekinoks gününe göre hesaplanır; huzmeler pencerelerden o saatin açısıyla girer.</p>

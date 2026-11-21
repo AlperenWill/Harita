@@ -177,7 +177,7 @@ function Game({ onExit }: { onExit: () => void }) {
       {g.chapter !== 'giris' && <LookCrosshair locked={look.locked} />}
 
       {/* merdiven: nefes göstergesi */}
-      {g.chapter === 'merdiven' && <div className="pointer-events-none absolute left-1/2 top-[124px] z-20 w-44 -translate-x-1/2 rounded-full bg-[#f7f5f1]/85 px-3 py-1.5 text-[11px] font-semibold text-[#1f1b17] shadow ring-1 ring-black/5 backdrop-blur-md sm:top-[72px]" style={{ marginTop: 56 }}>
+      {g.chapter === 'merdiven' && <div className="pointer-events-none absolute left-1/2 top-[68px] z-20 w-44 -translate-x-1/2 rounded-full bg-[#f7f5f1]/85 px-3 py-1.5 text-[11px] font-semibold text-[#1f1b17] shadow ring-1 ring-black/5 backdrop-blur-md sm:top-[72px]" style={{ marginTop: 56 }}>
         <div className="flex items-center gap-1.5"><Wind size={12} /> Nefes<div className="ml-1 h-1.5 flex-1 overflow-hidden rounded-full bg-black/10"><div className="h-full rounded-full transition-[width] duration-200" style={{ width: `${Math.round(breath * 100)}%`, background: breath < 0.3 ? '#c2453a' : THEME.accent }} /></div></div>
       </div>}
       {/* zindan: armanın üzerinde tutma ilerlemesi */}

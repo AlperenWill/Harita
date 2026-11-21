@@ -410,7 +410,7 @@ function MiniMap() {
   useEffect(() => { const id = setInterval(() => force((x) => x + 1), 200); return () => clearInterval(id); }, []);
   const W = 236, H = 108, sx = (x: number) => x + 118, sz = (z: number) => z + 54, p = live.player, g = live.guide, goal = live.goal;
   return (
-    <div className="pointer-events-none absolute right-3 top-[124px] z-30 w-40 rounded-xl sm:top-[72px] bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-1.5 backdrop-blur-md sm:w-52" aria-hidden>
+    <div className="pointer-events-none absolute right-3 top-[68px] z-30 w-40 rounded-xl sm:top-[72px] bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-1.5 backdrop-blur-md sm:w-52" aria-hidden>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
         <rect x={0} y={0} width={W} height={H} rx={4} fill="#5d7a3c" opacity={0.6} />
         <rect x={0} y={sz(-3)} width={sx(49)} height={6} fill="#a59c8a" />
