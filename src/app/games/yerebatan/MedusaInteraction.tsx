@@ -90,12 +90,12 @@ export function InfoPanel({ poi, onClose, inspecting }: { poi: Poi | null; onClo
   const t = useTransition(poi, { keys: (p) => p?.id ?? 'none', from: { x: 40, opacity: 0 }, enter: { x: 0, opacity: 1 }, leave: { x: 40, opacity: 0 }, config: { tension: 240, friction: 24 } });
   return t((style, p) => p && (
     <animated.div style={{ transform: style.x.to((x) => `translateX(${x}px)`), opacity: style.opacity }}
-      className="pointer-events-auto absolute right-3 top-16 z-30 w-[min(23rem,calc(100%-1.5rem))] rounded-2xl bg-black/80 p-4 text-white shadow-2xl backdrop-blur" role="dialog" aria-label={p.name}>
+      className="pointer-events-auto absolute right-3 top-[124px] z-30 sm:top-[72px] w-[min(23rem,calc(100%-1.5rem))] rounded-2xl bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-4 shadow-[0_10px_30px_rgba(31,27,23,0.18)] backdrop-blur" role="dialog" aria-label={p.name}>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-300">{p.kind === 'medusa' ? 'Medusa · inceleme' : p.kind === 'column' ? 'Sütun' : 'Bilgi'}</p>
       <h3 className="text-lg font-bold">{p.name}</h3>
-      <p className="mt-1 text-sm text-white/85">{p.text}</p>
-      <a href={p.source.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-white/60 underline">{p.source.title} <ExternalLink size={12} /></a>
-      <button onClick={onClose} className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-white/15 text-sm font-semibold"><X size={16} /> {inspecting ? 'İncelemeden çık' : 'Kapat'} <span className="text-white/50">(E)</span></button>
+      <p className="mt-1 text-sm text-[#4a433c]">{p.text}</p>
+      <a href={p.source.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-[#857b70] underline">{p.source.title} <ExternalLink size={12} /></a>
+      <button onClick={onClose} className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-black/5 text-sm font-semibold"><X size={16} /> {inspecting ? 'İncelemeden çık' : 'Kapat'} <span className="text-[#857b70]">(E)</span></button>
     </animated.div>
   ));
 }

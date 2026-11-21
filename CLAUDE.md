@@ -5,4 +5,5 @@
 - Kapsam: popüler yerler detaylı, az bilinen yerler kısa oyun. Her ilde en değerli 1–2 yer.
 - Tema açık (beyaz). Arayüz sade kalsın. Her değişiklik telefonda dikey ekranda da çalışmalı.
 - Yanıtlar Türkçe. Kaynakları bağlantı olarak ver. Doğrulanmamış bilgileri ve ölçülmemiş performansı açıkça belirt.
+- Oyun arayüzü ortaktır: `src/app/games/shared/hud/Hud.tsx` (kurallar: `docs/OYUN-UI.md`). Yeni oyunlar bu arayüzü kullanır.
 - Kontroller: `npx tsc --noEmit -p .`, `npx vitest run`, `npx vite build`.

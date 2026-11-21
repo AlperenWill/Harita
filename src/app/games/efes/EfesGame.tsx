@@ -15,11 +15,15 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { ArrowLeft, Captions, CaptionsOff, ExternalLink, Hourglass, Landmark, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { ChevronsRight, Footprints, MousePointer2 } from 'lucide-react';
+import { ArrowLeft, Hourglass, Landmark } from 'lucide-react';
 import { ODEON, ROUTE_LEN, THEATRE, WINDOWS, nextUnseen, routeAt, type Window } from './site';
 import { Celsus, Colonnades, Ground, Hadrian, Harbor, Terrace, Theatre, Trajan, Trees, useMats, type U } from './EfesScene';
 import { activated, morphTarget, stepMorph } from '../zilkale/HistoryLayerMorphing';
 import { speakTr } from '../shared/voice';
+import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
 import { Polish, SkyEnvironment } from '../shared/Polish';
 
 type Tier = 'low' | 'medium' | 'high';
@@ -61,6 +65,7 @@ const audio = new EfesAudio();
 interface S { started: boolean; seen: string[]; card: Window | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
 const INITIAL = { started: false, seen: [] as string[], card: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.04, goal: null as number | null, morph: {} as Record<string, number> };
 const U: U = Object.fromEntries([...WINDOWS.map((w) => w.id), 'all'].map((k) => [k, { value: 0 }]));
 
@@ -71,6 +76,7 @@ export default function EfesGame({ onExit }: { onExit: () => void }) {
 
 function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), [saver, setSaver] = useState(() => location.search.includes('saver'));
+  const look = useMouseLook((dx, dy) => { live.yaw -= dx * LOOK_YAW; live.pitch = THREE.MathUtils.clamp(live.pitch - dy * LOOK_PITCH, -1, 0.9); }, () => { const s = useDb.getState(); return s.started && !s.card; });
   const S = useDb();
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y0: number; y: number; mouse: boolean } | null>(null), lastTap = useRef(0);
   useEffect(() => {
@@ -78,7 +84,7 @@ function Game({ onExit }: { onExit: () => void }) {
     (navigator as Navigator & { getBattery?: () => Promise<B> }).getBattery?.().then((x) => { b = x; check(); x.addEventListener('levelchange', check); x.addEventListener('chargingchange', check); }).catch(() => {});
     return () => { b?.removeEventListener('levelchange', check); b?.removeEventListener('chargingchange', check); };
   }, []);
-  useEffect(() => { audio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.04, goal: null, morph: {} }); for (const k in U) U[k].value = 0; }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
   const goNext = useCallback(() => { const w = nextUnseen(live.s, useDb.getState().seen); if (w) live.goal = w.s; }, []);
@@ -89,42 +95,36 @@ function Game({ onExit }: { onExit: () => void }) {
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current;
       const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
-      live.yaw += ((k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0) - (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0)) * dt * 1.8; raf = requestAnimationFrame(loop); };
+      void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [close, goNext]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __efes: unknown }).__efes = { go: (s: number) => { live.s = s; live.goal = null; useDb.getState().set({ started: true }); }, look: (y: number, p = 0) => { live.yaw = y; live.pitch = p; }, state: () => ({ ...useDb.getState(), s: live.s, morph: { ...live.morph } }), WINDOWS, ROUTE_LEN }; }, []);
 
-  const onDown = (e: React.PointerEvent) => { audio.unlock(); if (!useDb.getState().started) return; const now = performance.now(); if (now - lastTap.current < 300) goNext(); lastTap.current = now; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
+  const onDown = (e: React.PointerEvent) => { audio.unlock(); look.lock(e); if (!useDb.getState().started) return; const now = performance.now(); if (now - lastTap.current < 300) goNext(); lastTap.current = now; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
   const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; const dx = e.clientX - d.x, dy = e.clientY - d.y; d.x = e.clientX; d.y = e.clientY; live.yaw += dx * 0.005;
     if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + dy * 0.004, -1, 0.9); else { live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); if (Math.abs(live.input) > 0.1) live.goal = null; } };
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (!drag.current.mouse) live.input = 0; drag.current = null; } };
   const start = () => { audio.unlock(); S.set({ started: true }); };
   const atEnd = useAtEnd();
 
+  const nextW = WINDOWS.find((w) => !S.seen.includes(w.id));
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#cfe3ee] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <HudTheme theme={THEME}>
+      <LookCrosshair locked={look.locked} />
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high', powerPreference: 'high-performance' }} camera={{ fov: 62, near: 0.1, far: 900, position: [110, 20, 20] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.0; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
         <Suspense fallback={null}><World tier={tier} saver={saver} /><SkyEnvironment sky={'#cfe3ee'} sun={'#fff2dc'} ground={'#c9b88e'} sunDir={[0.8, 0.6, 0.4]} /><Polish tier={tier} saver={saver} /></Suspense>
       </Canvas>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { audio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) audio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-amber-300 text-black' : 'bg-black/45'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.started && (
-          <div className="mx-auto flex flex-col items-center gap-1 rounded-2xl bg-black/45 px-4 py-2">
-            <div className="flex gap-1">{WINDOWS.map((w) => <Hourglass key={w.id} size={13} className={S.seen.includes(w.id) ? 'text-amber-300' : 'text-white/30'} />)}</div>
-            <p className="text-xs">{S.seen.length}/{WINDOWS.length} zaman penceresi</p>
-          </div>
-        )}
-      </div>
-      {S.started && !S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki pencere<span className="hidden [@media(pointer:fine)]:inline"> · W/S · fareyle bak · N</span></p>}
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Hourglass size={15} />} label={nextW ? `Sıradaki: ${nextW.name}` : 'Bütün pencereler açıldı'} done={S.seen.length} total={WINDOWS.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
+      {S.started && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki pencere<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · N</span></Hint>}
       {S.card && <Card w={S.card} onClose={close} />}
-      {!S.started && <TitleCard onStart={start} />}
+      {!S.started && <TitleCard onExit={onExit} onStart={start} />}
       {S.started && atEnd && S.seen.length === WINDOWS.length && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      </HudTheme>
     </div>
   );
 }
@@ -163,7 +163,7 @@ function Controller({ saver }: { saver: boolean }) {
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState();
     const back = Math.cos(live.yaw) < 0 ? -1 : 1;
-    let want = S.started ? live.input * WALK * back : 0;
+    let want = S.started && !pause.on ? live.input * WALK * back : 0;
     if (live.goal !== null) { const d = live.goal - live.s; if (Math.abs(d) < 0.3) live.goal = null; else want = Math.sign(d) * Math.min(WALK * 1.4, Math.abs(d) * 1.5 + 0.8); }
     live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
     const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt)); const moved = live.s - before, R = routeAt(live.s);
@@ -186,48 +186,19 @@ function Controller({ saver }: { saver: boolean }) {
 
 /* ---------- arayüz ---------- */
 function Card({ w, onClose }: { w: Window; onClose: () => void }) {
-  return (
-    <div className="absolute inset-x-3 bottom-14 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl border border-amber-100/30 bg-[#2a2219]/90 p-5 shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-2">
-          <div><p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Zaman penceresi · {w.era}</p><h2 className="text-xl font-bold">{w.name}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={18} /></button>
-        </div>
-        <p className="mt-2 text-sm leading-relaxed text-white/70"><span className="font-semibold text-white/85">Bugün: </span>{w.now}</p>
-        <p className="mt-1.5 text-sm leading-relaxed text-white/90"><span className="font-semibold text-amber-200">O zaman: </span>{w.then}</p>
-        <a href={w.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-white/60 underline">{w.source.title} <ExternalLink size={12} /></a>
-      </div>
-    </div>
-  );
+  return <InfoSheet kicker={`Zaman penceresi · ${w.era}`} title={w.name} text={<><p><span className="font-semibold text-[#1f1b17]">Bugün: </span>{w.now}</p><p><span className="font-semibold text-[#1f1b17]">O zaman: </span>{w.then}</p></>} source={w.source} onClose={onClose} />;
 }
-function TitleCard({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/60 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">İzmir · Selçuk · UNESCO Dünya Mirası</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Efes: Zaman Penceresi</h1>
-        <p className="mt-2 text-sm text-white/85">Antik kentin mermer caddelerinden aşağı yürü. Odeon’dan Celsus Kütüphanesi’ne, oradan Büyük Tiyatro’ya ve limana. Yedi noktada zaman penceresi açılır: yıkık yapılar Roma dönemindeki hâline döner.</p>
-        <p className="mt-2 text-xs text-white/60">Dikey sürükle ya da W/S: ileri/geri · yatay sürükle ya da fare: etrafa bak · çift dokun: sıradaki pencereye git</p>
-        <p className="mt-1 text-[11px] text-white/45">Plan stilizedir, mesafeler kısaltılmıştır. Yapıların “sağlam hâli” bir canlandırmadır.</p>
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 font-semibold text-black"><Landmark size={18} /> Kente gir</button>
-      </div>
-    </div>
-  );
+const THEME = { accent: '#b98a3e' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
+  { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
+  { icon: <ChevronsRight size={16} />, text: <>çift dokun: sıradaki pencereye git</> },
+];
+function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="İzmir · Selçuk · UNESCO Dünya Mirası" title="Efes: Zaman Penceresi" intro={<>Antik kentin mermer caddelerinden aşağı yürü. Odeon’dan Celsus Kütüphanesi’ne, oradan Büyük Tiyatro’ya ve limana. Yedi noktada zaman penceresi açılır: yıkık yapılar Roma dönemindeki hâline döner.</>} controls={CONTROLS} note="Plan stilizedir, mesafeler kısaltılmıştır. Yapıların “sağlam hâli” bir canlandırmadır." cta="Kente gir" ctaIcon={<Landmark size={18} />} onStart={onStart} onExit={onExit} />;
 }
-function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/25 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-[#f6efe2] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-amber-700">Bütün pencereler açıldı</p>
-        <h2 className="mt-1 text-2xl font-bold">Efes’in iki yüzü</h2>
-        <p className="mt-2 text-sm text-slate-600">Odeon’dan limana, kentin bugününü ve Roma dönemini yan yana gördün. Deniz bugün kilometrelerce uzakta.</p>
-        <div className="mt-5 flex gap-2">
-          <button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Gezmeye devam</button>
-          <button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button>
-        </div>
-      </div>
-    </div>
-  );
+function EndCard({ onStay, onExit, onRestart }: { onStay: () => void; onExit: () => void; onRestart?: () => void }) {
+  return <EndSheet kicker="Bütün pencereler açıldı" title="Efes’in iki yüzü" text="Odeon’dan limana, kentin bugününü ve Roma dönemini yan yana gördün. Deniz bugün kilometrelerce uzakta." stayLabel="Gezmeye devam" onStay={onStay} onExit={onExit} onRestart={onRestart} />;
 }
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);

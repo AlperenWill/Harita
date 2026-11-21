@@ -18,9 +18,12 @@ import { Environment, Lightformer, PerformanceMonitor } from '@react-three/drei'
 import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
-import { ArrowLeft, Captions, CaptionsOff, ExternalLink, Gem, Search, Sparkles, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { ChevronsRight, Footprints, Info } from 'lucide-react';
+import { ArrowLeft, Gem, Search, Sparkles } from 'lucide-react';
 import { Character, newRig, type Palette } from '../kiz-kulesi/NPCController';
-import { CHANDELIER, ROUTE_LEN, STAIR, UPPER, ZONE_LABEL, clampToRoom, routeAt, zoneAt, type V3, type Zone } from './palace';
+import { CHANDELIER, ROUTE_LEN, STAIR, UPPER, clampToRoom, routeAt, zoneAt, type V3, type Zone } from './palace';
 import { SPARKLES, nearSparkle, nextUnfound, pulse, type Sparkle } from './SparkleHuntMechanic';
 import { reflectionPlan, reflectorRoom, type Plan, type Tier } from './ReflectionOptimizer';
 import { orbitCamera } from './CrystalChandelier';
@@ -41,6 +44,7 @@ const GUEST: Palette = { skin: '#d9a982', hair: '#2a1a12', top: '#24324a', pants
 interface S { started: boolean; zone: Zone; found: string[]; card: Sparkle | null; near: Sparkle | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
 const INITIAL = { started: false, zone: 'medhal' as Zone, found: [] as string[], card: null, near: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { s: 0, v: 0, input: 0, goal: null as number | null, goalOpen: null as Sparkle | null, rig: newRig(0, 13, 0) };
 
 export default function DolmabahceGame({ onExit }: { onExit: () => void }) {
@@ -59,11 +63,11 @@ function Game({ onExit }: { onExit: () => void }) {
     (navigator as Navigator & { getBattery?: () => Promise<B> }).getBattery?.().then((x) => { b = x; check(); x.addEventListener('levelchange', check); x.addEventListener('chargingchange', check); }).catch(() => {});
     return () => { b?.removeEventListener('levelchange', check); b?.removeEventListener('chargingchange', check); };
   }, []);
-  useEffect(() => { palaceAudio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { palaceAudio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => { palaceAudio.setZone(S.zone); }, [S.zone]);
   useEffect(() => () => { palaceAudio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, goal: null, goalOpen: null }); }, []);
 
-  const open = useCallback((k: Sparkle) => { const s = useDb.getState(); s.set({ card: k, found: s.found.includes(k.id) ? s.found : [...s.found, k.id] }); if (s.tts) palaceAudio.speak(`${k.name}. ${k.text}`); }, []);
+  const open = useCallback((k: Sparkle) => { const s = useDb.getState(); s.set({ card: k, found: s.found.includes(k.id) ? s.found : [...s.found, k.id] }); if (useSettings.getState().tts) palaceAudio.speak(`${k.name}. ${k.text}`); }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); palaceAudio.hush(); }, []);
   const goNext = useCallback(() => { const k = nextUnfound(live.s, useDb.getState().found); if (k) { live.goal = k.sAnchor; live.goalOpen = k; } }, []);
 
@@ -94,6 +98,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#120d08] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <HudTheme theme={THEME}>
       <Canvas dpr={plan.dpr} gl={{ antialias: plan.tier === 'high', powerPreference: 'high-performance' }} camera={{ fov: 55, near: 0.05, far: 200, position: [0, 2.4, 18] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
@@ -109,26 +114,17 @@ function Game({ onExit }: { onExit: () => void }) {
         </Suspense>
       </Canvas>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/50" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { palaceAudio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/50" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) palaceAudio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-amber-400 text-black' : 'bg-black/50'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.started && (
-          <div className="mx-auto flex flex-col items-center gap-1 rounded-2xl bg-black/50 px-4 py-2">
-            <div className="flex gap-1">{SPARKLES.map((k) => <Gem key={k.id} size={13} className={S.found.includes(k.id) ? 'text-amber-300' : 'text-white/25'} />)}</div>
-            <p className="text-xs">{ZONE_LABEL[S.zone]} · {S.found.length}/{SPARKLES.length} parıltı</p>
-          </div>
-        )}
-      </div>
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Gem size={15} />} label={S.found.length < SPARKLES.length ? 'Salonlarda parlayan nesneleri bul' : 'Hepsi bulundu'} done={S.found.length} total={SPARKLES.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
       {S.started && !S.card && S.near && (
-        <button onPointerDown={(e) => e.stopPropagation()} onClick={() => open(S.near!)} className={`absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-xl ${S.found.includes(S.near.id) ? 'bg-black/60' : 'animate-pulse bg-amber-300 text-black'}`}>
+        <button onPointerDown={(e) => e.stopPropagation()} onClick={() => open(S.near!)} className={`absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 items-center gap-2 rounded-full px-5 text-sm font-semibold shadow-xl ${S.found.includes(S.near.id) ? 'bg-black/60' : 'animate-pulse bg-[#b98b2e] text-white'}`}>
           <Search size={18} /> İncele: {S.near.name}<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span>
         </button>
       )}
-      {S.started && !S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/45 px-4 py-1.5 text-center text-xs">Dikey sürükle: ileri/geri · çift dokun: en yakın parıltı<span className="hidden [@media(pointer:fine)]:inline"> · W/S · N: sıradaki parıltı</span></p>}
+      {S.started && !S.card && <Hint>Dikey sürükle: ileri/geri · çift dokun: en yakın parıltı<span className="hidden [@media(pointer:fine)]:inline"> · W/S · N: sıradaki parıltı</span></Hint>}
       {S.card && <Card k={S.card} onClose={close} />}
-      {!S.started && <TitleCard onStart={start} />}
+      {!S.started && <TitleCard onStart={start} onExit={onExit} />}
       {S.started && S.found.length === SPARKLES.length && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      </HudTheme>
     </div>
   );
 }
@@ -196,7 +192,7 @@ function Controller() {
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState(), t = clock.elapsedTime;
     // hız: girdi ya da otomatik hedef; yumuşak hızlanma (lüks mekânda ani hareket yok)
-    let want = S.started && !S.card ? live.input * 3.2 : 0;
+    let want = S.started && !S.card && !pause.on ? live.input * 3.2 : 0;
     if (live.goal !== null && !S.card) { const d = live.goal - live.s; if (Math.abs(d) < 0.15) { live.goal = null; if (live.goalOpen) { const k = live.goalOpen; live.goalOpen = null; const s2 = useDb.getState(); s2.set({ card: k, found: s2.found.includes(k.id) ? s2.found : [...s2.found, k.id] }); if (s2.tts) palaceAudio.speak(`${k.name}. ${k.text}`); } } else want = Math.sign(d) * Math.min(4, Math.abs(d) * 2 + 0.6); }
     live.v += (want - live.v) * (1 - Math.exp(-dt * 4));
     const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt));
@@ -221,47 +217,19 @@ function Controller() {
 
 /* ---------- arayüz ---------- */
 function Card({ k, onClose }: { k: Sparkle; onClose: () => void }) {
-  return (
-    <div className="absolute inset-x-3 bottom-3 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl border border-amber-200/30 bg-[#1a120a]/92 p-5 shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-2">
-          <div><p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">{k.matLabel}</p><h2 className="text-xl font-bold">{k.name}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={18} /></button>
-        </div>
-        <p className="mt-2 text-sm leading-relaxed text-white/85">{k.text}</p>
-        <a href={k.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-white/60 underline">{k.source.title} <ExternalLink size={12} /></a>
-      </div>
-    </div>
-  );
+  return <InfoSheet kicker={`${k.matLabel}`} title={k.name} text={k.text} source={k.source} onClose={onClose} />;
 }
-function TitleCard({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/65 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">İstanbul · Beşiktaş · 1843–1856</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Dolmabahçe: Kristal ve Işığın İhtişamı</h1>
-        <p className="mt-2 text-sm text-white/85">Sarayı ilk kez gören bir misafirsin. Salonlarda hafifçe parlayan on nesneyi bul: kristal avizeler, Baccarat korkuluklar, altın yaldızlı tavanlar, Hereke halısı… Yaklaş, incele, hikâyesini öğren.</p>
-        <p className="mt-2 text-xs text-white/60">Ekranı dikey sürükle ya da W/S: ileri/geri · kamera açıyı kendisi bulur · çift dokun: en yakın parıltıya git</p>
-        <p className="mt-1 text-[11px] text-white/45">Plan stilizedir, ölçüler kısaltılmıştır. Avizenin Kraliçe Victoria’nın hediyesi olduğu bilgisi tartışmalıdır.</p>
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-300 font-semibold text-black"><Sparkles size={18} /> Saraya gir</button>
-      </div>
-    </div>
-  );
+const THEME = { accent: '#b98b2e' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Ekranı dikey sürükle ya da W/S: ileri/geri</> },
+  { icon: <Info size={16} />, text: <>kamera açıyı kendisi bulur</> },
+  { icon: <ChevronsRight size={16} />, text: <>çift dokun: en yakın parıltıya git</> },
+];
+function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="İstanbul · Beşiktaş · 1843–1856" title="Dolmabahçe: Kristal ve Işığın İhtişamı" intro={<>Sarayı ilk kez gören bir misafirsin. Salonlarda hafifçe parlayan on nesneyi bul: kristal avizeler, Baccarat korkuluklar, altın yaldızlı tavanlar, Hereke halısı… Yaklaş, incele, hikâyesini öğren.</>} controls={CONTROLS} note="Plan stilizedir, ölçüler kısaltılmıştır. Avizenin Kraliçe Victoria’nın hediyesi olduğu bilgisi tartışmalıdır." cta="Saraya gir" ctaIcon={<Sparkles size={18} />} onStart={onStart} onExit={onExit} />;
 }
-function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/35 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-[#f6efe2] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-amber-700">Tüm parıltılar bulundu</p>
-        <h2 className="mt-1 text-2xl font-bold">Sarayın ışığı seninle</h2>
-        <p className="mt-2 text-sm text-slate-600">Bohem kristalinden Baccarat korkuluklara, altın varaktan Hereke halısına on nesneyi inceledin.</p>
-        <div className="mt-5 flex gap-2">
-          <button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Gezmeye devam</button>
-          <button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button>
-        </div>
-      </div>
-    </div>
-  );
+function EndCard({ onStay, onExit, onRestart }: { onStay: () => void; onExit: () => void; onRestart?: () => void }) {
+  return <EndSheet kicker="Tüm parıltılar bulundu" title="Sarayın ışığı seninle" text="Bohem kristalinden Baccarat korkuluklara, altın varaktan Hereke halısına on nesneyi inceledin." stayLabel="Gezmeye devam" onStay={onStay} onExit={onExit} onRestart={onRestart} />;
 }
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);

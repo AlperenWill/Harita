@@ -1,12 +1,14 @@
 import { Suspense, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Controls as HudControls, GameMenu, HudTheme, Objective, TopRow } from '../games/shared/hud/Hud';
+import { autoTier, useSettings } from '../games/shared/hud/settings';
 import { useRef } from 'react';
-import { ArrowLeft, BatteryLow, DoorOpen, Footprints, Home, Lightbulb, Moon, Plane, RotateCw, Sun, Sunrise, Sunset, X } from 'lucide-react';
+import { Landmark, DoorOpen, Footprints, Home, Lightbulb, Moon, Plane, RotateCw, Sun, Sunrise, Sunset, X } from 'lucide-react';
 import { walkInput } from '../monuments/walkInput';
 import { MONUMENTS } from '../monuments/registry';
 import { useMonumentStore } from '../monuments/store';
 import { supportsWebGL, useDeviceProfile } from '../monuments/useDeviceProfile';
-import type { MonumentData, Quality, TimeOfDay } from '../monuments/types';
+import type { MonumentData, TimeOfDay } from '../monuments/types';
 import { PLAZA, MAUSOLEUM, LION_ROAD, HOTSPOTS, STAIRS, STAIRS_DEPTH, STAIR_X0, WALK, buildings, towers } from '../monuments/anitkabir/layout';
 import NotFound from './NotFound';
 
@@ -14,7 +16,6 @@ const TIMES: { id: TimeOfDay; label: string; icon: typeof Sun }[] = [
   { id: 'sabah', label: 'Sabah', icon: Sunrise }, { id: 'ogle', label: 'Öğle', icon: Sun },
   { id: 'aksam', label: 'Akşam', icon: Sunset }, { id: 'gece', label: 'Gece', icon: Moon },
 ];
-const QUALITY_LABEL: Record<Quality, string> = { high: 'Yüksek', medium: 'Orta', low: 'Düşük' };
 
 export default function MonumentPage() {
   const { id = '' } = useParams();
@@ -48,7 +49,7 @@ export default function MonumentPage() {
       <InfoPanel data={data} />
 
       {isMobile && portrait && !hintClosed && (
-        <div className="absolute inset-x-3 top-16 z-40 flex items-center gap-3 rounded-xl bg-ink/90 px-3 py-2.5 text-sm text-white shadow-lg" role="status">
+        <div className="absolute inset-x-3 top-[124px] z-40 flex items-center gap-3 rounded-xl bg-[#f7f5f1]/95 px-3 py-2.5 text-sm text-[#1f1b17] shadow-lg ring-1 ring-black/5" role="status">
           <RotateCw size={18} className="shrink-0 text-brand" />
           <span className="flex-1">Daha geniş bir görüş için telefonunu yatay çevir.</span>
           <button onClick={() => setHintClosed(true)} className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10" aria-label="Kapat"><X size={16} /></button>
@@ -59,33 +60,26 @@ export default function MonumentPage() {
 }
 
 function TopBar({ data }: { data: MonumentData }) {
-  const saver = useMonumentStore((s) => s.batterySaver);
+  const navigate = useNavigate(), G = useSettings();
+  // ortak ayarlar (≡ Menü › Ayarlar) anıt görüntüleyicisinin kalite ve pil ayarına yansır
+  useEffect(() => { const st = useMonumentStore.getState(); st.setBatterySaver(G.battery); st.setQuality(G.quality === 'auto' ? autoTier() : G.quality); }, [G.quality, G.battery]);
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start gap-2 p-3">
-      <Link to="/harita" className="pointer-events-auto inline-flex h-11 items-center gap-2 rounded-xl bg-white/90 px-3 text-sm font-semibold shadow-card backdrop-blur hover:bg-white">
-        <ArrowLeft size={18} /> Harita
-      </Link>
-      <div className="pointer-events-auto rounded-xl bg-white/90 px-4 py-2 shadow-card backdrop-blur">
-        <h1 className="text-base font-bold leading-tight">{data.metadata.name}</h1>
-        <p className="text-xs text-ink-muted">{data.metadata.city} · {data.metadata.built}</p>
-      </div>
-      {saver && (
-        <span className="pointer-events-auto ml-auto inline-flex h-11 items-center gap-1.5 rounded-xl bg-amber-100 px-3 text-xs font-semibold text-amber-900 shadow-card">
-          <BatteryLow size={16} /> Pil tasarrufu
-        </span>
-      )}
-    </div>
+    <HudTheme theme={{ accent: '#f04448' }}>
+      <TopRow onExit={() => navigate('/harita')} objective={<Objective icon={<Landmark size={15} />} label={`${data.metadata.name} · ${data.metadata.city} · ${data.metadata.built}`} />}
+        right={<GameMenu tts={false} look={false} help={<HudControls items={[
+          { icon: <Plane size={16} />, text: <>Kuşbakışı: sürükle döndür, iki parmak ya da tekerlek yakınlaştır</> },
+          { icon: <Footprints size={16} />, text: <>Yürü: joystick ya da <b>WASD</b>; noktalara dokun, bilgi kartını aç</> },
+          { icon: <Sun size={16} />, text: <>Alttaki düğmeler: günün saati</> },
+        ]} />} onExit={() => navigate('/harita')} />} />
+    </HudTheme>
   );
 }
 
 function Controls() {
   const time = useMonumentStore((s) => s.timeOfDay);
-  const quality = useMonumentStore((s) => s.quality);
-  const saver = useMonumentStore((s) => s.batterySaver);
   const panelOpen = useMonumentStore((s) => s.selectedPoint !== null);
   const walking = useMonumentStore((s) => s.mode === 'walk');
   const st = useMonumentStore.getState();
-  const next: Record<Quality, Quality> = { high: 'medium', medium: 'low', low: 'high' };
   return (
     <div className={`pointer-events-none absolute bottom-3 left-3 z-30 max-w-[calc(100%-6rem)] flex-wrap items-end gap-2 ${panelOpen ? 'hidden sm:flex' : 'flex'}`}>
       <div className={`pointer-events-auto rounded-xl bg-white/90 p-1 shadow-card backdrop-blur ${walking ? 'hidden [@media(pointer:fine)]:flex' : 'flex'}`} role="radiogroup" aria-label="Günün saati">
@@ -116,11 +110,6 @@ function Controls() {
           </button>
         </>
       )}
-      <button onClick={() => st.setQuality(next[quality])} disabled={saver}
-        className={`pointer-events-auto h-[52px] items-center rounded-xl bg-white/90 px-3 text-sm font-medium shadow-card backdrop-blur hover:bg-white disabled:opacity-60 ${walking ? 'hidden [@media(pointer:fine)]:inline-flex' : 'inline-flex'}`}
-        aria-label={`Grafik kalitesi: ${QUALITY_LABEL[saver ? 'low' : quality]}. Değiştirmek için dokun.`}>
-        Kalite: {QUALITY_LABEL[saver ? 'low' : quality]}
-      </button>
     </div>
   );
 }

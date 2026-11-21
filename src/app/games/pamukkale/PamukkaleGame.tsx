@@ -12,9 +12,13 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { ArrowLeft, Captions, CaptionsOff, Droplets, ExternalLink, Footprints, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { Info, MousePointer2 } from 'lucide-react';
+import { ArrowLeft, Droplets, Footprints } from 'lucide-react';
 import { DRY, PLATEAU, poolY, ROUTE_LEN, SLOPE_Z0, SLOPE_Z1, SPOTS, heightAt, isTravertine, nearDry, nearSpot, routeAt, whiteness, type Pool, type Spot } from './terraces';
 import { speakTr } from '../shared/voice';
+import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
 import { normalFrom } from '../topkapi/kit';
 import { Polish, SkyEnvironment } from '../shared/Polish';
 
@@ -47,6 +51,7 @@ const audio = new PamukAudio();
 interface S { started: boolean; filled: string[]; seen: string[]; card: Spot | null; near: Pool | null; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
 const INITIAL = { started: false, filled: [] as string[], seen: [] as string[], card: null, near: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: 0.12, fill: {} as Record<string, number> };
 
 export default function PamukkaleGame({ onExit }: { onExit: () => void }) {
@@ -55,45 +60,45 @@ export default function PamukkaleGame({ onExit }: { onExit: () => void }) {
 }
 function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), S = useDb();
+  const look = useMouseLook((dx, dy) => { live.yaw -= dx * LOOK_YAW; live.pitch = THREE.MathUtils.clamp(live.pitch - dy * LOOK_PITCH, -1, 0.9); }, () => { const s = useDb.getState(); return s.started && !s.card; });
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y0: number; y: number; mouse: boolean } | null>(null);
-  useEffect(() => { audio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: 0.12, fill: {} }); }, []);
   const close = useCallback(() => { useDb.getState().set({ card: null }); audio.hush(); }, []);
-  const pour = useCallback(() => { const s = useDb.getState(), p = s.near; if (!p || s.filled.includes(p.id)) return; s.set({ filled: [...s.filled, p.id], near: null }); if (s.tts) audio.speak(s.filled.length === 0 ? 'Su havuza akıyor. Kalsiyum karbonat yeniden çökelecek ve havuz zamanla beyazlayacak.' : 'Bir havuz daha doldu.'); }, []);
+  const pour = useCallback(() => { const s = useDb.getState(), p = s.near; if (!p || s.filled.includes(p.id)) return; s.set({ filled: [...s.filled, p.id], near: null }); if (useSettings.getState().tts) audio.speak(s.filled.length === 0 ? 'Su havuza akıyor. Kalsiyum karbonat yeniden çökelecek ve havuz zamanla beyazlayacak.' : 'Bir havuz daha doldu.'); }, []);
   useEffect(() => {
     const down = (e: KeyboardEvent) => { keys.current.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault(); const s = useDb.getState(); if (!s.started || e.repeat) return; if (e.code === 'KeyE') { if (s.card) close(); else pour(); } if (e.code === 'Escape' && s.card) close(); };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current; const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
-      live.yaw += ((k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0) - (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0)) * dt * 1.8; raf = requestAnimationFrame(loop); };
+      void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [close, pour]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __pamuk: unknown }).__pamuk = { go: (s: number) => { live.s = s; useDb.getState().set({ started: true }); }, look: (y: number, p = 0) => { live.yaw = y; live.pitch = p; }, pour, state: () => ({ ...useDb.getState(), s: live.s }), DRY, SPOTS, ROUTE_LEN }; }, [pour]);
-  const onDown = (e: React.PointerEvent) => { audio.unlock(); if (!useDb.getState().started) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
+  const onDown = (e: React.PointerEvent) => { audio.unlock(); look.lock(e); if (!useDb.getState().started) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
   const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; };
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (!drag.current.mouse) live.input = 0; drag.current = null; } };
   const done = S.filled.length === DRY.length && S.seen.length === SPOTS.length;
 
+  const nextP = DRY.find((p) => !S.filled.includes(p.id));
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dbeef3] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <HudTheme theme={THEME}>
+      <LookCrosshair locked={look.locked} />
       <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 1200, position: [30, 30, 190] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.72; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
         <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#d6ecf3'} sun={'#fff6e6'} ground={'#f2f0ea'} sunDir={[0.7, 0.6, 0.5]} /><Polish tier={tier} /></Suspense>
       </Canvas>
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { audio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) audio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-cyan-300 text-black' : 'bg-black/45'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.started && <div className="mx-auto flex flex-col items-center gap-1 rounded-2xl bg-black/45 px-4 py-2"><div className="flex gap-1">{DRY.map((p) => <Droplets key={p.id} size={13} className={S.filled.includes(p.id) ? 'text-cyan-300' : 'text-white/30'} />)}</div><p className="text-xs">{S.filled.length}/{DRY.length} havuz · {S.seen.length}/{SPOTS.length} yer</p></div>}
-      </div>
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Droplets size={15} />} label={nextP ? 'Kuru havuzlara suyu yönlendir' : 'Bütün havuzlar dolu'} done={S.filled.length} total={DRY.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
       {S.started && !S.card && S.near && <button onPointerDown={(e) => e.stopPropagation()} onClick={pour} className="absolute bottom-24 left-1/2 z-40 flex h-12 -translate-x-1/2 animate-pulse items-center gap-2 rounded-full bg-cyan-300 px-5 text-sm font-semibold text-black shadow-xl"><Droplets size={18} /> Suyu bu havuza yönlendir<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
-      {S.started && !S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · fareyle bak · E: suyu aç</span></p>}
+      {S.started && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · E: suyu aç</span></Hint>}
       {S.card && <Card s={S.card} onClose={close} />}
-      {!S.started && <TitleCard onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
+      {!S.started && <TitleCard onExit={onExit} onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
       {S.started && done && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      </HudTheme>
     </div>
   );
 }
@@ -211,12 +216,12 @@ function Controller() {
   const { camera } = useThree(), st = useRef({ step: 0, bob: 0, grade: 0, head: NaN, near: '', spot: '' });
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState();
-    const back = Math.cos(live.yaw) < 0 ? -1 : 1, want = S.started && !S.card ? live.input * WALK * back : 0;
+    const back = Math.cos(live.yaw) < 0 ? -1 : 1, want = S.started && !S.card && !pause.on ? live.input * WALK * back : 0;
     live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
     const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt)); const moved = live.s - before, R = routeAt(live.s);
     st.current.step += Math.abs(moved); if (st.current.step > 0.75) { st.current.step = 0; audio.step(R.barefoot); } st.current.bob += Math.abs(moved) * 2.2;
     const np = S.started ? nearDry(live.s, S.filled) : null; if ((np?.id ?? '') !== st.current.near) { st.current.near = np?.id ?? ''; S.set({ near: np }); }
-    const sp = S.started ? nearSpot(live.s) : null; if ((sp?.id ?? '') !== st.current.spot) { st.current.spot = sp?.id ?? ''; if (sp && !S.seen.includes(sp.id)) { S.set({ card: sp, seen: [...S.seen, sp.id] }); if (S.tts) audio.speak(`${sp.name}. ${sp.text}`); } }
+    const sp = S.started ? nearSpot(live.s) : null; if ((sp?.id ?? '') !== st.current.spot) { st.current.spot = sp?.id ?? ''; if (sp && !S.seen.includes(sp.id)) { S.set({ card: sp, seen: [...S.seen, sp.id] }); if (useSettings.getState().tts) audio.speak(`${sp.name}. ${sp.text}`); } }
     const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(st.current.head)) st.current.head = hd; st.current.head += wrapA(hd - st.current.head) * (1 - Math.exp(-dt * 3));
     const grade = (routeAt(live.s + 3).p[1] - routeAt(live.s - 3).p[1]) / 6; st.current.grade += (Math.atan(grade) * 0.5 - st.current.grade) * (1 - Math.exp(-dt * 2));
     if (!S.started) { camera.position.set(40, 22, 175); camera.quaternion.copy(_q.setFromRotationMatrix(_m.lookAt(camera.position, _l.set(0, 38, 40), THREE.Object3D.DEFAULT_UP))); return; }
@@ -228,41 +233,19 @@ function Controller() {
 
 /* ---------- arayüz ---------- */
 function Card({ s, onClose }: { s: Spot; onClose: () => void }) {
-  return (
-    <div className="absolute inset-x-3 bottom-14 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl border border-cyan-100/30 bg-[#16343a]/90 p-5 shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-2"><div><p className="text-[11px] font-semibold uppercase tracking-wider text-cyan-300">Pamukkale · Hierapolis</p><h2 className="text-xl font-bold">{s.name}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={18} /></button></div>
-        <p className="mt-2 text-sm leading-relaxed text-white/85">{s.text}</p>
-        <a href={s.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-white/60 underline">{s.source.title} <ExternalLink size={12} /></a>
-      </div>
-    </div>
-  );
+  return <InfoSheet kicker={`Pamukkale · Hierapolis`} title={s.name} text={s.text} source={s.source} onClose={onClose} />;
 }
-function TitleCard({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/60 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-cyan-300">Denizli · UNESCO Dünya Mirası</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Pamukkale: Beyaz Basamaklar</h1>
-        <p className="mt-2 text-sm text-white/85">Ayakkabılarını çıkar: travertenlerde çıplak ayakla yürünür. Yukarı tırmanırken kurumuş, kararmış beş havuza suyu yönlendir; havuzlar dolup yeniden beyazlasın. Tepede Hierapolis seni bekliyor.</p>
-        <p className="mt-2 text-xs text-white/60">Dikey sürükle ya da W/S: ileri/geri · yatay sürükle ya da fare: etrafa bak · kuru havuzun yanında “Suyu yönlendir”</p>
-        <p className="mt-1 text-[11px] text-white/45">Plan stilizedir, mesafeler kısaltılmıştır. Havuzların dolup beyazlaması hızlandırılmıştır; gerçekte uzun zaman alır.</p>
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-cyan-300 font-semibold text-black"><Footprints size={18} /> Ayakkabılarını çıkar, başla</button>
-      </div>
-    </div>
-  );
+const THEME = { accent: '#2a9bb0' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
+  { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
+  { icon: <Info size={16} />, text: <>kuru havuzun yanında “Suyu yönlendir”</> },
+];
+function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="Denizli · UNESCO Dünya Mirası" title="Pamukkale: Beyaz Basamaklar" intro={<>Ayakkabılarını çıkar: travertenlerde çıplak ayakla yürünür. Yukarı tırmanırken kurumuş, kararmış beş havuza suyu yönlendir; havuzlar dolup yeniden beyazlasın. Tepede Hierapolis seni bekliyor.</>} controls={CONTROLS} note="Plan stilizedir, mesafeler kısaltılmıştır. Havuzların dolup beyazlaması hızlandırılmıştır; gerçekte uzun zaman alır." cta="Ayakkabılarını çıkar, başla" ctaIcon={<Footprints size={18} />} onStart={onStart} onExit={onExit} />;
 }
-function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/25 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-[#f2f8f9] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-cyan-700">Beş havuz yeniden dolu</p><h2 className="mt-1 text-2xl font-bold">Pamukkale beyaz kaldı</h2>
-        <p className="mt-2 text-sm text-slate-600">Suyu havuzlara sırayla vermek travertenlerin beyaz kalmasını sağlar. Hierapolis’in havuzunu, tiyatrosunu ve nekropolünü de gördün.</p>
-        <div className="mt-5 flex gap-2"><button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Gezmeye devam</button><button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button></div>
-      </div>
-    </div>
-  );
+function EndCard({ onStay, onExit, onRestart }: { onStay: () => void; onExit: () => void; onRestart?: () => void }) {
+  return <EndSheet kicker="Beş havuz yeniden dolu" title="Pamukkale beyaz kaldı" text="Suyu havuzlara sırayla vermek travertenlerin beyaz kalmasını sağlar. Hierapolis’in havuzunu, tiyatrosunu ve nekropolünü de gördün." stayLabel="Gezmeye devam" onStay={onStay} onExit={onExit} onRestart={onRestart} />;
 }
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);

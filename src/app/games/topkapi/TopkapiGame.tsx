@@ -15,7 +15,10 @@ import { Environment, Lightformer, PerformanceMonitor, Sky } from '@react-three/
 import { Bloom, EffectComposer, N8AO, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
-import { ArrowLeft, Captions, CaptionsOff, DoorOpen, Footprints, Info, Map as MapIcon, Search, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint as HudHint, HudTheme, IconButton, InfoSheet, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { Move } from 'lucide-react';
+import { ArrowLeft, DoorOpen, Footprints, Map as MapIcon, Search } from 'lucide-react';
 import { Character, newRig } from '../kiz-kulesi/NPCController';
 import { keys, readKeys, walk } from '../kiz-kulesi/input';
 import { makeMats } from './kit';
@@ -56,6 +59,7 @@ interface S {
 const INITIAL = { started: false, zone: START.zone, stop: 0, told: [] as string[], talk: null, card: null, seen: [] as string[], prompt: { door: null, thing: null }, fade: false, done: false, endShown: false };
 const useTop = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, map: true, set: (p) => set(p) }));
 /** Kare döngüsü ile arayüz arasında paylaşılan canlı durum (React durumu değil) */
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = {
   player: newRig(START.at[0], START.at[1], START.yaw), guide: newRig(START.at[0] + 4, START.at[1] + 2.6, START.yaw),
   cam: { yaw: START.yaw, pitch: 0.32, dist: 5.2, drag: 0 }, spin: { current: 0 } as React.MutableRefObject<number>, active: { current: null } as React.MutableRefObject<string | null>,
@@ -70,13 +74,13 @@ const lineTime = (s: string) => s.length / CPS + 1.6 + s.length * 0.03;
 
 function say(who: string, lines: string[], onDone?: () => void) {
   useTop.getState().set({ talk: { who, lines, i: 0, t0: performance.now(), onDone } });
-  if (useTop.getState().tts) topkapiAudio.speak(lines[0]);
+  if (useSettings.getState().tts) topkapiAudio.speak(lines[0]);
 }
 function advance() {
   const s = useTop.getState(), t = s.talk; if (!t) return;
   const el = (performance.now() - t.t0) / 1000, line = t.lines[t.i];
   if (el < line.length / CPS) { s.set({ talk: { ...t, t0: performance.now() - (line.length / CPS) * 1000 - 1 } }); return; }   // önce satırı tamamla
-  if (t.i + 1 < t.lines.length) { s.set({ talk: { ...t, i: t.i + 1, t0: performance.now() } }); if (s.tts) topkapiAudio.speak(t.lines[t.i + 1]); return; }
+  if (t.i + 1 < t.lines.length) { s.set({ talk: { ...t, i: t.i + 1, t0: performance.now() } }); if (useSettings.getState().tts) topkapiAudio.speak(t.lines[t.i + 1]); return; }
   s.set({ talk: null }); topkapiAudio.hush(); t.onDone?.();
 }
 
@@ -118,7 +122,7 @@ function Game({ onExit }: { onExit: () => void }) {
   }, []);
   const inspect = useCallback((t: Thing) => {
     const s = useTop.getState(); s.set({ card: t, seen: s.seen.includes(t.id) ? s.seen : [...s.seen, t.id] });
-    live.active.current = t.id; live.spin.current = 0; topkapiAudio.chime(); if (s.tts && !s.talk) topkapiAudio.speak(t.text);
+    live.active.current = t.id; live.spin.current = 0; topkapiAudio.chime(); if (useSettings.getState().tts && !s.talk) topkapiAudio.speak(t.text);
   }, []);
   const closeCard = () => { useTop.getState().set({ card: null }); live.active.current = null; topkapiAudio.hush(); };
 
@@ -140,7 +144,7 @@ function Game({ onExit }: { onExit: () => void }) {
   }, [enter, inspect]);
 
   // ses; çıkışta durumu sıfırla (yeniden girişte baştan başlasın)
-  useEffect(() => { topkapiAudio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { topkapiAudio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => () => { topkapiAudio.dispose(); useTop.setState(INITIAL); resetLive(); }, []);
 
   // ?debug: ışınlanma ve durak atlama (ekran görüntüsü / test)
@@ -173,6 +177,7 @@ function Game({ onExit }: { onExit: () => void }) {
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#cfd9df] text-white" style={{ touchAction: 'none' }}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={onUp} onWheel={onWheel}>
+      <HudTheme theme={THEME}>
       <Canvas shadows={prof.shadows ? { type: THREE.PCFSoftShadowMap } : false} dpr={prof.dpr} gl={{ antialias: prof.antialias, powerPreference: 'high-performance' }}
         camera={{ fov: 58, near: 0.1, far: 700, position: [-90, 14, 22] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1; }}>
@@ -190,21 +195,7 @@ function Game({ onExit }: { onExit: () => void }) {
         </Suspense>
       </Canvas>
 
-      {/* üst çubuk */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/50 backdrop-blur" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => S.set({ muted: !S.muted })} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/50 backdrop-blur" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) topkapiAudio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full backdrop-blur ${S.tts ? 'bg-amber-500' : 'bg-black/50'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.started && (
-          <div className="mx-auto flex flex-col items-center gap-1 rounded-2xl bg-black/50 px-3 py-2 backdrop-blur">
-            <div className="flex gap-1">{TOUR.map((t, i) => <span key={t.id} className={`h-1.5 w-3 rounded-full sm:w-6 ${S.told.includes(t.id) ? 'bg-amber-300' : i === S.stop ? 'bg-white' : 'bg-white/25'}`} />)}</div>
-            <p className="text-xs">{ZONE_LABEL[S.zone]} · {S.seen.length}/{THINGS.length} incelendi</p>
-          </div>
-        )}
-        {S.started && S.zone === 'avlu' && (
-          <button onClick={() => S.set({ map: !S.map })} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full backdrop-blur ${S.map ? 'bg-white/30' : 'bg-black/50'}`} aria-label="Krokiyi aç/kapat" aria-pressed={S.map}><MapIcon size={18} /></button>
-        )}
-      </div>
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<MapIcon size={15} />} label={`${ZONE_LABEL[S.zone]} · ${S.seen.length}/${THINGS.length} incelendi`} done={S.told.length} total={TOUR.length} /> : undefined} right={<>{S.started && S.zone === 'avlu' && <IconButton label="Krokiyi aç/kapat" active={S.map} onClick={() => S.set({ map: !S.map })}><MapIcon size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} /></>} />
       {S.started && S.zone === 'avlu' && S.map && <MiniMap />}
 
       {S.started && (
@@ -216,9 +207,10 @@ function Game({ onExit }: { onExit: () => void }) {
       )}
       <DialogueBox />
       {S.card && <Card t={S.card} onClose={closeCard} />}
-      {!S.started && <TitleCard onStart={start} />}
+      {!S.started && <TitleCard onStart={start} onExit={onExit} />}
       {S.done && !S.endShown && !S.talk && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
       <div className={`pointer-events-none absolute inset-0 z-50 bg-black transition-opacity duration-300 ${S.fade ? 'opacity-100' : 'opacity-0'}`} aria-hidden />
+      </HudTheme>
     </div>
   );
 }
@@ -300,7 +292,7 @@ function Controller({ playerXZ }: { playerXZ: React.MutableRefObject<{ x: number
   const promptKey = useRef(''), mixKey = useRef(''), audioT = useRef(0);
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useTop.getState(), zone = S.zone, p = live.player, g = live.guide, cam = live.cam, t = clock.elapsedTime;
-    const frozen = S.fade || !!S.card;
+    const frozen = S.fade || !!S.card || pause.on;
 
     /* oyuncu: kameraya göre yürü */
     const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
@@ -401,7 +393,7 @@ function Prompts({ enter, inspect }: { enter: (d: Door) => void; inspect: (t: Th
   return (
     <div className={`absolute right-4 z-40 flex flex-col items-end gap-2 ${talk ? 'bottom-40' : 'bottom-24 sm:bottom-28'}`} onPointerDown={(e) => e.stopPropagation()}>
       {prompt.thing && (
-        <button onClick={() => inspect(prompt.thing!)} className={`flex h-12 max-w-[62vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg backdrop-blur ${seen.includes(prompt.thing.id) ? 'bg-black/55' : 'bg-amber-400/95 text-black'}`}>
+        <button onClick={() => inspect(prompt.thing!)} className={`flex h-12 max-w-[62vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg backdrop-blur-md ${seen.includes(prompt.thing.id) ? 'bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5' : 'bg-[#b0413e] text-white'}`}>
           <Search size={18} className="shrink-0" /><span className="truncate">İncele: {prompt.thing.name}</span><span className="hidden opacity-70 [@media(pointer:fine)]:inline">· F</span>
         </button>
       )}
@@ -425,11 +417,11 @@ function DialogueBox() {
   const line = talk.lines[talk.i];
   return (
     <div className="absolute inset-x-3 bottom-3 z-40 mx-auto max-w-2xl sm:bottom-6" onPointerDown={(e) => { e.stopPropagation(); advance(); }}>
-      <div className="rounded-2xl border border-amber-200/20 bg-[#1b130c]/85 p-4 shadow-2xl backdrop-blur">
+      <div className="rounded-2xl bg-[#f7f5f1]/92 text-[#1f1b17] ring-1 ring-black/5 p-4 shadow-[0_10px_30px_rgba(31,27,23,0.18)] backdrop-blur">
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-amber-400 px-2.5 py-0.5 text-xs font-bold text-black">{talk.who}</span>
-          <span className="text-[11px] text-white/50">{GUIDE.role}</span>
-          <span className="ml-auto text-[11px] text-white/40">{talk.i + 1}/{talk.lines.length} · dokun: geç</span>
+          <span className="rounded-full bg-[#b0413e] px-2.5 py-0.5 text-xs font-bold text-white">{talk.who}</span>
+          <span className="text-[11px] text-[#857b70]">{GUIDE.role}</span>
+          <span className="ml-auto text-[11px] text-[#857b70]">{talk.i + 1}/{talk.lines.length} · dokun: geç</span>
         </div>
         <p className="mt-2 min-h-[3rem] text-[15px] leading-relaxed sm:text-base">{line.slice(0, n)}<span className="opacity-0">{line.slice(n)}</span></p>
       </div>
@@ -438,26 +430,14 @@ function DialogueBox() {
 }
 function Card({ t, onClose }: { t: Thing; onClose: () => void }) {
   const spin = t.id === 'kasikci' || t.id === 'hancer';
-  return (
-    <div className="absolute inset-x-3 bottom-3 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl bg-white p-5 text-ink shadow-2xl">
-        <div className="flex items-start gap-2">
-          <div><p className="text-xs font-semibold uppercase tracking-wider text-brand">{t.era}</p><h2 className="text-xl font-bold">{t.name}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-slate-100" aria-label="Kapat"><X size={18} /></button>
-        </div>
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">{t.text}</p>
-        {spin && <p className="mt-2 text-xs text-slate-500">Ekranda sürükle: nesneyi çevir</p>}
-        <a href={t.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-brand underline"><Info size={12} />Kaynak: {t.source.title}</a>
-      </div>
-    </div>
-  );
+  return <InfoSheet kicker={t.era} title={t.name} text={<><p>{t.text}</p>{spin && <p className="text-xs text-[#857b70]">Ekranda sürükle: nesneyi çevir</p>}</>} source={t.source} onClose={onClose} onListen={() => topkapiAudio.speak(`${t.name}. ${t.text}`)} />;
 }
 function MiniMap() {
   const [, force] = useState(0);
   useEffect(() => { const id = setInterval(() => force((x) => x + 1), 200); return () => clearInterval(id); }, []);
   const W = 236, H = 108, sx = (x: number) => x + 118, sz = (z: number) => z + 54, p = live.player, g = live.guide, goal = live.goal;
   return (
-    <div className="pointer-events-none absolute right-3 top-16 z-30 w-40 rounded-xl bg-black/45 p-1.5 backdrop-blur sm:w-52" aria-hidden>
+    <div className="pointer-events-none absolute right-3 top-[124px] z-30 w-40 rounded-xl sm:top-[72px] bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 p-1.5 backdrop-blur-md sm:w-52" aria-hidden>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
         <rect x={0} y={0} width={W} height={H} rx={4} fill="#5d7a3c" opacity={0.6} />
         <rect x={0} y={sz(-3)} width={sx(49)} height={6} fill="#a59c8a" />
@@ -472,40 +452,23 @@ function MiniMap() {
   );
 }
 function Hint({ text }: { text: string }) {
-  return <p className="pointer-events-none absolute bottom-6 left-1/2 z-30 max-w-[60vw] -translate-x-1/2 rounded-full bg-black/45 px-4 py-1.5 text-center text-xs backdrop-blur sm:text-sm">{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · sürükle: bak</span></p>;
+  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · sürükle: bak</span></HudHint>;
 }
-function TitleCard({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/60 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">İstanbul · Sarayburnu</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Topkapı Sarayı</h1>
-        <p className="mt-2 text-sm text-white/85">Sarayın avlularında, Divan’da, Harem’de ve Hazine’de serbestçe dolaş. Kâtip <b>{GUIDE.name}</b> sana yol gösterecek; yanına gidince anlatır. Parlayan düğmelerle yapıları ve hazineleri incele.</p>
-        <p className="mt-2 text-xs text-white/60">Joystick / WASD ile yürü (Shift: koş) · ekranı sürükleyerek bak · iki parmak / tekerlek: yakınlaş · E: kapı · F: incele</p>
-        <p className="mt-1 text-[11px] text-white/45">Saray planı ve figürler stilizedir; ölçüler kısaltılmıştır. Hasan Efendi kurgusal bir karakterdir.</p>
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 font-semibold text-black"><Footprints size={18} />Saraya gir</button>
-      </div>
-    </div>
-  );
+function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="İstanbul · Sarayburnu" title="Topkapı Sarayı" intro={<>Sarayın avlularında, Divan’da, Harem’de ve Hazine’de serbestçe dolaş. Kâtip <b>{GUIDE.name}</b> sana yol gösterecek; yanına gidince anlatır. Parlayan düğmelerle yapıları ve hazineleri incele.</>}
+    controls={CONTROLS} note="Saray planı ve figürler stilizedir; ölçüler kısaltılmıştır. Hasan Efendi kurgusal bir karakterdir." cta="Saraya gir" ctaIcon={<Footprints size={18} />} onStart={onStart} onExit={onExit} />;
 }
 function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
   const seen = useTop((s) => s.seen.length);
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/30 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-white p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-brand">Tur tamamlandı</p>
-        <h2 className="mt-1 text-2xl font-bold">“Sarayımıza yine bekleriz.”</h2>
-        <p className="mt-2 text-sm text-slate-600">Üç avluyu, Divan’ı, Harem’i ve Hazine’yi gezdin; {seen}/{THINGS.length} nesneyi inceledin. Kalanları bulmak için dolaşmaya devam edebilirsin.</p>
-        <div className="mt-5 flex gap-2">
-          <button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Dolaşmaya devam</button>
-          <button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button>
-        </div>
-      </div>
-    </div>
-  );
+  return <EndSheet kicker="Tur tamamlandı" title="“Sarayımıza yine bekleriz.”" text={`Üç avluyu, Divan’ı, Harem’i ve Hazine’yi gezdin; ${seen}/${THINGS.length} nesneyi inceledin. Kalanları bulmak için dolaşmaya devam edebilirsin.`} stayLabel="Dolaşmaya devam" onStay={onStay} onExit={onExit} />;
 }
-
-/** WebGL yoksa: fotoğraf + Hasan Efendi'nin anlatımı (sesli) */
+const THEME = { accent: '#b0413e' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: koş)</> },
+  { icon: <Move size={16} />, text: <>Sürükle: bak · iki parmak ya da tekerlek: yakınlaş</> },
+  { icon: <DoorOpen size={16} />, text: <><b>E</b>: kapı · <b>F</b>: incele</> },
+  { icon: <MapIcon size={16} />, text: <>Kroki düğmesi: avlu planını aç / kapat</> },
+];
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null);
   const lines = useMemo(() => TOUR.flatMap((s) => s.lines), []);

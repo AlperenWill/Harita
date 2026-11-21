@@ -64,13 +64,48 @@
       load(0);
     })();
   </script>
-<!-- Miras. Haritası: haritaya dönüş düğmesi (uygulamanın diğer oyunlarıyla aynı yer: sol üst) -->
-<a href="../harita" id="miras-back" aria-label="Haritaya dön" title="Haritaya dön">←<span>Harita</span></a>
+<!-- Miras. Haritası: ortak oyun arayüzü (uygulamadaki oyunlarla aynı): sol üstte "← Harita", sağ üstte ≡ menü.
+     Menü açılınca oyunun kendi duraklatması yoktur; menü yalnızca ses, bölüm seçimi ve haritaya dönüşü toplar. -->
+<a href="../harita" id="miras-back" aria-label="Haritaya dön" title="Haritaya dön"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg><span>Harita</span></a>
+<button id="miras-menu" aria-label="Menü" title="Menü"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+<div id="miras-modal" hidden><div class="mm-card" role="dialog" aria-label="Menü">
+  <div class="mm-head"><b>Menü</b><button class="mm-x" aria-label="Kapat">×</button></div>
+  <button class="mm-primary" data-act="close">▶ Devam et</button>
+  <button class="mm-row" data-act="sound"><span>🔊</span><span class="mm-l">Ses</span><span class="mm-v" id="mm-sound">Açık</span></button>
+  <button class="mm-row" data-act="home"><span>⌂</span><span class="mm-l">Bölüm seçimi</span></button>
+  <a class="mm-row" href="../harita"><span>🗺</span><span class="mm-l">Haritaya dön</span></a>
+</div></div>
 <style>
-  #miras-back{position:fixed;z-index:50;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left));height:44px;min-width:44px;padding:0 14px 0 12px;display:flex;align-items:center;gap:6px;border-radius:22px;background:rgba(31,27,23,.82);color:#fff;font:700 15px/1 system-ui,-apple-system,"Segoe UI",sans-serif;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25);-webkit-tap-highlight-color:transparent}
-  #miras-back span{font-size:13px}
-  @media (max-width:520px){#miras-back span{display:none}#miras-back{padding:0;justify-content:center}}
-  #hud{left:calc(max(10px,env(safe-area-inset-left)) + 118px)!important}@media (max-width:520px){#hud{left:62px!important}}
+  #miras-back,#miras-menu{position:fixed;z-index:50;top:max(12px,env(safe-area-inset-top));height:44px;display:flex;align-items:center;gap:6px;border:0;border-radius:22px;background:rgba(247,245,241,.88);color:#1f1b17;font:600 14px/1 system-ui,-apple-system,"Segoe UI",sans-serif;text-decoration:none;box-shadow:0 6px 24px rgba(31,27,23,.14),0 0 0 1px rgba(0,0,0,.05);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);cursor:pointer}
+  #miras-back{left:max(12px,env(safe-area-inset-left));padding:0 16px 0 12px}
+  #miras-menu{right:max(12px,env(safe-area-inset-right));width:44px;justify-content:center;padding:0}
+  #hud{left:calc(max(12px,env(safe-area-inset-left)) + 112px)!important;right:68px!important}
+  #hud #sound,#hud #home{display:none!important}
+  @media (max-width:520px){#hud{left:12px!important;right:12px!important;top:64px!important}}
+  #miras-modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(31,27,23,.3);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+  #miras-modal[hidden]{display:none}
+  .mm-card{width:min(100%,380px);display:grid;gap:8px;padding:20px;border-radius:24px;background:#f7f5f1;color:#1f1b17;box-shadow:0 18px 50px rgba(31,27,23,.25);font:600 14px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif}
+  .mm-head{display:flex;align-items:center;margin-bottom:4px}.mm-head b{font-size:18px}
+  .mm-x{margin-left:auto;width:40px;height:40px;border:0;border-radius:20px;background:rgba(0,0,0,.05);font-size:22px;cursor:pointer;color:#1f1b17}
+  .mm-primary{height:48px;border:0;border-radius:12px;background:#d9822b;color:#fff;font:700 15px system-ui,sans-serif;cursor:pointer}
+  .mm-row{height:48px;display:flex;align-items:center;gap:12px;padding:0 12px;border:0;border-radius:12px;background:transparent;box-shadow:0 0 0 1px rgba(0,0,0,.06);color:#1f1b17;text-decoration:none;font:600 14px system-ui,sans-serif;cursor:pointer;text-align:left}
+  .mm-l{flex:1}.mm-v{font-size:12px;color:#857b70}
 </style>
+<script>
+  (function () {
+    var modal = document.getElementById('miras-modal'), snd = document.getElementById('sound'), out = document.getElementById('mm-sound');
+    function sync() { if (out && snd) out.textContent = /🔇/.test(snd.textContent) ? 'Kapalı' : 'Açık'; }
+    function open(v) { modal.hidden = !v; if (v) { sync(); if (document.pointerLockElement) document.exitPointerLock(); } }
+    document.getElementById('miras-menu').onclick = function () { open(true); };
+    modal.addEventListener('click', function (e) {
+      var t = e.target.closest('[data-act]'); if (e.target === modal || e.target.classList.contains('mm-x')) return open(false);
+      if (!t) return; var a = t.getAttribute('data-act');
+      if (a === 'close') open(false);
+      if (a === 'sound' && snd) { snd.click(); setTimeout(sync, 50); }
+      if (a === 'home') { var h = document.getElementById('home'); open(false); if (h) h.click(); }
+    });
+    addEventListener('keydown', function (e) { if (e.code === 'Escape' && !modal.hidden) open(false); });
+  })();
+</script>
 </body>
 </html>

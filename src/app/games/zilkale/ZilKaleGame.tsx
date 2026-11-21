@@ -22,7 +22,10 @@ import { PerformanceMonitor } from '@react-three/drei';
 import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { create } from 'zustand';
-import { ArrowLeft, Captions, CaptionsOff, ExternalLink, History, Mountain, Volume2, VolumeX, X } from 'lucide-react';
+import { Controls, GameMenu, Hint, HudTheme, InfoSheet, StartSheet, EndSheet, TopRow, Objective } from '../shared/hud/Hud';
+import { useSettings } from '../shared/hud/settings';
+import { ChevronsRight, Footprints, MousePointer2 } from 'lucide-react';
+import { ArrowLeft, History, Mountain } from 'lucide-react';
 import { Character, newRig, type Palette } from '../kiz-kulesi/NPCController';
 import { LAYERS, REVEALS, ROUTE_LEN, SUMMIT_CAM, SUMMIT_S, castleBase, fallsFoot, heightAt, nextLayer, riverX, routeAt, waterY, type Layer, type V3 } from './valley';
 import { BASE_DENSITY, density, fogPlan, fogSheetTexture, linearFogRange, revealWeight, shaftIntensity, stepOpen, summitClear, wind, type FogPlan, type Tier } from './VolumetricFogSystem';
@@ -30,6 +33,7 @@ import { activated, makeMorphUniforms, morphTarget, stepMorph } from './HistoryL
 import { alderGeometry, billboardGeometry, fernGeometry, fernTexture, fillInstances, makeWind, mossGeometry, rhodoGeometry, scatter, spruceCardTexture, spruceGeometry, windMaterial, type WindUniforms } from './ProceduralVegetation';
 import { Bridge, Castle, HemsinHouse, Mountains, mountainMat, PathRibbon, River, SUN_DIR, Serender, Terrain } from './OrganicArchitecture';
 import { zilAudio } from './ZilKaleAudio';
+import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
 
 const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
 const pinned = (() => { const q = new URLSearchParams(location.search).get('q'); return q === 'low' || q === 'medium' || q === 'high' ? (q as Tier) : null; })();
@@ -46,6 +50,7 @@ const FOG_COLOR = new THREE.Color('#b7c2c3'), WALK = 3.5, EYE = 1.65;
 interface S { started: boolean; seen: string[]; card: Layer | null; reveal: string | null; summit: boolean; muted: boolean; tts: boolean; endShown: boolean; set: (p: Partial<S>) => void }
 const INITIAL = { started: false, seen: [] as string[], card: null, reveal: null, summit: false, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.05, goal: null as number | null, open: 0, sigma: BASE_DENSITY, rig: newRig(0, 0, 0), morph: {} as Record<string, number> };
 const U = makeMorphUniforms();
 
@@ -56,6 +61,7 @@ export default function ZilKaleGame({ onExit }: { onExit: () => void }) {
 
 function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), [saver, setSaver] = useState(() => location.search.includes('saver'));
+  const look = useMouseLook((dx, dy) => { live.yaw -= dx * LOOK_YAW; live.pitch = THREE.MathUtils.clamp(live.pitch - dy * LOOK_PITCH, -1, 0.9); }, () => { const s = useDb.getState(); return s.started && !s.card; });
   const plan = useMemo(() => fogPlan(tier, saver), [tier, saver]);
   const S = useDb();
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y0: number; y: number; mouse: boolean } | null>(null), lastTap = useRef(0);
@@ -65,7 +71,7 @@ function Game({ onExit }: { onExit: () => void }) {
     (navigator as Navigator & { getBattery?: () => Promise<B> }).getBattery?.().then((x) => { b = x; check(); x.addEventListener('levelchange', check); x.addEventListener('chargingchange', check); }).catch(() => {});
     return () => { b?.removeEventListener('levelchange', check); b?.removeEventListener('chargingchange', check); };
   }, []);
-  useEffect(() => { zilAudio.setMuted(S.muted); }, [S.muted]);
+  const G = useSettings(); useEffect(() => { zilAudio.setMuted(G.muted); }, [G.muted]);
   useEffect(() => { zilAudio.saver = saver; }, [saver]);
   useEffect(() => () => { zilAudio.dispose(); useDb.setState(INITIAL); Object.assign(live, { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.05, goal: null, open: 0, morph: {} }); for (const k in U) U[k].value = 0; }, []);
 
@@ -80,7 +86,7 @@ function Game({ onExit }: { onExit: () => void }) {
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current;
       const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
-      const turn = (k.has('ArrowLeft') || k.has('KeyA') ? 1 : 0) - (k.has('ArrowRight') || k.has('KeyD') ? 1 : 0); live.yaw += turn * dt * 1.8; raf = requestAnimationFrame(loop); };
+      void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [close, goNext]);
@@ -91,6 +97,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
   // dokunmatik: dikey sürükleme = yürü, yatay = bak; fare: sürükleme = bak (iki eksen), W/S = yürü; çift dokunuş = sıradaki Tarih Katmanı
   const onDown = (e: React.PointerEvent) => {
+    look.lock(e);
     zilAudio.unlock(); if (!useDb.getState().started) return; const now = performance.now();
     if (now - lastTap.current < 300) goNext(); lastTap.current = now; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' };
   };
@@ -104,8 +111,11 @@ function Game({ onExit }: { onExit: () => void }) {
   const start = () => { zilAudio.unlock(); S.set({ started: true }); };
   const allSeen = S.seen.length === LAYERS.length;
 
+  const nextL = LAYERS.find((l) => !S.seen.includes(l.id));
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#b7c2c3] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+      <HudTheme theme={THEME}>
+      <LookCrosshair locked={look.locked} />
       <Canvas dpr={plan.dpr} gl={{ antialias: plan.tier === 'high', powerPreference: 'high-performance' }} camera={{ fov: 62, near: 0.1, far: 1400, position: [20, 7, 18] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.0; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
@@ -121,23 +131,14 @@ function Game({ onExit }: { onExit: () => void }) {
         </Suspense>
       </Canvas>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onExit} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label="Haritaya dön"><ArrowLeft size={20} /></button>
-        <button onClick={() => { zilAudio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        <button onClick={() => { S.set({ tts: !S.tts }); if (S.tts) zilAudio.hush(); }} className={`pointer-events-auto grid h-11 w-11 place-items-center rounded-full ${S.tts ? 'bg-emerald-300 text-black' : 'bg-black/45'}`} aria-label={S.tts ? 'Sesli okumayı kapat' : 'Sesli okumayı aç'} aria-pressed={S.tts}>{S.tts ? <Captions size={18} /> : <CaptionsOff size={18} />}</button>
-        {S.started && (
-          <div className="mx-auto flex flex-col items-center gap-1 rounded-2xl bg-black/45 px-4 py-2">
-            <div className="flex gap-1">{LAYERS.map((l) => <History key={l.id} size={13} className={S.seen.includes(l.id) ? 'text-emerald-300' : 'text-white/30'} />)}</div>
-            <p className="text-xs">{S.seen.length}/{LAYERS.length} tarih izi{plan.saver ? ' · pil tasarrufu' : ''}</p>
-          </div>
-        )}
-      </div>
+      <TopRow onExit={onExit} objective={S.started ? <Objective icon={<History size={15} />} label={nextL ? `Sıradaki iz: ${nextL.name}` : 'Bütün izler bulundu'} done={S.seen.length} total={LAYERS.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
       {S.reveal && <p key={S.reveal} className="pointer-events-none absolute inset-x-0 top-[28%] text-center text-3xl font-bold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.6)] sm:text-4xl" style={{ animation: 'zkfade 4.2s ease-out forwards' }}>{S.reveal}<span className="mt-1 block text-sm font-normal text-white/85">sis aralanıyor</span></p>}
       <style>{'@keyframes zkfade{0%{opacity:0;transform:translateY(8px)}15%{opacity:1;transform:none}70%{opacity:1}100%{opacity:0}}'}</style>
-      {S.started && !S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs">{S.summit ? 'Zil Kale · geri yürümek için aşağı sürükle' : 'Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki tarih izi'}<span className="hidden [@media(pointer:fine)]:inline"> · W/S · fareyle bak · N</span></p>}
+      {S.started && !S.card && <Hint>{S.summit ? 'Zil Kale · geri yürümek için aşağı sürükle' : 'Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki tarih izi'}<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · N</span></Hint>}
       {S.card && <Card l={S.card} onClose={close} />}
-      {!S.started && <TitleCard onStart={start} />}
+      {!S.started && <TitleCard onExit={onExit} onStart={start} />}
       {S.started && S.summit && allSeen && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      </HudTheme>
     </div>
   );
 }
@@ -252,7 +253,7 @@ function Controller({ plan, wind: wu, sky, charRef }: { plan: FogPlan; wind: Win
     const dt = Math.min(raw, 0.05), S = useDb.getState(), t = clock.elapsedTime;
     // --- hareket: bakış geriye dönükse ileri girdisi geldiğin yöne yürütür
     const back = Math.cos(live.yaw) < 0 && !S.summit ? -1 : 1;
-    let want = S.started ? live.input * WALK * back : 0;
+    let want = S.started && !pause.on ? live.input * WALK * back : 0;
     if (live.goal !== null) { const d = live.goal - live.s; if (Math.abs(d) < 0.3) live.goal = null; else want = Math.sign(d) * Math.min(WALK * 1.4, Math.abs(d) * 1.5 + 0.8); }
     live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
     const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt)); const moved = live.s - before, R = routeAt(live.s);
@@ -295,48 +296,19 @@ function Controller({ plan, wind: wu, sky, charRef }: { plan: FogPlan; wind: Win
 
 /* ---------- arayüz ---------- */
 function Card({ l, onClose }: { l: Layer; onClose: () => void }) {
-  return (
-    <div className="absolute inset-x-3 bottom-14 z-40 mx-auto max-w-lg sm:bottom-6 sm:left-auto sm:right-6 sm:mx-0" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="rounded-2xl border border-emerald-100/25 bg-[#18211c]/90 p-5 shadow-2xl backdrop-blur">
-        <div className="flex items-start gap-2">
-          <div><p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300">Tarih katmanı · {l.era}</p><h2 className="text-xl font-bold">{l.name}</h2></div>
-          <button onClick={onClose} className="ml-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10" aria-label="Kapat"><X size={18} /></button>
-        </div>
-        <p className="mt-2 text-sm leading-relaxed text-white/70"><span className="font-semibold text-white/85">Bugün: </span>{l.ruinText}</p>
-        <p className="mt-1.5 text-sm leading-relaxed text-white/90"><span className="font-semibold text-emerald-200">Geçmişte: </span>{l.pastText}</p>
-        <a href={l.source.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs text-white/60 underline">{l.source.title} <ExternalLink size={12} /></a>
-      </div>
-    </div>
-  );
+  return <InfoSheet kicker={`Tarih katmanı · ${l.era}`} title={l.name} text={<><p><span className="font-semibold text-[#1f1b17]">Bugün: </span>{l.ruinText}</p><p><span className="font-semibold text-[#1f1b17]">Geçmişte: </span>{l.pastText}</p></>} source={l.source} onClose={onClose} />;
 }
-function TitleCard({ onStart }: { onStart: () => void }) {
-  return (
-    <div className="absolute inset-x-0 bottom-0 z-40 p-4 sm:p-8" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="mx-auto max-w-xl rounded-2xl bg-black/60 p-5 backdrop-blur">
-        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Rize · Çamlıhemşin · Fırtına Vadisi</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Zil Kale: Sis İçindeki İzler</h1>
-        <p className="mt-2 text-sm text-white/85">Sisli vadiye giren bir yolcusun. Dere kıyısından taş köprüye, şelaleye ve ormanın içinden Zil Kale’ye yürü. Sis bazı yerlerde birden aralanır. Eski taşlara ve ahşap evlere yaklaştıkça geçmişteki hâlleri belirir.</p>
-        <p className="mt-2 text-xs text-white/60">Dikey sürükle ya da W/S: ileri/geri · yatay sürükle ya da fare: etrafa bak · çift dokun: sıradaki tarih izine git</p>
-        <p className="mt-1 text-[11px] text-white/45">Vadi stilizedir, mesafeler kısaltılmıştır. Kalenin “sağlam hâli” bir canlandırmadır; yapım tarihi kesin bilinmiyor.</p>
-        <button onClick={onStart} className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-300 font-semibold text-black"><Mountain size={18} /> Vadiye gir</button>
-      </div>
-    </div>
-  );
+const THEME = { accent: '#3f8a5f' };
+const CONTROLS = [
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
+  { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
+  { icon: <ChevronsRight size={16} />, text: <>çift dokun: sıradaki tarih izine git</> },
+];
+function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
+  return <StartSheet kicker="Rize · Çamlıhemşin · Fırtına Vadisi" title="Zil Kale: Sis İçindeki İzler" intro={<>Sisli vadiye giren bir yolcusun. Dere kıyısından taş köprüye, şelaleye ve ormanın içinden Zil Kale’ye yürü. Sis bazı yerlerde birden aralanır. Eski taşlara ve ahşap evlere yaklaştıkça geçmişteki hâlleri belirir.</>} controls={CONTROLS} note="Vadi stilizedir, mesafeler kısaltılmıştır. Kalenin “sağlam hâli” bir canlandırmadır; yapım tarihi kesin bilinmiyor." cta="Vadiye gir" ctaIcon={<Mountain size={18} />} onStart={onStart} onExit={onExit} />;
 }
-function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void }) {
-  return (
-    <div className="absolute inset-0 z-40 grid place-items-center bg-black/25 p-5" onPointerDown={(e) => e.stopPropagation()}>
-      <div className="w-full max-w-md rounded-3xl bg-[#eef1ec] p-6 text-center text-ink shadow-2xl">
-        <p className="text-sm font-semibold text-emerald-700">Bütün izler bulundu</p>
-        <h2 className="mt-1 text-2xl font-bold">Sisin içinden kaleye</h2>
-        <p className="mt-2 text-sm text-slate-600">Ahşap evden serendere, kitabesi kaybolmuş köprüden Zil Kale’nin surlarına kadar vadinin beş tarih izini gördün.</p>
-        <div className="mt-5 flex gap-2">
-          <button onClick={onStay} className="h-11 flex-1 rounded-xl border border-line font-semibold">Manzaraya bak</button>
-          <button onClick={onExit} className="h-11 flex-1 rounded-xl bg-brand font-semibold text-white">Haritaya dön</button>
-        </div>
-      </div>
-    </div>
-  );
+function EndCard({ onStay, onExit, onRestart }: { onStay: () => void; onExit: () => void; onRestart?: () => void }) {
+  return <EndSheet kicker="Bütün izler bulundu" title="Sisin içinden kaleye" text="Ahşap evden serendere, kitabesi kaybolmuş köprüden Zil Kale’nin surlarına kadar vadinin beş tarih izini gördün." stayLabel="Manzaraya bak" onStay={onStay} onExit={onExit} onRestart={onRestart} />;
 }
 function Fallback({ onExit }: { onExit: () => void }) {
   const [img, setImg] = useState<string | null>(null), [i, setI] = useState(0);

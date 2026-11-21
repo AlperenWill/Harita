@@ -12,10 +12,10 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Anchor, Search, Ship, Volume2, VolumeX } from 'lucide-react';
+import { Anchor, ChevronRight, Move, Search, Ship } from 'lucide-react';
 import { ISLAND, LAKE_LIMIT, PIER, RELIEFS, START, TARGETS, arrived, autoRudder, reliefPos, stepBoat, type Boat, type Relief, type Scene } from './site';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { EndCard, InfoCard, NavRail, StopList, TitleCard, TopBar, WalkAudio, WikiFallback, detectTier, dprFor, pinned, supportsWebGL, wrapA, type Tier } from '../shared/walkKit';
+import { Controls, EndCard, GameMenu, Hint, HudTheme, InfoCard, NavRail, Objective, StopList, TitleCard, TopBar, WalkAudio, useAudioSettings, WikiFallback, detectTier, dprFor, pinned, supportsWebGL, wrapA, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { AlmondTrees, BoatMesh, Church, Grass, Island, Khachkars, Lake, Pier, SUN_DIR, Shore, ShoreRocks, boatRef, useMats } from './AkdamarModels';
 
@@ -26,6 +26,7 @@ const INITIAL = { phase: 'title' as Phase, listOpen: false, found: [] as string[
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, set: (p) => set(p) }));
 const BASE = ISLAND.h - 1.2;
 const newBoat = (): Boat => ({ x: START[0], z: START[1], heading: 0.05, t: 0 });
+const pause = { on: false };   // ≡ menü açıkken oyun durur
 const live = { boat: newBoat(), rudder: 0, orbit: Math.PI, radius: 20, auto: false, orbitTo: null as number | null };
 
 export default function AkdamarGame({ onExit }: { onExit: () => void }) {
@@ -35,7 +36,7 @@ export default function AkdamarGame({ onExit }: { onExit: () => void }) {
 function Game({ onExit }: { onExit: () => void }) {
   const [tier, setTier] = useState<Tier>(detectTier), S = useDb();
   const keys = useRef(new Set<string>()), drag = useRef<{ id: number; x: number; y: number; mouse: boolean } | null>(null);
-  useEffect(() => { audio.setMuted(S.muted); }, [S.muted]);
+  useAudioSettings(audio);
   useEffect(() => () => { audio.dispose(); useDb.setState(INITIAL); Object.assign(live, { boat: newBoat(), rudder: 0, orbit: Math.PI, radius: 20, auto: false, orbitTo: null }); }, []);
   const next = TARGETS.find((t) => !S.found.includes(t.id)) ?? null;
   const pick = useCallback((id: Scene) => { const s = useDb.getState(); if (s.phase !== 'island' || s.card) return; const want = TARGETS.find((t) => !s.found.includes(t.id)), r = RELIEFS.find((x) => x.id === id)!;
@@ -48,7 +49,7 @@ function Game({ onExit }: { onExit: () => void }) {
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current, lr = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
-      if (!drag.current || drag.current.mouse) { if (useDb.getState().phase === 'boat') live.rudder = lr; else live.orbit += lr * dt * 1.2; }
+      if (!drag.current || drag.current.mouse) { if (useDb.getState().phase === 'boat') live.rudder = lr; }   // A/D yalnız teknede dümen; adada kamera fareyle sürüklenir, tekerlekle yaklaşır
       live.radius = THREE.MathUtils.clamp(live.radius + ((k.has('KeyS') || k.has('ArrowDown') ? 1 : 0) - (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0)) * dt * 8, 13, 28); raf = requestAnimationFrame(loop); };
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
@@ -65,29 +66,35 @@ function Game({ onExit }: { onExit: () => void }) {
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (useDb.getState().phase === 'boat') live.rudder = 0; drag.current = null; } };
 
   return (
-    <div className="fixed inset-0 select-none overflow-hidden bg-[#dce8f0]" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+    <div className="fixed inset-0 select-none overflow-hidden bg-[#dce8f0]" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onWheel={(e) => { if (useDb.getState().phase === 'island') live.radius = THREE.MathUtils.clamp(live.radius + e.deltaY * 0.01, 13, 28); }}>
+      <HudTheme theme={THEME}>
       <Canvas shadows={tier !== 'low' ? 'soft' : false} dpr={dprFor(tier)} gl={{ antialias: tier === 'high' }} camera={{ fov: 58, near: 0.3, far: 6000, position: [-60, 20, 560] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.75; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
         <Suspense fallback={null}><World tier={tier} onPick={pick} /><SkyEnvironment sky="#cfe2ee" sun="#fff0dc" ground="#5e7a82" sunDir={[-0.5, 0.62, 0.6]} /><Polish tier={tier} /></Suspense>
       </Canvas>
-      <TopBar onExit={onExit}>
-        <button onClick={() => { audio.unlock(); S.set({ muted: !S.muted }); }} className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full bg-black/45 text-white" aria-label={S.muted ? 'Sesi aç' : 'Sesi kapat'}>{S.muted ? <VolumeX size={18} /> : <Volume2 size={18} />}</button>
-        {S.phase === 'boat' && <div className="mx-auto rounded-full bg-black/45 px-3 py-2 text-xs text-white"><Anchor size={12} className="mr-1 inline" />İskeleye {Math.max(0, Math.round(S.dist))} m</div>}
-        {S.phase === 'island' && <div className="mx-auto max-w-[70vw] rounded-2xl bg-black/50 px-3 py-2 text-center text-xs text-white"><p className="flex items-center justify-center gap-1 font-semibold text-amber-300"><Search size={12} /> Kabartma {Math.min(S.found.length + 1, TARGETS.length)}/{TARGETS.length}</p>{next ? <p className="mt-0.5">{next.clue}</p> : <p className="mt-0.5">Bütün sahneleri buldun.</p>}</div>}
-      </TopBar>
-      {S.phase === 'boat' && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs text-white">Sağa-sola sürükle: dümen · rüzgâr tekneyi doğuya iter<span className="hidden [@media(pointer:fine)]:inline"> · A/D</span></p>}
-      {S.phase === 'island' && !S.card && <p className="pointer-events-none absolute bottom-6 left-1/2 w-max max-w-[92vw] -translate-x-1/2 rounded-full bg-black/40 px-4 py-1.5 text-center text-xs text-white">{S.wrong ?? <>Yatay sürükle: kilisenin çevresinde dön · dikey: yaklaş · kabartmaya dokun<span className="hidden [@media(pointer:fine)]:inline"> · A/D, W/S</span></>}</p>}
+      <TopBar onExit={onExit} objective={S.phase === 'title' ? undefined : <Objective icon={S.phase === 'boat' ? <Anchor size={15} /> : <Search size={15} />} label={S.phase === 'boat' ? `Adaya geç · iskeleye ${Math.max(0, Math.round(S.dist))} m` : next ? next.clue : 'Bütün sahneleri buldun'} done={S.found.length} total={TARGETS.length} />} menu={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} />} />
+      {S.phase === 'boat' && <Hint>Sağa-sola sürükle: dümen · rüzgâr tekneyi doğuya iter<span className="hidden [@media(pointer:fine)]:inline"> · A/D</span></Hint>}
+      {S.phase === 'island' && !S.card && !S.listOpen && <Hint>{S.wrong ?? <>Yatay sürükle: kilisenin çevresinde dön · dikey: yaklaş · kabartmaya dokun<span className="hidden [@media(pointer:fine)]:inline"> · tekerlek: yaklaş</span></>}</Hint>}
       {S.phase === 'island' && !S.listOpen && !S.card && <NavRail onNext={() => orbitBy(Math.PI / 2)} onPrev={() => orbitBy(-Math.PI / 2)} onTurn={() => orbitBy(Math.PI)} onList={() => S.set({ listOpen: true, card: null })} nextDisabled={false} prevDisabled={false} listLabel="Kabartma listesi" />}
       {S.listOpen && <StopList title="Kabartmalar" items={TARGETS.map((x) => ({ id: x.id, name: S.found.includes(x.id) ? x.name : x.clue, done: S.found.includes(x.id) }))} doneLabel="Bulundu" todoLabel="Henüz bulunmadı · Git: o cepheye döner (ipucu)" onGo={goRelief} onRead={(i) => { const x = TARGETS[i]; S.set({ listOpen: false, card: x }); audio.speak(`${x.name}. ${x.text}`); }} onRestart={restart} onClose={() => S.set({ listOpen: false })} />}
       {S.card && !S.listOpen && <InfoCard kicker={`Kabartma ${S.found.indexOf(S.card.id) + 1} / ${TARGETS.length}`} title={S.card.name} text={S.card.text} source={{ title: 'Wikipedia — Akdamar Kilisesi', url: 'https://tr.wikipedia.org/wiki/Akdamar_Kilisesi' }} onClose={close} />}
-      {S.phase === 'title' && <TitleCard kicker="Van · Gevaş · Van Gölü" title="Akdamar: Taştaki Hikâyeler" note="Mesafeler kısaltılmıştır; kabartmalar gerçeklerinden esinlenilmiş sade çizimlerdir." cta="Tekneye bin" icon={<Ship size={18} />} onStart={() => { audio.unlock(); S.set({ phase: 'boat' }); }}>
-        <p>Van Gölü’ndeki Akdamar Adası’na tekneyle geç. 10. yüzyıldan kalma kilisenin dış duvarları taşa oyulmuş hikâyelerle kaplıdır: ipuçlarını izle, doğru kabartmayı bul.</p>
-        <p className="mt-2 text-xs text-white/60">Teknede sağa-sola sürükle: dümen · adada sürükle: kilisenin çevresinde dön · kabartmaya dokun</p></TitleCard>}
-      {S.phase === 'island' && S.found.length === TARGETS.length && !S.endShown && !S.card && <EndCard kicker="Hikâye kuşağı tamam" title="Taştaki hikâyeleri okudun" text="Kral Gagik’ten Yunus’a, asma kuşağına kadar beş sahneyi buldun. Kilise 2005–2007’deki restorasyondan sonra müze olarak açıldı." onStay={() => S.set({ endShown: true })} onExit={onExit} />}
+      {S.phase === 'title' && <TitleCard kicker="Van · Gevaş · Van Gölü" title="Akdamar: Taştaki Hikâyeler" note="Mesafeler kısaltılmıştır; kabartmalar gerçeklerinden esinlenilmiş sade çizimlerdir." cta="Tekneye bin" onExit={onExit} controls={CONTROLS} icon={<Ship size={18} />} onStart={() => { audio.unlock(); S.set({ phase: 'boat' }); }}>
+        <p>Van Gölü’ndeki Akdamar Adası’na tekneyle geç. 10. yüzyıldan kalma kilisenin dış duvarları taşa oyulmuş hikâyelerle kaplıdır: ipuçlarını izle, doğru kabartmayı bul.</p></TitleCard>}
+      {S.phase === 'island' && S.found.length === TARGETS.length && !S.endShown && !S.card && <EndCard kicker="Hikâye kuşağı tamam" title="Taştaki hikâyeleri okudun" text="Kral Gagik’ten Yunus’a, asma kuşağına kadar beş sahneyi buldun. Kilise 2005–2007’deki restorasyondan sonra müze olarak açıldı." onStay={() => S.set({ endShown: true })} onExit={onExit} onRestart={restart} />}
+      </HudTheme>
     </div>
   );
 }
+
+/* ---------- arayüz teması ve kontroller (ortak HUD) ---------- */
+const THEME = { accent: '#2b7d96' };
+const CONTROLS = [
+  { icon: <Ship size={16} />, text: <>Teknede sağa-sola sürükle ya da <b>A/D</b>: dümen; rüzgâr tekneyi doğuya iter</> },
+  { icon: <Move size={16} />, text: <>Adada sürükle: kilisenin çevresinde dön · dikey sürükle ya da <b>tekerlek</b>: yaklaş</> },
+  { icon: <Search size={16} />, text: <>Üstteki ipucuna uyan kabartmaya dokun</> },
+  { icon: <ChevronRight size={16} />, text: <>Sağdaki oklar: sonraki / önceki cephe · liste: bulunan kabartmalar</> },
+];
 
 /* ---------- 3B dünya (modeller: AkdamarModels.tsx) ---------- */
 function World({ tier, onPick }: { tier: Tier; onPick: (id: Scene) => void }) {
@@ -123,8 +130,8 @@ function Controller() {
   useFrame((st, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState(), t = st.clock.elapsedTime, k = 1 - Math.exp(-dt * 2.5);
     const b = live.boat, bob = Math.sin(t * 1.6) * 0.18;
-    if (S.phase === 'boat') {
-      live.boat = stepBoat(b, live.auto ? autoRudder(b) : live.rudder, dt);
+    if (S.phase === 'boat' && !pause.on) {
+      if (!pause.on) live.boat = stepBoat(b, live.auto ? autoRudder(b) : live.rudder, dt);
       const d = Math.hypot(live.boat.x, live.boat.z); if (d > LAKE_LIMIT) { live.boat.x *= LAKE_LIMIT / d; live.boat.z *= LAKE_LIMIT / d; }
       if (Math.hypot(live.boat.x, live.boat.z * 1.2) < ISLAND.r + 2 && !arrived(live.boat)) { live.boat.x -= Math.sin(live.boat.heading) * 9 * dt * 2; live.boat.z += Math.cos(live.boat.heading) * 9 * dt * 2; }   // kayalara çarpmasın
       const dist = Math.hypot(live.boat.x - PIER[0], live.boat.z - PIER[1]); if (Math.abs(dist - sm.current.lastDist) > 4) { sm.current.lastDist = dist; S.set({ dist }); }
