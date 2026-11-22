@@ -48,6 +48,7 @@ export const PLAYABLES: Playable[] = [
   // ---- Ankara ----
   { id: 'anitkabir', name: 'Anıtkabir', province: 'Ankara', coord: [32.8370, 39.9250], title: '3D Anıtkabir’i Keşfet', emoji: '🏛️', blurb: 'Aslanlı Yol’dan Şeref Holü’ne yürü.', kind: 'route', path: 'anit/ankara-anitkabir', depth: 'detayli', wiki: 'Anıtkabir' },
   // ---- Kapadokya ----
+  { id: 'cacabey', name: 'Cacabey Medresesi', province: 'Kırşehir', coord: [34.1600, 39.1460], title: 'Göğe Açılan Kubbe', emoji: '🔭', blurb: 'Kubbesindeki açıklıktan göğün kuyuya düştüğü Selçuklu medresesini keşfet.', kind: 'route', path: 'oyun/cacabey', depth: 'kisa', wiki: 'Cacabey Medresesi' },
   { id: 'goreme', name: 'Kapadokya (Göreme)', province: 'Nevşehir', coord: [34.8450, 38.6400], title: 'Gün Doğumunda Balon', emoji: '🎈', blurb: 'Balonla peribacalarının üstünde uç; yönü rüzgâr katmanlarıyla seç.', kind: 'route', path: 'oyun/kapadokya', depth: 'detayli', wiki: 'Kapadokya' },
   // ---- Konya (zip ile gelen bağımsız oyun: public/konya-kayip-miras) ----
   { id: 'mevlana', name: 'Mevlana Müzesi', province: 'Konya', coord: [32.5048, 37.8705], title: 'Kayıp Miras: Mevlâna', emoji: '🌀', blurb: 'Türbe, avlu ve Mevlevi kültürü: 4 araştırma görevi.', kind: 'static', path: 'konya-kayip-miras/index.html?mekan=mevlana', depth: 'detayli', wiki: 'Mevlana Müzesi' },
