@@ -3,7 +3,8 @@
  *
  * Kaynaklardan alınanlar (ayrıntı ve bağlantılar: docs/ANITKABIR-IC.md):
  *  - Şeref Holü'nün iki yanında dikdörtgen planlı, mermer zeminli, DOKUZAR ÇAPRAZ TONOZLA örtülü galeriler vardır.
- *  - Girişte eşiklerin ardından siyah mermerle çevrili enine kırmızı mermer dikdörtgenler ÜÇ GİRİŞİ işaretler.
+ *  - Girişte eşiğin ardından siyah mermerle çevrili enine kırmızı mermer dikdörtgen girişi işaretler. (Kaynakta "üç giriş" geçer; cephede
+ *    TEK büyük kapı modellendi, yan giriş yoktur. Kapı ölçüsü 6 × 11 m temsilîdir.)
  *  - Zemin kırmızı ağırlıklı, Türk halı/kilim motifli (koç boynuzu, "yaba") mermer döşemedir.
  *  - Yan duvarlar kaplan postu (beyaz) ve yeşil mermerle kaplıdır; tavan 27 kirişli, 16. yüzyıl motifli mozaiktir.
  *  - Yan duvarlarda altışar, toplam 12 bronz meşale vardır.
@@ -35,7 +36,8 @@ export const HALL = {
   nave: 8, pierZ: 8.6, pier: 1.2, bays: 9,
   floorY: PODIUM_H, ceilY: PODIUM_H + 14.2, galleryY: PODIUM_H + 7, vaultRise: 2.4,
   wall: 1.2,
-  door: { w: 5, h: 8 }, sideDoor: { w: 3, h: 6, z: 14.4 },
+  /** tek büyük bronz kapı (ölçü temsilî; yan giriş yok) */
+  door: { w: 6, h: 11 },
   niche: { depth: 6.5, halfW: 5.5, h: 12 },
   window: { halfW: 4, y0: 0.8, y1: 11.8 },
   beams: 27,
@@ -50,9 +52,9 @@ export const torchPositions = (): V3[] => { const xs = pierXs().slice(2, 8), out
 
 /** Hol duvar çarpışmaları (dikdörtgenler) */
 export function hallColliders(): Rect[] {
-  const out: Rect[] = [], { front, x0, x1, halfW, pierZ, pier, door, sideDoor, niche } = HALL, hz = COL_Z;
-  // ön duvar: ortada büyük kapı, iki yanda galerilere açılan kapılar
-  const dz = [[-hz, -sideDoor.z - sideDoor.w / 2], [-sideDoor.z + sideDoor.w / 2, -door.w / 2], [door.w / 2, sideDoor.z - sideDoor.w / 2], [sideDoor.z + sideDoor.w / 2, hz]];
+  const out: Rect[] = [], { front, x0, x1, halfW, pierZ, pier, door, niche } = HALL, hz = COL_Z;
+  // ön duvar: ortada tek büyük kapı
+  const dz = [[-hz, -door.w / 2], [door.w / 2, hz]];
   for (const [a, b] of dz) out.push([front, a, x0, b]);
   for (const s of [-1, 1]) out.push([front, s > 0 ? halfW : -hz - 0.3, x1 + 1.2, s > 0 ? hz + 0.3 : -halfW]);   // yan pencere duvarları
   out.push([x1, -hz, x1 + 1.2, hz]);                                                                       // arka duvar
@@ -180,7 +182,7 @@ export const EXHIBITS: Exhibit[] = [
   { id: 'pencere', level: 'out', at: [HALL.x1 - 1, PODIUM_H + 6, 0], reach: 5, kicker: 'Şeref Holü', title: 'Ankara Kalesi’ne bakan pencere', source: SRC_HALL,
     text: 'Lahdin arkasındaki büyük pencere Ankara Kalesi’ne bakar. Niş beyaz Afyon mermeriyle kaplıdır; pencerenin önünde bronz parmaklık vardır.' },
   { id: 'zemin', level: 'out', at: [HALL.x0 + 4, PODIUM_H + 0.2, 0], reach: 4, kicker: 'Şeref Holü', title: 'Kilim desenli mermer zemin', source: SRC_HALL,
-    text: 'Kırmızı ağırlıklı zemin, Türk halı ve kilimlerinden alınan koç boynuzu ve “yaba” motifleriyle halı izlenimi verir. Girişte siyah mermerle çevrili kırmızı mermer dikdörtgenler üç girişi işaretler.' },
+    text: 'Kırmızı ağırlıklı zemin, Türk halı ve kilimlerinden alınan koç boynuzu ve “yaba” motifleriyle halı izlenimi verir. Girişte siyah mermerle çevrili kırmızı mermer dikdörtgen girişi işaretler.' },
   { id: 'tavan', level: 'out', at: [(HALL.x0 + HALL.x1) / 2, PODIUM_H + 2, 0], reach: 5, kicker: 'Şeref Holü', title: 'Mozaik tavan ve meşaleler', source: SRC_HALL,
     text: '27 kirişli tavan ve galeri tavanları 16. yüzyıl halı ve kilim desenli mozaiklerle bezelidir. Yan duvarlarda altışar, toplam 12 bronz meşale vardır.' },
   { id: 'galeri', level: 'out', at: [(HALL.x0 + HALL.x1) / 2, PODIUM_H + 1, 14], reach: 6, kicker: 'Şeref Holü', title: 'Yan galeriler', source: SRC_HALL,

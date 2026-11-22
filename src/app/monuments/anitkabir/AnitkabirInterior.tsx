@@ -31,7 +31,7 @@ function rnd(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147
    ŞEREF HOLÜ — dış kabuk (sütun hattında; yan cephede sütun araları pencere)
    ========================================================= */
 export function HallShell({ m }: { m: Materials }) {
-  const { front, x0, x1, door, sideDoor, window: win } = HALL, H = MAUSOLEUM.colH, y0 = PODIUM_H, hz = COL_Z;
+  const { front, x0, x1, door, window: win } = HALL, H = MAUSOLEUM.colH, y0 = PODIUM_H, hz = COL_Z;
   const sideCols = useMemo(() => mausoleumColumns().filter((c) => Math.abs(Math.abs(c[2]) - hz) < 0.01 && c[0] > front - 1).map((c) => c[0]).sort((a, b) => a - b), [hz, front]);
   const bays = useMemo(() => { const xs = [front, ...sideCols.filter((x) => x > front + 0.8 && x < x1)], out: { a: number; b: number }[] = []; for (let i = 0; i < xs.length - 1; i++) out.push({ a: xs[i] + (i === 0 ? 0 : 0.75), b: xs[i + 1] - 0.75 }); out.push({ a: xs[xs.length - 1] + 0.75, b: x1 + 1.2 }); return out; }, [sideCols, front, x1]);
   const win3 = useMemo(() => { const glass: { p: V3; s: V3 }[] = [], para: { p: V3; s: V3 }[] = [], band: { p: V3; s: V3 }[] = [], mull: { p: V3; s: V3 }[] = [];
@@ -40,14 +40,19 @@ export function HallShell({ m }: { m: Materials }) {
       for (let k = 1; k < 3; k++) mull.push({ p: [b.a + (L * k) / 3, y0 + 7.0, z], s: [0.12, 11.6, 0.14] });
       for (const yy of [4.2, 8.6]) mull.push({ p: [cx, y0 + yy, z], s: [L, 0.12, 0.14] }); }
     return { glass, para, band, mull }; }, [bays, hz, y0]);
-  const segs = [[-hz, -sideDoor.z - sideDoor.w / 2], [-sideDoor.z + sideDoor.w / 2, -door.w / 2], [door.w / 2, sideDoor.z - sideDoor.w / 2], [sideDoor.z + sideDoor.w / 2, hz]];
+  const segs = [[-hz, -door.w / 2], [door.w / 2, hz]];
   const fx = (front + x0) / 2;
   return (
     <group>
-      {/* ön duvar: üç giriş (ortada büyük kapı, iki yanda galerilere açılan kapılar) */}
+      {/* ön duvar: ortada tek büyük kapı (yan giriş yok) */}
       {segs.map(([a, b], i) => <B key={i} p={[fx, y0 + H / 2, (a + b) / 2]} s={[x0 - front, H, b - a]} m={m.travertineLight} />)}
       <B p={[fx, y0 + door.h + (H - door.h) / 2, 0]} s={[x0 - front, H - door.h, door.w]} m={m.travertineLight} />
-      {[-1, 1].map((s) => <B key={s} p={[fx, y0 + sideDoor.h + (H - sideDoor.h) / 2, s * sideDoor.z]} s={[x0 - front, H - sideDoor.h, sideDoor.w]} m={m.travertineLight} />)}
+      {/* içe açık duran iki bronz kanat: dikey kasa, yatay panel çıtaları */}
+      {[-1, 1].map((s) => <group key={'k' + s} position={[x0, y0, s * (door.w / 2 - 0.1)]}>
+        <B p={[door.w / 4, door.h / 2, 0]} s={[door.w / 2, door.h, 0.16]} m={m.bronze} />
+        {[0.12, 0.3, 0.5, 0.7, 0.88].map((k) => <B key={k} p={[door.w / 4, door.h * k, -s * 0.1]} s={[door.w / 2 - 0.3, 0.16, 0.06]} m={m.bronze} />)}
+        {[0.08, 0.92].map((k) => <B key={'v' + k} p={[(door.w / 2) * k, door.h / 2, -s * 0.1]} s={[0.16, door.h - 0.4, 0.06]} m={m.bronze} />)}
+      </group>)}
       {/* yan cephe: sütun araları korkuluk + bronz kayıtlı yüksek pencere + üst kuşak (sütunla hol arasında koridor YOK) */}
       <Inst mat={m.travertineLight} items={win3.para} /><Inst mat={m.travertineLight} items={win3.band} />
       <Inst mat={m.glass} items={win3.glass} /><Inst mat={m.bronze} items={win3.mull} />
@@ -63,7 +68,7 @@ export function HallShell({ m }: { m: Materials }) {
    ŞEREF HOLÜ — iç
    ========================================================= */
 export function HallInterior({ m, night, lite }: { m: Materials; night: boolean; lite: boolean }) {
-  const { x0, x1, halfW, nave, pierZ, pier, floorY, ceilY, galleryY, vaultRise, niche, window: win, beams, sideDoor } = HALL, len = x1 - x0, cx = (x0 + x1) / 2;
+  const { x0, x1, halfW, nave, pierZ, pier, floorY, ceilY, galleryY, vaultRise, niche, window: win, beams, door } = HALL, len = x1 - x0, cx = (x0 + x1) / 2;
   const xs = useMemo(() => pierXs(), []);
   const bayW = len / HALL.bays, galW = halfW - pierZ - pier / 2, galC = pierZ + pier / 2 + galW / 2;
   const vault = useMemo(() => groinVault(bayW, galW, vaultRise), [bayW, galW, vaultRise]);
@@ -84,15 +89,14 @@ export function HallInterior({ m, night, lite }: { m: Materials; night: boolean;
       {/* zemin: orta hol kilim desenli kırmızı mermer, galeriler krem mermer */}
       <mesh geometry={BOX} material={m.hallFloor} position={[cx, floorY + 0.02, 0]} scale={[len, 0.04, (pierZ + pier / 2) * 2]} receiveShadow />
       {[-1, 1].map((s) => <mesh key={s} geometry={BOX} material={m.gallery} position={[cx, floorY + 0.02, s * galC]} scale={[len, 0.04, galW]} receiveShadow />)}
-      {/* üç girişi işaretleyen, siyah mermerle çevrili enine kırmızı dikdörtgenler */}
-      {[0, -sideDoor.z, sideDoor.z].map((z, i) => <group key={i} position={[x0 + 1.6, floorY + 0.045, z]}>
-        <mesh geometry={BOX} material={m.dark} scale={[2.6, 0.01, i ? 3.6 : 5.6]} /><mesh geometry={BOX} material={m.redMarble} position={[0, 0.006, 0]} scale={[2.1, 0.01, i ? 3.1 : 5.1]} />
-      </group>)}
+      {/* girişi işaretleyen, siyah mermerle çevrili enine kırmızı dikdörtgen */}
+      <group position={[x0 + 1.9, floorY + 0.045, 0]}>
+        <mesh geometry={BOX} material={m.dark} scale={[3.2, 0.01, door.w + 1.6]} /><mesh geometry={BOX} material={m.redMarble} position={[0, 0.006, 0]} scale={[2.7, 0.01, door.w + 1.1]} />
+      </group>
       {/* duvar kaplamaları: kaplan postu beyaz mermer + yeşil mermer kuşak */}
       {/* giriş duvarı kaplaması: üç kapı açıklığı boş kalır (önceden tek levha kapıları kapatıyordu) */}
-      {([[-halfW, -sideDoor.z - sideDoor.w / 2], [-sideDoor.z + sideDoor.w / 2, -HALL.door.w / 2], [HALL.door.w / 2, sideDoor.z - sideDoor.w / 2], [sideDoor.z + sideDoor.w / 2, halfW]] as const).map(([a, b], i) => <B key={'fw' + i} p={[x0 + 0.03, floorY + (ceilY - floorY) / 2, (a + b) / 2]} s={[0.06, ceilY - floorY, b - a]} m={m.tiger} />)}
-      <B p={[x0 + 0.03, floorY + HALL.door.h + (ceilY - floorY - HALL.door.h) / 2, 0]} s={[0.06, ceilY - floorY - HALL.door.h, HALL.door.w]} m={m.tiger} />
-      {[-1, 1].map((s) => <B key={'fs' + s} p={[x0 + 0.03, floorY + sideDoor.h + (ceilY - floorY - sideDoor.h) / 2, s * sideDoor.z]} s={[0.06, ceilY - floorY - sideDoor.h, sideDoor.w]} m={m.tiger} />)}
+      {([[-halfW, -door.w / 2], [door.w / 2, halfW]] as const).map(([a, b], i) => <B key={'fw' + i} p={[x0 + 0.03, floorY + (ceilY - floorY) / 2, (a + b) / 2]} s={[0.06, ceilY - floorY, b - a]} m={m.tiger} />)}
+      <B p={[x0 + 0.03, floorY + door.h + (ceilY - floorY - door.h) / 2, 0]} s={[0.06, ceilY - floorY - door.h, door.w]} m={m.tiger} />
       {[-1, 1].map((s) => <B key={'bw' + s} p={[x1 - 0.03, floorY + (galleryY + vaultRise - floorY) / 2, s * galC]} s={[0.06, galleryY + vaultRise - floorY, galW]} m={m.tiger} />)}
       {[-1, 1].map((s) => <B key={'pw' + s} p={[cx, floorY + 0.6, s * (halfW - 0.05)]} s={[len, 1.2, 0.1]} m={m.tiger} />)}
       {/* paye sıraları + kemer üstü kiriş + üst duvar (orta holün yan duvarı) */}
