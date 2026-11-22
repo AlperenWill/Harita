@@ -89,7 +89,10 @@ export function HallInterior({ m, night, lite }: { m: Materials; night: boolean;
         <mesh geometry={BOX} material={m.dark} scale={[2.6, 0.01, i ? 3.6 : 5.6]} /><mesh geometry={BOX} material={m.redMarble} position={[0, 0.006, 0]} scale={[2.1, 0.01, i ? 3.1 : 5.1]} />
       </group>)}
       {/* duvar kaplamaları: kaplan postu beyaz mermer + yeşil mermer kuşak */}
-      <B p={[x0 + 0.03, floorY + (ceilY - floorY) / 2, 0]} s={[0.06, ceilY - floorY, halfW * 2]} m={m.tiger} />
+      {/* giriş duvarı kaplaması: üç kapı açıklığı boş kalır (önceden tek levha kapıları kapatıyordu) */}
+      {([[-halfW, -sideDoor.z - sideDoor.w / 2], [-sideDoor.z + sideDoor.w / 2, -HALL.door.w / 2], [HALL.door.w / 2, sideDoor.z - sideDoor.w / 2], [sideDoor.z + sideDoor.w / 2, halfW]] as const).map(([a, b], i) => <B key={'fw' + i} p={[x0 + 0.03, floorY + (ceilY - floorY) / 2, (a + b) / 2]} s={[0.06, ceilY - floorY, b - a]} m={m.tiger} />)}
+      <B p={[x0 + 0.03, floorY + HALL.door.h + (ceilY - floorY - HALL.door.h) / 2, 0]} s={[0.06, ceilY - floorY - HALL.door.h, HALL.door.w]} m={m.tiger} />
+      {[-1, 1].map((s) => <B key={'fs' + s} p={[x0 + 0.03, floorY + sideDoor.h + (ceilY - floorY - sideDoor.h) / 2, s * sideDoor.z]} s={[0.06, ceilY - floorY - sideDoor.h, sideDoor.w]} m={m.tiger} />)}
       {[-1, 1].map((s) => <B key={'bw' + s} p={[x1 - 0.03, floorY + (galleryY + vaultRise - floorY) / 2, s * galC]} s={[0.06, galleryY + vaultRise - floorY, galW]} m={m.tiger} />)}
       {[-1, 1].map((s) => <B key={'pw' + s} p={[cx, floorY + 0.6, s * (halfW - 0.05)]} s={[len, 1.2, 0.1]} m={m.tiger} />)}
       {/* paye sıraları + kemer üstü kiriş + üst duvar (orta holün yan duvarı) */}
@@ -172,8 +175,9 @@ function paintPanorama(p: Panorama) {
     g.fillStyle = 'rgba(0,0,0,.25)'; g.font = `bold ${Math.round(H * 0.05)}px sans-serif`; g.fillText('canlandırma', 20, H - 16);
   });
 }
-function PanoramaRoom({ p }: { p: Panorama }) {
+function PanoramaRoom({ p, wall }: { p: Panorama; wall: THREE.Material }) {
   const tex = useMemo(() => paintPanorama(p), [p]), a = arcOf(p), y = MUSE2.y;
+  const shell = useMemo(() => new THREE.CylinderGeometry(p.r + 0.3, p.r + 0.3, p.h + 0.2, 64, 1, true, p.theta - a / 2, a), [p, a]);
   const geo = useMemo(() => new THREE.CylinderGeometry(p.r, p.r, p.h, 64, 1, true, p.theta - a / 2, a), [p, a]);
   const maket = useMemo(() => { const g = new THREE.RingGeometry(p.r - 4.5, p.r - 0.05, 48, 4, p.theta - a / 2 - Math.PI / 2, a);   // halka XY düzleminde; X ekseninde yatırınca açı φ → (cos φ, −sin φ) = (sin θ, cos θ) g.rotateX(-Math.PI / 2);
     const q = g.attributes.position as THREE.BufferAttribute, col: number[] = [], c = new THREE.Color(), r = rnd(5);
@@ -181,6 +185,9 @@ function PanoramaRoom({ p }: { p: Panorama }) {
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.computeVertexNormals(); return g; }, [p, a]);
   return <group position={[p.c[0], y, p.c[1]]}>
     <mesh geometry={geo} position={[0, p.h / 2 + 0.1, 0]}><meshStandardMaterial map={tex} side={THREE.BackSide} roughness={0.9} emissive="#ffffff" emissiveMap={tex} emissiveIntensity={0.2} /></mesh>
+    {/* resmin arkası: dışarıdan sıva duvar görünür (resim arkadan görünmesin) + üst saçak */}
+    <mesh geometry={shell} position={[0, p.h / 2 + 0.1, 0]} material={wall} />
+    <mesh position={[0, p.h + 0.15, 0]} rotation={[-Math.PI / 2, 0, p.theta - a / 2 - Math.PI / 2]}><ringGeometry args={[p.r - 0.6, p.r + 0.35, 64, 1, 0, a]} /><meshStandardMaterial color="#2a2622" roughness={1} side={THREE.DoubleSide} /></mesh>
     <mesh geometry={maket} receiveShadow><meshStandardMaterial vertexColors roughness={1} /></mesh>
     {/* seyir alanı: hafif yükseltilmiş daire ve korkuluk */}
     <mesh position={[0, 0.1, 0]} receiveShadow><cylinderGeometry args={[3.2, 3.2, 0.2, 40]} /><meshStandardMaterial color="#5a4a3a" roughness={0.6} /></mesh>
@@ -209,23 +216,28 @@ function ShowcaseObj({ s, m }: { s: Showcase; m: Materials }) {
     : s.kind === 'sofra' ? <group position={[0, top + 0.05, 0]}>{[-0.9, -0.3, 0.3, 0.9].map((x) => <mesh key={x} position={[x, 0, 0]} scale={[0.22, 0.03, 0.22]} geometry={CYL}><meshStandardMaterial color="#f4f1ea" roughness={0.2} /></mesh>)}</group>
     : <group position={[0, top + 0.12, 0]}>{[-0.8, -0.2, 0.4, 1].map((x, i) => <mesh key={x} position={[x, 0.08 * i, 0]} scale={[0.25, 0.25 + 0.15 * i, 0.2]} geometry={BOX}><meshStandardMaterial color={['#7a5a34', '#a8a19a', '#2f3b4a', '#8f3b34'][i]} metalness={0.3} roughness={0.5} /></mesh>)}</group>;
   return <group position={[s.at[0], MUSE1.y, s.at[1]]}>
-    <mesh geometry={BOX} position={[0, top / 2, 0]} scale={[w, top, d]}><meshStandardMaterial color="#3b2c22" roughness={0.6} /></mesh>
+    <mesh geometry={BOX} position={[0, top / 2, 0]} scale={[w, top, d]}><meshStandardMaterial color="#5a4434" roughness={0.55} /></mesh>
+    <mesh geometry={BOX} position={[0, top + 0.01, 0]} scale={[w - 0.1, 0.02, d - 0.1]}><meshStandardMaterial color="#8a1f24" roughness={0.9} /></mesh>
     {obj}
     <mesh geometry={BOX} material={m.glass} position={[0, top + (h - top) / 2, 0]} scale={[w, h - top, d]} />
+    {/* bronz çerçeve: dört dikme + üst kasa (cam kutu boşlukta yüzmesin) */}
+    {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => <mesh key={`${sx}${sz}`} geometry={BOX} material={m.bronze} position={[sx * (w / 2 - 0.02), top + (h - top) / 2, sz * (d / 2 - 0.02)]} scale={[0.05, h - top, 0.05]} />))}
+    <mesh geometry={BOX} material={m.bronze} position={[0, h + 0.04, 0]} scale={[w + 0.04, 0.08, d + 0.04]} />
   </group>;
 }
 /* ---------- kitaplık ---------- */
 function Library({ m }: { m: Materials }) {
   const L = LIBRARY, y = MUSE2.y, h = 5;
   const books = useMemo(() => canvasTex(512, 256, (g) => { const r = rnd(77); g.fillStyle = '#3b2a1e'; g.fillRect(0, 0, 512, 256); for (let row = 0; row < 4; row++) { let x = 4; while (x < 508) { const w = 8 + r() * 14, hh = 40 + r() * 18; g.fillStyle = ['#6b2a22', '#2b3d4f', '#4a3a26', '#7a6a4a', '#2f4a36', '#5a1f2a'][Math.floor(r() * 6)]; g.fillRect(x, row * 64 + 60 - hh, w - 1, hh); x += w; } g.fillStyle = '#2a1d14'; g.fillRect(0, row * 64 + 58, 512, 6); } }), []);
-  const shelfMat = useMemo(() => new THREE.MeshStandardMaterial({ map: books, roughness: 0.8 }), [books]);
+  const shelfMat = useMemo(() => { const t = books.clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(8, 1); t.needsUpdate = true; return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }); }, [books]);
+  const sideMat = useMemo(() => { const t = books.clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2.5, 1); t.needsUpdate = true; return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }); }, [books]);   // ~3 m'lik raf başına bir doku: kitaplar gerçek boyda
   return <group>
     {[L.z0, L.z1].map((z, i) => <mesh key={i} geometry={BOX} material={m.plaster} position={[(L.x0 + L.x1) / 2, y + h / 2, z]} scale={[L.x1 - L.x0, h, 0.3]} />)}
     {[[L.z0, -2], [2, L.z1]].map(([a, b], i) => <mesh key={'f' + i} geometry={BOX} material={m.plaster} position={[L.x0, y + h / 2, (a + b) / 2]} scale={[0.3, h, b - a]} />)}
     <mesh geometry={BOX} material={m.plaster} position={[L.x0, y + h - 0.5, 0]} scale={[0.3, 1, 4]} />
     {/* raflar: arka duvar ve yan duvarlar */}
     <mesh geometry={BOX} material={shelfMat} position={[L.x1 - 1.0, y + 1.6, 0]} scale={[0.5, 3.2, L.z1 - L.z0 - 1]} />
-    {[-1, 1].map((s) => <mesh key={s} geometry={BOX} material={shelfMat} position={[(L.x0 + L.x1) / 2 + 1, y + 1.6, s * (L.z1 - 0.6)]} scale={[L.x1 - L.x0 - 4, 3.2, 0.5]} />)}
+    {[-1, 1].map((s) => <mesh key={s} geometry={BOX} material={sideMat} position={[(L.x0 + L.x1) / 2 + 1, y + 1.6, s * (L.z1 - 0.6)]} scale={[L.x1 - L.x0 - 4, 3.2, 0.5]} />)}
     <mesh geometry={BOX} position={[(L.x0 + L.x1) / 2 - 1, y + 0.8, 0]} scale={[2.2, 0.08, 1.2]}><meshStandardMaterial color="#5a3d28" roughness={0.5} /></mesh>
     <mesh geometry={BOX} position={[(L.x0 + L.x1) / 2 - 1, y + 0.4, 0]} scale={[2, 0.8, 1]}><meshStandardMaterial color="#4a3020" roughness={0.6} /></mesh>
     <mesh geometry={BOX} material={m.plaster} position={[(L.x0 + L.x1) / 2, y + h + 0.05, 0]} scale={[L.x1 - L.x0, 0.1, L.z1 - L.z0]} />
@@ -233,6 +245,26 @@ function Library({ m }: { m: Materials }) {
   </group>;
 }
 
+/** 1. bölümün duvar ve tavan donanımı: ahşap lambri, süpürgelik, çerçeveli fotoğraflar, tavan ışık panelleri (temsilî) */
+function Muse1Dressing({ m }: { m: Materials }) {
+  const M = MUSE1, L = M.x1 - M.x0, mid = (M.z0 + M.z1) / 2;
+  const wood = useMemo(() => new THREE.MeshStandardMaterial({ color: '#6a4b32', roughness: 0.55 }), []);
+  const panel = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fff7e8', emissive: '#fff1d6', emissiveIntensity: 1.2 }), []);
+  const photo = useMemo(() => canvasTex(256, 320, (g) => { const r = rnd(11); g.fillStyle = '#f1ead9'; g.fillRect(0, 0, 256, 320); g.fillStyle = '#3d362e'; g.fillRect(24, 24, 208, 220); const gr = g.createLinearGradient(0, 24, 0, 244); gr.addColorStop(0, '#8d8577'); gr.addColorStop(1, '#3a332b'); g.fillStyle = gr; g.fillRect(30, 30, 196, 208); g.fillStyle = '#2a241e'; g.beginPath(); g.ellipse(128, 120, 34, 44, 0, 0, 7); g.fill(); g.fillRect(84, 160, 88, 80); for (let l = 0; l < 3; l++) { g.fillStyle = '#5a5046'; g.fillRect(40, 262 + l * 16, 176 - r() * 60, 6); } }), []);
+  const frames = useMemo(() => { const out: { x: number; z: number; ry: number }[] = []; for (const [z, ry] of [[M.z0 + 0.02, 0], [M.z1 - 0.02, Math.PI]] as const) for (let x = M.x0 + 3; x < M.x1 - 2; x += 3.8) { if (SHOWCASES.some((s) => Math.abs(s.at[0] - x) < 2.2 && Math.abs(s.at[1] - z) < 2.5)) continue; out.push({ x, z, ry }); } return out; }, [M]);
+  return <group>
+    {[M.z0 + 0.04, M.z1 - 0.04].map((z, i) => <group key={i}>
+      <mesh geometry={BOX} material={wood} position={[(M.x0 + M.x1) / 2, M.y + 0.55, z]} scale={[L, 1.1, 0.08]} />
+      <mesh geometry={BOX} material={m.bronze} position={[(M.x0 + M.x1) / 2, M.y + 1.12, z]} scale={[L, 0.05, 0.1]} />
+    </group>)}
+    {[M.x0 + 0.04, M.x1 - 0.04].map((x, i) => <mesh key={'e' + i} geometry={BOX} material={wood} position={[x, M.y + 0.55, mid]} scale={[0.08, 1.1, M.z1 - M.z0]} />)}
+    {frames.map((f, i) => <group key={'f' + i} position={[f.x, M.y + 2.6, f.z]} rotation-y={f.ry}>
+      <mesh geometry={BOX} position={[0, 0, 0.03]} scale={[1.0, 1.25, 0.05]}><meshStandardMaterial color="#2b2119" roughness={0.5} /></mesh>
+      <mesh position={[0, 0, 0.065]}><planeGeometry args={[0.86, 1.1]} /><meshStandardMaterial map={photo} roughness={0.8} /></mesh>
+    </group>)}
+    {Array.from({ length: Math.floor(L / 6) }, (_, i) => <mesh key={'p' + i} geometry={BOX} material={panel} position={[M.x0 + 3 + i * 6, M.y + M.h - 0.02, mid]} scale={[2.4, 0.03, 1.2]} />)}
+  </group>;
+}
 export function Museum({ m, level }: { m: Materials; level: Level }) {
   const ceil = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2a2622', roughness: 1 }), []);
   if (level === 'muze1') {
@@ -240,6 +272,7 @@ export function Museum({ m, level }: { m: Materials; level: Level }) {
     return <group>
       <Room x0={M.x0} x1={M.x1} z0={M.z0} z1={M.z1} y={M.y} h={M.h} wall={m.plaster} floor={m.museumFloor} ceil={m.plaster} />
       {SHOWCASES.map((s) => <ShowcaseObj key={s.id} s={s} m={m} />)}
+      <Muse1Dressing m={m} />
       <DoorSign at={[M.x0 + 0.2, mid]} facing={Math.PI / 2} label="Çıkış" y={M.y} />
       <DoorSign at={[M.x1 - 0.2, mid]} facing={-Math.PI / 2} label="Panoramalar →" y={M.y} />
       {[0.25, 0.5, 0.75].map((k) => <pointLight key={k} position={[M.x0 + (M.x1 - M.x0) * k, M.y + 6, mid]} color="#fff0d8" intensity={500} distance={30} decay={2} />)}
@@ -257,7 +290,7 @@ export function Museum({ m, level }: { m: Materials; level: Level }) {
     <Room x0={M.x0} x1={M.x1} z0={M.z0} z1={M.z1} y={y} h={h} wall={m.plaster} floor={m.museumFloor} ceil={ceil} />
     {walls.map((w, i) => <B key={i} p={w.p} s={w.s} m={m.plaster} />)}
     {VAULTS.map((v) => <VaultBay key={v.i} v={v} m={m} />)}
-    {PANORAMAS.map((p) => <PanoramaRoom key={p.id} p={p} />)}
+    {PANORAMAS.map((p) => <PanoramaRoom key={p.id} p={p} wall={m.plaster} />)}
     <Library m={m} />
     <DoorSign at={[M.x0 + 0.2, -5]} facing={Math.PI / 2} label="← 1. bölüm" y={y} />
     <DoorSign at={[M.x0 + 0.2, 5]} facing={Math.PI / 2} label="Çıkış" y={y} />
