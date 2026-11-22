@@ -17,6 +17,7 @@ src/app/games/galata/
   ExhibitScene.tsx      3. sergi katı: vitrinler, otomatik kilitlenen yörünge kamera
   exhibits.ts           vitrin içerikleri ve kilitlenme mantığı
   TerracePanorama.tsx   4. teras: gün batımı, şehir, 4 bakış noktası, panorama kamerası
+  Skyline.tsx           teras silueti: Tarihi Yarımada tepeleri (arazi), Süleymaniye, Ayasofya, Sultanahmet, Yeni Cami, Kız Kulesi, Galata Köprüsü
   panorama.ts           bakış noktaları, gerçek koordinattan pusula yönü, kaba su maskesi (saf, test edilir)
   TowerExterior.tsx     kulenin dış görünüşü (prosedürel)
   textures.ts           1K prosedürel taş dokusu + normal haritası, arma çizimleri
@@ -67,7 +68,7 @@ Kısa tutulan nefes cezasız tekrarlanır. Kaydıramayanlar için ekranda "basam
 ## Mobil test kontrol listesi
 Geliştirme ortamında yalnızca ekran kartsız tarayıcıda (swiftshader, ~9 FPS) işlevsel test yapıldı. **Gerçek telefonda FPS ölçülmedi.**
 - [ ] Orta segment Android (Adreno 6xx) ve iPhone 11/12'de her bölümde 45+ FPS (Chrome DevTools / Safari Web Inspector, 30 sn)
-- [ ] Teras en ağır bölüm: düşük kademede (`?q=low`) 500, orta kademede 1100 şehir bloğu — FPS düşükse sayı azaltılmalı
+- [ ] Teras en ağır bölüm: şehir 3–6 katlı binalardan oluşur, sayısı kademenin 4 katı (düşük 2000, orta 4400, yüksek 7200 bina; gövde ve çatı iki InstancedMesh). Gerçek telefonda FPS ölçülmedi; düşükse çarpan azaltılmalı
 - [ ] Zindanda gölge kapalı (spot ışığı `castShadow={false}`), terasta açık; `?q=low` ve pil < %20 iken terasta da kapalı
 - [ ] Zindan: parmakla sürükleme feneri yönlendiriyor, ileri/geri düğmeleri basılı tutulunca yürüyor
 - [ ] Merdiven: W ya da joystick ile basamaklar çıkılıyor; nefes azalınca yavaşlıyor, durunca ve pencere önünde doluyor; pencereye bakınca kart açılıyor
