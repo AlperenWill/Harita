@@ -81,7 +81,7 @@ export interface Panorama { id: string; title: string; w: number; h: number; c: 
 export const PANORAMAS: Panorama[] = (() => {
   const mk = (id: string, title: string, w: number, h: number, c: [number, number], r: number, facing: number, text: string): Panorama => ({ id, title, w, h, c, r, theta: facing, text });
   return [
-    mk('canakkale', 'Çanakkale Kara ve Deniz Muharebeleri', 40, 6, [INNER.x0 + 14, 0], 13, -Math.PI / 2,
+    mk('canakkale', 'Çanakkale Kara ve Deniz Muharebeleri', 40, 6, [INNER.x0 + 12, 0], 13, Math.PI / 2,   // resim doğuda, açık yanı girişe bakar
       'Panoramanın ölçüsü 6 × 40 m’dir. 1915 Çanakkale Muharebeleri’nin kara ve deniz cephelerini anlatır. Önündeki maket alanı resmi üç boyutlu gösterir. (Bu sahnedeki resim bir canlandırmadır.)'),
     mk('sakarya', 'Sakarya Meydan Muharebesi', 30, 7, [INNER.x0 + 33, -9], 11, Math.PI,
       'Panoramanın ölçüsü 7 × 30 m’dir. 1921 Sakarya Meydan Muharebesi’ni anlatır. (Bu sahnedeki resim bir canlandırmadır.)'),
