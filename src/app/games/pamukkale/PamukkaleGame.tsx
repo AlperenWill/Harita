@@ -16,17 +16,17 @@ import { Controls, GameMenu, Hint, HudTheme, InfoSheet, InteractPrompt, StartShe
 import { useSettings } from '../shared/hud/settings';
 import { Info, MousePointer2 } from 'lucide-react';
 import { ArrowLeft, Droplets, Footprints, Search } from 'lucide-react';
-import { DRY, PLATEAU, poolY, ROUTE_LEN, SLOPE_Z0, SLOPE_Z1, SPOTS, heightAt, isTravertine, nearDry, nearSpot, routeAt, whiteness, type Pool, type Spot } from './terraces';
+import { DRY, ROUTE_LEN, SPOTS, nearDry, nearSpot, routeAt, whiteness, type Pool, type Spot } from './terraces';
 import { speakTr } from '../shared/voice';
 import { LOOK_PITCH, LOOK_YAW, LookCrosshair, useMouseLook } from '../shared/mouseLook';
-import { normalFrom } from '../topkapi/kit';
+import { Sun, Clouds } from '../shared/scenery';
+import { AntiquePool, FrontinusGate, Grass, Mountains, Necropolis, Ruins, SUN_DIR, Terrain, Theatre, Travertines, Trees, Village, patchGeo, travertine, useMats } from './PamukkaleModels';
 import { Polish, SkyEnvironment } from '../shared/Polish';
 
 type Tier = 'low' | 'medium' | 'high';
 const supportsWebGL = (() => { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; } })();
 const pinned = (() => { const q = new URLSearchParams(location.search).get('q'); return q === 'low' || q === 'medium' || q === 'high' ? (q as Tier) : null; })();
 function detectTier(): Tier { if (pinned) return pinned; const nav = navigator as Navigator & { deviceMemory?: number }; if ((nav.deviceMemory ?? 8) <= 3 || (nav.hardwareConcurrency ?? 8) <= 4) return 'low'; return matchMedia('(pointer: coarse)').matches ? 'medium' : 'high'; }
-function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
 const WALK = 3.2, EYE = 1.6, WATER = '#7fd3dc';
 
 /* ---------- ses: akan su, çıplak ayak (ıslak) / taş adım, havuz dolarken şırıltı ---------- */
@@ -88,10 +88,10 @@ function Game({ onExit }: { onExit: () => void }) {
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dbeef3] text-white" style={{ touchAction: 'none' }} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
       <HudTheme theme={THEME}>
       <LookCrosshair locked={look.locked} />
-      <Canvas dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 1200, position: [30, 30, 190] }}
+      <Canvas shadows={tier !== 'low' ? 'soft' : false} dpr={tier === 'high' ? [1, 2] : tier === 'medium' ? [1, 1.5] : [0.75, 1]} gl={{ antialias: tier === 'high' }} camera={{ fov: 62, near: 0.1, far: 1200, position: [30, 30, 190] }}
         onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 0.72; }}>
         {!pinned && <PerformanceMonitor bounds={() => [28, 55]} flipflops={2} onDecline={() => setTier((t) => (t === 'high' ? 'medium' : 'low'))} />}
-        <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#d6ecf3'} sun={'#fff6e6'} ground={'#f2f0ea'} sunDir={[0.7, 0.6, 0.5]} /><Polish tier={tier} /></Suspense>
+        <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#d6ecf3'} sun={'#fff6e6'} ground={'#f2f0ea'} sunDir={[SUN_DIR.x, SUN_DIR.y, SUN_DIR.z]} /><Polish tier={tier} /></Suspense>
       </Canvas>
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Droplets size={15} />} label={nextP ? 'Kuru havuzlara suyu yönlendir' : done ? 'Hepsi tamam' : 'Hierapolis: yapıları incele (E)'} done={nextP ? S.filled.length : S.seen.length} total={nextP ? DRY.length : SPOTS.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
       {S.started && !S.card && S.near && <InteractPrompt icon={<Droplets size={18} />} label="Suyu bu havuza yönlendir" onClick={pour} />}
@@ -107,108 +107,51 @@ function Game({ onExit }: { onExit: () => void }) {
 
 /* ---------- 3B dünya ---------- */
 function World({ tier }: { tier: Tier }) {
+  const m = useMats(), g = useRef<THREE.Group>(null);
+  const { scene } = useThree(); useEffect(() => { scene.environmentIntensity = 0.35; }, [scene]);
+  // gölge: noCast işaretli gruplar (arazi, traverten, ot, dağlar) gölge düşürmez; her şey gölge alır
+  useEffect(() => { g.current?.traverse((o) => { const mesh = o as THREE.Mesh; if (!mesh.isMesh) return; let cast = true; for (let q: THREE.Object3D | null = o; q; q = q.parent) if (q.userData.noCast) { cast = false; break; } mesh.castShadow = cast; mesh.receiveShadow = true; }); }, [tier]);
+  const sky = SUN_DIR.clone().multiplyScalar(1000), low = tier === 'low';
   return (
-    <group>
-      <Sky sunPosition={[200, 120, 160]} turbidity={5} rayleigh={1.1} />
-      <fog attach="fog" args={['#cfe2ec', 220, 900]} />
-      <hemisphereLight args={['#f4fbff', '#c9c0a8', 0.75]} />
-      <directionalLight position={[200, 160, 160]} intensity={1.35} color="#fff6e6" />
+    <group ref={g}>
+      <group userData={{ noCast: true }}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3.2} rayleigh={1.4} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
+      <fog attach="fog" args={['#d8e6ee', 300, 1900]} />
+      <hemisphereLight args={['#dfeaf3', '#a89c80', 0.45]} />
+      <Sun tier={tier} dir={SUN_DIR} intensity={5.2} color="#fff0dc" />
+      {!low && <Clouds />}
       <Terrain tier={tier} />
-      <Pools tier={tier} />
+      <Mountains />
+      <Travertines tier={tier} />
       <DryPools />
-      <AntiquePool />
-      <Theatre />
-      <Necropolis n={tier === 'low' ? 40 : 90} />
+      <Grass n={low ? 2500 : tier === 'medium' ? 6000 : 11000} />
+      <Trees n={low ? 120 : 260} />
+      <Village n={low ? 40 : 80} />
+      <AntiquePool m={m} />
+      <Theatre m={m} />
+      <FrontinusGate m={m} />
+      <Necropolis n={low ? 50 : 110} m={m} />
+      <Ruins m={m} n={low ? 30 : 70} />
       <Controller />
     </group>
   );
 }
-function Terrain({ tier }: { tier: Tier }) {
-  const geo = useMemo(() => {
-    const N = tier === 'high' ? 260 : tier === 'medium' ? 200 : 140, g = new THREE.PlaneGeometry(500, 520, N, N); g.rotateX(-Math.PI / 2); g.translate(0, 0, -20);
-    const p = g.attributes.position as THREE.BufferAttribute, col = new Float32Array(p.count * 3), c = new THREE.Color(), white = new THREE.Color('#f7f8f6'), cream = new THREE.Color('#d6c9ad'), green = new THREE.Color('#8fa064'), dry = new THREE.Color('#c8b98f'), r = rng(7);
-    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); let y = heightAt(x, z); if (Math.abs(x) > 84 && z > SLOPE_Z0) y += (Math.abs(x) - 84) * 0.25; if (z > SLOPE_Z1) y -= (z - SLOPE_Z1) * 0.02; p.setY(i, y);
-      if (isTravertine(x, z)) c.copy(white).lerp(cream, 0.2 + 0.35 * Math.abs(Math.sin(x * 0.07 + z * 0.11) * Math.cos(z * 0.05)) + r() * 0.15); /* krem lekeler: beyaz yamaç gökyüzü/sisle karışmasın */ else c.copy(z < SLOPE_Z0 ? dry : green).lerp(dry, r() * 0.3); col.set([c.r, c.g, c.b], i * 3); }
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); return g;
-  }, [tier]);
-  return <mesh geometry={geo}><meshStandardMaterial vertexColors roughness={0.55} /></mesh>;
-}
-/** Rotanın verilen z'deki x'i (havuzları yoldan uzak tutmak için) */
-function routeX(z: number) { let best = 0, bd = Infinity; for (let s = 0; s <= ROUTE_LEN; s += 2) { const p = routeAt(s).p; const d = Math.abs(p[2] - z); if (d < bd) { bd = d; best = p[0]; } } return best; }
-/** Traverten duvar dokusu: aşağı sarkan damla izleri ve saçaklar (kalsiyum karbonat birikimi) + normal haritası */
-let DRIP: { map: THREE.Texture; normal: THREE.Texture } | null = null;
-function dripTex() {
-  if (DRIP) return DRIP; const n = 256, mk = () => { const c = document.createElement('canvas'); c.width = c.height = n; return [c, c.getContext('2d')!] as const; }, [c, g] = mk(), [h, hg] = mk(), r = rng(29);
-  g.fillStyle = '#f6f5f0'; g.fillRect(0, 0, n, n); hg.fillStyle = '#808080'; hg.fillRect(0, 0, n, n);
-  for (let i = 0; i < 140; i++) { const x = r() * n, w = 2 + r() * 7, len = 40 + r() * 200, y0 = r() * 40; const gr = g.createLinearGradient(0, y0, 0, y0 + len); gr.addColorStop(0, 'rgba(225,220,205,.0)'); gr.addColorStop(0.5, `rgba(214,206,186,${0.25 + r() * 0.3})`); gr.addColorStop(1, 'rgba(240,238,230,0)'); g.fillStyle = gr; g.fillRect(x, y0, w, len);
-    hg.fillStyle = `rgba(255,255,255,${0.25 + r() * 0.3})`; hg.fillRect(x, y0, w, len); hg.fillStyle = 'rgba(0,0,0,.25)'; hg.fillRect(x + w, y0, 1, len); }
-  for (let i = 0; i < 60; i++) { const y = r() * 30; g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(0, y, n, 1); }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(4, 1);
-  const nm = normalFrom(h, 2.5); nm.repeat.set(4, 1); DRIP = { map: t, normal: nm }; return DRIP;
-}
-/** Yamaca oturan havuzlar: beyaz traverten gövde (yokuş aşağı yanı kenar duvar olarak görünür) + turkuaz su yüzeyi (instanced) */
-function Pools({ tier }: { tier: Tier }) {
-  const body = useRef<THREE.InstancedMesh>(null), water = useRef<THREE.InstancedMesh>(null), N = tier === 'low' ? 260 : 520;
-  useEffect(() => { const r = rng(13), o = new THREE.Object3D(); let k = 0;
-    for (let z = SLOPE_Z0 + 3; z < SLOPE_Z1 - 2 && k < N; z += 3.6 + r() * 1.2) { const rx = routeX(z);
-      for (let x = -62 + r() * 5; x < 62 && k < N; x += 5 + r() * 4) { const rr = 2.2 + r() * 2; if (DRY.some((d) => Math.hypot(d.at[0] - x, d.at[1] - z) < d.r + rr)) continue; if (Math.abs(x - rx) < rr + 1.4) continue;   // yürüme yolu açık
-        const zz = z + (r() - 0.5) * 1.5, y = poolY(x, zz), sx = rr, sz = rr * (0.6 + r() * 0.25);
-        o.position.set(x, y - 0.8, zz); o.rotation.set(0, (r() - 0.5) * 0.4, 0); o.scale.set(sx, 1.6, sz); o.updateMatrix(); body.current?.setMatrixAt(k, o.matrix);
-        o.position.set(x, y + 0.01, zz); o.scale.set(sx * 0.9, 1, sz * 0.86); o.updateMatrix(); water.current?.setMatrixAt(k, o.matrix); k++; } }
-    for (const m of [body.current, water.current]) if (m) { m.count = k; m.instanceMatrix.needsUpdate = true; m.computeBoundingSphere(); } }, [N]);
-  const disc = useMemo(() => { const g = new THREE.CircleGeometry(1, 22); g.rotateX(-Math.PI / 2); return g; }, []);
-  return (<>
-    <instancedMesh ref={body} args={[undefined, undefined, N]}><cylinderGeometry args={[1, 1.06, 1, 22]} /><meshStandardMaterial map={dripTex().map} normalMap={dripTex().normal} roughness={0.45} /></instancedMesh>
-    <instancedMesh ref={water} args={[disc, undefined, N]}><meshStandardMaterial color={WATER} roughness={0.02} metalness={0.2} envMapIntensity={1.4} emissive="#2a8a96" emissiveIntensity={0.15} /></instancedMesh>
-  </>);
-}
-/** Kurumuş havuzlar: lekeli kahverengi-gri; su verilince dolar ve beyazlar */
+/** Kurumuş havuzlar: kahverengi-gri leke; su verilince dolar ve yüzey beyazlar */
 function DryPools() {
-  const refs = useRef<{ water: THREE.Mesh | null; bed: THREE.MeshStandardMaterial; rim: THREE.MeshStandardMaterial; marker: THREE.Mesh | null }[]>(DRY.map(() => ({ water: null, bed: new THREE.MeshStandardMaterial({ color: '#a8977a', roughness: 0.9 }), rim: new THREE.MeshStandardMaterial({ color: '#b3a588', roughness: 0.8 }), marker: null })));
+  const geos = useMemo(() => DRY.map((p) => ({ bed: patchGeo(p.at[0], p.at[1], p.r, false), water: patchGeo(p.at[0], p.at[1], p.r * 0.92, true), y: travertine(p.at[0], p.at[1]).y })), []);
+  const refs = useRef<{ water: THREE.Mesh | null; bed: THREE.MeshStandardMaterial; marker: THREE.Mesh | null }[]>(DRY.map(() => ({ water: null, bed: new THREE.MeshStandardMaterial({ color: '#a8977a', roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -2 }), marker: null })));
   const stain = new THREE.Color('#8f7d60'), white = new THREE.Color('#f7f7f3');
   useFrame(({ clock }, raw) => { const dt = Math.min(raw, 0.05), S = useDb.getState(); let flowing = 0;
     DRY.forEach((p, i) => { const want = S.filled.includes(p.id) ? 1 : 0, f = (live.fill[p.id] = (live.fill[p.id] ?? 0) + Math.sign(want - (live.fill[p.id] ?? 0)) * Math.min(Math.abs(want - (live.fill[p.id] ?? 0)), dt / 4)); if (f > 0 && f < 1) flowing = 1;
-      const R = refs.current[i], w = whiteness(f) - 0.55; R.bed.color.copy(stain).lerp(white, w / 0.45); R.rim.color.copy(stain).lerp(white, Math.min(1, w / 0.45 + 0.15));
-      if (R.water) { R.water.position.y = -0.25 + 0.27 * f; R.water.visible = f > 0.01; }   // su seviyesi yükselir
-      if (R.marker) { R.marker.visible = !S.filled.includes(p.id); R.marker.position.y = 3 + Math.sin(clock.elapsedTime * 2 + i) * 0.25; } });
+      const R = refs.current[i], w = whiteness(f) - 0.55; R.bed.color.copy(stain).lerp(white, w / 0.45);
+      if (R.water) { R.water.position.y = -0.3 + 0.3 * f; R.water.visible = f > 0.01; }   // su seviyesi yükselir
+      if (R.marker) { R.marker.visible = !S.filled.includes(p.id); R.marker.position.y = geos[i].y + 3 + Math.sin(clock.elapsedTime * 2 + i) * 0.25; } });
     audio.setWater(flowing ? 0.25 : live.s < 140 ? 0.08 : 0.02); });
-  return (<>{DRY.map((p, i) => { const y = poolY(p.at[0], p.at[1]); return (
-    <group key={p.id} position={[p.at[0], y, p.at[1]]}>
-      <mesh position={[0, -0.8, 0]} scale={[p.r, 1.6, p.r * 0.8]} material={refs.current[i].rim}><cylinderGeometry args={[1, 1.06, 1, 26]} /></mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.25, 0]} scale={[1, 0.8, 1]} material={refs.current[i].bed}><circleGeometry args={[p.r * 0.9, 26]} /></mesh>
-      <mesh ref={(m) => { refs.current[i].water = m; }} rotation-x={-Math.PI / 2} position={[0, 0.02, 0]} scale={[1, 0.8, 1]}><circleGeometry args={[p.r * 0.9, 26]} /><meshStandardMaterial color={WATER} roughness={0.05} emissive="#2a8a96" emissiveIntensity={0.2} /></mesh>
-      <mesh ref={(m) => { refs.current[i].marker = m; }} position={[0, 3, 0]}><octahedronGeometry args={[0.4, 0]} /><meshBasicMaterial color="#29b6c8" /></mesh>
-    </group>); })}</>);
-}
-/** Antik Havuz: sıcak su, dibinde devrik sütun parçaları */
-function AntiquePool() {
-  const ref = useRef<THREE.InstancedMesh>(null), N = 14, c = SPOTS.find((s) => s.id === 'antik-havuz')!.at;
-  useEffect(() => { const r = rng(31), o = new THREE.Object3D(); for (let i = 0; i < N; i++) { o.position.set(c[0] - 9 + r() * 18, PLATEAU - 1.1, c[1] - 6 - r() * 9); o.rotation.set(Math.PI / 2, 0, r() * 3); o.scale.set(1, 2 + r() * 3, 1); o.updateMatrix(); ref.current?.setMatrixAt(i, o.matrix); } if (ref.current) { ref.current.instanceMatrix.needsUpdate = true; ref.current.computeBoundingSphere(); } }, [c]);
-  return (<group>
-    <mesh position={[c[0], PLATEAU - 0.9, c[1] - 10]}><boxGeometry args={[24, 1.8, 16]} /><meshStandardMaterial color="#cfc7b3" roughness={0.8} side={THREE.BackSide} /></mesh>
-    <mesh rotation-x={-Math.PI / 2} position={[c[0], PLATEAU - 0.25, c[1] - 10]}><planeGeometry args={[23.6, 15.6]} /><meshStandardMaterial color="#6fc3cf" roughness={0.05} transparent opacity={0.7} /></mesh>
-    <instancedMesh ref={ref} args={[undefined, undefined, N]}><cylinderGeometry args={[0.38, 0.42, 1, 10]} /><meshStandardMaterial color="#e9e3d6" roughness={0.6} /></instancedMesh>
-  </group>);
-}
-function Theatre() {
-  const at = SPOTS.find((s) => s.id === 'tiyatro')!.at, cx = at[0] + 40, cz = at[1] - 6;
-  const geo = useMemo(() => { const pts: THREE.Vector2[] = [new THREE.Vector2(8, 0)]; for (let i = 0; i < 22; i++) { pts.push(new THREE.Vector2(8 + i * 1.3, (i + 1) * 0.75)); pts.push(new THREE.Vector2(8 + (i + 1) * 1.3, (i + 1) * 0.75)); } pts.push(new THREE.Vector2(8 + 22 * 1.3, -0.1)); return new THREE.LatheGeometry(pts, 36, 0, Math.PI); }, []);
-  return (<group position={[cx, PLATEAU, cz]}>
-    <mesh geometry={geo}><meshStandardMaterial color="#ddd3bd" roughness={0.85} flatShading /></mesh>
-    <mesh position={[-10, 3.5, 0]}><boxGeometry args={[3, 7, 30]} /><meshStandardMaterial color="#d6cbb3" roughness={0.85} /></mesh>
-  </group>);
-}
-/** Nekropol: lahitler (kapaklı) ve tümülüsler */
-function Necropolis({ n }: { n: number }) {
-  const box = useRef<THREE.InstancedMesh>(null), lid = useRef<THREE.InstancedMesh>(null), c = SPOTS.find((s) => s.id === 'nekropol')!.at;
-  useEffect(() => { const r = rng(41), o = new THREE.Object3D(); for (let i = 0; i < n; i++) { const a = r() * 6.28, d = 6 + r() * 45, x = c[0] + Math.cos(a) * d, z = c[1] - 8 + Math.sin(a) * d, y = PLATEAU, yaw = r() * 0.6 - 0.3 + (r() < 0.5 ? 0 : Math.PI / 2);
-      o.position.set(x, y + 0.6, z); o.rotation.set(0, yaw, 0); o.scale.set(1, 1, 1); o.updateMatrix(); box.current?.setMatrixAt(i, o.matrix); o.position.y = y + 1.45; o.rotation.set(r() < 0.25 ? 0.4 : 0, yaw, 0); o.updateMatrix(); lid.current?.setMatrixAt(i, o.matrix); }
-    for (const m of [box.current, lid.current]) if (m) { m.instanceMatrix.needsUpdate = true; m.computeBoundingSphere(); } }, [n, c]);
-  return (<group>
-    <instancedMesh ref={box} args={[undefined, undefined, n]}><boxGeometry args={[2.4, 1.2, 1.1]} /><meshStandardMaterial color="#d9d0bc" roughness={0.85} /></instancedMesh>
-    <instancedMesh ref={lid} args={[undefined, undefined, n]}><cylinderGeometry args={[0.7, 0.7, 2.5, 3]} /><meshStandardMaterial color="#cfc5ae" roughness={0.85} flatShading /></instancedMesh>
-    {[[-25, -12], [18, -30], [-8, -48]].map(([dx, dz], i) => <mesh key={i} position={[c[0] + dx, PLATEAU, c[1] + dz]} scale={[1, 0.45, 1]}><sphereGeometry args={[6, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshStandardMaterial color="#a6a27a" roughness={1} /></mesh>)}
-  </group>);
+  return (<group userData={{ noCast: true }}>{DRY.map((p, i) => (
+    <group key={p.id} position={[p.at[0], 0, p.at[1]]}>
+      <mesh geometry={geos[i].bed} material={refs.current[i].bed} receiveShadow />
+      <mesh ref={(mm) => { refs.current[i].water = mm; }} geometry={geos[i].water}><meshStandardMaterial color={WATER} roughness={0.04} metalness={0.15} transparent opacity={0.85} envMapIntensity={1.4} /></mesh>
+      <mesh ref={(mm) => { refs.current[i].marker = mm; }} position={[0, geos[i].y + 3, 0]}><octahedronGeometry args={[0.4, 0]} /><meshBasicMaterial color="#29b6c8" /></mesh>
+    </group>))}</group>);
 }
 
 /* ---------- hareket + kamera ---------- */
