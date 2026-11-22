@@ -25,6 +25,7 @@ const BayburtPage = lazy(() => import('./pages/BayburtPage'));
 const SeytanPage = lazy(() => import('./pages/SeytanPage'));
 const MunzurPage = lazy(() => import('./pages/MunzurPage'));
 const YuzenAdaPage = lazy(() => import('./pages/YuzenAdaPage'));
+const SumelaPage = lazy(() => import('./pages/SumelaPage'));
 const TroyaPage = lazy(() => import('./pages/TroyaPage'));
 const AniPage = lazy(() => import('./pages/AniPage'));
 const IshakPasaPage = lazy(() => import('./pages/IshakPasaPage'));
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="oyun/seytan-kalesi" element={<SeytanPage />} />
           <Route path="oyun/munzur" element={<MunzurPage />} />
           <Route path="oyun/yuzen-adalar" element={<YuzenAdaPage />} />
+          <Route path="oyun/sumela" element={<SumelaPage />} />
           <Route path="oyun/troya" element={<TroyaPage />} />
           <Route path="oyun/ani" element={<AniPage />} />
           <Route path="oyun/ishakpasa" element={<IshakPasaPage />} />
