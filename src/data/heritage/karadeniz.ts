@@ -87,6 +87,12 @@ const sites: HeritageSite[] = [
     didYouKnow: 'Sinop, Karadeniz kıyısının en eski liman kentlerinden biridir; Diyojen’in doğduğu yer olarak da bilinir.',
   },
   {
+    id: 'sinop-cezaevi', name: 'Sinop Tarihi Cezaevi', province: 'Sinop', category: 'muze', period: 'osmanli',
+    coord: [35.1480, 42.0230], wiki: 'Sinop Cezaevi',
+    summary: 'Sinop Kalesi’nin iç kalesinde 1887’de açılan, 1997’de kapatılan cezaevi; bugün müze olarak geziliyor.',
+    didYouKnow: '“Anadolu’nun Alkatrazı” diye anılır; Sabahattin Ali’nin “Aldırma Gönül” şiirini burada yazdığı anlatılır.',
+  },
+  {
     id: 'mahmutbey', name: 'Mahmut Bey Camii', province: 'Kastamonu', category: 'unesco', period: 'selcuklu',
     coord: [33.7183, 41.4539], wiki: 'Mahmut Bey Camii',
     summary: 'Kasaba Köyü’ndeki 1366 tarihli Candaroğulları camisi; çivisiz ahşap işçiliği ve boyalı tavanıyla 2023’te UNESCO listesine girdi.',

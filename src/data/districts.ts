@@ -31,7 +31,7 @@ export const DISTRICT: Record<string, string> = {
   // Karadeniz
   zilkale: 'Çamlıhemşin', 'senyuva-koprusu': 'Çamlıhemşin', 'rize-kalesi': 'Merkez', 'rize-cay': 'Merkez', sumela: 'Maçka',
   'trabzon-ayasofya': 'Ortahisar', 'trabzon-kosk': 'Ortahisar', kemence: 'Ortahisar', ishan: 'Yusufeli', 'kus-dili': 'Çanakçı',
-  'giresun-adasi': 'Merkez', yason: 'Perşembe', ikiztepe: 'Bafra', amisos: 'Atakum', 'bandirma-vapuru': 'İlkadım', balatlar: 'Merkez',
+  'giresun-adasi': 'Merkez', yason: 'Perşembe', ikiztepe: 'Bafra', amisos: 'Atakum', 'bandirma-vapuru': 'İlkadım', balatlar: 'Merkez', 'sinop-cezaevi': 'Merkez',
   mahmutbey: 'Merkez', pompeiopolis: 'Taşköprü', amasra: 'Amasra', tios: 'Çaycuma', safranbolu: 'Safranbolu', 'cinci-han': 'Safranbolu',
   mudurnu: 'Mudurnu', konuralp: 'Merkez', 'kral-kaya': 'Merkez', 'amasya-bimarhane': 'Merkez', hazeranlar: 'Merkez',
   'tokat-gok': 'Merkez', hidirlik: 'Merkez', 'tokat-yazma': 'Merkez', hattusa: 'Boğazkale', alacahoyuk: 'Alaca',

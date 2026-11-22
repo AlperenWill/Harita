@@ -54,8 +54,11 @@ describe('Şeref Holü (v2)', () => {
     for (let x = HALL.x0 + 1; x < HALL.x1 - 1; x += 0.5) { const nearPier = pierXs().some((p) => Math.abs(p - x) < 1.2); if (!nearPier) expect(hit(x, 17), `galeri x=${x}`).toBe(false); }
     expect(hit((HALL.x0 + HALL.x1) / 2, COL_Z)).toBe(true);
   });
-  it('üç girişten de holün içine girilir', () => {
-    for (const z of [0, -HALL.sideDoor.z, HALL.sideDoor.z]) for (let x = HALL.front - 2; x < HALL.x0 + 2; x += 0.25) expect(hit(x, z), `z=${z} x=${x}`).toBe(false);
+  it('ortadaki büyük kapıdan holün içine girilir', () => {
+    for (const z of [-2.5, 0, 2.5]) for (let x = HALL.front - 2; x < HALL.x0 + 2; x += 0.25) expect(hit(x, z), `z=${z} x=${x}`).toBe(false);
+  });
+  it('yan giriş yok: ön duvar kapının dışında kapalı', () => {
+    for (const z of [-14.4, -8, 8, 14.4]) expect(hit((HALL.front + HALL.x0) / 2, z), `z=${z}`).toBe(true);
   });
 });
 

@@ -20,6 +20,17 @@ const ZilKalePage = lazy(() => import('./pages/ZilKalePage'));
 const EfesPage = lazy(() => import('./pages/EfesPage'));
 const KapadokyaPage = lazy(() => import('./pages/KapadokyaPage'));
 const PamukkalePage = lazy(() => import('./pages/PamukkalePage'));
+const CumalikizikPage = lazy(() => import('./pages/CumalikizikPage'));
+const BayburtPage = lazy(() => import('./pages/BayburtPage'));
+const SeytanPage = lazy(() => import('./pages/SeytanPage'));
+const MunzurPage = lazy(() => import('./pages/MunzurPage'));
+const YuzenAdaPage = lazy(() => import('./pages/YuzenAdaPage'));
+const SumelaPage = lazy(() => import('./pages/SumelaPage'));
+const TrabzonAyasofyaPage = lazy(() => import('./pages/TrabzonAyasofyaPage'));
+const SagalassosPage = lazy(() => import('./pages/SagalassosPage'));
+const CacabeyPage = lazy(() => import('./pages/CacabeyPage'));
+const MahmutbeyPage = lazy(() => import('./pages/MahmutbeyPage'));
+const SinopCezaeviPage = lazy(() => import('./pages/SinopCezaeviPage'));
 const TroyaPage = lazy(() => import('./pages/TroyaPage'));
 const AniPage = lazy(() => import('./pages/AniPage'));
 const IshakPasaPage = lazy(() => import('./pages/IshakPasaPage'));
@@ -52,6 +63,17 @@ export default function App() {
           <Route path="oyun/efes" element={<EfesPage />} />
           <Route path="oyun/kapadokya" element={<KapadokyaPage />} />
           <Route path="oyun/pamukkale" element={<PamukkalePage />} />
+          <Route path="oyun/cumalikizik" element={<CumalikizikPage />} />
+          <Route path="oyun/bayburt" element={<BayburtPage />} />
+          <Route path="oyun/seytan-kalesi" element={<SeytanPage />} />
+          <Route path="oyun/munzur" element={<MunzurPage />} />
+          <Route path="oyun/yuzen-adalar" element={<YuzenAdaPage />} />
+          <Route path="oyun/sumela" element={<SumelaPage />} />
+          <Route path="oyun/trabzon-ayasofya" element={<TrabzonAyasofyaPage />} />
+          <Route path="oyun/sagalassos" element={<SagalassosPage />} />
+          <Route path="oyun/cacabey" element={<CacabeyPage />} />
+          <Route path="oyun/mahmutbey" element={<MahmutbeyPage />} />
+          <Route path="oyun/sinop-cezaevi" element={<SinopCezaeviPage />} />
           <Route path="oyun/troya" element={<TroyaPage />} />
           <Route path="oyun/ani" element={<AniPage />} />
           <Route path="oyun/ishakpasa" element={<IshakPasaPage />} />
