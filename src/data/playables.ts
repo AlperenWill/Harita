@@ -73,6 +73,7 @@ export const PLAYABLES: Playable[] = [
   // ---- Karadeniz ----
   { id: 'hattusa', name: 'Hattuşa', province: 'Çorum', coord: [34.6150, 40.0140], title: 'Kralın Yolu', emoji: '🦁', blurb: 'Hitit başkentinde kapı ritüellerini yerine getir, Yazılıkaya’ya ulaş.', kind: 'route', path: 'oyun/hattusa', depth: 'detayli', wiki: 'Hattuşaş' },
   { id: 'sumela', name: 'Sümela Manastırı', province: 'Trabzon', coord: [39.6580, 40.6900], title: 'Kayadaki Manastır', emoji: '⛪', blurb: 'Ormandan kaya yüzüne tırman, kayaya oyulmuş manastırın kilisesini ve fresklerini keşfet.', kind: 'route', path: 'oyun/sumela', depth: 'detayli', wiki: 'Sümela Manastırı' },
+  { id: 'trabzon-ayasofya', name: 'Trabzon Ayasofya', province: 'Trabzon', coord: [39.6990, 41.0050], title: 'Kubbenin Altında', emoji: '🕍', blurb: 'Denize bakan bahçeden kubbenin altına gir; Âdem-Havva frizini, freskleri ve çan kulesini keşfet.', kind: 'route', path: 'oyun/trabzon-ayasofya', depth: 'detayli', wiki: 'Trabzon Ayasofya Camii' },
   { id: 'bayburt-kale', name: 'Bayburt Kalesi', province: 'Bayburt', coord: [40.2280, 40.2610], title: 'Burç Burç Bayburt Kalesi', emoji: '🏯', blurb: 'Çoruh kıyısındaki kayalığa tırman, burçları ve kitabeleri keşfet.', kind: 'route', path: 'oyun/bayburt', depth: 'detayli', wiki: 'Bayburt Kalesi' },
   { id: 'zilkale', name: 'Zil Kale', province: 'Rize', coord: [41.0667, 40.9581], title: 'Sis İçindeki İzler', emoji: '🌫️', blurb: 'Sisli Fırtına Vadisi’nden kaleye yürü.', kind: 'route', path: 'oyun/zilkale', depth: 'detayli', wiki: 'Zilkale' },
 ];
