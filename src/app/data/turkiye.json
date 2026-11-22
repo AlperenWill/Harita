@@ -565,7 +565,7 @@
      "category": "arkeoloji",
      "categoryLabel": "Arkeolojik Alan",
      "period": "antik",
-     "periodLabel": "Antik Çağ",
+     "periodLabel": "Klasik & Roma",
      "coord": [
       31.389,
       36.766
@@ -2199,7 +2199,7 @@
      "period": "osmanli",
      "periodLabel": "Osmanlı",
      "coord": [
-      29.0,
+      29,
       41.0392
      ],
      "summary": "Sultan Abdülmecid döneminde 1843–1856 arasında Boğaz kıyısında yapılan saray; Avrupa üsluplarını Osmanlı geleneğiyle birleştirir. Kristal avizeleri, Kristal Merdiveni ve altın yaldızlı tavanlarıyla tanınır.",
@@ -3666,7 +3666,7 @@
     34.884,
     41.623
    ],
-   "summary": "Karadeniz Bölgesi’nde yer alan Sinop (57), ortalama 400 m rakımlı bir ildir. Öne çıkan miras: Balatlar Kilisesi.",
+   "summary": "Karadeniz Bölgesi’nde yer alan Sinop (57), ortalama 400 m rakımlı bir ildir. Öne çıkan miras: Balatlar Kilisesi, Sinop Tarihi Cezaevi.",
    "sites": [
     {
      "id": "balatlar",
@@ -3683,6 +3683,22 @@
      "summary": "Roma hamamı üzerine kurulmuş Bizans kilisesi; kazılarda fresk parçaları ve mezarlar bulundu.",
      "didYouKnow": "Sinop, Karadeniz kıyısının en eski liman kentlerinden biridir; Diyojen’in doğduğu yer olarak da bilinir.",
      "wiki": "Balatlar Kilisesi"
+    },
+    {
+     "id": "sinop-cezaevi",
+     "name": "Sinop Tarihi Cezaevi",
+     "district": "Merkez",
+     "category": "muze",
+     "categoryLabel": "Müze",
+     "period": "osmanli",
+     "periodLabel": "Osmanlı",
+     "coord": [
+      35.148,
+      42.023
+     ],
+     "summary": "Sinop Kalesi’nin iç kalesinde 1887’de açılan, 1997’de kapatılan cezaevi; bugün müze olarak geziliyor.",
+     "didYouKnow": "“Anadolu’nun Alkatrazı” diye anılır; Sabahattin Ali’nin “Aldırma Gönül” şiirini burada yazdığı anlatılır.",
+     "wiki": "Sinop Cezaevi"
     }
    ]
   },
