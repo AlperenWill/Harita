@@ -43,6 +43,7 @@ export const PLAYABLES: Playable[] = [
   { id: 'kapalicarsi', name: 'Kapalıçarşı', province: 'İstanbul', coord: [28.9680, 41.0106], title: 'Bin Dükkânın Sırrı', emoji: '🏪', blurb: 'Çarşının sokaklarında kayıp eşyanın izini sür.', kind: 'route', path: 'oyun/kapalicarsi', depth: 'detayli', wiki: 'Kapalıçarşı' },
   { id: 'dolmabahce', name: 'Dolmabahçe Sarayı', province: 'İstanbul', coord: [29.0000, 41.0392], title: 'Kristal ve Işığın İhtişamı', emoji: '💎', blurb: 'Salonlarda parlayan on nesneyi bul.', kind: 'route', path: 'oyun/dolmabahce', depth: 'detayli', wiki: 'Dolmabahçe_Sarayı' },
   // ---- Çanakkale ----
+  { id: 'cumalikizik', name: 'Cumalıkızık', province: 'Bursa', coord: [29.1720, 40.1760], title: 'Kapı Kapı Cumalıkızık', emoji: '🚪', blurb: 'Renkli evlerin arasında dolaş, kapı tokmağından cumbaya köyün sırlarını bul.', kind: 'route', path: 'oyun/cumalikizik', depth: 'detayli', wiki: 'Cumalıkızık' },
   { id: 'troya', name: 'Troya', province: 'Çanakkale', coord: [26.2389, 39.9575], title: 'Dokuz Kent', emoji: '🐴', blurb: 'Üst üste kurulmuş dokuz kenti gez; her yapının hangi katmana ait olduğunu bul.', kind: 'route', path: 'oyun/troya', depth: 'detayli', wiki: 'Truva' },
   // ---- Ankara ----
   { id: 'anitkabir', name: 'Anıtkabir', province: 'Ankara', coord: [32.8370, 39.9250], title: '3D Anıtkabir’i Keşfet', emoji: '🏛️', blurb: 'Aslanlı Yol’dan Şeref Holü’ne yürü.', kind: 'route', path: 'anit/ankara-anitkabir', depth: 'detayli', wiki: 'Anıtkabir' },
