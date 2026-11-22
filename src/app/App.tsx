@@ -21,6 +21,7 @@ const EfesPage = lazy(() => import('./pages/EfesPage'));
 const KapadokyaPage = lazy(() => import('./pages/KapadokyaPage'));
 const PamukkalePage = lazy(() => import('./pages/PamukkalePage'));
 const CumalikizikPage = lazy(() => import('./pages/CumalikizikPage'));
+const BayburtPage = lazy(() => import('./pages/BayburtPage'));
 const TroyaPage = lazy(() => import('./pages/TroyaPage'));
 const AniPage = lazy(() => import('./pages/AniPage'));
 const IshakPasaPage = lazy(() => import('./pages/IshakPasaPage'));
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="oyun/kapadokya" element={<KapadokyaPage />} />
           <Route path="oyun/pamukkale" element={<PamukkalePage />} />
           <Route path="oyun/cumalikizik" element={<CumalikizikPage />} />
+          <Route path="oyun/bayburt" element={<BayburtPage />} />
           <Route path="oyun/troya" element={<TroyaPage />} />
           <Route path="oyun/ani" element={<AniPage />} />
           <Route path="oyun/ishakpasa" element={<IshakPasaPage />} />
