@@ -5,9 +5,10 @@
  */
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { bx, groundTex, mountainGeo, stoneTex, useGrassCards, weather } from '../shared/scenery';
-import { BATH, GATE_HALF, MOSQUE, MUSEUM, PLAZA_R, RING, TOWERS, TOWER_R, WELL, groundY } from './site';
+import { BATH, GATE_HALF, MOSQUE, MUSEUM, PLAZA_R, RING, TOWERS, TOWER_R, WELL, groundY, DAMAGE, inDamageArc } from './site';
 
 type Tier = 'low' | 'medium' | 'high';
 export function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
@@ -49,25 +50,55 @@ export function Terrain({ tier }: { tier: Tier }) {
 }
 
 /* ===================== sur, burçlar, kapı ===================== */
+/** Oyun yöneticisi yazar: onarılan hasarların kimlikleri */
+export const repairState = { fixed: [] as string[] };
+const STUB = 1.6;   // gedikte ayakta kalan alt duvarın, zeminden yüksekliği
 export function Walls({ m }: { m: Mats }) {
-  const ring = useMemo(() => { const parts: Parts = [], N = 540, rm = (RING.r0 + RING.r1) / 2, gate = (GATE_HALF + 0.5) / rm;
-    for (let i = 0; i < N; i++) { const a = (i / N) * Math.PI * 2; let d = Math.abs(((a - Math.PI / 2 + Math.PI * 3) % (Math.PI * 2)) - Math.PI); if (d < gate) continue;
+  // silindir UV'si 0–1: duvar ölçekli doku burçlarda dev taşlar veriyordu; burçlara ayrı tekrar oranlı kopya
+  const towerMat = useMemo(() => { const mm = m.stone.clone(); for (const k of ['map', 'bumpMap'] as const) { const t = m.stone[k]; if (t) { const c = t.clone(); c.repeat.set(12, 5); c.needsUpdate = true; mm[k] = c; } } return mm; }, [m.stone]);
+  const ring = useMemo(() => { const parts: Parts = [], N = 540, rm = (RING.r0 + RING.r1) / 2, gate = (GATE_HALF + 3.2) / rm, r = rng(77);
+    for (let i = 0; i < N; i++) { const a = (i / N) * Math.PI * 2; const d = Math.abs(((a - Math.PI / 2 + Math.PI * 3) % (Math.PI * 2)) - Math.PI); if (d < gate) continue;
       const seg = (2 * Math.PI * rm) / N, x = Math.cos(a) * rm, z = Math.sin(a) * rm, y = groundY(x, z);
+      if (inDamageArc(a)) { const h = STUB + 1.35 - 0.6 + r() * 1.2; const g = bx(RING.r1 - RING.r0, h, seg * 1.05, 2.4); g.rotateY(-a); g.translate(x, y - 1.35 + h / 2, z); parts.push(g); continue; }
       const g = bx(RING.r1 - RING.r0, RING.h + 1.5, seg * 1.05, 2.4); g.rotateY(-a); g.translate(x, y + RING.h / 2 - 0.6, z); parts.push(g);
-      if (i % 2 === 0) { const b = bx(RING.r1 - RING.r0, 0.9, seg * 0.55, 1.4); b.rotateY(-a); b.translate(x, y + RING.h + 0.55, z); parts.push(b); } }
+      if (i % 3 === 0) { const b = bx(RING.r1 - RING.r0 + 0.1, 1.1, seg * 1.6, 1.4); b.rotateY(-a); b.translate(x, y + RING.h + 0.7, z); parts.push(b); } }
     return merge(parts); }, []);
   const towers = useMemo(() => { const parts: Parts = [];
-    for (const t of TOWERS) { const y = groundY(t[0], t[1]), H = RING.h + 3.4, g = new THREE.CylinderGeometry(TOWER_R, TOWER_R + 0.5, H, 20); g.translate(t[0], y + H / 2 - 0.6, t[1]); parts.push(g);
-      for (let k = 0; k < 10; k++) { const a = (k / 10) * Math.PI * 2, mg = bx(1.2, 1, 0.9, 1.2); mg.rotateY(-a + Math.PI / 2); mg.translate(t[0] + Math.cos(a) * (TOWER_R - 0.3), y + H - 0.1, t[1] + Math.sin(a) * (TOWER_R - 0.3)); if (k % 3) parts.push(mg); } }
+    for (const t of TOWERS) { const y = groundY(t[0], t[1]), H = RING.h + 3.4, g = new THREE.CylinderGeometry(TOWER_R, TOWER_R + 0.5, H, 24); g.translate(t[0], y + H / 2 - 0.6, t[1]); parts.push(g);
+      const band = new THREE.CylinderGeometry(TOWER_R + 0.18, TOWER_R + 0.18, 0.35, 24); band.translate(t[0], y + H - 1.2, t[1]); parts.push(band);
+      for (let k = 0; k < 16; k++) { if (k % 2) continue; const a = (k / 16) * Math.PI * 2, mg = bx(0.95, 1.0, 0.6, 1.2); mg.rotateY(-a + Math.PI / 2); mg.translate(t[0] + Math.cos(a) * (TOWER_R - 0.25), y + H + 0.0, t[1] + Math.sin(a) * (TOWER_R - 0.25)); parts.push(mg); } }
     return merge(parts); }, []);
-  const gate = useMemo(() => { const parts: Parts = [], rm = (RING.r0 + RING.r1) / 2, y = groundY(0, rm);
-    for (const s of [-1, 1]) { const g = bx(3, RING.h + 2.4, RING.r1 - RING.r0 + 1.4, 2); g.translate(s * (GATE_HALF + 1.5), y + (RING.h + 2.4) / 2 - 0.6, rm); parts.push(g); }
-    const lint = bx(GATE_HALF * 2 + 0.2, 1.4, RING.r1 - RING.r0 + 1.4, 2); lint.translate(0, y + 4.3, rm); parts.push(lint);
+  // kapı: iki yanda kalın kuleli kütle, ortada sivri kemerli geçit (önceden düz kare delikti), üstte mazgallı korkuluk
+  const gate = useMemo(() => { const parts: Parts = [], rm = (RING.r0 + RING.r1) / 2, y = groundY(0, rm), W = GATE_HALF + 3.2, Hh = RING.h + 3.0, D = RING.r1 - RING.r0 + 1.6;
+    // dış hat kemeri de içerir (delik kullanılmaz: tabana değen delik üçgenlemede kesilmiyordu)
+    const hw = GATE_HALF - 0.05, sp = 3.0, sh = new THREE.Shape(); sh.moveTo(-W, -1); sh.lineTo(-hw, -1); sh.lineTo(-hw, sp); sh.quadraticCurveTo(-hw, sp + 1.6, 0, sp + 2.0); sh.quadraticCurveTo(hw, sp + 1.6, hw, sp); sh.lineTo(hw, -1); sh.lineTo(W, -1); sh.lineTo(W, Hh); sh.lineTo(-W, Hh); sh.closePath();
+    const g = new THREE.ExtrudeGeometry(sh, { depth: D, bevelEnabled: false, curveSegments: 12 }); g.translate(0, y - 0.6, rm - D / 2); parts.push(g);
+    for (let k = 0; k < 7; k++) { const x = -W + 0.6 + k * ((2 * W - 1.2) / 6), mg = bx(0.9, 1.1, 0.7, 1.2); mg.translate(x, y - 0.6 + Hh + 0.55, rm + D / 2 - 0.35); parts.push(mg); }
+    const arch = new THREE.TorusGeometry(hw + 0.25, 0.22, 6, 16, Math.PI); arch.scale(1, 1.1, 1); arch.translate(0, y - 0.6 + sp + 0.6, rm + D / 2 + 0.05); parts.push(arch);
     return merge(parts); }, []);
   return <group>
     <mesh geometry={ring} material={m.stone} castShadow receiveShadow />
-    <mesh geometry={towers} material={m.stone} castShadow receiveShadow />
+    <mesh geometry={towers} material={towerMat} castShadow receiveShadow />
     <mesh geometry={gate} material={m.stone} castShadow receiveShadow />
+    {DAMAGE.map((d) => <DamagePatch key={d.id} id={d.id} a={d.a} half={d.half} m={m} />)}
+  </group>;
+}
+/** Bir hasar yayı: onarılınca yerden yükselen üst duvar ve mazgallar; onarılmadan önce iç tarafta moloz yığını */
+function DamagePatch({ id, a, half, m }: { id: string; a: number; half: number; m: Mats }) {
+  const rm = (RING.r0 + RING.r1) / 2, base = groundY(Math.cos(a) * rm, Math.sin(a) * rm);
+  const geo = useMemo(() => { const up: Parts = [], rub: Parts = [], N = 18, r = rng(Math.round(a * 1000));
+    for (let i = 0; i < N; i++) { const aa = a - half + ((i + 0.5) / N) * 2 * half, seg = (2 * half * rm) / N, x = Math.cos(aa) * rm, z = Math.sin(aa) * rm, y = groundY(x, z) - base;
+      const h0 = STUB - 0.6, H = RING.h + 0.15 - h0; const g = bx(RING.r1 - RING.r0, H, seg * 1.05, 2.4); g.rotateY(-aa); g.translate(x, y + h0 + H / 2, z); up.push(g);
+      if (i % 3 === 0) { const b = bx(RING.r1 - RING.r0 + 0.1, 1.1, seg * 1.6, 1.4); b.rotateY(-aa); b.translate(x, y + RING.h + 0.7, z); up.push(b); } }
+    for (let k = 0; k < 26; k++) { const aa = a + (r() - 0.5) * half * 1.8, rr = RING.r0 - 1 - r() * 3.2, q = new THREE.DodecahedronGeometry(0.35 + r() * 0.45, 0); q.scale(1.2, 0.7, 1); q.translate(Math.cos(aa) * rr, groundY(Math.cos(aa) * rr, Math.sin(aa) * rr) - base + 0.2 + r() * 0.3, Math.sin(aa) * rr); rub.push(q); }
+    return { up: merge(up), rub: merge(rub) }; }, [a, half, base, rm]);
+  const upRef = useRef<THREE.Group>(null), rubRef = useRef<THREE.Group>(null), k = useRef(0);
+  useFrame((_, dt) => { const t = repairState.fixed.includes(id) ? 1 : 0; k.current += (t - k.current) * Math.min(1, dt * 1.6);
+    if (upRef.current) { upRef.current.scale.set(1, Math.max(0.001, k.current), 1); upRef.current.visible = k.current > 0.01; }
+    if (rubRef.current) { const s = 1 - k.current; rubRef.current.scale.set(1, Math.max(0.001, s), 1); rubRef.current.visible = s > 0.01; } });
+  return <group position-y={base}>
+    <group ref={upRef} visible={false}><mesh geometry={geo.up} material={m.stone} castShadow receiveShadow /></group>
+    <group ref={rubRef}><mesh geometry={geo.rub} material={m.ruin} castShadow receiveShadow /></group>
   </group>;
 }
 
@@ -82,7 +113,8 @@ export function Inside({ m }: { m: Mats }) {
     lowWalls(BATH, 0.9, 1.4); lowWalls(MOSQUE, 0.8, 1.6);
     // hamam: üç küçük kubbe kalıntısı (yarım küre kabuğu)
     for (let k = 0; k < 3; k++) { const cx = BATH.x0 + 1.8 + k * 2.2, cz = (BATH.z0 + BATH.z1) / 2, y = groundY(cx, cz), d = new THREE.SphereGeometry(1.1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2); d.translate(cx, y + 0.9, cz); p.push(d); }
-    // cami: mihrap nişi ve sütun kaideleri
+    // cami: mihrap nişi, sütun kaideleri ve köşede kırık minare gövdesi
+    { const mx = MOSQUE.x1 - 0.9, mz = MOSQUE.z1 - 0.9, my2 = groundY(mx, mz), mn = new THREE.CylinderGeometry(0.85, 1.0, 4.2, 12); mn.translate(mx, my2 + 2.1, mz); p.push(mn); const ft = bx(2.2, 1.2, 2.2, 1); ft.translate(mx, my2 + 0.6, mz); p.push(ft); }
     const my = groundY((MOSQUE.x0 + MOSQUE.x1) / 2, MOSQUE.z0), mih = bx(2, 2.6, 0.8, 1); mih.translate((MOSQUE.x0 + MOSQUE.x1) / 2, my + 1.3, MOSQUE.z0 + 0.5); p.push(mih);
     for (const dx of [-2, 2]) for (const dz of [-1, 1.4]) { const c = new THREE.CylinderGeometry(0.4, 0.5, 0.9, 10); c.translate((MOSQUE.x0 + MOSQUE.x1) / 2 + dx, groundY((MOSQUE.x0 + MOSQUE.x1) / 2, (MOSQUE.z0 + MOSQUE.z1) / 2) + 0.45, (MOSQUE.z0 + MOSQUE.z1) / 2 + dz); p.push(c); }
     // kuyu ağzı

@@ -15,6 +15,18 @@ Oyuncu yokuşun başından dar sokağa girer, cumbalı konakların arasından me
 4. Restorasyon
 5. Geçici liste
 
+## Konağı kur (mekanik)
+Sokağın doğu yanında iskeleli, boş bir restorasyon parseli var; yalnızca temel taşları duruyor. Oyuncu parselin önünde **E**'ye her bastığında konağın sıradaki bölümü yerden yükselir: **taş zemin kat → ahşap iskelet (dikme, kuşak, çapraz) → kerpiç dolgu → sıva ve boya → cumba ve payandalar → kiremit çatı**. Her adımda kısa bir açıklama çıkar; konak bitince kart açılır. Hedef toplam 6: 5 ayrıntı ve konak.
+- **Kaynak:** Üst katların ahşap çerçeveli ve kerpiç dolgulu yapım sistemi için [Odunpazarı Belediyesi](https://odunpazari.bel.tr/en-US/detay/historical-odunpazari-houses).
+- **Temsilî:** Yapım sırası ve ayrıntılar genel bir anlatımdır. Bu sırayla yapıldığı ayrıca doğrulanmadı.
+
+## Model düzeltmeleri
+- Soldaki evlerin cumbaları sokağa değil, evin arkasına bakıyordu; yön hesabı terstendi. Artık her evin cumbası ve çıkması sokağa taşıyor.
+- Cumbalar düz bir tahta sandıktı. Evin renginde, pencereli ve ahşap kuşaklı yapıldı; altında iki eğik "eli böğründe" payanda var.
+- Zemin katlar kapısız ve penceresizdi. Ahşap kapı ve demir parmaklıklı pencere eklendi. Kat kuşağı, köşe dikmeleri ve çıkma payandaları eklendi; payandalar ilk denemede havada yatay duruyordu, düzeltildi.
+- Evlerle sokak arasında 1 m'lik çimen boşluğu vardı; evler sokağa yaklaştırıldı.
+- Kuzeydeki meydanın zemini düzdü, bir ucu toprağa gömülüyordu; artık eğimi izliyor. Meydana çeşme, çınar ve banklar eklendi; temsilî.
+
 ## Kaynaklarda bulunanlar
 - **Yapı ve biçim:** Konaklar 19. yüzyıl Osmanlı sivil mimarisinin örneği; cumbalı, çıkmalı, ahşap süslemeli, genellikle iki–üç katlı. [Küre Ansiklopedisi — Odunpazarı Evleri](https://kureansiklopedi.com/tr/detay/odunpazari-evleri-88d0a)
 - **Cumba:** Üst kat çıkmasının sahibin toplumsal durumuna işaret ettiği aktarılıyor. [Küre Ansiklopedisi — Odunpazarı Evleri](https://kureansiklopedi.com/tr/detay/odunpazari-evleri-88d0a)

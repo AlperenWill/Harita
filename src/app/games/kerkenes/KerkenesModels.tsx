@@ -4,9 +4,10 @@
  */
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { bx, groundTex, mountainGeo, stoneTex, useGrassCards } from '../shared/scenery';
-import { GATE_ANGLES, GATE_HALF, HOUSES, PALACE, RING, STREET_W, TRENCH, heightAt } from './site';
+import { GATE_ANGLES, GATE_HALF, HOUSES, PALACE, RING, STREET_W, TRENCH, heightAt, CELL, NCELL, PLOTS, PLOT_SIZE, magAt } from './site';
 
 type Tier = 'low' | 'medium' | 'high';
 export function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
@@ -50,19 +51,27 @@ export function Terrain({ tier }: { tier: Tier }) {
 
 /* ===================== sur, kapılar, kuleler ===================== */
 export function Wall({ m }: { m: Mats }) {
-  const geo = useMemo(() => { const parts: Parts = [], N = 720, rm = (RING.r0 + RING.r1) / 2, gateSpan = (GATE_HALF + 0.4) / rm;
-    const gateAt = (a: number) => GATE_ANGLES.some((g) => { let d = Math.abs(((a - g + Math.PI * 3) % (Math.PI * 2)) - Math.PI); return d < gateSpan; });
-    for (let i = 0; i < N; i++) { const a = (i / N) * Math.PI * 2; if (gateAt(a)) continue;
-      const seg = (2 * Math.PI * rm) / N, x = Math.cos(a) * rm, z = Math.sin(a) * rm, y = heightAt(x, z);
-      const g = bx(RING.r1 - RING.r0, RING.h, seg * 1.04, 2.4); g.rotateY(-a); g.translate(x, y + RING.h / 2 - 0.3, z); parts.push(g);
-      if (i % 2 === 0) { const b = bx(RING.r1 - RING.r0, 0.7, seg * 0.5, 1.5); b.rotateY(-a); b.translate(x, y + RING.h + 0.2, z); parts.push(b); } }
-    return merge(parts); }, []);
+  const wallMat = useMemo(() => { const mm = m.stone.clone(); mm.side = THREE.DoubleSide; return mm; }, [m.stone]);
+  // yıkık taş sur sırtı: kesintisiz halka, içte ve dışta eğimli yüzler, tepe yüksekliği yer yer düşer (önceden aralıklı kutular ve kalın sırt boyunca mazgallardı)
+  const geo = useMemo(() => { const rm = (RING.r0 + RING.r1) / 2, gateSpan = (GATE_HALF + 1.8) / rm, N = 900, pos: number[] = [], uv: number[] = [], idx: number[] = [];
+    const gateAt = (a: number) => GATE_ANGLES.some((g) => Math.abs(((a - g + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < gateSpan);
+    const hAt = (a: number) => RING.h * (0.62 + 0.28 * Math.sin(a * 23) * Math.sin(a * 7 + 1) + 0.1 * Math.sin(a * 61));
+    let run: number[] | null = null;
+    const prof = (a: number) => { const c = Math.cos(a), s2 = Math.sin(a), h = hAt(a), pts: [number, number][] = [[RING.r0 - 1.2, -0.4], [RING.r0 + 1.6, h], [RING.r1 - 1.6, h], [RING.r1 + 1.2, -0.4]];
+      return pts.map(([r, y]) => [c * r, heightAt(c * r, s2 * r) + y, s2 * r] as [number, number, number]); };
+    for (let i = 0; i <= N; i++) { const a = (i / N) * Math.PI * 2, g = gateAt(a);
+      if (g) { run = null; continue; }
+      const P = prof(a), base = pos.length / 3; for (let k = 0; k < 4; k++) { pos.push(...P[k]); uv.push((a * rm) / 3, k * 0.9); }
+      if (run) { const pb = run[0]; for (let k = 0; k < 3; k++) idx.push(pb + k, base + k, pb + k + 1, pb + k + 1, base + k, base + k + 1); }
+      run = [base]; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g; }, []);
   const gates = useMemo(() => { const parts: Parts = [];
-    for (const g of GATE_ANGLES) for (const side of [-1, 1]) { const a = g + side * (GATE_HALF + 1.6) / ((RING.r0 + RING.r1) / 2), rm = (RING.r0 + RING.r1) / 2, x = Math.cos(a) * rm, z = Math.sin(a) * rm, y = heightAt(x, z);
-      const t = bx(4.2, RING.h + 2.2, 4.2, 2); t.translate(x, y + (RING.h + 2.2) / 2 - 0.3, z); parts.push(t); }
+    // kapı: iki yanda taş kule tabanı (yıkık, farklı yükseklikte)
+    for (const g of GATE_ANGLES) for (const side of [-1, 1]) { const a = g + side * (GATE_HALF + 1.6) / ((RING.r0 + RING.r1) / 2), rm = (RING.r0 + RING.r1) / 2, x = Math.cos(a) * rm, z = Math.sin(a) * rm, y = heightAt(x, z), H = RING.h * (0.8 + 0.25 * Math.sin(g * 5 + side));
+      const t = bx(4.2, H, 9, 2); t.rotateY(-a); t.translate(x, y + H / 2 - 0.3, z); parts.push(t); }
     return merge(parts); }, []);
   return <group>
-    <mesh geometry={geo} material={m.stone} castShadow receiveShadow />
+    <mesh geometry={geo} material={wallMat} castShadow receiveShadow />
     <mesh geometry={gates} material={m.stone} castShadow receiveShadow />
   </group>;
 }
@@ -82,16 +91,20 @@ export function Streets({ m }: { m: Mats }) {
 }
 
 /* ===================== evler ===================== */
+/** Evler: MÖ 540 dolayında yanarak terk edilen kentin taş temel kalıntıları (önceden çatılı, sağlam evlerdi). Duvar yükseklikleri ve iç bölmeler temsilîdir. */
 export function Houses({ m }: { m: Mats }) {
-  const walls = useMemo(() => { const parts: Parts = [];
-    for (const h of HOUSES) { const g = bx(h.w, 2.8, h.d, 2.2); g.rotateY(h.yaw); g.translate(h.x, heightAt(h.x, h.z) + 1.4, h.z); parts.push(g); }
-    return merge(parts); }, []);
-  const roofs = useMemo(() => { const parts: Parts = [];
-    for (const h of HOUSES) { const g = new THREE.ConeGeometry(Math.max(h.w, h.d) * 0.62, 1.6, 4, 1); g.rotateY(Math.PI / 4 + h.yaw); g.scale(h.w / Math.max(h.w, h.d), 1, h.d / Math.max(h.w, h.d)); g.translate(h.x, heightAt(h.x, h.z) + 2.8 + 0.8, h.z); parts.push(g); }
-    return merge(parts); }, []);
+  const geo = useMemo(() => { const st: Parts = [], ash: Parts = [], r = rng(61);
+    for (const h of HOUSES) { const y = heightAt(h.x, h.z), t = 0.6, c = Math.cos(h.yaw), s2 = Math.sin(h.yaw);
+      const put = (lx: number, lz: number, w: number, d: number, hh: number) => { const g = bx(w, hh, d, 1.6); g.translate(lx, hh / 2 - 0.1, lz); g.rotateY(h.yaw); g.translate(h.x, y, h.z); st.push(g); };
+      const segs = (x0: number, z0: number, x1: number, z1: number, gap: boolean) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(2, Math.round(L / 1.2)), ax = Math.abs(x1 - x0) > Math.abs(z1 - z0);
+        for (let i = 0; i < n; i++) { if (gap && i === Math.floor(n / 2)) continue; const u = (i + 0.5) / n, hh = 0.5 + r() * 0.9 * (r() < 0.15 ? 0.3 : 1); put(x0 + (x1 - x0) * u, z0 + (z1 - z0) * u, ax ? L / n + 0.02 : t, ax ? t : L / n + 0.02, hh); } };
+      const hw = h.w / 2, hd = h.d / 2; segs(-hw, -hd, hw, -hd, false); segs(-hw, hd, hw, hd, true); segs(-hw, -hd, -hw, hd, false); segs(hw, -hd, hw, hd, false);
+      if (h.w > 6) segs(0, -hd, 0, hd * 0.3, false);
+      const f = new THREE.PlaneGeometry(h.w - 0.8, h.d - 0.8); f.rotateX(-Math.PI / 2); f.rotateY(h.yaw); f.translate(h.x, y + 0.03, h.z); ash.push(f); void c; void s2; }
+    return { st: merge(st), ash: merge(ash) }; }, []);
   return <group>
-    <mesh geometry={walls} material={m.stone} castShadow receiveShadow />
-    <mesh geometry={roofs} material={m.roof} castShadow />
+    <mesh geometry={geo.st} material={m.stone} castShadow receiveShadow />
+    <mesh geometry={geo.ash} receiveShadow><meshStandardMaterial color="#4a3f36" roughness={1} /></mesh>
   </group>;
 }
 
@@ -151,4 +164,38 @@ export function Hills() {
     for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + r() * 0.25, dd = 900 + r() * 450; out.push({ p: [Math.cos(a) * dd, -6, Math.sin(a) * dd], g: mountainGeo(520 + r() * 260, 170 + r() * 150, 90 + i, 1.5, '#8a7a58') }); }
     return out; }, []);
   return <group userData={{ noCast: true }}>{list.map((mm, i) => <mesh key={i} geometry={mm.g} position={mm.p}><meshStandardMaterial vertexColors roughness={1} /></mesh>)}</group>;
+}
+
+/* ===================== manyetik tarama: alan çerçevesi, taranan hücreler, ortaya çıkan plan ===================== */
+/** Oyun yöneticisi yazar: her alanın taranan hücreleri ve tamamlanan alanlar */
+export const surveyState = { cells: Object.fromEntries(PLOTS.map((p) => [p.id, new Uint8Array(NCELL * NCELL)])) as Record<string, Uint8Array>, done: [] as string[], rev: 0 };
+export function Survey({ m }: { m: Mats }) {
+  const frame = useMemo(() => { const pegs: Parts = [], str: Parts = [];
+    for (const p of PLOTS) { const h = PLOT_SIZE / 2; for (const [dx, dz] of [[-h, -h], [h, -h], [-h, h], [h, -h], [h, h], [-h, h]]) { const x = p.c[0] + dx, z = p.c[1] + dz; pegs.push(new THREE.CylinderGeometry(0.06, 0.06, 0.9, 6).translate(x, heightAt(x, z) + 0.4, z)); }
+      for (const [x0, z0, x1, z1] of [[-h, -h, h, -h], [-h, h, h, h], [-h, -h, -h, h], [h, -h, h, h]]) { const L = Math.hypot(x1 - x0, z1 - z0), mx = p.c[0] + (x0 + x1) / 2, mz = p.c[1] + (z0 + z1) / 2, g = bx(x0 === x1 ? 0.03 : L, 0.03, x0 === x1 ? L : 0.03, 1); g.translate(mx, heightAt(mx, mz) + 0.7, mz); str.push(g); } }
+    return { pegs: merge(pegs), str: merge(str) }; }, []);
+  const n = PLOTS.length * NCELL * NCELL, ref = useRef<THREE.InstancedMesh>(null), seen = useRef(-1);
+  const quad = useMemo(() => { const g = new THREE.PlaneGeometry(CELL * 0.96, CELL * 0.96); g.rotateX(-Math.PI / 2); return g; }, []);
+  const mat = useMemo(() => new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.78, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), []);
+  useEffect(() => { const mm = ref.current; if (!mm) return; const o = new THREE.Object3D(); let k = 0;
+    for (const p of PLOTS) for (let j = 0; j < NCELL; j++) for (let i = 0; i < NCELL; i++) { const x = p.c[0] - PLOT_SIZE / 2 + (i + 0.5) * CELL, z = p.c[1] - PLOT_SIZE / 2 + (j + 0.5) * CELL; o.position.set(x, heightAt(x, z) + 0.06, z); o.scale.setScalar(0.001); o.updateMatrix(); mm.setMatrixAt(k, o.matrix); k++; }
+    mm.instanceMatrix.needsUpdate = true; mm.computeBoundingSphere(); }, []);
+  // renkler ilk çizimden önce hazır olmalı (sonradan eklenen instanceColor gölgelendiriciye girmez)
+  const colors = useMemo(() => { const a = new Float32Array(n * 3); let k = 0; for (const p of PLOTS) for (let j = 0; j < NCELL; j++) for (let i = 0; i < NCELL; i++) { const v = magAt(p, i, j); a.set([1 - v * 0.9, 1 - v * 0.85, 1 - v * 0.7], k * 3); k++; } return a; }, [n]);
+  useFrame(() => { const mm = ref.current; if (!mm || seen.current === surveyState.rev) return; seen.current = surveyState.rev; const o = new THREE.Object3D(); let k = 0;
+    for (const p of PLOTS) { const c = surveyState.cells[p.id]; for (let j = 0; j < NCELL; j++) for (let i = 0; i < NCELL; i++) { const x = p.c[0] - PLOT_SIZE / 2 + (i + 0.5) * CELL, z = p.c[1] - PLOT_SIZE / 2 + (j + 0.5) * CELL; o.position.set(x, heightAt(x, z) + 0.06, z); o.scale.setScalar(c[j * NCELL + i] ? 1 : 0.001); o.updateMatrix(); mm.setMatrixAt(k++, o.matrix); } }
+    mm.instanceMatrix.needsUpdate = true; });
+  // tamamlanan alanda gömülü duvarların planı: zeminde parlayan çizgiler
+  const plans = useMemo(() => PLOTS.map((p) => { const parts: Parts = [];
+    for (const r of p.rooms) for (const [x0, z0, x1, z1] of [[r.x0, r.z0, r.x1, r.z0], [r.x0, r.z1, r.x1, r.z1], [r.x0, r.z0, r.x0, r.z1], [r.x1, r.z0, r.x1, r.z1]]) { const L = Math.hypot(x1 - x0, z1 - z0), mx = p.c[0] + (x0 + x1) / 2, mz = p.c[1] + (z0 + z1) / 2, g = bx(x0 === x1 ? 0.35 : L + 0.35, 0.12, x0 === x1 ? L + 0.35 : 0.35, 1); g.translate(mx, heightAt(mx, mz) + 0.12, mz); parts.push(g); }
+    return merge(parts); }), []);
+  const planMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#2fb6c9', emissive: '#2fb6c9', emissiveIntensity: 0.7, transparent: true, opacity: 0.9 }), []);
+  const planRefs = useRef<(THREE.Mesh | null)[]>([]);
+  useFrame(({ clock }) => { planRefs.current.forEach((mm, i) => { if (!mm) return; mm.visible = surveyState.done.includes(PLOTS[i].id); }); planMat.emissiveIntensity = 0.55 + 0.25 * Math.sin(clock.elapsedTime * 2); });
+  return <group userData={{ noCast: true }}>
+    <mesh geometry={frame.pegs} material={m.wood ?? m.stone} />
+    <mesh geometry={frame.str}><meshStandardMaterial color="#f2e6c4" roughness={0.8} /></mesh>
+    <instancedMesh ref={ref} args={[quad, mat, n]}><instancedBufferAttribute attach="instanceColor" args={[colors, 3]} /></instancedMesh>
+    {plans.map((g, i) => <mesh key={i} ref={(mm) => { planRefs.current[i] = mm; }} geometry={g} material={planMat} visible={false} />)}
+  </group>;
 }

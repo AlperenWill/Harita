@@ -16,6 +16,11 @@ Oyuncu avludan eski fabrika salonuna girer; uzun kâğıt makinesinin iki yanın
 5. Matbaa makineleri
 6. Kapanış ve müze
 
+## Kâğıt hattı (mekanik)
+Makinenin güneyinde beş kumanda panosu var. Oyuncu bölümleri sırayla çalıştırır: **hamur kasası → elek → pres → kurutma silindirleri → kalender ve sarıcı**. Sırası gelmeyen pano uyarı verir ("Önce … çalışmalı"). Pano lambası yeşilse bölüm çalışıyor, sarı yanıp sönüyorsa sıradaki demektir. Çalışan bölümün merdaneleri döner, kâğıt şeridi o bölüme ulaşır, kurutmada buhar çıkar, son bölümde rulo büyür. Her bölüm bir bilgi kartı açar. Hedef toplam 11: 6 ayrıntı ve 5 bölüm.
+- **Kaynak:** Bölümlerin sırası ve ne yaptıkları, kâğıt makinelerinin genel çalışma düzenidir. [Wikipedia — Paper machine](https://en.wikipedia.org/wiki/Paper_machine). Bölüm metinlerinde sayısal değer (su oranı, sıcaklık, hız) kullanılmadı.
+- **Temsilî:** SEKA'daki makinenin kendi bölümleri, sayıları ve ölçüleri bu aramada doğrulanmadı. Oyundaki silindir ve merdane sayıları, buhar davlumbazı, panolar ve lambalar temsilîdir. Salonun pencereleri de temsilîdir.
+
 ## Kaynaklarda bulunanlar
 - **Fabrika:** Sümerbank İzmit Kâğıt ve Karton Fabrikası. Temel 1934'te atıldı (14 ya da 18 Ağustos; kaynaklar çelişiyor), deneme üretimi 18 Nisan 1936, resmî açılış 6 Kasım 1936. [DergiPark](https://dergipark.org.tr/tr/download/article-file/1473662), [Wikipedia](https://en.wikipedia.org/wiki/SEKA_Paper_Museum)
 - **Kapanış:** Özelleştirme Yüksek Kurulu'nun 14.09.1998 tarihli kararı. [DergiPark](https://dergipark.org.tr/tr/download/article-file/1473662)
@@ -36,3 +41,8 @@ Not: Bilgiler arama sonuçlarının özetlerinden alındı; sayfalar açılıp o
 - Kâğıt makinesinin hattı (silindir sayısı ve yerleşimi); gerçek makine çok daha uzundur ve karmaşıktır.
 - Vitrinlerin sayısı (oyunda 8) ve içerikleri; matbaa makinelerinin biçimi.
 - Avlu, baca ve havuz.
+
+## Model düzeltmeleri (ikinci tarama)
+- Bacada tuğlalar dev boyuttaydı, çünkü duvar ölçekli doku silindire uygulanmıştı. Bacaya ayrı tekrar oranlı tuğla dokusu verildi.
+- Matbaa makineleri koyu bir kutu ve bir silindirden ibaretti. Ayaklı gövde, yan çerçeveler, baskı silindiri, mürekkep merdaneleri, kâğıt besleme tablası ve volan eklendi; biçim temsilî.
+- Vitrin içindeki kutular tabanın 30 cm üstünde havada duruyordu. Tabana oturan kâğıt destesi, küçük rulo ve açık kitap yapıldı.

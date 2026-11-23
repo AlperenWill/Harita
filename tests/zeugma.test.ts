@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, SPOTS, START, groundY, walkable } from '../src/app/games/zeugma/site';
+import { BOUNDS, PUZZLE_START, RESTORE, SPOTS, START, TABLE, groundY, movesLeft, rotateTile, solved, walkable } from '../src/app/games/zeugma/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -33,5 +33,12 @@ describe('Zeugma Mozaik Müzesi', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('restorasyon: masa yürünmez, başına yürünür; bulmaca çözülebilir ve baştan hiçbir parça doğru değil', () => {
+    expect(walkable((TABLE.x0 + TABLE.x1) / 2, (TABLE.z0 + TABLE.z1) / 2)).toBe(false);
+    const r = reach(); expect(r(RESTORE.c[0], RESTORE.c[1])).toBe(true);
+    expect(PUZZLE_START.every((v) => v !== 0)).toBe(true);
+    let rot = PUZZLE_START.slice(); for (let i = 0; i < 9; i++) while (rot[i] !== 0) rot = rotateTile(rot, i);
+    expect(solved(rot)).toBe(true); expect(movesLeft(PUZZLE_START)).toBe(PUZZLE_START.reduce((a, v) => a + (4 - v), 0));
   });
 });

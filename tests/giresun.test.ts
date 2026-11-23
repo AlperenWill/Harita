@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, CHURCH, SPOTS, START, groundY, walkable } from '../src/app/games/giresun/site';
+import { BOARD_AT, BOAT_START, BOUNDS, CHURCH, HAMZA, LAP, LAP_REACH, SPOTS, START, boatWater, groundY, walkable } from '../src/app/games/giresun/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -19,11 +19,14 @@ describe('Giresun Adası', () => {
   it('kilisenin duvarları geçilmez; güney kapısından girilir', () => {
     expect(walkable(0, CHURCH.z1 - 0.6)).toBe(true);     // kapı
     expect(walkable(6, CHURCH.z1 - 0.6)).toBe(false);    // duvar
-    expect(walkable(CHURCH.x1 - 0.6, 0)).toBe(false);    // doğu duvarı
+    expect(walkable(CHURCH.x1 - 0.6, 5.5)).toBe(false);  // doğu duvarının köşesi
+    expect(walkable(14.2, 0)).toBe(false);               // apsis duvarı
+    expect(walkable(11.5, 0)).toBe(true);                // apsisin içi
     expect(walkable(0, 0)).toBe(true);                    // iç mekân
   });
   it('kıyı ve sarnıç: deniz içinde yürünmez', () => {
-    expect(walkable(0, 41)).toBe(false);
+    expect(walkable(8, 41)).toBe(false);   // iskelenin yanı: deniz
+    expect(walkable(0, 43)).toBe(true);    // iskele (önceki sürümde yürünemiyordu)
     expect(walkable(24, -12)).toBe(false);
   });
   it('yükseklik sürekli: 0,5 m adımda 0,3 m\'den fazla sıçrama yok', () => {
@@ -36,5 +39,15 @@ describe('Giresun Adası', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('kayık turu: iskeleye yürünür, kayık suyun içinden bütün şamandıralara ulaşır; Hamza Taşı yürünmez', () => {
+    expect(reach()(BOARD_AT[0], BOARD_AT[1])).toBe(true);
+    expect(walkable(HAMZA.c[0], HAMZA.c[1])).toBe(false);
+    expect(boatWater(BOAT_START[0], BOAT_START[1])).toBe(true);
+    // su kuşağında 1 m ızgarayla taşma (4 komşu)
+    const x0 = -160, z0 = -100, nx = 321, nz = 201, seen = new Uint8Array(nx * nz), idx = (x: number, z: number) => Math.round(z - z0) * nx + Math.round(x - x0);
+    const q = [idx(BOAT_START[0], BOAT_START[1])]; seen[q[0]] = 1;
+    while (q.length) { const c = q.pop()!, i = c % nx, j = (c - i) / nx; for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ii = i + a, jj = j + b; if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue; const k = jj * nx + ii; if (seen[k] || !boatWater(x0 + ii, z0 + jj)) continue; seen[k] = 1; q.push(k); } }
+    for (const l of LAP) { let ok = false; for (let dx = -LAP_REACH + 1; dx < LAP_REACH && !ok; dx++) for (let dz = -LAP_REACH + 1; dz < LAP_REACH && !ok; dz++) if (Math.hypot(dx, dz) < LAP_REACH - 1 && seen[idx(Math.round(l.at[0] + dx), Math.round(l.at[1] + dz))]) ok = true; expect(ok, l.id).toBe(true); }
   });
 });

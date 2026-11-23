@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, CHIMNEY, HALL, MACHINE, POND, PRESSES, SPOTS, START, VITRINS, groundY, walkable } from '../src/app/games/seka/site';
+import { BOUNDS, CHIMNEY, HALL, MACHINE, POND, PRESSES, SPOTS, START, STATIONS, STATION_REACH, VITRINS, groundY, nearestStation, stationAction, walkable } from '../src/app/games/seka/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -33,5 +33,14 @@ describe('SEKA Kâğıt Müzesi', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('kâğıt hattı: beş pano yürünerek kullanılabilir, gövdeleri geçilmez, bölümler sırayla çalışır', () => {
+    expect(STATIONS.map((q) => q.id)).toEqual(['hamur', 'elek', 'pres', 'kurutma', 'rulo']);
+    for (const q of STATIONS) { expect(walkable(q.panel[0], q.panel[1]), q.id).toBe(false); expect(q.source.url).toMatch(/^https:\/\//);
+      let ok = false; for (let dx = -STATION_REACH; dx <= STATION_REACH && !ok; dx += 0.25) for (let dz = -STATION_REACH; dz <= STATION_REACH && !ok; dz += 0.25) { const x = q.panel[0] + dx, z = q.panel[1] + dz; if (walkable(x, z) && nearestStation(x, z) === q) ok = true; }
+      expect(ok, q.id).toBe(true); }
+    for (let i = 1; i < STATIONS.length; i++) expect(STATIONS[i].x0).toBeGreaterThanOrEqual(STATIONS[i - 1].x1);
+    expect(stationAction(0, 0)).toBe('start'); expect(stationAction(2, 0)).toBe('blocked'); expect(stationAction(1, 3)).toBe('again'); expect(stationAction(3, 3)).toBe('start');
+    expect(nearestStation(START.at[0], START.at[1])).toBeNull();
   });
 });

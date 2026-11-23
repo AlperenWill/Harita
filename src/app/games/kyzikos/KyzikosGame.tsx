@@ -10,8 +10,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Footprints, Landmark, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { Footprints, History, Landmark, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
+import { ActionDock, Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, RoundAction, StartSheet, Toast, TopRow } from '../shared/hud/Hud';
 import { adaptive, initialTier, useSettings } from '../shared/hud/settings';
 import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
 import { LookCrosshair } from '../shared/mouseLook';
@@ -19,17 +19,24 @@ import { Joystick } from '../shared/Joystick';
 import { WalkAudio, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { AMPHI, AREA, BOUNDS, CAPITAL, PODIUM, RAMP, SPOTS, START, TRENCHES, groundY, nearestSpot, slide, type Spot } from './site';
-import { Backdrop, Excavation, Poplars, Reeds, SUN_DIR, Temple, Terrain, useMats } from './KyzikosModels';
+import { AMPHI, AREA, BOUNDS, CAPITAL, LENS_TARGETS, PIERS, PODIUM, RAMP, SPOTS, START, TRENCHES, groundY, lensTargetsAt, nearestSpot, slide, type Spot } from './site';
+import { AmphiRuins, Backdrop, Excavation, Olives, Poplars, Reconstruction, Reeds, SUN_DIR, Temple, Terrain, useMats } from './KyzikosModels';
 
 const THEME = { accent: '#7a6a42' };
 const EYE = 1.62, WALK = 1.7, RUN = 3.6;
 const audio = new WalkAudio({ freq: 620, gain: 0.07 }, 'any');
 
 /* ---------- durum ---------- */
-interface S { started: boolean; card: Spot | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false };
+interface S { started: boolean; card: Spot | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; lens: boolean; lensSeen: string[]; toast: string | null; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false, lens: false, lensSeen: [] as string[], toast: null as string | null };
 const useKyz = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
+const lensAmt = { v: 0 };
+let toastTimer = 0;
+/** Mercek açıkken oyuncu bir hedefin yakınındaysa o hedef "görüldü" sayılır ve kısa bir bildirim çıkar */
+function markLens() { const s = useKyz.getState(); if (!s.lens) return; const fresh = lensTargetsAt(live.x, live.z).filter((id) => !s.lensSeen.includes(id)); if (!fresh.length) return;
+  const names = fresh.map((id) => LENS_TARGETS.find((t) => t.id === id)!.name).join(' ve '); s.set({ lensSeen: [...s.lensSeen, ...fresh], toast: `${names}: eski hâli görüldü (canlandırma temsilîdir)` }); audio.tone(true);
+  clearTimeout(toastTimer); toastTimer = window.setTimeout(() => useKyz.getState().set({ toast: null }), 3200); }
+function toggleLens() { const s = useKyz.getState(); s.set({ lens: !s.lens }); audio.tone(!s.lens); markLens(); }
 const live = { x: START.at[0], z: START.at[1], view: { yaw: START.yaw, pitch: -0.02 }, speed: 0, bob: 0, step: 0, fly: null as null | [number, number, number] };
 const pause = { on: false };
 const keys = new Set<string>();
@@ -54,6 +61,7 @@ export default function KyzikosGame({ onExit }: { onExit: () => void }) {
       if (e.code === 'KeyE') { if (s.card) close(); else if (s.near) inspect(s.near); }
       if (e.code === 'Escape' && s.card) { close(); e.preventDefault(); }
       if (e.code === 'KeyM') s.set({ map: !s.map });
+      if (e.code === 'KeyT' && !s.card) toggleLens();
     };
     const up = (e: KeyboardEvent) => keys.delete(e.code);
     const blur = () => keys.clear();
@@ -70,13 +78,14 @@ export default function KyzikosGame({ onExit }: { onExit: () => void }) {
       map: (v: boolean) => useKyz.getState().set({ map: v }),
       fly: (x: number, y: number, z: number) => { live.fly = [x, y, z]; },
       land: () => { live.fly = null; },
-      seeAll: () => useKyz.getState().set({ seen: SPOTS.map((s) => s.id) }),
+      seeAll: () => useKyz.getState().set({ seen: SPOTS.map((s) => s.id), lensSeen: LENS_TARGETS.map((t) => t.id) }),
+      lens: (v: boolean) => { useKyz.getState().set({ lens: v }); lensAmt.v = v ? 1 : 0; markLens(); },
       SPOTS,
     };
   }, []);
 
   const fpl = useFpLook(live.view, () => { const a = useKyz.getState(); return a.started && !a.card && !pause.on; }, () => audio.unlock());
-  const done = S.seen.length >= SPOTS.length;
+  const total = SPOTS.length + LENS_TARGETS.length, found = S.seen.length + S.lensSeen.length, done = found >= total;
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dde7ee] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
@@ -92,22 +101,25 @@ export default function KyzikosGame({ onExit }: { onExit: () => void }) {
           </Suspense>
         </Canvas>
         <TopRow onExit={onExit}
-          objective={S.started ? <Objective icon={<Landmark size={15} />} label={done ? 'Hepsini buldun' : 'Kentin izlerini bul'} done={S.seen.length} total={SPOTS.length} /> : undefined}
+          objective={S.started ? <Objective icon={<Landmark size={15} />} label={done ? 'Hepsini buldun' : 'İzleri bul, eski hâlini gör'} done={found} total={total} /> : undefined}
           right={<>{S.started && <IconButton label="Krokiyi aç/kapat (M)" active={S.map} onClick={() => S.set({ map: !S.map })}><MapIcon size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; if (v) keys.clear(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} /></>} />
-        {S.started && S.map && <Kroki seen={S.seen} />}
+        <div className="pointer-events-none absolute inset-0 transition-opacity duration-700" style={{ opacity: S.lens ? 1 : 0, background: 'radial-gradient(ellipse at center, rgba(255,226,170,0.10) 40%, rgba(150,100,40,0.38) 100%)' }} />
+        {S.started && S.map && <Kroki seen={S.seen} lensSeen={S.lensSeen} />}
         {S.started && (<>
           <Joystick stick={stick} onTouch={() => audio.unlock()} color="bg-[#7a6a42]" />
           <LookCrosshair locked={fpl.locked} />
           {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <ActionDock><RoundAction label="Zaman merceği (T)" primary={S.lens} size={56} onClick={toggleLens}><History size={24} /></RoundAction></ActionDock>}
+          <Toast text={S.toast} tone="ok" />
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · saat düğmesi ya da T: zaman merceği<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Balıkesir · Erdek · Kyzikos" title="Hadrian'ın Tapınağı"
-          intro={<>Kıstaktaki yoldan ovaya gir; rampayla tapınak podyumuna çık, kırık sütunları ve devasa başlığı gör, batıdaki amfiteatr çanağına in: <b>6 ayrıntıyı</b> incele.</>}
-          controls={CONTROLS} note="Tapınağın ölçüleri, sütun sayısı ve yerleşim temsilîdir." cta="Antik kente gir" ctaIcon={<Footprints size={18} />}
+          intro={<>Kıstaktaki yoldan ovaya gir; rampayla tapınak podyumuna çık, kırık sütunları ve devasa başlığı gör, batıdaki amfiteatra in: <b>6 ayrıntıyı</b> incele. <b>Zaman merceğini</b> açınca tapınağın ve amfiteatrın eski hâli kalıntıların üstünde belirir; ikisini de eski hâliyle gör.</>}
+          controls={CONTROLS} note="Tapınağın ölçüleri, sütun sayısı, yerleşim ve mercekteki canlandırmalar temsilîdir." cta="Antik kente gir" ctaIcon={<Footprints size={18} />}
           onStart={() => { audio.unlock(); S.set({ started: true }); }} onExit={onExit} />}
         {S.started && done && !S.endShown && !S.card && <EndSheet kicker="Kyzikos" title="Ovanın ortasındaki dev"
-          text="Kentin imparator tapınağı, parçaları yeniden birleştirilerek bugün de araştırılıyor; kazılar özel mülkiyet yüzünden zorlukla sürüyor."
+          text="Tapınağın ve amfiteatrın eski hâlini merceğin altında gördün. Bugün tapınaktan geriye birkaç sütun ve dev bir başlık kaldı; kazılar, alanın büyük bölümü özel mülkiyette olduğu için zorlukla sürüyor."
           stayLabel="Ovada kal" onStay={() => S.set({ endShown: true })} onExit={onExit} onRestart={restart} />}
       </HudTheme>
     </div>
@@ -118,6 +130,7 @@ const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
   { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
+  { icon: <History size={16} />, text: <>Saat düğmesi ya da <b>T</b>: zaman merceği (tapınağın ve amfiteatrın eski hâli)</> },
 ];
 
 /* ---------- 3B dünya ---------- */
@@ -137,7 +150,10 @@ function World({ tier }: { tier: Tier }) {
       <Terrain tier={tier} />
       <Temple m={m} />
       <Excavation m={m} />
-      <Poplars n={low ? 8 : 18} />
+      <AmphiRuins m={m} />
+      <Reconstruction amount={lensAmt} />
+      <Poplars n={low ? 6 : 12} />
+      <Olives n={low ? 120 : 420} />
       <Reeds n={low ? 1500 : 4500} />
       <Markers />
     </group>
@@ -169,13 +185,14 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
     const near = S.started ? nearestSpot(live.x, live.z) : null; if ((near?.id ?? '') !== nearId.current) { nearId.current = near?.id ?? ''; S.set({ near }); }
     const gy = groundY(live.x, live.z), sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.035 : 0;
     if (live.fly) applyFp(camera, live.fly[0], live.fly[1], live.fly[2], live.view, 0); else applyFp(camera, live.x, gy + EYE, live.z, live.view, sway);
+    lensAmt.v += ((S.lens ? 1 : 0) - lensAmt.v) * Math.min(1, dt * 3); if (S.lens) markLens();
     easeFov(camera, 66, dt);
   });
   return null;
 }
 
 /* ---------- kroki ---------- */
-function Kroki({ seen }: { seen: string[] }) {
+function Kroki({ seen, lensSeen }: { seen: string[]; lensSeen: string[] }) {
   const [, force] = useState(0);
   useEffect(() => { const id = setInterval(() => force((x) => x + 1), 200); return () => clearInterval(id); }, []);
   const W = BOUNDS.x1 - BOUNDS.x0, Hh = BOUNDS.z1 - BOUNDS.z0, sx = (x: number) => x - BOUNDS.x0, sz = (z: number) => z - BOUNDS.z0;
@@ -189,11 +206,13 @@ function Kroki({ seen }: { seen: string[] }) {
         <rect x={sx(PODIUM.x0)} y={sz(PODIUM.z0)} width={PODIUM.x1 - PODIUM.x0} height={PODIUM.z1 - PODIUM.z0} fill="#ece6d4" stroke="#8a8068" strokeWidth={0.6} />
         <rect x={sx(RAMP.x0)} y={sz(RAMP.z0)} width={RAMP.x1 - RAMP.x0} height={RAMP.z1 - RAMP.z0} fill="#d8d0b8" />
         <rect x={sx(CAPITAL.x0)} y={sz(CAPITAL.z0)} width={CAPITAL.x1 - CAPITAL.x0} height={CAPITAL.z1 - CAPITAL.z0} fill="#a89c84" />
+        {PIERS.map((c, i) => <circle key={`p${i}`} cx={sx(c[0])} cy={sz(c[1])} r={1.3} fill="#8a7a60" />)}
+        {LENS_TARGETS.map((t) => <circle key={t.id} cx={sx(t.c[0])} cy={sz(t.c[1])} r={4} fill="none" stroke={lensSeen.includes(t.id) ? THEME.accent : '#fff'} strokeWidth={0.8} strokeDasharray="2 1.5" />)}
         {TRENCHES.map((t, i) => <rect key={i} x={sx(t.x0)} y={sz(t.z0)} width={t.x1 - t.x0} height={t.z1 - t.z0} fill="#2a2218" />)}
         {SPOTS.map((s) => <circle key={s.id} cx={sx(s.at[0])} cy={sz(s.at[1])} r={2.2} fill={seen.includes(s.id) ? THEME.accent : '#fff'} stroke={THEME.accent} strokeWidth={0.8} />)}
         <g transform={`translate(${sx(live.x)} ${sz(live.z)}) rotate(${(-live.view.yaw * 180) / Math.PI})`}><path d="M0,-3 L2.2,2.2 L0,1.1 L-2.2,2.2 Z" fill="#1f1b17" stroke="#fff" strokeWidth={0.4} /></g>
       </svg>
-      <p className="px-1 pb-0.5 text-[11px] font-semibold text-[#4a433c]">Kroki · {seen.length}/{SPOTS.length} bulundu</p>
+      <p className="px-1 pb-0.5 text-[11px] font-semibold text-[#4a433c]">Kroki · {seen.length}/{SPOTS.length} ayrıntı · {lensSeen.length}/{LENS_TARGETS.length} eski hâl</p>
     </div>
   );
 }

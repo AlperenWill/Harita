@@ -4,10 +4,11 @@
  * kemer biçimi, malzeme ve çevre TEMSİLÎDİR (docs/JUSTINIANUS.md).
  */
 import { useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { bx, groundTex, mountainGeo, useGrassCards } from '../shared/scenery';
-import { ARCHES, AREA, DECK_H, DECK_X, HALF_W, RAMP_X, STREAM } from './site';
+import { APSE, ARCHES, ARCH_FEET, AREA, BAND, CUT_L, DECK_H, DECK_X, FOOT_HALF, GAUGE, HALF_W, PIER_W, PIER_X, PONTOON, RAMP_X, STREAM } from './site';
 
 type Tier = 'low' | 'medium' | 'high';
 export function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
@@ -62,7 +63,35 @@ export function Bridge({ m }: { m: Mats }) {
     for (const side of [-1, 1]) { const L = RAMP_X - DECK_X, len = Math.hypot(L, DECK_H), g = new THREE.PlaneGeometry(len, HALF_W * 2); g.rotateX(-Math.PI / 2); g.rotateZ(side * Math.atan2(DECK_H, L) * -1);
       g.translate(side * (DECK_X + L / 2), DECK_H / 2 + 0.02, 0); parts.push(g); }
     return merge(parts); }, []);
+  // ayak mahmuzları: yukarı akıntıda (−z) yuvarlak burun ve yarım kubbe başlık, aşağı akıntıda (+z) sivri burun ve piramit başlık
+  const cutwaters = useMemo(() => { const box: Parts = [], round: Parts = [], r = PIER_W / 2, h = 4.6, z0 = HALF_W, L = BAND + CUT_L, Lb = L - r;
+    for (const px of PIER_X) {
+      // yukarı akıntı (−z): gövdeden çıkan kutu + yarım silindir burun + yarım kubbe başlık
+      const b = bx(PIER_W, h, Lb + 0.3, 2); b.translate(px, h / 2 - 0.3, -(z0 + Lb / 2) + 0.15); box.push(b);
+      const capB = bx(PIER_W + 0.2, 0.35, Lb + 0.3, 1); capB.translate(px, h - 0.12, -(z0 + Lb / 2) + 0.15); box.push(capB);
+      const c = new THREE.CylinderGeometry(r, r, h, 20, 1, false, Math.PI / 2, Math.PI); c.translate(px, h / 2 - 0.3, -(z0 + Lb)); round.push(c);
+      const cap = new THREE.SphereGeometry(r, 20, 8, Math.PI / 2, Math.PI, 0, Math.PI / 2); cap.scale(1, 0.75, 1); cap.translate(px, h - 0.3, -(z0 + Lb)); round.push(cap);
+      // aşağı akıntı (+z): eşkenar dörtgen prizma (4 köşeli silindir z'de uzatılır; yarısı gövdenin içinde kalır) + aynı biçimde piramit başlık
+      const n = new THREE.CylinderGeometry(r, r, h, 4); n.scale(1, 1, L / r); n.translate(px, h / 2 - 0.3, z0); round.push(n);
+      const pc = new THREE.ConeGeometry(r * 1.06, 1.3, 4, 1, true); pc.scale(1, 1, (L * 1.06) / (r * 1.06)); pc.translate(px, h - 0.3 + 0.65, z0); round.push(pc); }
+    return { box: merge(box), round: merge(round) }; }, []);
+  // doğu ucundaki apsis (yarım kubbesi doğuya bakar, açık yüzü batıda) ve batıdaki zafer takının temelleri
+  const ends = useMemo(() => { const parts: Parts = [], flat: Parts = [], R = APSE.r, hw = 7.4;
+    const outer = new THREE.CylinderGeometry(R, R, hw, 28, 1, true, 0, Math.PI); const inner = new THREE.CylinderGeometry(R - 0.9, R - 0.9, hw, 28, 1, true, 0, Math.PI); inner.scale(-1, 1, 1); inner.rotateY(Math.PI);
+    for (const g of [outer, inner]) { g.translate(APSE.c[0], hw / 2 - 0.2, APSE.c[1]); parts.push(g); }
+    const dome = new THREE.SphereGeometry(R, 22, 10, Math.PI / 2, Math.PI, 0, Math.PI / 2); dome.translate(APSE.c[0], hw - 0.2, APSE.c[1]); parts.push(dome);
+    for (const sz of [-1, 1]) { const pl = bx(1.2, hw + 0.6, 1.2, 1.5); pl.translate(APSE.c[0] - 0.2, (hw + 0.6) / 2 - 0.2, APSE.c[1] + sz * (R - 0.45)); flat.push(pl); }
+    const plinth = bx(R + 1.5, 0.6, R * 2 + 1.4, 2); plinth.translate(APSE.c[0] + R / 2 - 0.3, 0.1, APSE.c[1]); flat.push(plinth);
+    for (const f of ARCH_FEET) { const q = bx(FOOT_HALF[0] * 2, 1.1, FOOT_HALF[1] * 2, 1.5); q.translate(f[0], 0.35, f[1]); flat.push(q); }
+    return { curved: merge(parts), flat: merge(flat) }; }, []);
+  // silindir ve küre UV'leri 0–1 aralığındadır; dünya ölçekli taş dokusu onlarda tek renk görünür. Bu yüzden ayrı tekrar oranlı kopyalar.
+  const roundMat = useMemo(() => { const mm = m.stone.clone(); mm.map = m.stone.map!.clone(); mm.map.repeat.set(2.5, 1.6); mm.map.needsUpdate = true; return mm; }, [m.stone]);
+  const apseMat = useMemo(() => { const mm = m.stone.clone(); mm.map = m.stone.map!.clone(); mm.map.repeat.set(4, 2.4); mm.map.needsUpdate = true; mm.side = THREE.DoubleSide; return mm; }, [m.stone]);
   return <group>
+    <mesh geometry={cutwaters.box} material={m.stone} castShadow receiveShadow />
+    <mesh geometry={cutwaters.round} material={roundMat} castShadow receiveShadow />
+    <mesh geometry={ends.curved} material={apseMat} castShadow receiveShadow />
+    <mesh geometry={ends.flat} material={m.stone} castShadow receiveShadow />
     <mesh geometry={body} material={m.stone} castShadow receiveShadow />
     <mesh geometry={ramps} material={m.stone} castShadow receiveShadow />
     <mesh geometry={parapets} material={m.stone} castShadow receiveShadow />
@@ -112,4 +141,41 @@ export function Hills() {
     for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2 + r() * 0.2, dd = 700 + r() * 300; out.push({ p: [Math.cos(a) * dd, -8, Math.sin(a) * dd], g: mountainGeo(360 + r() * 180, 150 + r() * 130, 270 + i, 0, '#5d7a48') }); }
     return out; }, []);
   return <group userData={{ noCast: true }}>{list.map((mm, i) => <mesh key={i} geometry={mm.g} position={mm.p}><meshStandardMaterial vertexColors roughness={1} /></mesh>)}</group>;
+}
+
+/* ===================== taşkın: su, ölçek direği, dubalı ahşap köprü ===================== */
+/** Oyun yöneticisi yazar: su seviyesi (m, ova zemini 0) ve dubalı köprünün sürüklenme durumu */
+export const floodState = { level: 0, reset: 0 };
+export function FloodWater() {
+  const tex = useMemo(() => { const t = canvasTex(256, 256, (g, r) => { g.fillStyle = '#7a6f4e'; g.fillRect(0, 0, 256, 256); for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '60,52,34' : '200,190,160'},${r() * 0.16})`; g.fillRect(r() * 256, r() * 256, 2 + r() * 4, 18 + r() * 40); } }); t.repeat.set(14, 6); return t; }, []);
+  const mat = useMemo(() => new THREE.MeshStandardMaterial({ map: tex, roughness: 0.25, metalness: 0.1, transparent: true, opacity: 0.9 }), [tex]);
+  const ref = useRef<THREE.Mesh>(null);
+  useFrame((_, dt) => { const L = floodState.level, mm = ref.current; if (!mm) return; mm.visible = L > 0.02; mm.position.y = L - 0.3; tex.offset.y -= dt * (0.04 + L * 0.03); });
+  return <mesh ref={ref} rotation-x={-Math.PI / 2} material={mat} visible={false} userData={{ noCast: true }}><planeGeometry args={[AREA.x1 - AREA.x0 + 60, AREA.z1 - AREA.z0 + 60]} /></mesh>;
+}
+/** Taşkın ölçeği: metre çizgili ahşap direk ve küçük levha */
+export function Gauge() {
+  const tex = useMemo(() => canvasTex(32, 256, (g) => { g.fillStyle = '#f2ede0'; g.fillRect(0, 0, 32, 256); for (let i = 0; i < 9; i++) { g.fillStyle = i % 2 ? '#1f1b17' : '#b3392b'; g.fillRect(0, 256 - (i + 1) * 28, 32, 14); } }), []);
+  return <group position={[GAUGE.c[0], 0, GAUGE.c[1]]}>
+    <mesh position={[0, 2.6, 0]} castShadow><boxGeometry args={[0.35, 5.2, 0.35]} /><meshStandardMaterial map={tex} roughness={0.8} /></mesh>
+    <mesh position={[0.9, 1.4, 0]} castShadow><boxGeometry args={[1.4, 0.8, 0.08]} /><meshStandardMaterial color="#6d4b2e" roughness={0.85} /></mesh>
+  </group>;
+}
+/** Prokopios'un anlattığı türden dubalı ahşap köprü (temsilî): tekneler ve üstünde kalaslar. Su 1,6 m'yi geçince parçalar akıntıyla sürüklenir. */
+export function Pontoon() {
+  const n = 6, span = PONTOON.x1 - PONTOON.x0;
+  const wood = useMemo(() => new THREE.MeshStandardMaterial({ color: '#7a5634', roughness: 0.9 }), []);
+  const hull = useMemo(() => { const g = new THREE.CylinderGeometry(0.7, 0.7, 4.4, 12, 1, false, Math.PI / 2, Math.PI); g.rotateX(Math.PI / 2); g.rotateZ(Math.PI); return g; }, []);
+  const refs = useRef<(THREE.Group | null)[]>([]);
+  const st = useRef({ drift: Array(n + 1).fill(0), seen: -1 });
+  useFrame((_, dt) => { const L = floodState.level, S = st.current;
+    if (S.seen !== floodState.reset) { S.seen = floodState.reset; S.drift.fill(0); }
+    refs.current.forEach((g, i) => { if (!g) return; if (L > 1.6 || S.drift[i] > 0) S.drift[i] += dt * (1.2 + i * 0.35 + L);
+      const d = S.drift[i], y = Math.max(-0.2, L - 0.3) + 0.25;
+      g.position.set((i === n ? PONTOON.x0 : PONTOON.x0 + (i + 0.5) * (span / n)) + Math.sin(d * 0.3 + i) * Math.min(d, 6) * 0.3, y, PONTOON.z + d);
+      g.rotation.set(Math.sin(d * 0.2 + i) * Math.min(1, d / 10) * 0.25, Math.min(1, d / 8) * (i % 2 ? 0.9 : -0.7), 0); g.visible = d < 110; }); });
+  return <group userData={{ noCast: true }}>
+    {Array.from({ length: n }, (_, i) => <group key={i} ref={(g) => { refs.current[i] = g; }}><mesh geometry={hull} material={wood} /><mesh position={[0, 0.05, 0]} material={wood}><boxGeometry args={[span / n - 0.1, 0.12, 3.4]} /></mesh></group>)}
+    <group ref={(g) => { refs.current[n] = g; }}>{[-1.3, 1.3].map((z) => <mesh key={z} position={[span / 2, 0.6, z]} material={wood}><boxGeometry args={[span, 0.12, 0.12]} /></mesh>)}</group>
+  </group>;
 }

@@ -18,6 +18,20 @@ Oyuncu yamaçtaki yoldan kiliseye yürür, narteksten girer, sütunların arası
 5. Cami olarak
 6. Yakın tarihli araştırma
 
+## Kıbleyi bul (mekanik)
+Kubbe bölümünün doğu kenarında bir pusula noktası var. **E** ile pusula açılır: üstte bakılan yönün derecesi, ana yönler ve yeşil kıble işareti görünür. Oyuncu Mekke yönüne (≈150°) döner ve yeniden **E**'ye basar. Fark 15°'den azsa kıble bulunur. O zaman cami katmanı yerden yükselir: güney duvarda mihrap, yanında minber, binanın eksenine göre çapraz uzanan halı safları. Minber artık yürünmez. Hedef toplam 7: 6 ayrıntı ve kıble.
+- **Hesap:** Vize (41,57° K, 27,77° D) ile Mekke (21,42° K, 39,83° D) arasındaki büyük daire başlangıç yönü ≈ 149,5°. `tests/vizeayasofya.test.ts` bunu yeniden hesaplayıp doğrular.
+- **Kaynak:** Kıble kavramı için [TDV İslâm Ansiklopedisi — Kıble](https://islamansiklopedisi.org.tr/kible). Bu sayfa açılıp okunmadı.
+- **Temsilî:** Mihrabın, minberin ve safların yeri ışın hesabıyla bulundu. Vize'deki mihrabın gerçek yeri doğrulanmadı. "Camiye çevrilen kiliselerde mihrap kıbleye göre kaydırılır" ifadesi genel bir gözlemdir; bu yapı için ayrıca doğrulanmadı.
+
+## Model düzeltmeleri
+- Nefin tavanı yoktu, kubbenin çevresinden gökyüzü görünüyordu. Kubbe bölümünün iki yanına beşik tonozlar eklendi. Kubbe bölümünü dairesel açıklıklı bir döşeme kapatıyor. Nefin iki ucunda çatıya kadar çıkan alınlık duvarları var. Eyice'nin anlattığı "dört beşik tonozlu üst yapı"ya daha yakın, ama yan kollar temsilî.
+- Kubbe bölümünü tamamen örten bir çatı levhası kubbenin içini gizliyordu; levhaya kubbe açıklığı verildi. Kasnak sekizgen yapıldı, içi de görünüyor; kasnakta içte ışıklı, dışta koyu pencereler var.
+- Dolu çatı üçgeni beşik tonozu gizliyordu; çatı iki eğik levha olarak yeniden yapıldı.
+- Duvar dokusu dev kareli bir desen gibiydi. Yerine dört sıra kesme taş ve beş sıra tuğladan oluşan dönüşümlü, ölçekli bir doku yapıldı.
+- Dış duvarlarda pencere yoktu. Yan duvarlara, narteks cephesine, apsislere ve nefin üst duvarlarına kemerli pencereler eklendi.
+- Apsis içeriden kara bir levhaydı. Kuzey duvarda apsise açılan bir kemer gözü açıldı. Apsislerin yarım kubbe başlıkları ters yöne, nefin içine bakıyordu; düzeltildi.
+
 ## Kaynaklarda bulunanlar
 - **Yer ve işlev:** Antik Bizye'nin akropolünün güneybatı yamacında; sıklıkla piskoposluk kilisesi (katedral) olarak tanımlanır. [Columbia / DAI Vize projesi](https://projects.mcah.columbia.edu/vize/html/intro.htm), [Klein](https://arthistory.columbia.edu/sites/default/files/content/faculty/pdfs/klein/The-Church-of-Hagia-Sophia.pdf)
 - **Plan:** Bazilika planı; batıda narteks, üç çokgen apsis, galeriler, büyük bir kubbe. [Columbia / DAI](https://projects.mcah.columbia.edu/vize/html/intro.htm)

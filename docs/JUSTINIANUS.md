@@ -15,6 +15,20 @@ Oyuncu ovadan köprünün batı rampasına yürür, tabliyede dolaşır, doğu y
 4. Çark Deresi
 5. Geçici liste
 
+## Taşkın (mekanik)
+Ovadaki **taşkın ölçeğinde** (metre çizgili direk) **E** ile taşkın başlar. Su ovada başta yavaş, sonra hızlanarak 70 saniyede 3,6 m'ye yükselir, 8 saniye bekler, 18 saniyede çekilir. Su bel hizasını (zeminden 1,1 m) geçerse sel oyuncuyu sürükler; oyuncu ölçeğin yanına döner ve yeniden deneyebilir. Su dizi geçince (0,35 m) yürüyüş yavaşlar. Güvenli yer köprünün tabliyesi ya da rampanın yüksek kısmıdır.
+
+Derenin yukarı akıntı tarafında ahşap bir **dubalı köprü** durur. Su 1,6 m'yi geçince parçaları akıntıyla sürüklenir. Bu, Prokopios'un anlattığı taşkınları ve taş köprünün neden yapıldığını gösterir. Taşkın atlatılınca bir kart açılır. Hedef toplam 8: 7 ayrıntı ve taşkın.
+- **Test:** `tests/justinianus.test.ts`, ölçekten tabliyeye giden en kısa yolu yürüme hızıyla (koşmadan, suda yavaşlayarak) izler ve oyuncunun hiç sürüklenmediğini doğrular. Telefonda koşma tuşu olmadığı için bu önemlidir.
+- **Temsilî:** Taşkının yüksekliği, hızı ve süresi; dubalı köprünün biçimi ve yeri; ölçek direği.
+
+## Ayaklar ve uç yapılar
+- **Ayaklar:** Yukarı akıntı yanında yuvarlak, aşağı akıntı yanında sivri. Kaynaklara göre bu, sivri mahmuzu yukarı akıntıda olan Roma köprülerinin çoğundan farklıdır. Oyunda kuzey (−z) yukarı akıntı kabul edildi. Mahmuzların uzunluğu ve başlıkları temsilîdir. [Wikiwand — Sangarius Bridge](https://www.wikiwand.com/en/articles/Sangarius_Bridge)
+- **Doğu ucundaki apsis:** Yarım kubbesi doğuya bakar; kaynaklarda yaklaşık 11 m yüksek, 9 m geniş. İşlevi belirsiz; dinî bir yapı olabileceği düşünülüyor. Oyundaki yeri (rampanın kuzeydoğusu) temsilîdir. [Wikiwand](https://www.wikiwand.com/en/articles/Sangarius_Bridge)
+- **Batı ucundaki zafer takı:** Bugün yok; yalnızca temelleri kaldı (Léon de Laborde'un 1838 çizimlerinde görülür). Oyunda yalnızca iki temel bloğu var.
+- **Not:** Bir kaynak "yedi ana kemer" diyor; öteki kaynaklar 12 kemer gözü sayıyor. Oyunda 12 göz var. Bu bilgiler arama sonucu özetlerinden alındı; Wikipedia sayfası bu oturumda açılamadı.
+- **Restorasyon:** DHA, köprünün 8 yıl süren restorasyon ve kazının ardından yeniden ziyarete açıldığını yazıyor. Haber yalnızca arama sonucunda görüldü; oyun metnine alınmadı. [DHA](https://www.dha.com.tr/foto-galeri/unesco-listesindeki-justinianus-koprusu-8-yillik-restorasyonun-ardindan-yeniden-ziyarete-acildi-2921582)
+
 ## Kaynaklarda bulunanlar
 - **Tarih ve yer:** Yaklaşık MS 562'de tamamlanmış; Beşköprü köyünde, Adapazarı'nın birkaç kilometre güneybatısında. [Wikipedia — Sangarius Bridge](https://en.wikipedia.org/wiki/Sangarius_Bridge), [Structurae](https://structurae.net/en/structures/sangarius-bridge)
 - **Kemerler ve ölçüler:** 12 kemer gözü (kaynaklar tutarlı). Uzunluk 365, 384 ve 429–430 m olarak farklı veriliyor; genişlik yaklaşık 9,85 m. [NTV](https://www.ntv.com.tr/sanat/galeri-justinianus-koprusu-bin-bes-yildir-ayakta-duruyor,42LnXDyqskaINd9nUeuPvg)

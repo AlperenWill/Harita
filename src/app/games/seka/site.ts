@@ -22,7 +22,36 @@ export const YARD: Rect = { x0: -52, x1: 52, z0: 16, z1: 52 };
 export const CHIMNEY = { c: [38, 28] as V2, r: 2.6 };
 export const POND = { c: [-4, 34] as V2, r: 4.5 };
 
+/* ===================== kâğıt hattı: beş bölüm ve kumanda panoları ===================== */
+/** Hat batıdan doğuya akar: hamur kasası → elek → pres → kurutma → kalender ve sarıcı. Bölüm sınırları (x) makine gövdesi üzerinde, panolar
+ * makinenin güneyinde (z ≈ 3,6). Bölümlerin sırası, kâğıt makinelerinin genel çalışma düzenidir; SEKA'daki makinenin kendi ayrıntıları TEMSİLÎDİR. */
+export interface Station { id: string; name: string; x0: number; x1: number; panel: V2; text: string; source: { title: string; url: string } }
+const PM = { title: 'Wikipedia — Paper machine', url: 'https://en.wikipedia.org/wiki/Paper_machine' };
+export const STATIONS: Station[] = [
+  { id: 'hamur', name: 'Hamur kasası', x0: -26, x1: -21, panel: [-23.5, 3.7], source: PM,
+    text: 'Hat burada başlar. Büyük bölümü sudan oluşan çok seyreltik lif hamuru, hamur kasasından eleğin üstüne ince ve düzgün bir perde olarak akıtılır.' },
+  { id: 'elek', name: 'Elek bölümü', x0: -21, x1: -9, panel: [-15, 3.7], source: PM,
+    text: 'Sonsuz bir elek bandı hamuru taşırken su aşağı süzülür; lifler birbirine tutunarak ıslak bir tabaka oluşturur. Kâğıdın asıl doğduğu yer burasıdır.' },
+  { id: 'pres', name: 'Pres bölümü', x0: -9, x1: -3, panel: [-6, 3.7], source: PM,
+    text: 'Islak tabaka keçelerin arasında merdanelerle sıkıştırılır; böylece suyun bir kısmı ısıtmaya gerek kalmadan sıkılarak çıkarılır.' },
+  { id: 'kurutma', name: 'Kurutma silindirleri', x0: -3, x1: 10, panel: [3.5, 3.7], source: PM,
+    text: 'Kâğıt, içi buharla ısıtılan büyük silindirlerin üstünden sırayla geçer; kalan su buharlaşır. Hattın en uzun bölümü genellikle burasıdır.' },
+  { id: 'rulo', name: 'Kalender ve sarıcı', x0: 10, x1: 14, panel: [12, 3.7], source: PM,
+    text: 'Üst üste dizili merdaneler kâğıdın yüzeyini düzleştirir; ardından kâğıt büyük bir rulo hâlinde sarılır. Hat tamamlandı!' },
+];
+/** Panoların gövdesi (yürünmez) */
+export const PANEL_HALF: V2 = [0.6, 0.35];
+export const STATION_REACH = 2.6;
+export function nearestStation(x: number, z: number): Station | null {
+  let best: Station | null = null, bd = Infinity;
+  for (const s of STATIONS) { const d = Math.hypot(x - s.panel[0], z - s.panel[1]); if (d < STATION_REACH && d < bd) { bd = d; best = s; } }
+  return best;
+}
+/** Sırayla çalıştırma kuralı: `running` çalışan bölüm sayısı. Dönüş: 'start' (sıradaki), 'again' (zaten çalışıyor), 'blocked' (önce önceki çalışmalı) */
+export function stationAction(i: number, running: number): 'start' | 'again' | 'blocked' { return i < running ? 'again' : i === running ? 'start' : 'blocked'; }
+
 export function walkable(x: number, z: number): boolean {
+  if (STATIONS.some((s) => Math.abs(x - s.panel[0]) < PANEL_HALF[0] + 0.3 && Math.abs(z - s.panel[1]) < PANEL_HALF[1] + 0.3)) return false;
   if (inR(HALL, x, z, -WALL_T)) {                                       // duvar bandı dâhil bina bölgesi
     if (inR(HALL, x, z, 0.3)) {                                          // salonun içi
       if (inR(MACHINE, x, z, -0.4)) return false;

@@ -16,6 +16,18 @@ Oyuncu Söğüt meydanından türbe bahçesinin kapısına yürür, nöbet nokta
 5. Nöbet ve büstler
 6. Anma ve Şenlikler
 
+## Zaman şeridi (mekanik)
+Sol üstteki **zaman şeridi** (ya da **1–4** tuşları) türbe bahçesini dört döneme çevirir. Sahne yerden yükselerek ya da yere inerek değişir:
+1. **1280'ler, açık mezar:** Höyük, baş ve ayak taşı, taş halka, çalı çit. Tepede göçebe kıl çadırları var, kasaba yok.
+2. **Orhan Gazi dönemi, ilk türbe taşları:** Alçak moloz taş bahçe duvarı ve mezarın çevresinde alçak altıgen taş duvar.
+3. **Sonra, altıgen türbe:** Bugünkü bahçe duvarı, kubbeli altıgen türbe, tepede cami, Söğüt evleri.
+4. **Bugün, büstler ve nöbet:** Büstler, nöbet noktaları ve aralıklarla birkaç adım yürüyüp dönen iki nöbetçi.
+
+Oyuncu bahçedeyken bir dönemi ilk kez seçince o dönem sayılır ve kartı açılır. Hedef toplam 10: 6 ayrıntı ve 4 dönem.
+- **Kaynaklar:** Açık mezar ve ilk türbe taşları için [Küre Ansiklopedisi](https://kureansiklopedi.com/tr/detay/ertugrul-gazi-camii-ve-turbesi). Altıgen türbe ve 1970'lerde konan büstler için [TDV İslâm Ansiklopedisi](https://islamansiklopedisi.org.tr/ertugrul-gazi-camii-ve-turbesi). Büstlerin bir kısmının tartışmalar sonucu kaldırıldığı için [Diken](https://www.diken.com.tr/?p=832768). Diken'e yalnızca arama sonucu özetinden ulaşıldı, sayfa açılmadı.
+- **Temsilî:** Erken dönemlerin biçimi bilinmiyor. Höyük, çit, taş halka, alçak duvarlar, çadırlar, dönemler arası geçişlerin sırası ve nöbetçilerin hareketi temsilîdir. "Sonra" dönemi tek bir tarihe bağlanmadı, çünkü türbe birkaç kez yeniden yapıldı.
+- **Bilerek oyuna alınmayanlar:** Büstlerin kimleri gösterdiği ve "16 büyük Türk devleti" listesi. Kaynaklar büstlerin kimleri gösterdiğini söylemiyor. 16 devlet listesi de tarihçilerce tartışmalı ([Wikipedia — 16 Great Turkic Empires](https://en.wikipedia.com/wiki/16_Great_Turkic_Empires)). Bu yüzden büstler isimsiz kaldı.
+
 ## Kaynaklarda bulunanlar
 - **Yer:** Söğüt, Osmanlı Beyliği'nin çıkış yeri olarak anılır. [Küre Ansiklopedisi — Söğüt](https://kureansiklopedi.com/tr/detay/sogut-2)
 - **Mezar ve türbe:** Ertuğrul Gazi'nin yaklaşık 1281–82'de öldüğü ve Söğüt'e gömüldüğü aktarılır. Mezarın Osman Bey tarafından açık mezar olarak düzenlendiği (1281–85) ve ilk türbe taşlarının Orhan Gazi döneminde konduğu söylenir. [Küre Ansiklopedisi](https://kureansiklopedi.com/tr/detay/ertugrul-gazi-camii-ve-turbesi), [TDV İslâm Ansiklopedisi](https://islamansiklopedisi.org.tr/ertugrul-gazi-camii-ve-turbesi)

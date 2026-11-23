@@ -33,13 +33,25 @@ export const SQUARE = { x0: -40, x1: 40, z0: -30, z1: 40 };
 /** Karanlık salondaki ışıklı sahne (yürünmez) */
 export const SPOTLIGHT = { x: 13.5, z: -9.6 };   // ortadaki sergi kaidesi (yürünmez)
 
+/** Restorasyon masası (yürünmez) ve başındaki çalışma noktası */
+export const TABLE = { x0: -19.4, x1: -16.8, z0: -5.8, z1: -3.2 };
+export const RESTORE = { c: [-15.6, -4.5] as V2, reach: 1.8 };
+
+/* ===================== mozaik restorasyonu: 3×3 parça döndürme ===================== */
+/** Her parçanın dönüşü 0..3 (×90°). Başlangıç sabit ve çözülebilir; hiçbir parça baştan doğru değil. Hepsi 0 olunca çözülür. */
+export const PUZZLE_START = [1, 3, 2, 2, 1, 3, 3, 2, 1];
+export function rotateTile(rot: number[], i: number): number[] { const o = rot.slice(); o[i] = (o[i] + 1) % 4; return o; }
+export function solved(rot: number[]): boolean { return rot.every((v) => v === 0); }
+/** En az kaç dokunuşla çözülür (her parça için (4 − dönüş) mod 4) */
+export function movesLeft(rot: number[]): number { return rot.reduce((a, v) => a + ((4 - v) % 4), 0); }
+
 const inBuildOpen = (x: number, z: number) => inR(BUILD, x, z, -WALL_T);
 export function inside(x: number, z: number): boolean {
   const m = 0.3;
   if (inR(ROOMS.hol, x, z, m)) return true;
   if (z > ROOMS.hol.z1 - 0.6 && z < BUILD.z1 + WALL_T + 0.3 && x > HOL_DOOR.x0 && x < HOL_DOOR.x1) return true;   // giriş kapısı
   if (z > ROOMS.hol.z0 - 0.8 && z < ROOMS.hol.z0 + 0.6 && x > HOL_DOOR.x0 && x < HOL_DOOR.x1) return true;   // hol-salon kapısı
-  if (inR(ROOMS.salon, x, z, m)) return !CASES.some((c) => inR(c, x, z, -0.2));
+  if (inR(ROOMS.salon, x, z, m)) return !CASES.some((c) => inR(c, x, z, -0.35)) && !inR(TABLE, x, z, -0.3);
   if (z > ROOMS.salon.z0 - 0.6 && z < ROOMS.salon.z0 + 0.5 && x > DARK_DOOR.x0 && x < DARK_DOOR.x1) return true;   // karanlık salon kapısı
   if (inR(ROOMS.karanlik, x, z, m)) return Math.hypot(x - SPOTLIGHT.x, z - SPOTLIGHT.z) > 1.1;
   return false;

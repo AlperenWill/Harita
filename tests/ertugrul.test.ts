@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, BUSTS, GARDEN, GATE, MOSQUE, POSTS, SPOTS, START, TENT, TOMB, WALL_T, groundY, walkable } from '../src/app/games/ertugrul/site';
+import { BOUNDS, BUSTS, ERAS, GARDEN, GATE, MOSQUE, POSTS, SPOTS, START, TENT, TOMB, WALL_T, eraCounts, groundY, walkable } from '../src/app/games/ertugrul/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -37,5 +37,11 @@ describe('Ertuğrul Gazi Türbesi', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('zaman şeridi: dört dönem kaynaklı, yalnızca bahçede sayılır', () => {
+    expect(ERAS.map((e) => e.id)).toEqual(['mezar', 'taslar', 'turbe', 'bust']);
+    for (const e of ERAS) { expect(e.source.url).toMatch(/^https:\/\//); expect(e.text.length).toBeGreaterThan(40); }
+    expect(eraCounts(START.at[0], START.at[1])).toBe(false);
+    expect(eraCounts(TOMB.c[0], TOMB.c[1] + TOMB.r + 2)).toBe(true);
   });
 });

@@ -9,8 +9,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Anchor, Footprints, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { Anchor, Footprints, Map as MapIcon, MousePointer2, Sailboat, Search } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, Toast, TopRow } from '../shared/hud/Hud';
 import { adaptive, initialTier, useSettings } from '../shared/hud/settings';
 import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
 import { LookCrosshair } from '../shared/mouseLook';
@@ -18,17 +18,27 @@ import { Joystick } from '../shared/Joystick';
 import { WalkAudio, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { BOUNDS, CISTERN, SPOTS, START, groundY, nearestSpot, slide, type Spot } from './site';
-import { Boats, Church, Cistern, Hills, Island, Jetty, SUN_DIR, Sea, Shrubs, useMats } from './GiresunModels';
+import { BOARD_AT, BOAT_START, BOUNDS, CISTERN, HAMZA, LAP, LAP_REACH, SPOTS, START, boatSlide, groundY, nearestSpot, slide, type Spot } from './site';
+import { Boats, Buoys, Church, Cistern, Forest, Hamza, Hills, Island, Jetty, PlayerBoat, SUN_DIR, Sea, Shrubs, boatState, lapState, useMats } from './GiresunModels';
 
 const THEME = { accent: '#2f6f86' };
 const EYE = 1.62, WALK = 1.7, RUN = 3.6;
 const audio = new WalkAudio({ freq: 620, gain: 0.07 }, 'any');
 
 /* ---------- durum ---------- */
-interface S { started: boolean; card: Spot | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false };
+type Card = Pick<Spot, 'id' | 'name' | 'kicker' | 'text' | 'source'>;
+interface S { started: boolean; card: Card | null; seen: string[]; near: Spot | null; boat: boolean; nearBoard: boolean; lap: number; lapDone: boolean; toast: string | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, card: null, seen: [] as string[], near: null, boat: false, nearBoard: false, lap: 0, lapDone: false, toast: null as string | null, map: false, endShown: false };
 const useGir = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
+const LAP_CARD: Card = { id: 'tur', name: 'Adanın çevresi dolaşıldı', kicker: 'Aksu geleneği',
+  text: 'Giresun\'da Mayıs başlarında yapılan Aksu şenliklerinde, bereket getireceğine inanılarak kayıklarla adanın çevresinde dolaşılır; anlatılara göre tur, adanın doğu kıyısındaki büyük siyah kaya Hamza Taşı\'nın önünde başlar ve biter. Şenliğin tarihi kaynaklarda 20 Mayıs ya da Hicri takvime göre Mayıs 7\'si olarak farklı verilir. Oyundaki şamandıralar ve rota temsilîdir.',
+  source: { title: 'Wikipedia — Hamza Stone', url: 'https://en.wikipedia.org/wiki/Hamza_Stone' } };
+let toastTimer = 0;
+function toast(t: string, ms = 2600) { useGir.getState().set({ toast: t }); clearTimeout(toastTimer); toastTimer = window.setTimeout(() => useGir.getState().set({ toast: null }), ms); }
+/** Kayığa bin ya da in: binince tur Hamza Taşı önündeki şamandıradan başlar */
+function toggleBoat() { const s = useGir.getState();
+  if (!s.boat) { live.x = BOAT_START[0]; live.z = BOAT_START[1]; boatState.on = true; s.set({ boat: true }); audio.tone(true); toast(s.lapDone ? 'Kayıktasın. İstediğin gibi dolaş; iskeleye dönüp inebilirsin.' : 'Kayıktasın: önce doğudaki Hamza Taşı önündeki şamandıraya git, sonra adanın çevresini dolaş.', 4200); }
+  else { live.x = BOARD_AT[0]; live.z = BOARD_AT[1] - 1; boatState.on = false; s.set({ boat: false }); audio.tone(true); } }
 const live = { x: START.at[0], z: START.at[1], view: { yaw: START.yaw, pitch: -0.02 }, speed: 0, bob: 0, step: 0, fly: null as null | [number, number, number] };
 const pause = { on: false };
 const keys = new Set<string>();
@@ -38,19 +48,19 @@ export default function GiresunGame({ onExit }: { onExit: () => void }) {
   const S = useGir(), G = useSettings();
   const stick = useRef({ x: 0, y: 0 });
   useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
-  useEffect(() => () => { audio.dispose(); useGir.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  useEffect(() => () => { audio.dispose(); boatState.on = false; lapState.next = 0; useGir.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   const inspect = useCallback((s: Spot) => {
     const st = useGir.getState(); st.set({ card: s, seen: st.seen.includes(s.id) ? st.seen : [...st.seen, s.id] }); audio.tone(true); audio.speak(`${s.name}. ${s.text}`);
   }, []);
   const close = useCallback(() => { useGir.getState().set({ card: null }); audio.hush(); }, []);
-  const restart = useCallback(() => { audio.hush(); useGir.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  const restart = useCallback(() => { audio.hush(); boatState.on = false; lapState.next = 0; useGir.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useGir.getState(); if (!s.started || pause.on) return;
-      if (e.code === 'KeyE') { if (s.card) close(); else if (s.near) inspect(s.near); }
+      if (e.code === 'KeyE') { if (s.card) close(); else if (s.nearBoard) toggleBoat(); else if (!s.boat && s.near) inspect(s.near); }
       if (e.code === 'Escape' && s.card) { close(); e.preventDefault(); }
       if (e.code === 'KeyM') s.set({ map: !s.map });
     };
@@ -69,13 +79,14 @@ export default function GiresunGame({ onExit }: { onExit: () => void }) {
       map: (v: boolean) => useGir.getState().set({ map: v }),
       fly: (x: number, y: number, z: number) => { live.fly = [x, y, z]; },
       land: () => { live.fly = null; },
-      seeAll: () => useGir.getState().set({ seen: SPOTS.map((s) => s.id) }),
+      seeAll: () => { lapState.next = LAP.length; useGir.getState().set({ seen: SPOTS.map((s) => s.id), lapDone: true, lap: LAP.length }); },
+      boat: (x: number, z: number, yaw: number) => { boatState.on = true; live.x = x; live.z = z; live.view.yaw = yaw; useGir.getState().set({ boat: true, started: true }); },
       SPOTS,
     };
   }, []);
 
   const fpl = useFpLook(live.view, () => { const a = useGir.getState(); return a.started && !a.card && !pause.on; }, () => audio.unlock());
-  const done = S.seen.length >= SPOTS.length;
+  const total = SPOTS.length + 1, found = S.seen.length + (S.lapDone ? 1 : 0), done = found >= total;
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dde7ee] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
@@ -91,18 +102,20 @@ export default function GiresunGame({ onExit }: { onExit: () => void }) {
           </Suspense>
         </Canvas>
         <TopRow onExit={onExit}
-          objective={S.started ? <Objective icon={<Anchor size={15} />} label={done ? 'Hepsini buldun' : 'Adanın izlerini bul'} done={S.seen.length} total={SPOTS.length} /> : undefined}
+          objective={S.started ? <Objective icon={<Anchor size={15} />} label={done ? 'Hepsini buldun' : S.boat && !S.lapDone ? `Tur: ${LAP[Math.min(S.lap, LAP.length - 1)].name}` : 'İzleri bul, adayı kayıkla dolaş'} done={found} total={total} /> : undefined}
           right={<>{S.started && <IconButton label="Krokiyi aç/kapat (M)" active={S.map} onClick={() => S.set({ map: !S.map })}><MapIcon size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; if (v) keys.clear(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} /></>} />
         {S.started && S.map && <Kroki seen={S.seen} />}
         {S.started && (<>
           <Joystick stick={stick} onTouch={() => audio.unlock()} color="bg-[#2f6f86]" />
           <LookCrosshair locked={fpl.locked} />
-          {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          <Toast text={S.toast} tone="info" />
+          {!S.card && S.nearBoard && <InteractPrompt icon={<Sailboat size={18} />} label={S.boat ? 'Kayıktan in' : 'Kayığa bin'} onClick={toggleBoat} />}
+          {!S.card && !S.nearBoard && !S.boat && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · iskelenin ucunda kayığa bin, şamandıraları sırayla geçerek adayı dolaş<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
         </>)}
-        {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
+        {S.card && <InfoSheet kicker={S.card.id === 'tur' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Giresun · Giresun Adası · Antik ve Bizans" title="Ares'in Adası"
-          intro={<>İskeleden adaya çık; kayalık yollarda dolaş, Bizans katolikonunu ve altındaki Helenistik temel taşlarını bul: <b>5 ayrıntıyı</b> incele.</>}
+          intro={<>İskeleden adaya çık; ormanlık yollarda dolaş, Bizans katolikonunu ve altındaki Helenistik temel taşlarını bul: <b>5 ayrıntıyı</b> incele. Sonra iskelenin ucunda <b>kayığa bin</b>: Aksu geleneğindeki gibi Hamza Taşı'nın önünden başlayıp şamandıraları sırayla geçerek adanın çevresini dolaş.</>}
           controls={CONTROLS} note="Kilise planı, kaya biçimleri ve tapınak ölçüleri temsilîdir." cta="Adaya çık" ctaIcon={<Footprints size={18} />}
           onStart={() => { audio.unlock(); S.set({ started: true }); }} onExit={onExit} />}
         {S.started && done && !S.endShown && !S.card && <EndSheet kicker="Giresun Adası" title="Denizin ortasındaki kilise"
@@ -112,11 +125,12 @@ export default function GiresunGame({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
-function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
+function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
   { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
+  { icon: <Sailboat size={16} />, text: <>İskelenin ucunda <b>E</b>: kayığa bin ya da in; kayıkta joystick ya da WASD ile kürek çek, baktığın yöne gidersin</> },
 ];
 
 /* ---------- 3B dünya ---------- */
@@ -139,7 +153,11 @@ function World({ tier }: { tier: Tier }) {
       <Cistern m={m} />
       <Jetty m={m} />
       {!low && <Boats />}
-      <Shrubs n={low ? 40 : 110} />
+      <Shrubs n={low ? 30 : 70} />
+      <Forest n={low ? 120 : 380} />
+      <Hamza />
+      <PlayerBoat />
+      <Buoys />
       <Markers />
     </group>
   );
@@ -165,10 +183,16 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
     const len = Math.hypot(wx, wy); if (len > 1) { wx /= len; wy /= len; }
     const sp = (keys.has('ShiftLeft') || keys.has('ShiftRight') ? RUN : WALK) * Math.min(1, len), y = live.view.yaw, f = -wy, s = wx;
     let dx = 0, dz = 0; if (len > 0.08) { const k = 1 / Math.max(1e-6, Math.hypot(f, s)); dx = (-Math.sin(y) * f + Math.cos(y) * s) * k * sp * dt; dz = (-Math.cos(y) * f - Math.sin(y) * s) * k * sp * dt; }
-    const [nx, nz] = slide([live.x, live.z], dx, dz), moved = Math.hypot(nx - live.x, nz - live.z); live.x = nx; live.z = nz; live.speed = dt > 0 ? moved / dt : 0;
+    if (S.boat) { dx *= 1.9; dz *= 1.9; }
+    const [nx, nz] = S.boat ? boatSlide([live.x, live.z], dx, dz) : slide([live.x, live.z], dx, dz), moved = Math.hypot(nx - live.x, nz - live.z); live.x = nx; live.z = nz; live.speed = dt > 0 ? moved / dt : 0;
     live.step += moved; if (live.step > 0.72) { live.step = 0; audio.step(1000); } live.bob += moved * 2.4;
+    // kayık: konum/yön modele; iskele ucunda bin-in; şamandıra sırası
+    if (S.boat) { boatState.x = live.x; boatState.z = live.z; boatState.yaw = live.view.yaw;
+      if (!S.lapDone) { const nx2 = LAP[S.lap]; if (Math.hypot(live.x - nx2.at[0], live.z - nx2.at[1]) < LAP_REACH) { const lap = S.lap + 1; lapState.next = lap; audio.tone(true);
+        if (lap >= LAP.length) { S.set({ lap, lapDone: true, card: LAP_CARD }); audio.speak(`${LAP_CARD.name}. ${LAP_CARD.text}`); } else { S.set({ lap }); toast(`${nx2.name} geçildi · sıradaki: ${LAP[lap].name}`); } } } }
+    const nb = S.started && (S.boat ? Math.hypot(live.x - BOAT_START[0], live.z - BOAT_START[1]) < 7 : Math.hypot(live.x - BOARD_AT[0], live.z - BOARD_AT[1]) < 2.2); if (nb !== S.nearBoard) S.set({ nearBoard: nb });
     const near = S.started ? nearestSpot(live.x, live.z) : null; if ((near?.id ?? '') !== nearId.current) { nearId.current = near?.id ?? ''; S.set({ near }); }
-    const gy = groundY(live.x, live.z), sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.035 : 0;
+    const gy = S.boat ? -0.3 : groundY(live.x, live.z), sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.035 : 0;
     if (live.fly) applyFp(camera, live.fly[0], live.fly[1], live.fly[2], live.view, 0); else applyFp(camera, live.x, gy + EYE, live.z, live.view, sway);
     easeFov(camera, 66, dt);
   });
@@ -187,6 +211,8 @@ function Kroki({ seen }: { seen: string[] }) {
         <ellipse cx={sx(0)} cy={sz(0)} rx={70} ry={40} fill="#b7b08f" stroke="#6b6450" strokeWidth={0.6} />
         <rect x={sx(-11)} y={sz(-7)} width={22} height={14} fill="#e6dccb" stroke="#6b5a46" strokeWidth={0.6} />
         <circle cx={sx(CISTERN.x)} cy={sz(CISTERN.z)} r={CISTERN.r} fill="#1f2c30" />
+        {LAP.slice(0, -1).map((l) => <circle key={l.id} cx={sx(l.at[0])} cy={sz(l.at[1])} r={2.6} fill="#e04a2f" />)}
+        <circle cx={sx(HAMZA.c[0])} cy={sz(HAMZA.c[1])} r={HAMZA.r} fill="#26282a" />
         {SPOTS.map((s) => <circle key={s.id} cx={sx(s.at[0])} cy={sz(s.at[1])} r={3} fill={seen.includes(s.id) ? THEME.accent : '#fff'} stroke={THEME.accent} strokeWidth={1} />)}
         <g transform={`translate(${sx(live.x)} ${sz(live.z)}) rotate(${(-live.view.yaw * 180) / Math.PI})`}><path d="M0,-4 L3,3 L0,1.5 L-3,3 Z" fill="#1f1b17" stroke="#fff" strokeWidth={0.6} /></g>
       </svg>

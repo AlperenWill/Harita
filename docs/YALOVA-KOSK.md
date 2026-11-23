@@ -19,6 +19,19 @@ Kapsam: kısa oyun (`depth: 'kisa'`). Miras verisindeki kayıt: `yalova-kosk` (`
 4. Restorasyon ve ziyaret
 5. Termal'deki köşk ayrı
 
+## Köşkü kaydır (mekanik)
+Oyun 1930'da başlar: köşk **eski yerindedir** ve çınarın köşke uzanan dalı çatısının batı yamacına değer. Rayların doğu ucunda bir **kriko** (makara, kol, halat) var. Her **E**'ye ya da düğmeye basışta köşk 40 cm doğuya kayar, toplam yaklaşık 4,8 m. Köşkün yürünmez alanı da onunla birlikte kayar; yolda biri varsa kriko çevrilmez. Köşk yerine varınca "Dal kurtuldu" kartı açılır. Eski temelin taş sırası, köşkün önceki yerini gösterir. Hedef toplam 6: 5 ayrıntı ve kaydırma.
+- **Kaynak:** Yaklaşık 4,8 m ve 10 Ağustos 1930 için [Timeturk](https://www.timeturk.com/kultur/ataturk-agac-icin-kosku-kaydirmis/haber-1677866) kullanıldı; bazı haberler "yaklaşık 5 m" der.
+- **Temsilî:** Kriko, makara ve halat düzeneği; dalın biçimi ve çatıya değdiği yer; kaydırmanın adım adım yapılışı. Köşkün gerçekte hangi düzenekle kaydırıldığı doğrulanmadı.
+
+## Model düzeltmeleri
+- Bahçe çiti kalın, düz bir levha duvar gibiydi. Dikmeli, kuşaklı, çıtalı ahşap çit yapıldı; kapıda taş babalar var.
+- Çınarın dalları kesik kütük gibi taçtan dışarı çıkıyordu. Dallar gövdeden çıkıp taç içinde incelerek bitiyor. Köşke uzanan ayrı bir dal ve ucunda yapraklar var; gövde dibine kök şişkinliği eklendi. Ağaç 1,1 m batıya alındı, çünkü eski konumda gövde köşkün temeline giriyordu.
+- Pencereler camsız kahverengi levhalardı. Camlı, beyaz kasalı ve yeşil kepenkli pencereler dört yüze ve iki kata eklendi. Kapı camlı oldu; balkona payandalar ve çıtalı korkuluk eklendi.
+- Çiçek tarhları düz renkli kutulardı. Ahşap kenarlı, topraklı ve çiçek öbekli yapıldı.
+- Havuzun taş halkası havada duruyordu. Yerden yükselen bir havuz kenarı yapıldı.
+- Köşk kaydırılabildiği için çimen, köşkün eski ve yeni yerinin ikisinde de bitmiyor.
+
 ## Kaynaklarda bulunanlar
 - **Yapım ve ad:** Yapımına 21 Ağustos 1929'da Atatürk'ün talimatıyla başlandı; çınar ağacının dalı kesilmesin diye köşk raylar üzerinde kaydırıldı, bu yüzden "Yürüyen Köşk". [CNN Türk](https://cnnturk.com/yasam/ataturkun-emriyle-tasinmisti-dal-kesilmeyecek-kosk-yuruyecek-635043)
 - **Kaydırma:** Yaklaşık 4,80 m (bazı haberlerde "yaklaşık 5 m"); iş 10 Ağustos 1930'da tamamlandı. [Timeturk](https://www.timeturk.com/kultur/ataturk-agac-icin-kosku-kaydirmis/haber-1677866), [CNN Türk](https://cnnturk.com/yasam/ataturkun-emriyle-tasinmisti-dal-kesilmeyecek-kosk-yuruyecek-635043)

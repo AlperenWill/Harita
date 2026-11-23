@@ -23,6 +23,15 @@ export const TRENCHES: Rect[] = [{ x0: -36, x1: -28, z0: -16, z1: -8 }, { x0: 28
 export const COLUMNS: V2[] = [[14, -20], [14, -15], [-16, -20], [-16, -17], [4, -22], [-2, -22]];
 export const DRUMS: V2[] = [[8, -6], [10, -4], [-14, -4], [2, -8]];
 export const OBST_R = 0.95;
+/** Amfiteatrın çanak kenarında ayakta kalan kemerli taşıyıcı ayaklar (yürünmez); açılar çanak elipsi üzerinde, 1,12 kat dışarıda */
+export const PIER_R = 1.3;
+export const PIERS: V2[] = [-2.6, -2.2, -1.75, -0.9, -0.5, 0.35, 0.75, 1.9, 2.3, 2.75].map((a) => [AMPHI.c[0] + Math.cos(a) * AMPHI.a * 1.12, AMPHI.c[1] + Math.sin(a) * AMPHI.b * 1.12] as V2);
+/** Zaman merceği: tapınağın ve amfiteatrın eski hâli bu noktaların yakınında mercek açılınca "görülmüş" sayılır */
+export const LENS_TARGETS: { id: string; name: string; c: V2; r: number }[] = [
+  { id: 'tapinak', name: 'Hadrian Tapınağı', c: [0, -10], r: 34 },
+  { id: 'amfi', name: 'Amfiteatr', c: [-48, 10], r: 28 },
+];
+export function lensTargetsAt(x: number, z: number): string[] { return LENS_TARGETS.filter((t) => Math.hypot(x - t.c[0], z - t.c[1]) < t.r).map((t) => t.id); }
 /** Çıpa taşı (Argonot anlatısı), meydanın güneydoğusunda; yürünmez */
 export const ANCHOR = { c: [30, 30] as V2, r: 1.4 };
 
@@ -40,6 +49,7 @@ export function walkable(x: number, z: number): boolean {
   if (inR(CAPITAL, x, z, -0.5)) return false;
   if (TRENCHES.some((t) => inR(t, x, z, -0.5))) return false;
   if (Math.hypot(x - ANCHOR.c[0], z - ANCHOR.c[1]) < ANCHOR.r + 0.4) return false;
+  for (const c of PIERS) if (Math.hypot(x - c[0], z - c[1]) < PIER_R + 0.4) return false;
   for (const c of [...COLUMNS, ...DRUMS]) if (Math.hypot(x - c[0], z - c[1]) < OBST_R + 0.35) return false;
   // rampanın yan kenarları dik: iki yanına yürünmez şerit
   if (z > RAMP.z0 - 0.2 && z < RAMP.z1 + 0.2 && ((x > RAMP.x0 - 0.8 && x < RAMP.x0 - 0.05) || (x > RAMP.x1 + 0.05 && x < RAMP.x1 + 0.8))) return false;

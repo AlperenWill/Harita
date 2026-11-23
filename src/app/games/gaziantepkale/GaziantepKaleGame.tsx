@@ -10,8 +10,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Footprints, Landmark, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { Footprints, Hammer, Landmark, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, Toast, TopRow } from '../shared/hud/Hud';
 import { adaptive, initialTier, useSettings } from '../shared/hud/settings';
 import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
 import { LookCrosshair } from '../shared/mouseLook';
@@ -19,17 +19,26 @@ import { Joystick } from '../shared/Joystick';
 import { WalkAudio, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { BATH, BOUNDS, MOSQUE, MUSEUM, RING, SPOTS, START, TOWERS, TOWER_R, WELL, groundY, nearestSpot, slide, type Spot } from './site';
-import { City, Grass, Inside, Mountains, SUN_DIR, Terrain, Walls, useMats } from './GaziantepModels';
+import { BATH, BOUNDS, DAMAGE, MOSQUE, MUSEUM, RING, SPOTS, START, TOWERS, TOWER_R, WELL, groundY, nearestDamage, nearestSpot, slide, type Spot } from './site';
+import { City, Grass, Inside, Mountains, SUN_DIR, Terrain, Walls, repairState, useMats } from './GaziantepModels';
 
 const THEME = { accent: '#8a5a32' };
 const EYE = 1.62, WALK = 1.7, RUN = 3.6;
 const audio = new WalkAudio({ freq: 620, gain: 0.07 }, 'any');
 
 /* ---------- durum ---------- */
-interface S { started: boolean; card: Spot | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false };
+type Card = Pick<Spot, 'id' | 'name' | 'kicker' | 'text' | 'source'>;
+type Dmg = (typeof DAMAGE)[number];
+interface S { started: boolean; card: Card | null; seen: string[]; near: Spot | null; nearDmg: Dmg | null; fixed: string[]; toast: string | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, card: null, seen: [] as string[], near: null, nearDmg: null, fixed: [] as string[], toast: null as string | null, map: false, endShown: false };
 const useAntep = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
+const REPAIR_CARD: Card = { id: 'onarim', name: 'Surlar onarıldı', kicker: 'Depremden sonra',
+  text: 'Şubat 2023 depremleri kalenin bazı burç ve surlarında hasara yol açtı; onarım Eylül 2023\'te başladı. Yıkılan taşlar numaralanıp yeniden yerine konarak onarılır. Oyundaki hasarların yeri, biçimi ve onarımın böyle hızlı yapılışı temsilîdir.',
+  source: { title: 'Gazete Vatan — Gaziantep Kalesi\'nin yeniden açılışı', url: 'https://www.gazetevatan.com/galeri/gazianteplilere-duyuruldu-tarih-belli-oldu-ekimde-aciliyor-2289058' } };
+let toastTimer = 0;
+function repair(d: Dmg) { const s = useAntep.getState(); if (s.fixed.includes(d.id)) return; const fixed = [...s.fixed, d.id]; repairState.fixed = fixed; audio.step(300); audio.tone(true);
+  if (fixed.length === DAMAGE.length) { s.set({ fixed, card: REPAIR_CARD }); audio.speak(`${REPAIR_CARD.name}. ${REPAIR_CARD.text}`); }
+  else { s.set({ fixed, toast: `Gedik onarıldı · ${fixed.length}/${DAMAGE.length}` }); clearTimeout(toastTimer); toastTimer = window.setTimeout(() => useAntep.getState().set({ toast: null }), 2200); } }
 const live = { x: START.at[0], z: START.at[1], view: { yaw: START.yaw, pitch: -0.02 }, speed: 0, bob: 0, step: 0, fly: null as null | [number, number, number] };
 const pause = { on: false };
 const keys = new Set<string>();
@@ -39,19 +48,19 @@ export default function GaziantepKaleGame({ onExit }: { onExit: () => void }) {
   const S = useAntep(), G = useSettings();
   const stick = useRef({ x: 0, y: 0 });
   useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
-  useEffect(() => () => { audio.dispose(); useAntep.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  useEffect(() => () => { audio.dispose(); repairState.fixed = []; useAntep.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   const inspect = useCallback((s: Spot) => {
     const st = useAntep.getState(); st.set({ card: s, seen: st.seen.includes(s.id) ? st.seen : [...st.seen, s.id] }); audio.tone(true); audio.speak(`${s.name}. ${s.text}`);
   }, []);
   const close = useCallback(() => { useAntep.getState().set({ card: null }); audio.hush(); }, []);
-  const restart = useCallback(() => { audio.hush(); useAntep.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  const restart = useCallback(() => { audio.hush(); repairState.fixed = []; useAntep.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useAntep.getState(); if (!s.started || pause.on) return;
-      if (e.code === 'KeyE') { if (s.card) close(); else if (s.near) inspect(s.near); }
+      if (e.code === 'KeyE') { if (s.card) close(); else if (s.nearDmg) repair(s.nearDmg); else if (s.near) inspect(s.near); }
       if (e.code === 'Escape' && s.card) { close(); e.preventDefault(); }
       if (e.code === 'KeyM') s.set({ map: !s.map });
     };
@@ -70,13 +79,14 @@ export default function GaziantepKaleGame({ onExit }: { onExit: () => void }) {
       map: (v: boolean) => useAntep.getState().set({ map: v }),
       fly: (x: number, y: number, z: number) => { live.fly = [x, y, z]; },
       land: () => { live.fly = null; },
-      seeAll: () => useAntep.getState().set({ seen: SPOTS.map((s) => s.id) }),
+      seeAll: () => { repairState.fixed = DAMAGE.map((d) => d.id); useAntep.getState().set({ seen: SPOTS.map((s) => s.id), fixed: repairState.fixed }); },
+      fix: (n: number) => { repairState.fixed = DAMAGE.slice(0, n).map((d) => d.id); useAntep.getState().set({ fixed: repairState.fixed }); },
       SPOTS,
     };
   }, []);
 
   const fpl = useFpLook(live.view, () => { const a = useAntep.getState(); return a.started && !a.card && !pause.on; }, () => audio.unlock());
-  const done = S.seen.length >= SPOTS.length;
+  const total = SPOTS.length + DAMAGE.length, found = S.seen.length + S.fixed.length, done = found >= total;
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dde7ee] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
@@ -92,18 +102,20 @@ export default function GaziantepKaleGame({ onExit }: { onExit: () => void }) {
           </Suspense>
         </Canvas>
         <TopRow onExit={onExit}
-          objective={S.started ? <Objective icon={<Landmark size={15} />} label={done ? 'Hepsini buldun' : 'Kalenin izlerini bul'} done={S.seen.length} total={SPOTS.length} /> : undefined}
+          objective={S.started ? <Objective icon={<Landmark size={15} />} label={done ? 'Hepsini buldun' : 'İzleri bul, gedikleri onar'} done={found} total={total} /> : undefined}
           right={<>{S.started && <IconButton label="Krokiyi aç/kapat (M)" active={S.map} onClick={() => S.set({ map: !S.map })}><MapIcon size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; if (v) keys.clear(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} /></>} />
-        {S.started && S.map && <Kroki seen={S.seen} />}
+        {S.started && S.map && <Kroki seen={S.seen} fixed={S.fixed} />}
         {S.started && (<>
           <Joystick stick={stick} onTouch={() => audio.unlock()} color="bg-[#8a5a32]" />
           <LookCrosshair locked={fpl.locked} />
-          {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          <Toast text={S.toast} tone="ok" />
+          {!S.card && S.nearDmg && <InteractPrompt icon={<Hammer size={18} />} label="Gediği onar" onClick={() => repair(S.nearDmg!)} />}
+          {!S.card && !S.nearDmg && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · surun içinde moloz yığınlı 4 gediği bul, onar<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
         </>)}
-        {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
+        {S.card && <InfoSheet kicker={S.card.id === 'onarim' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Gaziantep · Kale · Roma – Osmanlı" title="Antep'in Tepesi"
-          intro={<>Kentin meydanından höyüğe yürü, güney kapısından surların içine gir; burçları, hamam ve cami kalıntılarını ve Panorama Müzesi'ni bul: <b>6 ayrıntıyı</b> incele.</>}
+          intro={<>Kentin meydanından höyüğe yürü, güney kapısından surların içine gir. 2023 depreminde surların bazı yerleri yıkıldı: içerideki moloz yığınlarından <b>4 gediği bul ve onar</b>. Burçları, hamam ve cami kalıntılarını ve Panorama Müzesi'ni de bul: <b>6 ayrıntıyı</b> incele.</>}
           controls={CONTROLS} note="Burç yerleşimi, iç yapılar ve ölçüler temsilîdir; kaynaklar 12 burç sayar." cta="Kaleye çık" ctaIcon={<Footprints size={18} />}
           onStart={() => { audio.unlock(); S.set({ started: true }); }} onExit={onExit} />}
         {S.started && done && !S.endShown && !S.card && <EndSheet kicker="Gaziantep Kalesi" title="Kentin tepesindeki katmanlar"
@@ -113,11 +125,12 @@ export default function GaziantepKaleGame({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
-function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
+function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
   { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
+  { icon: <Hammer size={16} />, text: <>Surdaki yıkık yerlerin önündeki moloz yığınına yaklaş, <b>E</b> ile onar</> },
 ];
 
 /* ---------- 3B dünya ---------- */
@@ -166,6 +179,7 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
     let dx = 0, dz = 0; if (len > 0.08) { const k = 1 / Math.max(1e-6, Math.hypot(f, s)); dx = (-Math.sin(y) * f + Math.cos(y) * s) * k * sp * dt; dz = (-Math.cos(y) * f - Math.sin(y) * s) * k * sp * dt; }
     const [nx, nz] = slide([live.x, live.z], dx, dz), moved = Math.hypot(nx - live.x, nz - live.z); live.x = nx; live.z = nz; live.speed = dt > 0 ? moved / dt : 0;
     live.step += moved; if (live.step > 0.72) { live.step = 0; audio.step(1000); } live.bob += moved * 2.4;
+    const nd = S.started ? nearestDamage(live.x, live.z, S.fixed) : null; if (nd !== S.nearDmg) S.set({ nearDmg: nd });
     const near = S.started ? nearestSpot(live.x, live.z) : null; if ((near?.id ?? '') !== nearId.current) { nearId.current = near?.id ?? ''; S.set({ near }); }
     const gy = groundY(live.x, live.z), sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.035 : 0;
     if (live.fly) applyFp(camera, live.fly[0], live.fly[1], live.fly[2], live.view, 0); else applyFp(camera, live.x, gy + EYE, live.z, live.view, sway);
@@ -175,7 +189,7 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
 }
 
 /* ---------- kroki ---------- */
-function Kroki({ seen }: { seen: string[] }) {
+function Kroki({ seen, fixed }: { seen: string[]; fixed: string[] }) {
   const [, force] = useState(0);
   useEffect(() => { const id = setInterval(() => force((x) => x + 1), 200); return () => clearInterval(id); }, []);
   const W = BOUNDS.x1 - BOUNDS.x0, Hh = BOUNDS.z1 - BOUNDS.z0, sx = (x: number) => x - BOUNDS.x0, sz = (z: number) => z - BOUNDS.z0;
@@ -189,10 +203,11 @@ function Kroki({ seen }: { seen: string[] }) {
         {TOWERS.map((t, i) => <circle key={i} cx={sx(t[0])} cy={sz(t[1])} r={TOWER_R} fill="#7a7060" />)}
         {[BATH, MOSQUE, MUSEUM].map((r, i) => <rect key={i} x={sx(r.x0)} y={sz(r.z0)} width={r.x1 - r.x0} height={r.z1 - r.z0} fill="#a89c84" stroke="#5b5146" strokeWidth={0.5} />)}
         <circle cx={sx(WELL.c[0])} cy={sz(WELL.c[1])} r={WELL.r} fill="#2a2420" />
+        {DAMAGE.map((d) => <rect key={d.id} x={sx(d.at[0]) - 1.6} y={sz(d.at[1]) - 1.6} width={3.2} height={3.2} fill={fixed.includes(d.id) ? '#1f9d63' : '#b3392b'} />)}
         {SPOTS.map((s) => <circle key={s.id} cx={sx(s.at[0])} cy={sz(s.at[1])} r={2} fill={seen.includes(s.id) ? THEME.accent : '#fff'} stroke={THEME.accent} strokeWidth={0.8} />)}
         <g transform={`translate(${sx(live.x)} ${sz(live.z)}) rotate(${(-live.view.yaw * 180) / Math.PI})`}><path d="M0,-3 L2.2,2.2 L0,1.1 L-2.2,2.2 Z" fill="#1f1b17" stroke="#fff" strokeWidth={0.4} /></g>
       </svg>
-      <p className="px-1 pb-0.5 text-[11px] font-semibold text-[#4a433c]">Kroki · {seen.length}/{SPOTS.length} bulundu</p>
+      <p className="px-1 pb-0.5 text-[11px] font-semibold text-[#4a433c]">Kroki · {seen.length}/{SPOTS.length} ayrıntı · {fixed.length}/{DAMAGE.length} gedik</p>
     </div>
   );
 }

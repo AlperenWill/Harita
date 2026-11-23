@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, CASES, DESK, ENTRY, FLOOR_H, FOUNTAIN, HOUSE, PEDESTAL, SPOTS, STAIRS, START, TREES, WALL_T, groundY, walkable } from '../src/app/games/rakoczi/site';
+import { BOUNDS, CASES, DESK, DESK_AT, ENTRY, FLOOR_H, FOUNTAIN, HOUSE, LETTERS, PEDESTAL, SHELF, SPOTS, STAIRS, START, TREES, WALL_T, groundY, nearestLetter, nextInOrder, walkable } from '../src/app/games/rakoczi/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -40,5 +40,14 @@ describe('Rákóczi Müzesi', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('belgeler: altısı da yürünerek alınır, kaynaklı; masa ve kitaplık; sıralama kuralı', () => {
+    expect(LETTERS).toHaveLength(6);
+    const r = reach();
+    for (const l of LETTERS) { expect(r(l.at[0], l.at[1]), l.id).toBe(true); expect(nearestLetter(l.at[0], l.at[1], [])?.id).toBe(l.id); expect(l.source.url).toMatch(/^https:\/\//); }
+    expect(r(DESK_AT[0], DESK_AT[1])).toBe(true);
+    expect(walkable((SHELF.x0 + SHELF.x1) / 2, (SHELF.z0 + SHELF.z1) / 2)).toBe(false);
+    expect(nextInOrder([])?.year).toBe(1717); expect(nextInOrder(['l1717', 'l1720'])?.year).toBe(1735); expect(nextInOrder(LETTERS.map((l) => l.id))).toBeNull();
+    const ys = [...LETTERS].map((l) => l.year).sort((a, b) => a - b); expect(new Set(ys).size).toBe(6);
   });
 });

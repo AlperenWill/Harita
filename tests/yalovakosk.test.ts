@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BEDS, BOUNDS, FENCE_T, GARDEN, GATE, KOSK, OLD_KOSK, POND, SHIFT, SPOTS, START, TREE, groundY, walkable } from '../src/app/games/yalovakosk/site';
+import { BEDS, BOUNDS, FENCE_T, GARDEN, GATE, KOSK, OLD_KOSK, POND, SHIFT, SPOTS, START, TREE, WINCH, groundY, koskNow, shift, walkable } from '../src/app/games/yalovakosk/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -35,5 +35,18 @@ describe('Yalova Atatürk Köşkü (Yürüyen Köşk)', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('köşkü kaydırma: başta eski yerde, sonra yeni yerde engel; kriko yürünmez; ağaç eski temele değmez', () => {
+    shift.v = 0;
+    expect(koskNow().x0).toBeCloseTo(OLD_KOSK.x0, 5);
+    expect(walkable(OLD_KOSK.x0 + 1, (KOSK.z0 + KOSK.z1) / 2)).toBe(false);
+    expect(walkable(KOSK.x1 - 0.8, (KOSK.z0 + KOSK.z1) / 2)).toBe(true);   // henüz köşk yok
+    shift.v = SHIFT;
+    expect(walkable(KOSK.x1 - 0.8, (KOSK.z0 + KOSK.z1) / 2)).toBe(false);
+    expect(walkable(OLD_KOSK.x0 + 1, (KOSK.z0 + KOSK.z1) / 2)).toBe(true);
+    shift.v = 0;
+    expect(walkable(WINCH.c[0], WINCH.c[1])).toBe(false);
+    expect(walkable(WINCH.c[0] - 1.5, WINCH.c[1])).toBe(true);
+    expect(TREE.c[0] + TREE.r * 1.12).toBeLessThan(OLD_KOSK.x0 - 0.5);       // gövde dibi eski temelin (0,5 m taşan) dışında
   });
 });
