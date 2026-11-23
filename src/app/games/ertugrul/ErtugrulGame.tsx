@@ -10,8 +10,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Footprints, Landmark, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { Footprints, History, Landmark, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, Toast, ToolPanel, TopRow } from '../shared/hud/Hud';
 import { adaptive, initialTier, useSettings } from '../shared/hud/settings';
 import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
 import { LookCrosshair } from '../shared/mouseLook';
@@ -19,17 +19,25 @@ import { Joystick } from '../shared/Joystick';
 import { WalkAudio, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { AREA, BOUNDS, BUSTS, GARDEN, GATE, HILL, MOSQUE, POSTS, SPOTS, START, TENT, TOMB, groundY, nearestSpot, slide, type Spot } from './site';
-import { Garden, Grass, Hills, Landmarks, SUN_DIR, Terrain, Town, Trees, useMats } from './ErtugrulModels';
+import { AREA, BOUNDS, BUSTS, ERAS, GARDEN, GATE, HILL, MOSQUE, POSTS, SPOTS, START, TENT, TOMB, eraCounts, groundY, nearestSpot, slide, type Spot } from './site';
+import { EraGroup, Garden, Grass, Hills, Landmarks, SUN_DIR, Terrain, Town, Trees, eraState, useMats } from './ErtugrulModels';
 
 const THEME = { accent: '#5d7a62' };
 const EYE = 1.62, WALK = 1.7, RUN = 3.6;
 const audio = new WalkAudio({ freq: 620, gain: 0.07 }, 'any');
 
 /* ---------- durum ---------- */
-interface S { started: boolean; card: Spot | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false };
+type Card = Pick<Spot, 'id' | 'name' | 'kicker' | 'text' | 'source'>;
+interface S { started: boolean; card: Card | null; seen: string[]; near: Spot | null; era: number; eraSeen: string[]; toast: string | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, card: null, seen: [] as string[], near: null, era: 3, eraSeen: [] as string[], toast: null as string | null, map: false, endShown: false };
 const useErt = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
+let toastTimer = 0;
+/** Dönem seç: sahne değişir; oyuncu bahçedeyse dönem ilk kez seçildiğinde sayılır ve kartı açılır */
+function pickEra(i: number) { const s = useErt.getState(); eraState.era = i; s.set({ era: i }); audio.tone(true);
+  const e = ERAS[i]; if (s.eraSeen.includes(e.id)) return;
+  if (!eraCounts(live.x, live.z)) { s.set({ toast: 'Dönemi saymak için türbe bahçesine gir' }); clearTimeout(toastTimer); toastTimer = window.setTimeout(() => useErt.getState().set({ toast: null }), 2600); return; }
+  const card: Card = { id: `era-${e.id}`, name: e.name, kicker: `Zaman şeridi · ${e.chip}`, text: e.text, source: e.source };
+  window.setTimeout(() => { const st = useErt.getState(); if (st.card) return; st.set({ card, eraSeen: st.eraSeen.includes(e.id) ? st.eraSeen : [...st.eraSeen, e.id] }); audio.speak(`${e.name}. ${e.text}`); }, 1300); }
 const live = { x: START.at[0], z: START.at[1], view: { yaw: START.yaw, pitch: -0.02 }, speed: 0, bob: 0, step: 0, fly: null as null | [number, number, number] };
 const pause = { on: false };
 const keys = new Set<string>();
@@ -39,13 +47,13 @@ export default function ErtugrulGame({ onExit }: { onExit: () => void }) {
   const S = useErt(), G = useSettings();
   const stick = useRef({ x: 0, y: 0 });
   useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
-  useEffect(() => () => { audio.dispose(); useErt.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  useEffect(() => () => { audio.dispose(); eraState.era = 3; useErt.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   const inspect = useCallback((s: Spot) => {
     const st = useErt.getState(); st.set({ card: s, seen: st.seen.includes(s.id) ? st.seen : [...st.seen, s.id] }); audio.tone(true); audio.speak(`${s.name}. ${s.text}`);
   }, []);
   const close = useCallback(() => { useErt.getState().set({ card: null }); audio.hush(); }, []);
-  const restart = useCallback(() => { audio.hush(); useErt.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  const restart = useCallback(() => { audio.hush(); eraState.era = 3; useErt.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -54,6 +62,7 @@ export default function ErtugrulGame({ onExit }: { onExit: () => void }) {
       if (e.code === 'KeyE') { if (s.card) close(); else if (s.near) inspect(s.near); }
       if (e.code === 'Escape' && s.card) { close(); e.preventDefault(); }
       if (e.code === 'KeyM') s.set({ map: !s.map });
+      if (!s.card && /^Digit[1-4]$/.test(e.code)) pickEra(Number(e.code.slice(5)) - 1);
     };
     const up = (e: KeyboardEvent) => keys.delete(e.code);
     const blur = () => keys.clear();
@@ -70,13 +79,14 @@ export default function ErtugrulGame({ onExit }: { onExit: () => void }) {
       map: (v: boolean) => useErt.getState().set({ map: v }),
       fly: (x: number, y: number, z: number) => { live.fly = [x, y, z]; },
       land: () => { live.fly = null; },
-      seeAll: () => useErt.getState().set({ seen: SPOTS.map((s) => s.id) }),
+      seeAll: () => useErt.getState().set({ seen: SPOTS.map((s) => s.id), eraSeen: ERAS.map((e) => e.id) }),
+      era: (i: number) => { eraState.era = i; useErt.getState().set({ era: i }); },
       SPOTS,
     };
   }, []);
 
   const fpl = useFpLook(live.view, () => { const a = useErt.getState(); return a.started && !a.card && !pause.on; }, () => audio.unlock());
-  const done = S.seen.length >= SPOTS.length;
+  const total = SPOTS.length + ERAS.length, found = S.seen.length + S.eraSeen.length, done = found >= total;
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dde7ee] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
@@ -92,19 +102,23 @@ export default function ErtugrulGame({ onExit }: { onExit: () => void }) {
           </Suspense>
         </Canvas>
         <TopRow onExit={onExit}
-          objective={S.started ? <Objective icon={<Landmark size={15} />} label={done ? 'Hepsini buldun' : 'Söğüt\'ün izlerini bul'} done={S.seen.length} total={SPOTS.length} /> : undefined}
+          objective={S.started ? <Objective icon={<Landmark size={15} />} label={done ? 'Hepsini buldun' : 'İzleri bul, dönemleri gör'} done={found} total={total} /> : undefined}
           right={<>{S.started && <IconButton label="Krokiyi aç/kapat (M)" active={S.map} onClick={() => S.set({ map: !S.map })}><MapIcon size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; if (v) keys.clear(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} /></>} />
         {S.started && S.map && <Kroki seen={S.seen} />}
         {S.started && (<>
           <Joystick stick={stick} onTouch={() => audio.unlock()} color="bg-[#5d7a62]" />
           <LookCrosshair locked={fpl.locked} />
+          <Toast text={S.toast} tone="info" />
+          {!S.card && <ToolPanel title={<span className="flex items-center gap-1"><History size={14} /> Zaman şeridi</span>}>
+            <div className="grid grid-cols-2 gap-1.5">{ERAS.map((e, i) => <button key={e.id} onClick={() => pickEra(i)} className={`rounded-lg px-2 py-1.5 text-left text-[11px] font-semibold leading-tight transition active:scale-95 ${S.era === i ? 'text-white' : 'bg-black/5 text-[#1f1b17]'}`} style={S.era === i ? { background: THEME.accent } : undefined}>{e.chip}{S.eraSeen.includes(e.id) ? ' ✓' : ''}</button>)}</div>
+          </ToolPanel>}
           {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · türbe bahçesinde zaman şeridinden dönem seç (1–4)<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
         </>)}
-        {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
+        {S.card && <InfoSheet kicker={S.card.id.startsWith('era-') ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Bilecik · Söğüt · 13. yüzyıl" title="Söğüt'te Bir Sessizlik"
-          intro={<>Söğüt meydanından türbe bahçesine yürü; nöbet noktaları ve büstlerin arasından türbeye gel, tepedeki camiyi ve şenlik alanını gez: <b>6 ayrıntıyı</b> incele.</>}
-          controls={CONTROLS} note="Yapıların ölçüleri, büstlerin biçimi ve yerleşim temsilîdir; türbenin yapım tarihi kaynaklarda kesin değildir." cta="Söğüt'e gir" ctaIcon={<Footprints size={18} />}
+          intro={<>Söğüt meydanından türbe bahçesine yürü; türbeyi, tepedeki camiyi ve şenlik alanını gez: <b>6 ayrıntıyı</b> incele. Bahçede <b>zaman şeridini</b> kullan: açık mezardan bugünkü türbeye ve büstlere, <b>4 dönemi</b> kendi gözünle gör.</>}
+          controls={CONTROLS} note="Yapıların ölçüleri, büstlerin biçimi ve yerleşim temsilîdir; erken dönemlerin biçimi bilinmez, türbenin yapım tarihi kaynaklarda kesin değildir." cta="Söğüt'e gir" ctaIcon={<Footprints size={18} />}
           onStart={() => { audio.unlock(); S.set({ started: true }); }} onExit={onExit} />}
         {S.started && done && !S.endShown && !S.card && <EndSheet kicker="Ertuğrul Gazi Türbesi" title="Bir beyliğin başlangıcı"
           text="Osmanlı Beyliği'nin çıkış yeri sayılan Söğüt'te türbe, her yıl anma törenleriyle ve yüz binlerce ziyaretçiyle yaşıyor."
@@ -113,11 +127,12 @@ export default function ErtugrulGame({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
-function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
+function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
   { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
+  { icon: <History size={16} />, text: <>Sol üstteki <b>zaman şeridi</b> ya da <b>1–4</b>: dönem seç. Bahçedeyken seçilen dönem sayılır</> },
 ];
 
 /* ---------- 3B dünya ---------- */
@@ -137,7 +152,7 @@ function World({ tier }: { tier: Tier }) {
       <Terrain tier={tier} />
       <Garden m={m} />
       <Landmarks m={m} />
-      <Town m={m} />
+      <EraGroup when={(e) => e >= 2}><Town m={m} /></EraGroup>
       <Trees n={low ? 20 : 60} />
       <Grass n={low ? 1500 : 4000} />
       <Markers />

@@ -25,6 +25,24 @@ export const MOSQUE = { c: [-42, 34] as V2, r: 3.6 };
 /** Şenlik alanındaki yürünmez çadır (doğuda) */
 export const TENT = { c: [34, 28] as V2, r: 3 };
 
+/* ===================== zaman şeridi: türbenin dört dönemi ===================== */
+/** Oyuncu bahçedeyken dönem seçerse o dönem "görüldü" sayılır. Sahne dönemle değişir: açık mezar → ilk türbe taşları → altıgen türbe → büstler.
+ * Erken dönemlerin biçimi bilinmez; oyundaki mezar höyüğü, çit, alçak taş duvar TEMSİLÎDİR (docs/ERTUGRUL.md). */
+export interface Era { id: string; chip: string; name: string; text: string; source: { title: string; url: string } }
+const KURE = { title: 'Küre Ansiklopedisi — Ertuğrul Gazi Camii ve Türbesi', url: 'https://kureansiklopedi.com/tr/detay/ertugrul-gazi-camii-ve-turbesi' };
+const TDV = { title: 'TDV İslâm Ansiklopedisi — Ertuğrul Gazi Camii ve Türbesi', url: 'https://islamansiklopedisi.org.tr/ertugrul-gazi-camii-ve-turbesi' };
+export const ERAS: Era[] = [
+  { id: 'mezar', chip: '1280\'ler', name: 'Açık mezar', source: KURE,
+    text: 'Ertuğrul Gazi\'nin yaklaşık 1281–82\'de öldüğü ve Söğüt\'e gömüldüğü aktarılır. Mezarın önce oğlu Osman Bey tarafından üstü açık bir mezar olarak düzenlendiği söylenir. Oyundaki höyük, taş halka ve çalı çit temsilîdir.' },
+  { id: 'taslar', chip: 'Orhan G.', name: 'İlk türbe taşları', source: KURE,
+    text: 'İlk türbe taşlarının Orhan Gazi döneminde konduğu aktarılır. Başka bir anlatı, mezarın türbeye dönüştürülmesini I. Mehmed\'e bağlar. Bu ilk yapının biçimi bilinmediği için oyundaki alçak taş duvarlar temsilîdir.' },
+  { id: 'turbe', chip: 'Sonra', name: 'Altıgen türbe', source: TDV,
+    text: 'Bugünkü türbe altıgen planlı ve kubbelidir; erken Osmanlı türbe mimarisinin özelliklerini taşır. Türbe birkaç kez yeniden yapıldığı için hangi bölümün hangi döneme ait olduğu kesin bilinmez.' },
+  { id: 'bust', chip: 'Bugün', name: 'Büstler ve nöbet', source: TDV,
+    text: '1970\'lerde türbenin önündeki açık alana, tarihteki Türk devletlerinin kurucularını temsil eden büstler konuldu. Büstlerin sayısı ve kimleri gösterdiği zamanla değişti; bazıları sonradan kaldırıldı. Bugün türbede jandarmanın nöbet töreni yapılır.' },
+];
+export function eraCounts(x: number, z: number): boolean { return inR(GARDEN, x, z); }
+
 export function groundY(x: number, z: number): number { return HILL.h * Math.exp(-((x - HILL.c[0]) ** 2 + (z - HILL.c[1]) ** 2) / (2 * HILL.s * HILL.s)); }
 export function walkable(x: number, z: number): boolean {
   if (!inR(AREA, x, z, 0.4)) return false;
