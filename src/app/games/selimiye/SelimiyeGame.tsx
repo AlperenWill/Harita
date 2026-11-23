@@ -20,7 +20,7 @@ import { WalkAudio, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { Polish, SkyEnvironment } from '../shared/Polish';
 import { AREA, BOUNDS, COLUMNS, COURT, DOOR, GATE, HALL, MINARETS, MINARET_R, PILLARS, PILLAR_R, POOL, SPOTS, START, groundY, nearestSpot, slide, type Spot } from './site';
-import { City, Court, Grass, Ground, Hills, Minarets, Mosque, SUN_DIR, Trees, useMats } from './SelimiyeModels';
+import { City, Court, Kulliye, Grass, Ground, Hills, Minarets, Mosque, SUN_DIR, Trees, useMats } from './SelimiyeModels';
 
 const THEME = { accent: '#2f5f8a' };
 const EYE = 1.62, WALK = 1.7, RUN = 3.6;
@@ -138,6 +138,7 @@ function World({ tier }: { tier: Tier }) {
       <Mosque m={m} tier={tier} />
       <Court m={m} />
       <Minarets m={m} />
+      <Kulliye m={m} />
       <City m={m} />
       <Trees n={low ? 20 : 60} />
       <Grass n={low ? 1500 : 4000} />

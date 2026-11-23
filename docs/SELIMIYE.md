@@ -29,10 +29,11 @@ Not: Bilgiler arama sonuçlarının özetlerinden alındı; sayfalar açılıp o
 - **Kubbe çapı:** 31,25 / 31,5 / 32 m olarak farklı veriliyor; oyunda 31,5 m kullanıldı (UNESCO). Yükseklik 42–43 m.
 - **Minare yüksekliği:** UNESCO belgesi kurşun kaplı külah uçlarına kadar yaklaşık 70,9 m verir; Türkçe haberlerde 85 m dolayı geçer. Oyundaki minareler 71 m. "83 m" bir kaynakta bulunamadı.
 - **Açılış tarihi:** Bir haber 14 Mart 1575 diyor; oyunda yalnızca 1569–1575 yazıyor. Bir kaynak çalışmanın 1568'de başladığını söylüyor.
-- **Müezzin mahfili, minber, mihrap ayrıntıları ve külliyenin medrese/arasta/Dar-ül Hadis bölümleri:** Bu aramada doğrulanamadı; oyunda yer almıyor. Oyundaki iç mekânda bir mihrap nişi ve basit bir minber bulunuyor, ikisi de temsilî.
+- **Müezzin mahfili, minber, mihrap ayrıntıları ve külliyenin medrese/arasta/Dar-ül Hadis bölümleri:** Bu aramada doğrulanamadı. Oyundaki iç mekânda bir mihrap nişi ve basit bir minber var, ikisi de temsilî. Dış görünüşe, kullanıcının paylaştığı havadan fotoğraf örnek alınarak kuzey köşelerde iki avlulu medrese ve batıda uzun bir arasta eklendi. Bunlar adsız, yürünemeyen dekorlardır; yerleri, boyları ve kubbe sayıları temsilîdir.
 - **Ayasofya'dan büyük kubbe iddiası:** Tek bir kaynakta; oyuna alınmadı.
 
 ## Temsilî olanlar
+- **Dış görünüş (fotoğrafa göre yenilendi):** Kurşun kaplı çatı ve kubbeler, sekizgen kasnak ve köşelerindeki sekiz payanda kulesi, köşegenlerde dört yarım kubbe, çatıda küçük kubbeler, kemerli pencere sıraları, avlunun üç yanında kubbeli revaklar, sekiz sütunlu şadırvan ve avlu taç kapısı var. Taç kapı duvardan 1,2 m öne taşar, 11 m yüksektir; kemerli niş, yazı kuşağı ve saçak altındaki küçük kemer dizisi temsilîdir (yazının içeriği yok). İnce kalem minareler sekizgen kaideli, üç şerefeli ve uzun kurşun külahlı. Bunların hepsi biçim olarak fotoğrafa benzetildi; sayıları ve ölçüleri ölçülmüş değildir. Kubbe biraz basık çizildi (yükseklik × 0,86).
 - Avlunun biçimi, revak sütunları ve ortadaki havuz (gerçek külliyenin avlusu farklı olabilir).
 - Ayakların ve kemerlerin ölçüsü ve biçimi; pencere sayıları ve yerleri.
 - Çini ve halı desenleri; avizeler.

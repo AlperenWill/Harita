@@ -22,7 +22,12 @@ export const PILLARS: V2[] = Array.from({ length: 8 }, (_, k) => { const a = (k 
 export const MINARETS: V2[] = [[-26.8, -20], [26.8, -20], [-26.8, 20], [26.8, 20]];
 export const MINARET_R = 2.6;
 /** Avlu sütunları (iki yan duvar boyunca revak) ve ortadaki şadırvan benzeri havuz (yürünmez) */
-export const COLUMNS: V2[] = (() => { const o: V2[] = []; for (let z = 23; z <= 46; z += 4.6) { o.push([-19.5, z]); o.push([19.5, z]); } return o; })();
+/** Avlunun güney revakının sütun sırası (kapının iki yanında) */
+export const SOUTH_ROW_Z = 44.4;
+export const COLUMNS: V2[] = (() => { const o: V2[] = []; for (let z = 23; z <= 46; z += 4.6) { o.push([-19.5, z]); o.push([19.5, z]); }
+  for (const x of [5.75, 10.35, 14.95]) { o.push([-x, SOUTH_ROW_Z]); o.push([x, SOUTH_ROW_Z]); } return o; })();
+/** Avlu taç kapısı: duvardan 1,2 m öne taşan, 11 m yüksek, 14 m geniş blok (temsilî); kapı açıklığı GATE */
+export const PORTAL = { hw: 7, h: 11, z1: COURT.z1 + WALL_T + 1.2 };
 export const POOL = { c: [0, 34] as V2, r: 3.4 };
 /** Dış meydan */
 export const AREA: Rect = { x0: -70, x1: 70, z0: -36, z1: 90 };
@@ -44,6 +49,8 @@ export function walkable(x: number, z: number): boolean {
     if (z > COURT.z1 - 0.4 && x > GATE.x0 && x < GATE.x1) return true;
     return false;
   }
+  // taç kapının öne taşan payeleri (kapı açıklığı yürünür)
+  if (z > COURT.z1 && z < PORTAL.z1 + 0.3 && Math.abs(x) < PORTAL.hw + 1 && (x <= GATE.x0 + 0.3 || x >= GATE.x1 - 0.3)) return false;
   return true;
 }
 export function slide(p: V2, dx: number, dz: number): V2 {
