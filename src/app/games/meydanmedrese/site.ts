@@ -15,6 +15,20 @@ export const WALL_T = 1.6;
 /** Taç kapı (güney) ve eyvan (kuzey) açıklıkları */
 export const PORTAL = { x0: -2.5, x1: 2.5 };
 export const EYVAN = { x0: -4, x1: 4 };
+/** Eyvan: kuzey duvarına açılan, arkası kapalı beşik tonozlu oda (önceden duvarda dışarıya açılan bir delikti) */
+export const EYVAN_ROOM: Rect = { x0: -4, x1: 4, z0: -22, z1: -14.4 };
+/** Revak sütunları: hücrelerin önünde, avlunun iki yanında (yürünmez) */
+export const REVAK_X = 8.7, COL_R = 0.35;
+export const COLUMNS: V2[] = [-1, 1].flatMap((s) => Array.from({ length: 7 }, (_, k) => [s * REVAK_X, -11.4 + k * 3.8] as V2));
+/** Kitabe: taç kapının önünde okuma noktası */
+export const KITABE_AT: V2 = [0, 17.6];
+export const KITABE_REACH = 1.8;
+/** Doğu Arap rakamları (٠–٩) ve kitabedeki Hicri yıl */
+export const EAST_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+export const HIJRI = 1112;
+/** Hicri yılın kabaca karşılığı: Hicri yıl ≈ 354,37 gün; M ≈ H × 0,970229 + 621,5643. Bir Hicri yıl iki Miladi yıla yayılabilir. */
+export function hijriToGregorian(h: number): [number, number] { const a = h * 0.970229 + 621.5643; return [Math.floor(a), Math.floor(a + 0.970229)]; }
+export const YEAR_CHOICES: string[] = ['1112', '1700–1701', '1568–1569', '1733–1734'];
 /** Avludaki havuz (yürünmez) */
 export const POOL = { x: 0, z: 4, r: 1.7 };
 /** Yan hücre blokları (yürünmez) */
@@ -28,16 +42,18 @@ export const SQUARE: Rect = { x0: -44, x1: 44, z0: -40, z1: 40 };
 export const HOUSES: Rect[] = [{ x0: 22.5, x1: 29.5, z0: -23, z1: -17 }, { x0: 26.5, x1: 33.5, z0: 12, z1: 20 }, { x0: -32, x1: -24, z0: -21.5, z1: -14.5 }, { x0: -31, x1: -21, z0: 11, z1: 17 }];
 
 export function walkable(x: number, z: number): boolean {
+  if (inR(EYVAN_ROOM, x, z, -0.1) && z < BUILD.z0 + 0.1) return inR({ x0: EYVAN_ROOM.x0 + 0.9, x1: EYVAN_ROOM.x1 - 0.9, z0: EYVAN_ROOM.z0 + 0.9, z1: EYVAN_ROOM.z1 + 1 }, x, z);   // eyvanın içi
   if (HOUSES.some((h) => inR(h, x, z, 0.4))) return false;
   if (inR(BUILD, x, z, -0.2)) {
     // dış duvarlar ve hücreler: yalnızca kapılar ve avlu açık
     if (CELLS.some((c) => inR(c, x, z, 0))) return false;
     if (inR(COURT, x, z, 0)) {
       if (Math.hypot(x - POOL.x, z - POOL.z) < POOL.r + 0.4) return false;
+      if (COLUMNS.some((c) => Math.hypot(x - c[0], z - c[1]) < COL_R + 0.35)) return false;
       return true;
     }
     if (z > BUILD.z1 - WALL_T - 0.2 && x > PORTAL.x0 && x < PORTAL.x1) return true;   // taç kapı geçidi
-    if (z < BUILD.z0 + WALL_T + 0.2 && x > EYVAN.x0 && x < EYVAN.x1) return true;    // eyvan geçidi
+    if (z < BUILD.z0 + WALL_T + 0.2 && x > EYVAN.x0 + 0.5 && x < EYVAN.x1 - 0.5) return true;    // eyvan ağzı
     return false;
   }
   return inR(SQUARE, x, z, 0.3);
@@ -61,8 +77,8 @@ const SRC = {
 };
 const mk = (id: string, name: string, kicker: string, at: V2, mark: [number, number, number], text: string, source: Source, reach = 4.4): Spot => ({ id, name, kicker, at, reach, text, source, mark });
 export const SPOTS: Spot[] = [
-  mk('kapi', 'Taç kapı ve kitabe', 'Giriş', [0, 20], [0, 9.4, 16.8],
-    'Giriş kapısının üzerindeki iki satırlık nesih kitabe, medresenin H. 1112 (M. 1700–1701) yılında yapıldığını bildirir. Kitabede ağırlıklı olarak Kur\'an ayetleri yer alır.', SRC.hjuoz, 5),
+  mk('kapi', 'Taç kapı ve kitabe', 'Giriş', [4.2, 23], [0, 9.4, 16.8],
+    'Giriş kapısının üzerindeki iki satırlık nesih kitabe, medresenin H. 1112 (M. 1700–1701) yılında yapıldığını bildirir. Kitabede ağırlıklı olarak Kur\'an ayetleri yer alır.', SRC.hjuoz, 3.6),
   mk('avli', 'Avlulu plan', 'Mimari', [0, -1], [0, 4.2, 0],
     'Medrese, Anadolu\'da Selçuklu döneminde başlayan, Beylikler ve Osmanlı döneminde gelişen avlulu medrese planının 18. yüzyıl başındaki bir örneğidir. Bu tür medreselerde avlunun çevresinde öğrenci hücreleri yer alır; oyundaki hücre ve eyvan düzeni temsilîdir.', SRC.hjuoz, 5),
   mk('yapan', 'Yaptıran tartışması', 'Tarih', [-5.4, -4.2], [-5.4, 3.2, -4.2],
