@@ -22,7 +22,10 @@ export const PILLARS: V2[] = Array.from({ length: 8 }, (_, k) => { const a = (k 
 export const MINARETS: V2[] = [[-26.8, -20], [26.8, -20], [-26.8, 20], [26.8, 20]];
 export const MINARET_R = 2.6;
 /** Avlu sütunları (iki yan duvar boyunca revak) ve ortadaki şadırvan benzeri havuz (yürünmez) */
-export const COLUMNS: V2[] = (() => { const o: V2[] = []; for (let z = 23; z <= 46; z += 4.6) { o.push([-19.5, z]); o.push([19.5, z]); } return o; })();
+/** Avlunun güney revakının sütun sırası (kapının iki yanında) */
+export const SOUTH_ROW_Z = 44.4;
+export const COLUMNS: V2[] = (() => { const o: V2[] = []; for (let z = 23; z <= 46; z += 4.6) { o.push([-19.5, z]); o.push([19.5, z]); }
+  for (const x of [5.75, 10.35, 14.95]) { o.push([-x, SOUTH_ROW_Z]); o.push([x, SOUTH_ROW_Z]); } return o; })();
 export const POOL = { c: [0, 34] as V2, r: 3.4 };
 /** Dış meydan */
 export const AREA: Rect = { x0: -70, x1: 70, z0: -36, z1: 90 };
