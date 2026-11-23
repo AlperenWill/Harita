@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ANCHOR, BOUNDS, CAPITAL, COLUMNS, DRUMS, PODIUM, PODIUM_H, SPOTS, START, TRENCHES, groundY, walkable } from '../src/app/games/kyzikos/site';
+import { ANCHOR, BOUNDS, CAPITAL, COLUMNS, DRUMS, LENS_TARGETS, PIERS, PODIUM, PODIUM_H, SPOTS, START, TRENCHES, groundY, lensTargetsAt, walkable } from '../src/app/games/kyzikos/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -35,5 +35,13 @@ describe('Kyzikos Antik Kenti', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('amfiteatrın kemer ayakları geçilmez; zaman merceğinin iki hedefi de yürünerek görülebilir', () => {
+    for (const c of PIERS) expect(walkable(c[0], c[1])).toBe(false);
+    const r = reach();
+    for (const t of LENS_TARGETS) { let ok = false;
+      for (let x = t.c[0] - t.r; x <= t.c[0] + t.r && !ok; x += 1) for (let z = t.c[1] - t.r; z <= t.c[1] + t.r && !ok; z += 1) if (r(x, z) && lensTargetsAt(x, z).includes(t.id)) ok = true;
+      expect(ok, t.id).toBe(true); }
+    expect(lensTargetsAt(START.at[0], START.at[1])).toEqual([]);
   });
 });
