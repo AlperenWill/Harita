@@ -33,7 +33,7 @@ export function groundY(x: number, z: number): number {
 export function walkable(x: number, z: number): boolean {
   if (!inR(AREA, x, z, 0.4)) return false;
   if (inR(outer, x, z)) {
-    if (inR(NAVE, x, z, 0.3)) return !PIERS.some((p) => Math.hypot(x - p[0], z - p[1]) < PIER_R + 0.4);
+    if (inR(NAVE, x, z, 0.3)) return !(mosqueBlock.on && inR(MINBER, x, z, -0.3)) && !PIERS.some((p) => Math.hypot(x - p[0], z - p[1]) < PIER_R + 0.4);
     if (inR(NARTHEX, x, z, 0.3)) return true;
     if (z > NAVE.z1 - 0.3 && z < NARTHEX.z0 + 0.3 && Math.abs(x) < DOOR) return true;            // narteks–nef kapısı
     if (z > NARTHEX.z1 - 0.3 && Math.abs(x) < DOOR) return true;                                 // ana kapı
@@ -41,6 +41,32 @@ export function walkable(x: number, z: number): boolean {
   }
   return true;
 }
+/* ===================== kıble ===================== */
+/** Oyun ekseni: apsisler doğuda (−z), narteks batıda (+z); buna göre kuzey −x, güney +x. Pusula yönü (kuzeyden saat yönünde derece):
+ * ileri vektör (−sin yaw, −cos yaw) olduğundan yön = 90° − yaw. Vize (≈41,57° K, 27,76° D) → Mekke (21,42° K, 39,83° D) büyük daire başlangıç yönü ≈ 150°. */
+export const QIBLA_DEG = 150;
+export const QIBLA_TOL = 15;
+/** Kıble pusulasının kullanıldığı yer: kubbe bölümünün doğu (apsis) kenarı; kubbe durağıyla (0, −2) çakışmasın diye 3,6 m ötede */
+export const COMPASS = { c: [0, -5.6] as V2, reach: 2.0 };
+const DOME_C: V2 = [0, -2];
+export function headingDeg(yaw: number): number { const d = 90 - (yaw * 180) / Math.PI; return ((d % 360) + 360) % 360; }
+/** İşaretli açı farkı (−180..180): pozitifse oyuncu kıblenin solunda kalıyor, sağa dönmeli */
+export function qiblaDiff(yaw: number): number { return ((QIBLA_DEG - headingDeg(yaw) + 540) % 360) - 180; }
+export function bearingDeg(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const r = Math.PI / 180, f1 = lat1 * r, f2 = lat2 * r, dl = (lon2 - lon1) * r;
+  const b = Math.atan2(Math.sin(dl) * Math.cos(f2), Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl)) / r; return (b + 360) % 360;
+}
+/** Mihrabın yeri: kubbe merkezinden kıble yönündeki ışının iç duvara değdiği nokta (oyunda temsilî) */
+export const MIHRAB: { at: V2; ry: number } = (() => { const b = (QIBLA_DEG * Math.PI) / 180, dx = -Math.cos(b), dz = -Math.sin(b);
+  const tx = dx > 0 ? (NAVE.x1 - 0.05 - DOME_C[0]) / dx : (NAVE.x0 + 0.05 - DOME_C[0]) / dx, tz = dz > 0 ? (NAVE.z1 - DOME_C[1]) / dz : (NAVE.z0 + 0.05 - DOME_C[1]) / dz, t = Math.min(tx, tz);
+  return { at: [DOME_C[0] + dx * t, DOME_C[1] + dz * t], ry: tx < tz ? (dx > 0 ? -Math.PI / 2 : Math.PI / 2) : (dz > 0 ? Math.PI : 0) }; })();
+
+/** Cami katmanı açıkken minber yürünmez (kıble bulununca oyun yöneticisi açar) */
+export const mosqueBlock = { on: false };
+export const MINBER = (() => { const [mx, mz] = MIHRAB.at, sx = Math.cos(MIHRAB.ry), sz = -Math.sin(MIHRAB.ry), nx = Math.sin(MIHRAB.ry), nz = Math.cos(MIHRAB.ry);
+  const ax = mx + sx * 2.2 + nx * 0.3, az = mz + sz * 2.2 + nz * 0.3, bx2 = mx + sx * 2.2 + nx * 3.9, bz = mz + sz * 2.2 + nz * 3.9;
+  return { x0: Math.min(ax, bx2) - 0.5, x1: Math.max(ax, bx2) + 0.5, z0: Math.min(az, bz) - 0.5, z1: Math.max(az, bz) + 0.5 }; })();
+
 export function slide(p: V2, dx: number, dz: number): V2 {
   let [x, z] = p;
   if (walkable(x + dx, z)) x += dx;

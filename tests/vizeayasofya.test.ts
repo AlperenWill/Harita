@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, CHURCH, FLOOR_H, NARTHEX, NAVE, PIERS, SPOTS, START, groundY, walkable } from '../src/app/games/vizeayasofya/site';
+import { BOUNDS, CHURCH, COMPASS, FLOOR_H, MIHRAB, MINBER, NARTHEX, NAVE, PIERS, QIBLA_DEG, SPOTS, START, bearingDeg, groundY, headingDeg, mosqueBlock, qiblaDiff, walkable } from '../src/app/games/vizeayasofya/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -37,5 +37,17 @@ describe('Vize Ayasofyası', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('kıble: Vize\'den Mekke yaklaşık 150°; pusula yönü ve fark doğru; mihrap iç duvarda', () => {
+    const b = bearingDeg(41.5728, 27.7653, 21.4225, 39.8262);
+    expect(Math.abs(b - QIBLA_DEG)).toBeLessThan(2);
+    expect(headingDeg(0)).toBeCloseTo(90, 5);          // ileri −z = doğu (apsis yönü)
+    expect(headingDeg(Math.PI / 2)).toBeCloseTo(0, 5); // ileri −x = kuzey
+    const yawQ = ((90 - QIBLA_DEG) * Math.PI) / 180; expect(Math.abs(qiblaDiff(yawQ))).toBeLessThan(1e-6);
+    expect(qiblaDiff(yawQ + 0.3)).toBeGreaterThan(0);  // sola dönmüş: sağa dönmeli
+    expect(walkable(COMPASS.c[0], COMPASS.c[1])).toBe(true);
+    expect(MIHRAB.at[0]).toBeGreaterThan(NAVE.x1 - 0.2); expect(MIHRAB.at[1]).toBeGreaterThan(NAVE.z0); expect(MIHRAB.at[1]).toBeLessThan(NAVE.z1);
+    const cx = (MINBER.x0 + MINBER.x1) / 2, cz = (MINBER.z0 + MINBER.z1) / 2;
+    mosqueBlock.on = false; expect(walkable(cx, cz)).toBe(true); mosqueBlock.on = true; expect(walkable(cx, cz)).toBe(false); mosqueBlock.on = false;
   });
 });
