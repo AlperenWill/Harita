@@ -15,7 +15,7 @@ export const KOSK: Rect = { x0: -8, x1: 8, z0: -16, z1: -5 };
 export const SHIFT = 4.8;
 export const OLD_KOSK: Rect = { x0: KOSK.x0 - SHIFT, x1: KOSK.x1 - SHIFT, z0: KOSK.z0, z1: KOSK.z1 };
 /** Çınar: gövde merkezi ve yarıçapı (yürünmez); tepesi köşkün eski yerinin üzerindeydi */
-export const TREE = { c: [-15.5, -8] as V2, r: 2.2, crown: 10 };
+export const TREE = { c: [-16.6, -8] as V2, r: 2.2, crown: 10 };
 /** Ray izleri (görsel; yürünür): köşkün önünde iki paralel hat */
 export const RAILS = { x0: OLD_KOSK.x0 + 1, x1: KOSK.x1 - 1, z: [-3.8, -2.6] as [number, number] };
 /** Bahçe (çitli), kapı ve dış sokak alanı */
@@ -27,13 +27,24 @@ export const AREA: Rect = { x0: -50, x1: 50, z0: -30, z1: 70 };
 export const POND = { c: [14, 12] as V2, r: 2.6 };
 export const BEDS: Rect[] = [{ x0: -20, x1: -14, z0: 16, z1: 22 }, { x0: 12, x1: 18, z0: 20, z1: 26 }];
 
+/* ===================== köşkü kaydırma ===================== */
+/** Oyun köşk ESKİ yerindeyken başlar (shift.v = 0); oyuncu kriko kolunu çevirdikçe köşk raylar üzerinde doğuya kayar (shift.v → SHIFT).
+ * Köşkün yürünmez alanı o anki yerine göre hesaplanır. Kriko düzeneğinin biçimi TEMSİLÎDİR (docs/YALOVA-KOSK.md). */
+export const shift = { v: 0 };
+export function koskNow(): Rect { const o = shift.v - SHIFT; return { x0: KOSK.x0 + o, x1: KOSK.x1 + o, z0: KOSK.z0, z1: KOSK.z1 }; }
+/** Kriko: rayların doğu ucunda; her çevirişte köşk STEP kadar ilerler */
+export const WINCH = { c: [11.2, -3.2] as V2, reach: 2.4, step: 0.4 };
+/** Çınarın köşke doğru uzanan dalı: ucu eski çatının batı yamacının üstündedir */
+export const BRANCH = { from: [TREE.c[0] + 0.6, 7.0, TREE.c[1] + 0.2] as [number, number, number], to: [-10.2, 9.3, -9.5] as [number, number, number] };
+
 export function groundY(_x: number, _z: number): number { return 0; }
 export function walkable(x: number, z: number): boolean {
   if (!inR(AREA, x, z, 0.4)) return false;
   const fo: Rect = { x0: GARDEN.x0 - FENCE_T, x1: GARDEN.x1 + FENCE_T, z0: GARDEN.z0 - FENCE_T, z1: GARDEN.z1 + FENCE_T };
   if (inR(fo, x, z)) {
     if (!inR(GARDEN, x, z)) return z > GARDEN.z1 - 0.4 && x > GATE.x0 && x < GATE.x1;   // çit: yalnızca kapı
-    if (inR(KOSK, x, z, -0.6)) return false;
+    if (inR(koskNow(), x, z, -0.6)) return false;
+    if (Math.abs(x - WINCH.c[0]) < 0.9 && Math.abs(z - WINCH.c[1]) < 0.9) return false;
     if (Math.hypot(x - TREE.c[0], z - TREE.c[1]) < TREE.r + 0.4) return false;
     if (Math.hypot(x - POND.c[0], z - POND.c[1]) < POND.r + 0.4) return false;
     if (BEDS.some((b) => inR(b, x, z, -0.3))) return false;
