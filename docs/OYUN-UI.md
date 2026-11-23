@@ -3,7 +3,7 @@
 Bütün oyunlar aynı arayüzü kullanır: `src/app/games/shared/hud/Hud.tsx`. İlk örnek: Kapadokya (`src/app/games/kapadokya/BalloonGame.tsx`).
 
 Geçirilen oyunlar: Kapadokya, Ani, İshak Paşa, Akdamar, Troya, Efes, Pamukkale, Zil Kale, Ayasofya, Topkapı, Dolmabahçe, Nemrut, Hattuşa,
-Kapalıçarşı, Kız Kulesi, Galata, Yerebatan, Cumalıkızık, Bayburt Kalesi, Şeytan Kalesi, Munzur Vadisi, Yüzen Adalar, Sümela Manastırı, Trabzon Ayasofya, Sagalassos, Cacabey Medresesi, Mahmut Bey Camii, Sinop Tarihi Cezaevi, Anıtkabir (anıt sayfası). Bağımsız Şanlıurfa oyununa aynı görünümde ≡ menü
+Kapalıçarşı, Kız Kulesi, Galata, Yerebatan, Cumalıkızık, Bayburt Kalesi, Şeytan Kalesi, Munzur Vadisi, Yüzen Adalar, Sümela Manastırı, Trabzon Ayasofya, Sagalassos, Cacabey Medresesi, Mahmut Bey Camii, Sinop Tarihi Cezaevi, Zeugma Mozaik Müzesi, Kerkenes Dağı, Odunpazarı Evleri, Giresun Adası, Meydan Medresesi, Adada Antik Kenti, Gaziantep Kalesi, Kyzikos, SEKA Kâğıt Müzesi, Justinianus Köprüsü, Ertuğrul Gazi Türbesi, Selimiye Camii, Vize Ayasofyası, Rákóczi Müzesi, Yalova Atatürk Köşkü, Anıtkabir (anıt sayfası). Bağımsız Şanlıurfa oyununa aynı görünümde ≡ menü
 `public/sanliurfa-oyun/index.html` sonunda eklendi. Konya ve Antalya oyunlarının kendi menüleri bu arayüzün örnek alındığı yapıdır.
 Oyuna özel paneller (konuşma kutuları, defter, kroki, ışık paneli…) aynı açık temaya boyandı; oyuna özel düğmeler sağ üstte ≡'in soluna konur.
 
@@ -57,3 +57,9 @@ Oyunda kullanımı: `const G = useSettings()`; kademe `initialTier(G)`, otomatik
 2. `<Hud theme>` içine `TopBar` (`objective`, `right={<GameMenu onPause …/>}`), ana kontroller için `ActionDock`, kartlar için `InfoSheet`, `StartSheet` ve `EndSheet` koy.
 3. Kontrol listesini (`CONTROLS`) bir kez yaz: hem başlangıç ekranında hem menüdeki "Nasıl oynanır"da kullanılır.
 4. Baştan başla için bir `restart` işlevi ver.
+
+## Görüntü: kabartma dokusu ve siyah kareler
+- three'nin kabartma (`bumpMap`) gölgelendiricisi, ufka yatık bakılan uzak yüzeylerde ekran türevleri sıfıra inince NaN üretebiliyor. Son işlem (Polish: bloom/AO) tek bir NaN pikseli bütün kareye yayar ve ekran **tamamen siyah** görünür.
+- Kök düzeltme `src/app/games/shared/safeBump.ts`: gölgelendirici parçasını, türev ya da sonuç sıfıra yakınsa yüzey normaline dönecek biçimde değiştirir. `scenery.tsx` ve `Polish.tsx` bu modülü yükler; kabartma kullanan her oyun bu ikisinden birini içe aktarır. Test: `tests/safeBump.test.ts`.
+- three sürümü yükseltilirse test, özgün parçanın beklenen imzayı taşıyıp taşımadığını denetler; taşımıyorsa yama uygulanmaz ve test kırılır.
+- Hata swiftshader (başsız Chromium) ile yakalandı; gerçek ekran kartlarında görülüp görülmediği doğrulanmadı.

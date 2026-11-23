@@ -9,6 +9,7 @@
 import { Environment, Lightformer } from '@react-three/drei';
 import { Bloom, EffectComposer, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
+import './safeBump';   // son işlem tek bir NaN pikseli tüm kareye yayar; kabartma gölgelendiricisi NaN üretmesin
 
 export function SkyEnvironment({ sky = '#cfe3ee', sun = '#fff1d8', ground = '#b9a57c', sunDir = [1, 0.6, 0.4] as [number, number, number] }) {
   return (

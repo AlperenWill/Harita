@@ -31,6 +31,21 @@ const SagalassosPage = lazy(() => import('./pages/SagalassosPage'));
 const CacabeyPage = lazy(() => import('./pages/CacabeyPage'));
 const MahmutbeyPage = lazy(() => import('./pages/MahmutbeyPage'));
 const SinopCezaeviPage = lazy(() => import('./pages/SinopCezaeviPage'));
+const ZeugmaPage = lazy(() => import('./pages/ZeugmaPage'));
+const KerkenesPage = lazy(() => import('./pages/KerkenesPage'));
+const OdunpazariPage = lazy(() => import('./pages/OdunpazariPage'));
+const GiresunPage = lazy(() => import('./pages/GiresunPage'));
+const MeydanMedresePage = lazy(() => import('./pages/MeydanMedresePage'));
+const AdadaPage = lazy(() => import('./pages/AdadaPage'));
+const GaziantepKalePage = lazy(() => import('./pages/GaziantepKalePage'));
+const KyzikosPage = lazy(() => import('./pages/KyzikosPage'));
+const SekaPage = lazy(() => import('./pages/SekaPage'));
+const JustinianusPage = lazy(() => import('./pages/JustinianusPage'));
+const ErtugrulPage = lazy(() => import('./pages/ErtugrulPage'));
+const SelimiyePage = lazy(() => import('./pages/SelimiyePage'));
+const VizeAyasofyaPage = lazy(() => import('./pages/VizeAyasofyaPage'));
+const RakocziPage = lazy(() => import('./pages/RakocziPage'));
+const YalovaKoskPage = lazy(() => import('./pages/YalovaKoskPage'));
 const TroyaPage = lazy(() => import('./pages/TroyaPage'));
 const AniPage = lazy(() => import('./pages/AniPage'));
 const IshakPasaPage = lazy(() => import('./pages/IshakPasaPage'));
@@ -74,6 +89,21 @@ export default function App() {
           <Route path="oyun/cacabey" element={<CacabeyPage />} />
           <Route path="oyun/mahmutbey" element={<MahmutbeyPage />} />
           <Route path="oyun/sinop-cezaevi" element={<SinopCezaeviPage />} />
+          <Route path="oyun/zeugma" element={<ZeugmaPage />} />
+          <Route path="oyun/kerkenes" element={<KerkenesPage />} />
+          <Route path="oyun/odunpazari" element={<OdunpazariPage />} />
+          <Route path="oyun/giresun" element={<GiresunPage />} />
+          <Route path="oyun/meydan-medrese" element={<MeydanMedresePage />} />
+          <Route path="oyun/adada" element={<AdadaPage />} />
+          <Route path="oyun/gaziantep-kalesi" element={<GaziantepKalePage />} />
+          <Route path="oyun/kyzikos" element={<KyzikosPage />} />
+          <Route path="oyun/seka" element={<SekaPage />} />
+          <Route path="oyun/justinianus" element={<JustinianusPage />} />
+          <Route path="oyun/ertugrul" element={<ErtugrulPage />} />
+          <Route path="oyun/selimiye" element={<SelimiyePage />} />
+          <Route path="oyun/vize-ayasofya" element={<VizeAyasofyaPage />} />
+          <Route path="oyun/rakoczi" element={<RakocziPage />} />
+          <Route path="oyun/yalova-kosk" element={<YalovaKoskPage />} />
           <Route path="oyun/troya" element={<TroyaPage />} />
           <Route path="oyun/ani" element={<AniPage />} />
           <Route path="oyun/ishakpasa" element={<IshakPasaPage />} />

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { rng, type Tier } from './walkKit';
+import './safeBump';   // kabartma gölgelendiricisini NaN'a karşı güvenli yap (siyah kare hatası)
 
 /* ---------- yardımcılar ---------- */
 /** Dünya ölçekli UV'li kutu: doku her yüzde `s` metrede bir tekrar eder (uzun duvarlar gerilmez) */
