@@ -15,6 +15,20 @@ Oyuncu iskeleden adaya çıkar, kayalık yollarda dolaşır, Bizans katolikonuna
 4. Tapınak temelleri
 5. Argonotlar
 
+## Kayıkla adayı dolaş (mekanik)
+İskelenin ucunda **E** ile kayığa binilir. Kayıkta joystick ya da WASD ile kürek çekilir; kayık bakılan yöne gider ve adanın çevresindeki su kuşağında kalır. Tur, adanın doğu kıyısındaki büyük siyah kaya **Hamza Taşı**'nın önündeki şamandıradan başlar; kuzey kıyısı, batı ucu ve iskele açığı geçilip yeniden Hamza Taşı'nın önünde biter. Sıradaki şamandıra yanıp söner, geçilenler yeşile döner. Tur bitince kart açılır; iskeleye dönüp inilebilir. Hedef toplam 6: 5 ayrıntı ve tur.
+- **Kaynak:** Aksu şenliklerinde bereket getireceğine inanılarak kayıklarla adanın çevresinde dolaşılması, turun Hamza Taşı önünde başlayıp bitmesi ve Hamza Taşı'nın doğu kıyısındaki büyük siyah bir kaya olması arama sonucu özetlerinden alındı. [Wikipedia — Hamza Stone](https://en.wikipedia.org/wiki/Hamza_Stone), [Yeni Birlik](https://www.gazetebirlik.com/kultur-sanat/3-bin-yillik-rituel-giresunda-yeniden-hayat-buldu-dereye-tas-attilar-dilek-dilediler/999961). Şenliğin tarihi kaynaklarda 20 Mayıs ya da Hicri takvime göre Mayıs 7'si olarak farklı veriliyor. Tur sayısı (sık anlatılan "yedi tur") ve çaput bağlama geleneği doğrulanamadı, oyuna alınmadı.
+- **Temsilî:** Şamandıralar, rota ve kayığın biçimi.
+
+## Model düzeltmeleri
+- İskele yürünebilir alanın dışındaydı, yani oyuncu iskeleye çıkamıyordu. Eski bir test de bu hatayı doğru kabul ediyordu; düzeltildi.
+- Saydam denizin altından kare bir taban levhası görünüyordu. Deniz artık opak; adanın tabanı suyun altında yumuşakça iniyor; kıyıda sığ su kuşağı ve kayalar var.
+- Ada çıplak kumdan bir kubbeydi. Ormanlık yapıldı: yapraklı ağaçlar, kıyıya doğru çayır ve kaya, kıyıda kum. Gövdeler ilk denemede yeşil göründü; düzeltildi.
+- Kilise lentolu kapısı olan sağlam bir kutuydu. Kazıyla açılmış alçak ve kırık duvarlar, doğuda yarım daire apsis ve iç payeler yapıldı. Apsisin içi yürünür, duvarı geçilmez.
+- Sarnıçta su yüzeyi dik duran bir diskti, taş ağız da havada düz bir halkaydı; ikisi de düzeltildi.
+- Suyun üstünde yassı mavi elipsler vardı. Gerçek kayık gövdeleri yapıldı.
+- Doğu kıyısına Hamza Taşı (siyah kaya) eklendi.
+
 ## Kaynaklarda bulunanlar
 - **Adlar:** Antik kaynaklarda Aretias; "Ares'in adası" anlamında Areos Nesos; Roma döneminde Khalkeritis. [Wikipedia — Giresun Island](https://en.wikipedia.org/wiki/Giresun_Island), [Küre Ansiklopedisi](https://kureansiklopedi.com/tr/detay/giresun-adasi-aa417)
 - **Amazon efsanesi:** Amazonların Ares için adada bir tapınak yaptırdığı anlatılır; bu bir efsanedir. [Küre Ansiklopedisi](https://kureansiklopedi.com/tr/detay/giresun-adasi-aa417)

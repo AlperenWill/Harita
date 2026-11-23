@@ -16,17 +16,42 @@ export const SHORE_D = 0.97;
 export const CHURCH: Rect = { x0: -11, x1: 11, z0: -7, z1: 7 };
 export const CHURCH_T = 1.2;
 export const DOOR_HALF = 2;
+/** Doğu apsisi: kilisenin doğu duvarına açılan yarım daire (merkez, yarıçap, duvar kalınlığı) */
+export const APSE = { c: [10, 0] as V2, r: 4.6, t: 1.2 };
 /** Kuzeydoğudaki sarnıç çukuru (yürünmez) */
 export const CISTERN = { x: 24, z: -12, r: 2.2 };
 
+/** İskele (güneyde): kıyıdan denize uzanan yürünebilir ahşap platform; ucunda kayığa binilir */
+export const JETTY = { x0: -2, x1: 2, z0: 36, z1: 47 };
+export const BOARD_AT: V2 = [0, 46];
+export const BOAT_START: V2 = [0, 52];
+/** Hamza Taşı: adanın doğu kıyısında büyük siyah kaya; kayık turu önünde başlar ve biter */
+export const HAMZA = { c: [ISLE.a * 0.99, 3] as V2, r: 4 };
+/** Kayık turu: sırayla geçilecek şamandıralar (Hamza Taşı önünden başlayıp kuzey, batı, güney ve yeniden Hamza Taşı) */
+export const LAP: { id: string; name: string; at: V2 }[] = [
+  { id: 'hamza', name: 'Hamza Taşı önü', at: [ISLE.a * 1.32, 3] },
+  { id: 'kuzey', name: 'Kuzey kıyısı', at: [0, -ISLE.b * 1.5] },
+  { id: 'bati', name: 'Batı ucu', at: [-ISLE.a * 1.3, 0] },
+  { id: 'guney', name: 'İskele açığı', at: [-14, ISLE.b * 1.55] },
+  { id: 'bitis', name: 'Hamza Taşı önü (tur tamam)', at: [ISLE.a * 1.32, 3] },
+];
+export const LAP_REACH = 10;
+/** Kayığın gidebildiği su kuşağı: kıyıdan biraz açıkta, adadan çok uzaklaşmadan */
+export function boatWater(x: number, z: number): boolean { const d = isleD(x, z); if (Math.abs(x) < 3.5 && z > JETTY.z0 && z < JETTY.z1 + 1.5) return false; return d > 1.12 && d < 2.1; }
+export function boatSlide(p: V2, dx: number, dz: number): V2 { let [x, z] = p; if (boatWater(x + dx, z)) x += dx; if (boatWater(x, z + dz)) z += dz; return [x, z]; }
+
 export function isleD(x: number, z: number): number { return Math.hypot(x / ISLE.a, z / ISLE.b); }
 export function heightAt(x: number, z: number): number { const d = Math.min(isleD(x, z), 1.2); return d >= 1 ? -1.5 : 0.6 + 10 * (1 - d * d); }
-export function groundY(x: number, z: number): number { return heightAt(x, z); }
+export function groundY(x: number, z: number): number { if (x > JETTY.x0 && x < JETTY.x1 && z > JETTY.z0 - 2 && isleD(x, z) > 0.9) return Math.max(heightAt(x, z), 0.6); return heightAt(x, z); }
 function inChurchInterior(x: number, z: number): boolean { return inR({ x0: CHURCH.x0 + CHURCH_T, x1: CHURCH.x1 - CHURCH_T, z0: CHURCH.z0 + CHURCH_T, z1: CHURCH.z1 - CHURCH_T }, x, z); }
 function inChurchDoor(x: number, z: number): boolean { return Math.abs(x) < DOOR_HALF && z > CHURCH.z1 - CHURCH_T - 0.4 && z < CHURCH.z1 + 0.4; }
 export function walkable(x: number, z: number): boolean {
+  if (x > JETTY.x0 + 0.3 && x < JETTY.x1 - 0.3 && z > JETTY.z0 - 2 && z < JETTY.z1 - 0.3) return true;   // iskele (önceden yürünemiyordu)
   if (isleD(x, z) > SHORE_D) return false;
+  if (Math.hypot(x - HAMZA.c[0], z - HAMZA.c[1]) < HAMZA.r + 0.5) return false;
   if (Math.hypot(x - CISTERN.x, z - CISTERN.z) < CISTERN.r + 0.6) return false;
+  const ad = Math.hypot(x - APSE.c[0], z - APSE.c[1]);
+  if (x > APSE.c[0] - 0.5 && ad < APSE.r + 0.4) return ad < APSE.r - APSE.t - 0.4;   // apsis: içi yürünür, duvarı geçilmez
   if (inR(CHURCH, x, z, -0.2)) return inChurchInterior(x, z) || inChurchDoor(x, z);
   return true;
 }
@@ -65,4 +90,4 @@ export function nearestSpot(x: number, z: number): Spot | null {
   for (const s of SPOTS) { const d = Math.hypot(s.at[0] - x, s.at[1] - z); if (d < s.reach && d < bd) { bd = d; best = s; } }
   return best;
 }
-export const BOUNDS = { x0: -76, x1: 76, z0: -44, z1: 44 };
+export const BOUNDS = { x0: -76, x1: 76, z0: -44, z1: 50 };
