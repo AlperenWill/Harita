@@ -19,6 +19,27 @@ export const STREET_W = 4.2;
 export const PALACE: Rect = { x0: -24, x1: 24, z0: -66, z1: -40 };
 /** Kazı çukuru (yürünmez) */
 export const TRENCH: Rect = { x0: -52, x1: -34, z0: 14, z1: 26 };
+/* ===================== manyetik tarama alanları ===================== */
+/** Üç kare tarama alanı (20 × 20 m, 2 m hücre). Oyuncu içinde yürüdükçe 1 m yarıçaplı şerit taranır. Altındaki gömülü yapı planı TEMSİLÎDİR:
+ * oda dikdörtgenleri (yerel koordinat, alan merkezine göre). Duvar üstü güçlü, yanmış oda tabanı orta, toprak zayıf manyetik iz verir. */
+export interface Plot { id: string; c: V2; rooms: Rect[] }
+export const PLOT_SIZE = 20, CELL = 2, NCELL = PLOT_SIZE / CELL, SURVEY_DONE = 0.85;
+export const PLOTS: Plot[] = [
+  { id: 'p1', c: [28, 72], rooms: [{ x0: -8, x1: -1, z0: -7, z1: -1 }, { x0: -1, x1: 5, z0: -7, z1: -1 }, { x0: -8, x1: 5, z0: -1, z1: 4 }, { x0: 6, x1: 9, z0: 1, z1: 8 }] },
+  { id: 'p2', c: [-70, -10], rooms: [{ x0: -7, x1: 7, z0: -8, z1: -3 }, { x0: -7, x1: -1, z0: -3, z1: 4 }, { x0: -1, x1: 7, z0: -3, z1: 4 }, { x0: -4, x1: 4, z0: 5, z1: 9 }] },
+  { id: 'p3', c: [64, -34], rooms: [{ x0: -9, x1: -3, z0: -6, z1: 6 }, { x0: -3, x1: 3, z0: -6, z1: 0 }, { x0: -3, x1: 3, z0: 0, z1: 6 }, { x0: 4, x1: 9, z0: -2, z1: 7 }] },
+];
+export function plotAt(x: number, z: number): Plot | null { return PLOTS.find((p) => Math.abs(x - p.c[0]) < PLOT_SIZE / 2 && Math.abs(z - p.c[1]) < PLOT_SIZE / 2) ?? null; }
+/** Bir noktanın çevresindeki (1 m yarıçap) hücrelerin dizinleri */
+export function cellsNear(p: Plot, x: number, z: number): number[] { const out: number[] = [], lx = x - p.c[0] + PLOT_SIZE / 2, lz = z - p.c[1] + PLOT_SIZE / 2;
+  for (let j = 0; j < NCELL; j++) for (let i = 0; i < NCELL; i++) { const cx = (i + 0.5) * CELL, cz = (j + 0.5) * CELL; if (Math.abs(cx - lx) < CELL / 2 + 1 && Math.abs(cz - lz) < CELL / 2 + 1) out.push(j * NCELL + i); } return out; }
+/** Hücrenin manyetik değeri 0..1 (koyu = güçlü) */
+export function magAt(p: Plot, i: number, j: number): number { const x = (i + 0.5) * CELL - PLOT_SIZE / 2, z = (j + 0.5) * CELL - PLOT_SIZE / 2;
+  let v = 0.12 + 0.08 * Math.sin(i * 1.7 + j * 2.3) ** 2;
+  for (const r of p.rooms) { const inside = x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1, edge = Math.min(Math.abs(x - r.x0), Math.abs(x - r.x1), Math.abs(z - r.z0), Math.abs(z - r.z1));
+    if (inside || edge < 1.1) { if (edge < 1.1 && x > r.x0 - 1.1 && x < r.x1 + 1.1 && z > r.z0 - 1.1 && z < r.z1 + 1.1) v = Math.max(v, 0.92); else if (inside) v = Math.max(v, 0.5); } }
+  return v; }
+
 /** Evler: tepenin içinde, sokakların arasındaki kesimlerde; yürünmez */
 export interface House { x: number; z: number; w: number; d: number; yaw: number }
 function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
@@ -27,6 +48,7 @@ export const HOUSES: House[] = (() => { const r = rng(44), out: House[] = [];
     const a = r() * Math.PI * 2, d = 14 + r() * 100, x = Math.cos(a) * d, z = Math.sin(a) * d, w = 5 + r() * 3, dd = 4 + r() * 2.5, yaw = (r() - 0.5) * 0.2;
     if (d + Math.max(w, dd) > RING.r0 - 4) continue;
     if (inR(PALACE, x, z, -6) || inR(TRENCH, x, z, -4) || inR({ x0: -6, x1: 6, z0: -6, z1: 6 }, x, z)) continue;
+    if (PLOTS.some((p) => Math.abs(x - p.c[0]) < PLOT_SIZE / 2 + Math.max(w, dd) / 2 + 2 && Math.abs(z - p.c[1]) < PLOT_SIZE / 2 + Math.max(w, dd) / 2 + 2)) continue;
     if (GATE_ANGLES.some((g) => distToRay(x, z, g) < STREET_W / 2 + Math.max(w, dd) / 2 + 0.8)) continue;   // sokakların üstü boş
     if (out.some((o) => Math.hypot(o.x - x, o.z - z) < (Math.max(o.w, o.d) + Math.max(w, dd)) / 2 + 2.4)) continue;
     out.push({ x, z, w, d: dd, yaw }); }

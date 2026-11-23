@@ -17,6 +17,15 @@ Oyuncu güney kapısından surların içine girer, ışınsal sokaklarda dolaş�
 4. Kazı alanı
 5. Yıkım ve son
 
+## Manyetik tarama (mekanik)
+Kentte iple çevrili üç tarama alanı var (20 × 20 m, 2 m'lik hücreler). Oyuncu içinde yürüdükçe geçtiği yaklaşık 2 m'lik şerit taranır. Taranan hücreler zeminde manyetik harita gibi açık ya da koyu renkle belirir; sol üstteki panel de aynı ızgarayı gösterir. Alanın %85'i taranınca gömülü duvarların planı zeminde parlayan çizgilerle ortaya çıkar ve kart açılır. Hedef toplam 8: 5 ayrıntı ve 3 alan.
+- **Kaynak:** Manyetik tarama 1993'te başladı ve 2002'de tamamlandı. Gradyometrelerle, kentin 271 hektarının %90'ından fazlasında gömülü duvarlar, yapılar ve kent adaları ortaya çıkarıldı. İzlerin net olmasının nedenleri: granit ana kaya, tek yapım evresi, duvar üstlerinin yüzeye yakınlığı ve kentin yangınla yok olması. Sonradan özdirenç ve elektromanyetik ölçümler eklendi; kazı açmaları bu haritaya göre yerleştirildi. [METU — Kerkenes jeofizik](https://kerkenes.metu.edu.tr/en/node/55), [UCF — Research activities](https://sciences.ucf.edu/anthropology/kerkenes/research-activities/). Bilgiler arama sonucu özetlerinden alındı.
+- **Temsilî:** Tarama alanlarının yeri, altlarındaki yapı planları, hücre değerleri ve tarama şeridinin genişliği.
+
+## Model düzeltmeleri
+- Sur, aralarında koyu boşluklar olan ayrı kutulardan ve kalın sırt boyunca dizilmiş mazgallardan oluşuyordu; havadan basamak gibi görünüyordu. Kesintisiz bir taş sırt yapıldı: iç ve dış yüzü eğimli, tepe yüksekliği yer yer düşüyor. Kapılarda yıkık kule tabanları var.
+- Evler çatılı ve sağlamdı. Kent MÖ 540 dolayında yanarak terk edildiği için evler yarı yıkık taş temel kalıntısına çevrildi; kapı boşlukları, iç bölmeler ve yanık koyu tabanlar var. Duvar yükseklikleri temsilî.
+
 ## Kaynaklarda bulunanlar
 - **Boyut:** Kerkenes Dağı, Anadolu platosundaki en büyük Demir Çağı yerleşimlerinden biridir; yaklaşık 7 km taş sur ve yaklaşık 2,5 km² alan. [Küre Ansiklopedisi](https://kureansiklopedi.com/tr/detay/kerkenes-harabeleri-8ba67)
 - **Yedi kapı:** Sur, yedi kapıyla delinmiştir. [Küre Ansiklopedisi](https://kureansiklopedi.com/tr/detay/kerkenes-harabeleri-8ba67), [Wikipedia](https://en.wikipedia.org/wiki/Kerkenes)

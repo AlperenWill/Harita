@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, GATE_ANGLES, HOUSES, RING, SPOTS, START, groundY, walkable } from '../src/app/games/kerkenes/site';
+import { BOUNDS, GATE_ANGLES, HOUSES, NCELL, PLOTS, PLOT_SIZE, RING, SPOTS, START, cellsNear, groundY, magAt, plotAt, walkable } from '../src/app/games/kerkenes/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -39,5 +39,14 @@ describe('Kerkenes Dağı', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('tarama alanları: içinde ev yok, hücrelerin en az %85\'i yürünerek taranabilir, plan duvarları güçlü iz verir', () => {
+    const r = reach();
+    for (const p of PLOTS) {
+      for (const h of HOUSES) expect(Math.abs(h.x - p.c[0]) > PLOT_SIZE / 2 || Math.abs(h.z - p.c[1]) > PLOT_SIZE / 2, p.id).toBe(true);
+      const got = new Set<number>(); for (let x = p.c[0] - PLOT_SIZE / 2; x <= p.c[0] + PLOT_SIZE / 2; x += 0.5) for (let z = p.c[1] - PLOT_SIZE / 2; z <= p.c[1] + PLOT_SIZE / 2; z += 0.5) if (plotAt(x, z) === p && r(x, z)) for (const k of cellsNear(p, x, z)) got.add(k);
+      expect(got.size / (NCELL * NCELL), p.id).toBeGreaterThanOrEqual(0.85);
+      let strong = 0; for (let j = 0; j < NCELL; j++) for (let i = 0; i < NCELL; i++) if (magAt(p, i, j) > 0.8) strong++; expect(strong, p.id).toBeGreaterThan(8);
+    }
   });
 });
