@@ -43,3 +43,7 @@ Not: Bilgiler arama sonuçlarının özetlerinden alındı; sayfalar açılıp o
 - Amfiteatrin biçimi (elips çukur) ve oturma sıraları.
 - Kazı çukurlarının yeri ve çıpa taşının biçimi.
 - Ovanın bitki örtüsü ve kavaklar.
+
+## Model düzeltmeleri (ikinci tarama)
+- Yivli sütunlar, başlıklar ve kütükler taş blok dokusuyla kırmızı derzli tuğla baca gibi görünüyordu. Bunlara derzsiz, hafif damarlı bir mermer dokusu verildi.
+- Amfiteatr ayaklarının üstündeki kırık kemer başlangıçları havada kanca gibi duruyordu. Kaldırıldı; ayakların üstüne kemerin oturduğu bir taş silme kondu. Yakın ayaklar arasındaki tam kemerler duruyor.

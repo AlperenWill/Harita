@@ -41,3 +41,8 @@ Not: Bilgiler arama sonuçlarının özetlerinden alındı; sayfalar açılıp o
 - Kâğıt makinesinin hattı (silindir sayısı ve yerleşimi); gerçek makine çok daha uzundur ve karmaşıktır.
 - Vitrinlerin sayısı (oyunda 8) ve içerikleri; matbaa makinelerinin biçimi.
 - Avlu, baca ve havuz.
+
+## Model düzeltmeleri (ikinci tarama)
+- Bacada tuğlalar dev boyuttaydı, çünkü duvar ölçekli doku silindire uygulanmıştı. Bacaya ayrı tekrar oranlı tuğla dokusu verildi.
+- Matbaa makineleri koyu bir kutu ve bir silindirden ibaretti. Ayaklı gövde, yan çerçeveler, baskı silindiri, mürekkep merdaneleri, kâğıt besleme tablası ve volan eklendi; biçim temsilî.
+- Vitrin içindeki kutular tabanın 30 cm üstünde havada duruyordu. Tabana oturan kâğıt destesi, küçük rulo ve açık kitap yapıldı.

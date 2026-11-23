@@ -23,12 +23,18 @@ function bowlY(x: number, z: number): number {
 }
 
 /* ===================== malzemeler ===================== */
-export interface Mats { marble: THREE.MeshStandardMaterial; stone: THREE.MeshStandardMaterial; dark: THREE.MeshStandardMaterial; wood: THREE.MeshStandardMaterial }
+export interface Mats { smooth: THREE.MeshStandardMaterial; marble: THREE.MeshStandardMaterial; stone: THREE.MeshStandardMaterial; dark: THREE.MeshStandardMaterial; wood: THREE.MeshStandardMaterial }
 export function useMats(): Mats {
   return useMemo(() => {
     const mb = stoneTex('kyzikos-mermer', ['#e8e2d2', '#ddd5c2', '#efe9da', '#d3cab5'], [10, 8], [44, 60]);
     const st = stoneTex('kyzikos-tas', ['#b3a78e', '#a39780', '#c0b49b'], [14, 10], [30, 40]);
     return {
+      // yivli sütun, başlık ve kütükler için derzsiz mermer: hafif damar ve lekeler (taş bloklu doku bunlarda tuğla baca gibi görünüyordu)
+      smooth: (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d')!, r = rng(23); g.fillStyle = '#e9e3d4'; g.fillRect(0, 0, 256, 256);
+        for (let i = 0; i < 500; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '150,140,120' : '255,252,244'},${r() * 0.08})`; g.beginPath(); g.arc(r() * 256, r() * 256, 2 + r() * 9, 0, 7); g.fill(); }
+        g.strokeStyle = 'rgba(140,128,110,0.22)'; for (let i = 0; i < 7; i++) { g.lineWidth = 0.6 + r(); g.beginPath(); let x = r() * 256, y = 0; g.moveTo(x, y); while (y < 256) { x += (r() - 0.5) * 18; y += 12 + r() * 14; g.lineTo(x, y); } g.stroke(); }
+        const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1.5, 1); t.anisotropy = 8;
+        return weather(new THREE.MeshStandardMaterial({ map: t, roughness: 0.62 })); })(),
       marble: weather(new THREE.MeshStandardMaterial({ map: mb.map, bumpMap: mb.bump, bumpScale: 0.25, roughness: 0.8 })),
       stone: weather(new THREE.MeshStandardMaterial({ map: st.map, bumpMap: st.bump, bumpScale: 0.4, roughness: 0.95 })),
       dark: new THREE.MeshStandardMaterial({ color: '#2a2218', roughness: 1 }),
@@ -105,7 +111,7 @@ export function Temple({ m }: { m: Mats }) {
     return merge(p); }, []);
   return <group>
     <mesh geometry={base} material={m.marble} castShadow receiveShadow />
-    <mesh geometry={ruins} material={m.marble} castShadow receiveShadow />
+    <mesh geometry={ruins} material={m.smooth} castShadow receiveShadow />
   </group>;
 }
 
@@ -158,8 +164,8 @@ export function AmphiRuins({ m }: { m: Mats }) {
   const geo = useMemo(() => { const p: Parts = [], r = rng(21), hs: number[] = [];
     PIERS.forEach((c) => { const h = 4 + r() * 5; hs.push(h); const a = Math.atan2((c[1] - AMPHI.c[1]) / AMPHI.b, (c[0] - AMPHI.c[0]) / AMPHI.a);
       const q = bx(PIER_R * 1.6, h, PIER_R * 2, 2); q.rotateY(-a); q.translate(c[0], h / 2 - 0.2, c[1]); p.push(q);
-      // kırık kemer başlangıcı: ayağın üstünden yana uzanan yay parçası
-      const t = new THREE.TorusGeometry(2.6, 0.55, 6, 12, Math.PI * (0.35 + r() * 0.2)); t.rotateY(-a + Math.PI / 2); t.translate(c[0], h - 2.4, c[1]); p.push(t); });
+      // ayak başlığı: kemerin oturduğu çıkıntılı taş silme
+      const capq = bx(PIER_R * 2, 0.4, PIER_R * 2.4, 1.5); capq.rotateY(-a); capq.translate(c[0], h - 0.2, c[1]); p.push(capq); });
     // iki komşu ayak yakınsa aralarında tam kemer (ayakta kalan bir göz)
     for (let i = 0; i + 1 < PIERS.length; i++) { const A = PIERS[i], B = PIERS[i + 1], d = Math.hypot(B[0] - A[0], B[1] - A[1]); if (d > 7.5) continue;
       const hh = Math.min(hs[i], hs[i + 1]) - 1, t = new THREE.TorusGeometry(d / 2 - PIER_R * 0.6, 0.7, 6, 16, Math.PI); t.rotateY(-Math.atan2(B[1] - A[1], B[0] - A[0])); t.translate((A[0] + B[0]) / 2, hh - (d / 2 - PIER_R * 0.6), (A[1] + B[1]) / 2); p.push(t); }

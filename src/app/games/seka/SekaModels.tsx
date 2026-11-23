@@ -69,12 +69,24 @@ export function Hall({ m, tier }: { m: Mats; tier: Tier }) {
   const vit = useMemo(() => { const base: Parts = [], glass: Parts = [], goods: Parts = [], r = rng(31);
     for (const v of VITRINS) { const cx = (v.x0 + v.x1) / 2, cz = (v.z0 + v.z1) / 2, w = v.x1 - v.x0, d = v.z1 - v.z0;
       base.push(bx(w, 0.9, d, 1.5).translate(cx, 0.45, cz)); glass.push(new THREE.BoxGeometry(w - 0.1, 1.8, d - 0.1).translate(cx, 1.8, cz));
-      for (let k = 0; k < 3; k++) goods.push(bx(0.5, 0.05 + r() * 0.5, 0.4, 0.5).translate(cx - 0.9 + k * 0.9, 1.0 + 0.2, cz)); }
+      // vitrin içi (temsilî): kâğıt destesi, küçük rulo, açık kitap
+      for (let k = 0; k < 6; k++) goods.push(bx(0.45, 0.012, 0.32, 0.5).translate(cx - 0.9 + (r() - 0.5) * 0.02, 0.92 + k * 0.016, cz));
+      { const rl = new THREE.CylinderGeometry(0.12, 0.12, 0.42, 14); rl.rotateZ(Math.PI / 2); rl.translate(cx, 1.03, cz); goods.push(rl); }
+      for (const sd of [-1, 1]) { const pg = bx(0.26, 0.02, 0.34, 0.5); pg.rotateZ(sd * 0.12); pg.translate(cx + 0.9 + sd * 0.13, 0.94, cz); goods.push(pg); } }
     return { base: merge(base), glass: merge(glass), goods: merge(goods) }; }, []);
-  const presses = useMemo(() => { const dk: Parts = [], st: Parts = [];
+  // matbaa makineleri (temsilî): ayaklı gövde, iki yan çerçeve, baskı silindiri, mürekkep merdaneleri, kâğıt besleme tablası ve yanda volan
+  const presses = useMemo(() => { const dk: Parts = [], st: Parts = [], pp: Parts = [];
     for (const q of PRESSES) { const cx = (q.x0 + q.x1) / 2, cz = (q.z0 + q.z1) / 2, w = q.x1 - q.x0, d = q.z1 - q.z0;
-      dk.push(bx(w, 1.6, d, 1.5).translate(cx, 0.8, cz)); const c = new THREE.CylinderGeometry(0.5, 0.5, d - 0.3, 14); c.rotateX(Math.PI / 2); c.translate(cx - w / 4, 2, cz); st.push(c); const c2 = c.clone(); c2.translate(w / 2, 0, 0); st.push(c2); }
-    return { dk: merge(dk), st: merge(st) }; }, []);
+      dk.push(bx(w, 0.7, d - 0.2, 1.5).translate(cx, 0.55, cz));
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) dk.push(bx(0.18, 0.2, 0.18, 1).translate(cx + sx * (w / 2 - 0.2), 0.1, cz + sz * (d / 2 - 0.25)));
+      for (const sz of [-1, 1]) { const fr = new THREE.Shape(); fr.moveTo(-w / 2, 0); fr.lineTo(w / 2, 0); fr.lineTo(w / 2 - 0.6, 1.3); fr.lineTo(-w / 2 + 0.9, 1.5); fr.closePath(); const g = new THREE.ExtrudeGeometry(fr, { depth: 0.14, bevelEnabled: false }); g.translate(cx, 0.9, cz + sz * (d / 2 - 0.1) - 0.07); dk.push(g); }
+      const cyl = new THREE.CylinderGeometry(0.42, 0.42, d - 0.4, 20); cyl.rotateX(Math.PI / 2); cyl.translate(cx - 0.3, 1.55, cz); st.push(cyl);
+      for (const [dx, dy] of [[0.55, 2.05], [0.95, 1.9], [0.75, 2.3]]) { const ink = new THREE.CylinderGeometry(0.12, 0.12, d - 0.5, 12); ink.rotateX(Math.PI / 2); ink.translate(cx + dx, dy, cz); dk.push(ink); }
+      const tray = bx(1.3, 0.05, d - 0.6, 1); tray.rotateZ(0.35); tray.translate(cx - w / 2 + 0.2, 1.75, cz); st.push(tray);
+      pp.push(bx(1.1, 0.12, d - 0.9, 1).rotateZ(0.35).translate(cx - w / 2 + 0.2, 1.84, cz));
+      const fw = new THREE.TorusGeometry(0.65, 0.07, 8, 24); fw.translate(cx + 0.4, 1.4, cz + d / 2 + 0.05); st.push(fw);
+      for (let k = 0; k < 4; k++) { const sp = bx(0.05, 1.3, 0.05, 1); sp.rotateZ((k * Math.PI) / 4); sp.translate(cx + 0.4, 1.4, cz + d / 2 + 0.05); st.push(sp); } }
+    return { dk: merge(dk), st: merge(st), pp: merge(pp) }; }, []);
   const lights = tier === 'low' ? [[-14, 0], [14, 0]] : [[-24, -8], [-8, -8], [8, -8], [-24, 8], [-8, 8], [8, 8], [24, 0]];
   return <group>
     <mesh geometry={walls} material={m.brick} castShadow receiveShadow />
@@ -88,6 +100,7 @@ export function Hall({ m, tier }: { m: Mats; tier: Tier }) {
     <mesh geometry={vit.goods} material={m.paper} />
     <mesh geometry={presses.dk} material={m.dark} castShadow receiveShadow />
     <mesh geometry={presses.st} material={m.steel} castShadow />
+    <mesh geometry={presses.pp} material={m.paper} />
     {lights.map(([x, z], i) => <pointLight key={i} position={[x, 6.4, z]} color="#fff0d6" intensity={tier === 'low' ? 60 : 70} distance={22} decay={2} />)}
   </group>;
 }
@@ -101,9 +114,11 @@ export function Yard({ m }: { m: Mats }) {
   const bands = useMemo(() => { const p: Parts = [];
     for (const y of [30, 33, 36]) { const c = new THREE.CylinderGeometry(CHIMNEY.r * 0.7 + 0.15 + (38 - y) * 0.01, CHIMNEY.r * 0.7 + 0.15 + (38 - y) * 0.01, 1.2, 20); c.translate(CHIMNEY.c[0], y, CHIMNEY.c[1]); p.push(c); }
     return merge(p); }, []);
+  // silindir UV'si 0–1: duvar ölçekli tuğla dokusu bacada dev tuğlalar veriyordu; çevre ~14 m, yükseklik 38 m için tekrar oranı
+  const chimMat = useMemo(() => { const mm = m.brick.clone(); mm.map = m.brick.map!.clone(); mm.map.repeat.set(5, 14); mm.map.needsUpdate = true; return mm; }, [m.brick]);
   return <group>
     <mesh geometry={geo} material={m.floor} receiveShadow />
-    <mesh geometry={chimney} material={m.brick} castShadow receiveShadow />
+    <mesh geometry={chimney} material={chimMat} castShadow receiveShadow />
     <mesh geometry={bands} material={m.paper} />
     <mesh position={[POND.c[0], 0.08, POND.c[1]]} rotation-x={-Math.PI / 2}><circleGeometry args={[POND.r, 28]} /><primitive object={m.water} attach="material" /></mesh>
     <mesh position={[POND.c[0], 0.2, POND.c[1]]} rotation-x={-Math.PI / 2} castShadow receiveShadow><ringGeometry args={[POND.r, POND.r + 0.5, 28]} /><primitive object={m.dark} attach="material" /></mesh>
