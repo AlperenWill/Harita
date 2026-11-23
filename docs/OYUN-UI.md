@@ -3,7 +3,7 @@
 Bütün oyunlar aynı arayüzü kullanır: `src/app/games/shared/hud/Hud.tsx`. İlk örnek: Kapadokya (`src/app/games/kapadokya/BalloonGame.tsx`).
 
 Geçirilen oyunlar: Kapadokya, Ani, İshak Paşa, Akdamar, Troya, Efes, Pamukkale, Zil Kale, Ayasofya, Topkapı, Dolmabahçe, Nemrut, Hattuşa,
-Kapalıçarşı, Kız Kulesi, Galata, Yerebatan, Cumalıkızık, Bayburt Kalesi, Şeytan Kalesi, Munzur Vadisi, Yüzen Adalar, Sümela Manastırı, Trabzon Ayasofya, Sagalassos, Cacabey Medresesi, Mahmut Bey Camii, Sinop Tarihi Cezaevi, Zeugma Mozaik Müzesi, Kerkenes Dağı, Odunpazarı Evleri, Giresun Adası, Meydan Medresesi, Adada Antik Kenti, Gaziantep Kalesi, Kyzikos, SEKA Kâğıt Müzesi, Justinianus Köprüsü, Ertuğrul Gazi Türbesi, Selimiye Camii, Vize Ayasofyası, Rákóczi Müzesi, Anıtkabir (anıt sayfası). Bağımsız Şanlıurfa oyununa aynı görünümde ≡ menü
+Kapalıçarşı, Kız Kulesi, Galata, Yerebatan, Cumalıkızık, Bayburt Kalesi, Şeytan Kalesi, Munzur Vadisi, Yüzen Adalar, Sümela Manastırı, Trabzon Ayasofya, Sagalassos, Cacabey Medresesi, Mahmut Bey Camii, Sinop Tarihi Cezaevi, Zeugma Mozaik Müzesi, Kerkenes Dağı, Odunpazarı Evleri, Giresun Adası, Meydan Medresesi, Adada Antik Kenti, Gaziantep Kalesi, Kyzikos, SEKA Kâğıt Müzesi, Justinianus Köprüsü, Ertuğrul Gazi Türbesi, Selimiye Camii, Vize Ayasofyası, Rákóczi Müzesi, Yalova Atatürk Köşkü, Anıtkabir (anıt sayfası). Bağımsız Şanlıurfa oyununa aynı görünümde ≡ menü
 `public/sanliurfa-oyun/index.html` sonunda eklendi. Konya ve Antalya oyunlarının kendi menüleri bu arayüzün örnek alındığı yapıdır.
 Oyuna özel paneller (konuşma kutuları, defter, kroki, ışık paneli…) aynı açık temaya boyandı; oyuna özel düğmeler sağ üstte ≡'in soluna konur.
 
