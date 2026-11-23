@@ -57,16 +57,18 @@ export function TopBar({ objective, right }: { onExit?: () => void; objective?: 
     </div>
   );
 }
-/** Görev rozeti: şimdiki hedef + ilerleme (nokta ya da çubuk) */
+/** Görev rozeti: şimdiki hedef + ilerleme (8'e kadar bölmeli, daha fazlasında tek çubuk; telefonda dar ekrana sığsın) */
 export function Objective({ label, done, total, icon }: { label: ReactNode; done?: number; total?: number; icon?: ReactNode }) {
   const t = useTheme();
   return (
-    <div className={`pointer-events-none flex max-w-[92vw] items-center gap-2.5 rounded-2xl px-3.5 py-2 ${GLASS}`} role="status">
+    <div className={`pointer-events-none flex max-w-full items-center gap-2.5 rounded-2xl px-3.5 py-2 ${GLASS}`} role="status">
       {icon && <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full" style={{ background: `${t.accent}22`, color: t.accent }}>{icon}</span>}
       <div className="min-w-0">
         <p className="truncate text-[13px] font-semibold leading-tight">{label}</p>
         {total !== undefined && done !== undefined && <div className="mt-1 flex items-center gap-1.5">
-          <div className="flex gap-1">{Array.from({ length: total }, (_, i) => <span key={i} className="h-1.5 w-4 rounded-full transition-colors" style={{ background: i < done ? t.accent : 'rgba(31,27,23,0.14)' }} />)}</div>
+          {total > 8
+            ? <div className="h-1.5 w-28 overflow-hidden rounded-full" style={{ background: 'rgba(31,27,23,0.14)' }}><div className="h-full rounded-full transition-all" style={{ width: `${(100 * Math.min(done, total)) / total}%`, background: t.accent }} /></div>
+            : <div className="flex gap-1">{Array.from({ length: total }, (_, i) => <span key={i} className="h-1.5 w-4 rounded-full transition-colors" style={{ background: i < done ? t.accent : 'rgba(31,27,23,0.14)' }} />)}</div>}
           <span className="text-[11px] font-semibold text-[#857b70]">{done}/{total}</span>
         </div>}
       </div>
