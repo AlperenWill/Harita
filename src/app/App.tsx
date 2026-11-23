@@ -33,6 +33,7 @@ const MahmutbeyPage = lazy(() => import('./pages/MahmutbeyPage'));
 const SinopCezaeviPage = lazy(() => import('./pages/SinopCezaeviPage'));
 const ZeugmaPage = lazy(() => import('./pages/ZeugmaPage'));
 const KerkenesPage = lazy(() => import('./pages/KerkenesPage'));
+const OdunpazariPage = lazy(() => import('./pages/OdunpazariPage'));
 const TroyaPage = lazy(() => import('./pages/TroyaPage'));
 const AniPage = lazy(() => import('./pages/AniPage'));
 const IshakPasaPage = lazy(() => import('./pages/IshakPasaPage'));
@@ -78,6 +79,7 @@ export default function App() {
           <Route path="oyun/sinop-cezaevi" element={<SinopCezaeviPage />} />
           <Route path="oyun/zeugma" element={<ZeugmaPage />} />
           <Route path="oyun/kerkenes" element={<KerkenesPage />} />
+          <Route path="oyun/odunpazari" element={<OdunpazariPage />} />
           <Route path="oyun/troya" element={<TroyaPage />} />
           <Route path="oyun/ani" element={<AniPage />} />
           <Route path="oyun/ishakpasa" element={<IshakPasaPage />} />
