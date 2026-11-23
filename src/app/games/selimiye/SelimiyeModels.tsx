@@ -20,6 +20,8 @@ const merge = (parts: THREE.BufferGeometry[]) => mergeGeometries(parts.map((g) =
 type Parts = THREE.BufferGeometry[];
 const slab = (p: Parts, x0: number, x1: number, z0: number, z1: number, h: number, y0 = 0, s = 2.4) => { const g = bx(x1 - x0, h, z1 - z0, s); g.translate((x0 + x1) / 2, y0 + h / 2, (z0 + z1) / 2); p.push(g); };
 const H = 20, F = 0.25;
+/** zemin düzlemi y = −0,12'de; yapıların tabanı bunun altına iner ki havada durmasın */
+const G0 = -0.35;
 const DOME_R = 15.75, DOME_Y = 26, DOME_K = 0.86;
 /** dış kurşun çatının üst yüzü ve sekizgen kasnağın köşe yarıçapı */
 const ROOF_Y = H + F + 0.5, OCT_V = 17.4;
@@ -59,13 +61,15 @@ export function useMats(): Mats {
 
 /* ===================== cami: duvarlar, ayaklar, kubbe ===================== */
 export function Mosque({ m, tier }: { m: Mats; tier: Tier }) {
-  const walls = useMemo(() => { const p: Parts = [], B = HALL, t = WALL_T, y = F - 0.1, h = H;
+  const walls = useMemo(() => { const p: Parts = [], B = HALL, t = WALL_T, y = G0, h = H + F - 0.1 - G0;
     slab(p, B.x0 - t, B.x1 + t, B.z0 - t, B.z0, h, y); slab(p, B.x0 - t, B.x0, B.z0, B.z1 + t, h, y); slab(p, B.x1, B.x1 + t, B.z0, B.z1 + t, h, y);
     slab(p, B.x0 - t, DOOR.x0, B.z1, B.z1 + t + 1.5, h, y); slab(p, DOOR.x1, B.x1 + t, B.z1, B.z1 + t + 1.5, h, y); slab(p, DOOR.x0, DOOR.x1, B.z1, B.z1 + t + 1.5, h - 8, y + 8);
     // avlu yan duvarı ve güney duvarı (alçak)
-    const C = COURT, ch = 5.5;
+    const C = COURT, ch = 5.5 + F - 0.1 - G0;
     slab(p, B.x0 - t, B.x0, C.z0, C.z1 + t, ch, y); slab(p, B.x1, B.x1 + t, C.z0, C.z1 + t, ch, y);
-    slab(p, B.x0 - t, GATE.x0, C.z1, C.z1 + t, ch, y); slab(p, GATE.x1, B.x1 + t, C.z1, C.z1 + t, ch, y); slab(p, GATE.x0, GATE.x1, C.z1, C.z1 + t, ch - 2.6, y + 2.6);
+    slab(p, B.x0 - t, GATE.x0, C.z1, C.z1 + t, ch, y); slab(p, GATE.x1, B.x1 + t, C.z1, C.z1 + t, ch, y); slab(p, GATE.x0, GATE.x1, C.z1, C.z1 + t, y + ch - (F + 2.5), F + 2.5);
+    // taban: bütün yapının altında zeminden döşeme seviyesine kadar dolu taş platform (yapı yerden kopuk görünmesin)
+    slab(p, B.x0 - t, B.x1 + t, B.z0 - t, PORTAL.z1, F - 0.03 - G0, G0);
     return merge(p); }, []);
   // tavan: ortasında kubbe açıklığı olan döşeme
   const ceiling = useMemo(() => { const s = new THREE.Shape(); const B = HALL; s.moveTo(B.x0, B.z0); s.lineTo(B.x1, B.z0); s.lineTo(B.x1, B.z1); s.lineTo(B.x0, B.z1); s.closePath();
@@ -193,14 +197,14 @@ export function Court({ m }: { m: Mats }) {
     for (let i = 0; i < xs.length - 1; i++) { const x0 = xs[i], x1 = xs[i + 1], cx = (x0 + x1) / 2, span = x1 - x0; arch(cx, SOUTH_ROW_Z, span, false);
       const r = Math.min(span / 2 - 0.3, 2.6), d = new THREE.SphereGeometry(r, 16, 7, 0, Math.PI * 2, 0, Math.PI / 2); d.translate(cx, top + 1.05, (SOUTH_ROW_Z + C.z1) / 2); lead.push(d); }
     // avlu taç kapısı: duvardan öne taşan, avlu duvarının iki katı yüksek blok (PORTAL); kemerli niş ve çerçeve Court bileşeninde ayrı çizilir
-    { const P = PORTAL, zf = P.z1; slab(stone, -P.hw, GATE.x0, C.z1, zf, P.h, F - 0.1); slab(stone, GATE.x1, P.hw, C.z1, zf, P.h, F - 0.1);
+    { const P = PORTAL, zf = P.z1; slab(stone, -P.hw, GATE.x0, C.z1, zf, P.h + F - 0.1 - G0, G0); slab(stone, GATE.x1, P.hw, C.z1, zf, P.h + F - 0.1 - G0, G0);
       slab(stone, GATE.x0, GATE.x1, C.z1, zf, P.h - 5.5, F + 5.5);
       slab(stone, -P.hw - 0.35, P.hw + 0.35, C.z1 - 0.3, zf + 0.35, 0.6, F + P.h - 0.2);   // saçak silmesi
-      for (const sx of [-1, 1]) { slab(stone, sx * P.hw - 0.7, sx * P.hw + 0.7, zf - 0.9, zf + 0.25, P.h + 1.8, F - 0.1);   // köşe payeleri
+      for (const sx of [-1, 1]) { slab(stone, sx * P.hw - 0.7, sx * P.hw + 0.7, zf - 0.9, zf + 0.25, P.h + 1.8 + F - 0.1 - G0, G0);   // köşe payeleri
         const d = new THREE.SphereGeometry(0.75, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2); d.translate(sx * P.hw, F + P.h + 1.7, zf - 0.32); lead.push(d);
         const fn = new THREE.ConeGeometry(0.15, 0.9, 6); fn.translate(sx * P.hw, F + P.h + 2.8, zf - 0.32); lead.push(fn); }
       // çerçeve: nişin iki yanında ve üstünde öne çıkan şeritler
-      for (const sx of [-1, 1]) slab(stone, sx > 0 ? 4.3 : -5.1, sx > 0 ? 5.1 : -4.3, zf, zf + 0.18, 9.9, F - 0.1);
+      for (const sx of [-1, 1]) slab(stone, sx > 0 ? 4.3 : -5.1, sx > 0 ? 5.1 : -4.3, zf, zf + 0.18, 9.9 + F - 0.1 - G0, G0);
       slab(stone, -5.1, 5.1, zf, zf + 0.18, 0.8, F + 9.8); }
     // şadırvan: sekiz sütun, sekizgen saçak ve kurşun kubbe
     const P = POOL; for (let k = 0; k < 8; k++) { const a = (k + 0.5) * Math.PI / 4, c = new THREE.CylinderGeometry(0.18, 0.22, 3.2, 8); c.translate(P.c[0] + Math.cos(a) * (P.r + 0.35), F + 2.2, P.c[1] + Math.sin(a) * (P.r + 0.35)); stone.push(c); }
@@ -239,7 +243,7 @@ function PortalNiche({ m }: { m: Mats }) {
 export function Minarets({ m }: { m: Mats }) {
   const g = useMemo(() => { const stone: Parts = [], lead: Parts = [], sh = 60;
     for (const q of MINARETS) {
-      const base = new THREE.CylinderGeometry(MINARET_R * 0.95, MINARET_R, 10, 8); base.translate(q[0], 5, q[1]); stone.push(base);
+      const base = new THREE.CylinderGeometry(MINARET_R * 0.95, MINARET_R, 10 - G0, 8); base.translate(q[0], (10 + G0) / 2, q[1]); stone.push(base);
       const tr = new THREE.CylinderGeometry(1.9, MINARET_R * 0.95, 1.6, 16); tr.translate(q[0], 10.8, q[1]); stone.push(tr);
       const body = new THREE.CylinderGeometry(1.3, 1.9, sh - 11.6, 16); body.translate(q[0], 11.6 + (sh - 11.6) / 2, q[1]); stone.push(body);
       for (const y of [36, 47, 56]) { const rr = 1.3 + 0.6 * (1 - (y - 11.6) / (sh - 11.6));
@@ -261,7 +265,7 @@ export function Minarets({ m }: { m: Mats }) {
 /* ===================== külliye kanatları (temsilî): kuzey köşelerde iki medrese, batıda uzun arasta; avlu yürünmez alanın dışında ===================== */
 export function Kulliye({ m }: { m: Mats }) {
   const g = useMemo(() => { const stone: Parts = [], lead: Parts = [];
-    const wing = (x0: number, x1: number, z0: number, z1: number, h: number, r: number, alongX: boolean) => { slab(stone, x0, x1, z0, z1, h, 0, 2.4);
+    const wing = (x0: number, x1: number, z0: number, z1: number, h: number, r: number, alongX: boolean) => { slab(stone, x0, x1, z0, z1, h - G0, G0, 2.4);
       const n = Math.floor(((alongX ? x1 - x0 : z1 - z0)) / (2 * r + 0.8)); const rows = Math.max(1, Math.floor(((alongX ? z1 - z0 : x1 - x0)) / (2 * r + 1)));
       for (let i = 0; i < n; i++) for (let j = 0; j < rows; j++) { const u = (i + 0.5) / n, v = (j + 0.5) / rows; const x = alongX ? x0 + u * (x1 - x0) : x0 + v * (x1 - x0), z = alongX ? z0 + v * (z1 - z0) : z0 + u * (z1 - z0);
         const d = new THREE.SphereGeometry(r, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2); d.translate(x, h, z); lead.push(d); } };
@@ -288,7 +292,7 @@ export function Ground({ tier }: { tier: Tier }) {
 export function City({ m }: { m: Mats }) {
   const geo = useMemo(() => { const r = rng(33), walls: Parts = [], roofs: Parts = [];
     for (let i = 0; i < 110; i++) { const side = r(), x = side < 0.3 ? -94 - r() * 60 : side < 0.6 ? 78 + r() * 70 : -72 + r() * 144, z = side < 0.6 ? -40 + r() * 140 : 96 + r() * 50, w = 7 + r() * 6, d = 7 + r() * 5, h = 5 + r() * 5;
-      const b = bx(w, h, d, 2.4); b.translate(x, h / 2, z); walls.push(b);
+      const b = bx(w, h, d, 2.4); b.translate(x, h / 2 + G0, z); walls.push(b);
       const roof = new THREE.ConeGeometry(Math.max(w, d) * 0.72, 2.4, 4); roof.rotateY(Math.PI / 4); roof.translate(x, h + 1.2, z); roofs.push(roof); }
     return { walls: merge(walls), roofs: merge(roofs) }; }, []);
   return <group>
@@ -302,7 +306,7 @@ export function Trees({ n }: { n: number }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   useEffect(() => { const r = rng(15), o = new THREE.Object3D(); let k = 0;
     for (let i = 0; i < n * 10 && k < n; i++) { const x = -130 + r() * 260, z = -50 + r() * 190; if (x > AREA.x0 - 4 && x < AREA.x1 + 4 && z > AREA.z0 - 4 && z < AREA.z1 + 4) continue; if ((Math.abs(x) < 50 && z < -38) || (x > -90 && x < -72 && z > -18 && z < 78)) continue;
-      o.position.set(x, 0, z); o.rotation.set(0, r() * 6, 0); o.scale.setScalar(1 + r() * 0.7); o.updateMatrix(); ref.current?.setMatrixAt(k++, o.matrix); }
+      o.position.set(x, G0, z); o.rotation.set(0, r() * 6, 0); o.scale.setScalar(1 + r() * 0.7); o.updateMatrix(); ref.current?.setMatrixAt(k++, o.matrix); }
     const mm = ref.current; if (mm) { mm.count = k; mm.instanceMatrix.needsUpdate = true; mm.computeBoundingSphere(); } }, [n]);
   return <instancedMesh ref={ref} args={[geo, mat, n]} castShadow receiveShadow />;
 }
