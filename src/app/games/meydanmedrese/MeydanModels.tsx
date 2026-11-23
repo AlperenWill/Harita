@@ -84,7 +84,7 @@ export function Madrasa({ m }: { m: Mats }) {
 export function Ground({ tier }: { tier: Tier }) {
   const geo = useMemo(() => { const N = tier === 'high' ? 40 : 20, g = new THREE.PlaneGeometry(SQUARE.x1 - SQUARE.x0 + 80, SQUARE.z1 - SQUARE.z0 + 80, N, N); g.rotateX(-Math.PI / 2); return g; }, [tier]);
   const tex = useMemo(() => groundTex(), []);
-  return <mesh geometry={geo} position={[0, -0.3, 0]} receiveShadow userData={{ noCast: true }}><meshStandardMaterial color="#b8a87e" map={tex.map} roughness={1} /></mesh>;
+  return <mesh geometry={geo} position={[0, -0.3, 0]} receiveShadow userData={{ noCast: true }}><meshStandardMaterial color="#b8a87e" map={tex.map} bumpMap={tex.bump} bumpScale={0.2} roughness={1} /></mesh>;
 }
 export function Square({ m }: { m: Mats }) {
   const g = useMemo(() => { const x = SQUARE.x1 - SQUARE.x0, z = SQUARE.z1 - SQUARE.z0; const p = new THREE.PlaneGeometry(x, z); p.rotateX(-Math.PI / 2); p.translate(0, -0.12, 0); return p; }, []);

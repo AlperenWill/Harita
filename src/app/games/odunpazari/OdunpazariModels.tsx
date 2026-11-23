@@ -48,7 +48,7 @@ export function Street({ m }: { m: Mats }) {
   const geo = useMemo(() => { const N = 90, pos: number[] = [], idx: number[] = [], uv: number[] = [];
     for (let i = 0; i <= N; i++) { const z = LANE.z0 + (i / N) * (LANE.z1 - LANE.z0), y = groundY(0, z) + 0.02;
       pos.push(LANE.x0, y, z, LANE.x1, y, z); uv.push(0, i / 6, 1, i / 6);
-      if (i < N) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); } }
+      if (i < N) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);   // yüz yukarı baksın (ters sırada şerit görünmüyordu) } }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g; }, []);
   const sq = useMemo(() => { const g = new THREE.PlaneGeometry(SQUARE.x1 - SQUARE.x0, SQUARE.z1 - SQUARE.z0, 1, 1); g.rotateX(-Math.PI / 2); g.translate((SQUARE.x0 + SQUARE.x1) / 2, groundY(0, SQUARE.z0) + 0.03, (SQUARE.z0 + SQUARE.z1) / 2); return g; }, []);
   return <group>
@@ -59,7 +59,7 @@ export function Street({ m }: { m: Mats }) {
 export function Ground({ tier }: { tier: Tier }) {
   const geo = useMemo(() => { const N = tier === 'high' ? 160 : 100, g = new THREE.PlaneGeometry(400, 400, N, N); g.rotateX(-Math.PI / 2);
     const p = g.attributes.position as THREE.BufferAttribute, col = new Float32Array(p.count * 3), c = new THREE.Color(), grass = new THREE.Color('#7f9a54'), dry = new THREE.Color('#a6a070');
-    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setY(i, groundY(x, z) - 0.15);
+    for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); p.setY(i, groundY(x, z) - 0.06);   // sokak şeridinin (+0.02) altında kalsın, z-çakışması olmasın
       c.copy(grass).lerp(dry, 0.3 + 0.3 * Math.sin(x * 0.04 + z * 0.03)); col.set([c.r, c.g, c.b], i * 3); }
     g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); return g; }, [tier]);
   const tex = useMemo(() => groundTex(), []);

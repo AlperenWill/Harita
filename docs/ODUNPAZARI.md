@@ -33,4 +33,4 @@ Not: Bilgiler arama sonuçlarındaki özetlerden alındı; sayfalar açılıp ok
 
 ## Bilinen görsel sorunlar
 - Sokağın bitiminde arazi şeridi kenarında beyaz bir ufuk şeridi görünüyor (arazi düzleminin sonu). Sonraki turda arazi kenarı genişletilecek.
-- Zemin düzlemi, sokak yüzeyiyle aynı yükseklikte olunca z-çakışması yapıyordu; zemin 15 cm aşağı alınarak giderildi.
+- Bazı açılarda görülen siyah kareler z-çakışmasından değil, kabartma gölgelendiricisinin ürettiği NaN'dan kaynaklanıyordu. Kök düzeltme `src/app/games/shared/safeBump.ts`'de; zemini 15 cm alçaltan geçici çözüm geri alındı.

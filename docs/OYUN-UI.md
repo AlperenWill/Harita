@@ -57,3 +57,9 @@ Oyunda kullanımı: `const G = useSettings()`; kademe `initialTier(G)`, otomatik
 2. `<Hud theme>` içine `TopBar` (`objective`, `right={<GameMenu onPause …/>}`), ana kontroller için `ActionDock`, kartlar için `InfoSheet`, `StartSheet` ve `EndSheet` koy.
 3. Kontrol listesini (`CONTROLS`) bir kez yaz: hem başlangıç ekranında hem menüdeki "Nasıl oynanır"da kullanılır.
 4. Baştan başla için bir `restart` işlevi ver.
+
+## Görüntü: kabartma dokusu ve siyah kareler
+- three'nin kabartma (`bumpMap`) gölgelendiricisi, ufka yatık bakılan uzak yüzeylerde ekran türevleri sıfıra inince NaN üretebiliyor. Son işlem (Polish: bloom/AO) tek bir NaN pikseli bütün kareye yayar ve ekran **tamamen siyah** görünür.
+- Kök düzeltme `src/app/games/shared/safeBump.ts`: gölgelendirici parçasını, türev ya da sonuç sıfıra yakınsa yüzey normaline dönecek biçimde değiştirir. `scenery.tsx` ve `Polish.tsx` bu modülü yükler; kabartma kullanan her oyun bu ikisinden birini içe aktarır. Test: `tests/safeBump.test.ts`.
+- three sürümü yükseltilirse test, özgün parçanın beklenen imzayı taşıyıp taşımadığını denetler; taşımıyorsa yama uygulanmaz ve test kırılır.
+- Hata swiftshader (başsız Chromium) ile yakalandı; gerçek ekran kartlarında görülüp görülmediği doğrulanmadı.

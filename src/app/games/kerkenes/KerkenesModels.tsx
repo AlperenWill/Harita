@@ -73,7 +73,7 @@ export function Streets({ m }: { m: Mats }) {
     for (const a of GATE_ANGLES) { const N = 60, pos: number[] = [], idx: number[] = [], ux = Math.cos(a), uz = Math.sin(a), px = -uz, pz = ux;
       for (let i = 0; i <= N; i++) { const r = 4 + (i / N) * (RING.r0 - 6), cx = ux * r, cz = uz * r, y = heightAt(cx, cz) + 0.04, hw = STREET_W / 2;
         pos.push(cx + px * hw, y, cz + pz * hw, cx - px * hw, y, cz - pz * hw); }
-      for (let i = 0; i < N; i++) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+      for (let i = 0; i < N; i++) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);   // yüz yukarı baksın (ters sırada şerit görünmüyordu) }
       const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx);
       const uv: number[] = []; for (let i = 0; i <= N; i++) uv.push(0, i / 6, 1, i / 6); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
       g.computeVertexNormals(); parts.push(g); }

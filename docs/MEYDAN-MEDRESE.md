@@ -31,4 +31,4 @@ Not: Bilgiler arama sonuçlarının özetlerinden alındı; sayfalar açılıp o
 - Avludaki havuz (kaynaklarda doğrulanmadı), meydandaki evler ve kavaklar.
 
 ## Teknik not: siyah kareler
-- Zemindeki kabartma dokusu (`bumpMap`), ufka yatık bakışta NaN üretiyor; son işleme (Polish) bu pikseli tüm kareye yayınca ekran siyaha dönüyordu. Bu oyunda zeminden kabartma kaldırıldı. Aynı doku başka oyunlarda da kullanılıyor; Odunpazarı'nda zemin alçaltılarak geçici olarak giderilmişti. Diğer oyunların ayrıca denetlenmesi gerekiyor.
+- Ufka yatık bakışta ekran tamamen siyaha dönüyordu. Nedeni three'nin kabartma (bump) gölgelendiricisi: uzak pikselde ekran türevleri sıfıra inince `normalize(0)` NaN veriyor, son işlem (Polish) bu pikseli tüm kareye yayıyor. Kök düzeltme ortak modülde: `src/app/games/shared/safeBump.ts` (bkz. `docs/OYUN-UI.md`). Bu oyundaki geçici çözüm (zeminden kabartmayı kaldırmak) geri alındı.
