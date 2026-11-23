@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BATH, BOUNDS, MOSQUE, MUSEUM, RING, SPOTS, START, TOWERS, WELL, groundY, walkable } from '../src/app/games/gaziantepkale/site';
+import { BATH, BOUNDS, DAMAGE, MOSQUE, MUSEUM, RING, SPOTS, START, TOWERS, TOWER_R, WELL, groundY, inDamageArc, nearestDamage, walkable } from '../src/app/games/gaziantepkale/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -36,5 +36,13 @@ describe('Gaziantep Kalesi', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('deprem hasarı: dört gedik burçlara değmez, onarım noktaları yürünerek bulunur, gedikten dışarı çıkılmaz', () => {
+    expect(DAMAGE).toHaveLength(4);
+    const r = reach();
+    for (const d of DAMAGE) expect(r(d.at[0], d.at[1]), d.id).toBe(true);
+    for (const d of DAMAGE) { expect(nearestDamage(d.at[0], d.at[1], [])?.id).toBe(d.id); expect(nearestDamage(d.at[0], d.at[1], [d.id])).toBeNull(); expect(inDamageArc(d.a)).toBe(d.id);
+      const rm = (RING.r0 + RING.r1) / 2; expect(walkable(Math.cos(d.a) * rm, Math.sin(d.a) * rm)).toBe(false);
+      for (const t of TOWERS) expect(Math.hypot(Math.cos(d.a) * rm - t[0], Math.sin(d.a) * rm - t[1])).toBeGreaterThan(TOWER_R + d.half * rm); }
   });
 });

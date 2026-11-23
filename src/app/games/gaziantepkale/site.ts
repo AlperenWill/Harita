@@ -23,6 +23,15 @@ export const WELL = { c: [-12, 11] as V2, r: 1.6 };
 /** Dış meydan: kalenin çevresinde yürünebilir alan (etrafı kent evleri çevreler) */
 export const PLAZA_R = 52;
 
+/* ===================== deprem hasarı ve onarım ===================== */
+/** Surun dört yerinde üst bölüm yıkılmış (temsilî): her hasar bir yay (açı ± yarı genişlik); içeride onarım noktası. Gedikte alt duvar ayakta kalır, geçit açılmaz. */
+export const DAMAGE: { id: string; a: number; half: number; at: V2 }[] = [3, 5, 8, 10].map((k, i) => { const a = Math.PI / 2 + (k * 2 * Math.PI) / TOWER_N; return { id: `h${i + 1}`, a, half: 0.11, at: [Math.cos(a) * 26, Math.sin(a) * 26] as V2 }; });
+export const DAMAGE_REACH = 3.2;
+export function nearestDamage(x: number, z: number, fixed: string[]) { let best: (typeof DAMAGE)[number] | null = null, bd = Infinity;
+  for (const d of DAMAGE) { if (fixed.includes(d.id)) continue; const q = Math.hypot(x - d.at[0], z - d.at[1]); if (q < DAMAGE_REACH && q < bd) { bd = q; best = d; } } return best; }
+/** Bir açı hasarlı yaylardan birinin içinde mi */
+export function inDamageArc(a: number): string | null { for (const d of DAMAGE) { const q = Math.abs(((a - d.a + Math.PI * 3) % (Math.PI * 2)) - Math.PI); if (q < d.half) return d.id; } return null; }
+
 /** Arazi: merkezde yükselen yumuşak höyük; dışarıda düz */
 export function groundY(x: number, z: number): number { return 14 * Math.exp(-(x * x + z * z) / (2 * 34 * 34)); }
 function inGate(x: number, z: number): boolean {
