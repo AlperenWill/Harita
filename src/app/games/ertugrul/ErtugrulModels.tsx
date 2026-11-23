@@ -54,6 +54,8 @@ function Alem({ m, y, s = 1 }: { m: Mats; y: number; s?: number }) {
     <mesh position={[0, 1.6, 0]} rotation-y={Math.PI / 2} material={m.gold}><torusGeometry args={[0.32, 0.06, 6, 16, Math.PI * 1.4]} /></mesh>
   </group>;
 }
+/** türbe kasnağı ve kubbe yarıçapı: altıgenin iç teğet dairesinden (≈4,7 m) küçük kalır ki kasnak gövdeden taşmasın */
+const DR = 3.9;
 const archWin = (w: number, h: number) => { const s = new THREE.Shape(), r = w / 2; s.moveTo(-r, 0); s.lineTo(r, 0); s.lineTo(r, h - r * 1.2); s.quadraticCurveTo(r, h - r * 0.2, 0, h); s.quadraticCurveTo(-r, h - r * 0.2, -r, h - r * 1.2); s.closePath(); return new THREE.ShapeGeometry(s, 8); };
 
 /* ===================== bahçe ve türbe ===================== */
@@ -80,24 +82,29 @@ export function Garden({ m }: { m: Mats }) {
     const head = bx(0.5, 1.3, 0.2, 1); head.translate(c[0], 0.6, c[1] - 2.3); st.push(head); const foot = bx(0.4, 0.7, 0.2, 1); foot.translate(c[0], 0.3, c[1] + 2.3); st.push(foot);
     return { earth: merge(earth), st: merge(st) }; }, []);
   const stones = useMemo(() => { const p: Parts = [], r = rng(8); for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2, q = new THREE.DodecahedronGeometry(0.45 + r() * 0.25, 0); q.scale(1, 0.6, 1); q.translate(TOMB.c[0] + Math.cos(a) * 5, 0.2, TOMB.c[1] + Math.sin(a) * 5); p.push(q); } return merge(p); }, []);
-  const hexLow = useMemo(() => { const g = new THREE.CylinderGeometry(4.6, 4.8, 1.6, 6, 1, true); g.rotateY(Math.PI / 6); g.translate(TOMB.c[0], 0.8, TOMB.c[1]); const top = new THREE.RingGeometry(4.1, 4.8, 6, 1); top.rotateX(-Math.PI / 2); top.rotateY(Math.PI / 6); top.translate(TOMB.c[0], 1.6, TOMB.c[1]); const inner = new THREE.CylinderGeometry(4.1, 4.2, 1.6, 6, 1, true); inner.scale(-1, 1, 1); inner.rotateY(Math.PI / 6); inner.translate(TOMB.c[0], 0.8, TOMB.c[1]); return merge([g, top, inner]); }, []);
+  const hexLow = useMemo(() => { const hex = (R: number) => { const sh = new THREE.Shape(); for (let k = 0; k < 6; k++) { const a = (k * Math.PI) / 3; if (k) sh.lineTo(Math.cos(a) * R, Math.sin(a) * R); else sh.moveTo(R, 0); } sh.closePath(); return sh; };
+    const outer = hex(4.8), hole = new THREE.Path(hex(4.1).getPoints().reverse()); outer.holes.push(hole);
+    const g = new THREE.ExtrudeGeometry(outer, { depth: 1.6, bevelEnabled: false }); g.rotateX(-Math.PI / 2); g.translate(TOMB.c[0], 0, TOMB.c[1]); return g; }, []);
   // 3.–4. dönem: altıgen türbe (gövde, silmeler, sivri kemerli pencereler, taçkapı, kasnak, kurşun kubbe)
   const tomb = useMemo(() => { const p: Parts = [], dk: Parts = [], c = TOMB.c, r = TOMB.r, H = 5.2;
+    const skirt = new THREE.CylinderGeometry(DR + 0.2, r + 0.35, 0.75, 6); skirt.rotateY(Math.PI / 6); skirt.translate(c[0], H + 0.62, c[1]);
     const body = new THREE.CylinderGeometry(r, r + 0.2, H, 6); body.rotateY(Math.PI / 6); body.translate(c[0], H / 2, c[1]); p.push(body);
     for (const [y, dr, hh] of [[H, 0.3, 0.4], [H + 0.4, 0.15, 0.25], [1.1, 0.12, 0.2]] as const) { const b = new THREE.CylinderGeometry(r + dr, r + dr, hh, 6); b.rotateY(Math.PI / 6); b.translate(c[0], y, c[1]); p.push(b); }
     const step = new THREE.CylinderGeometry(r + 1.4, r + 1.6, 0.4, 6); step.rotateY(Math.PI / 6); step.translate(c[0], 0.2, c[1]); p.push(step);
-    const drum = new THREE.CylinderGeometry(r * 0.86, r * 0.9, 1.1, 12); drum.translate(c[0], H + 1.05, c[1]); p.push(drum);
-    // altı yüz: yüz merkezleri a = 90° + k·60° yönünde (güney yüzü kapı)
-    const ap = r * Math.cos(Math.PI / 6) + 0.03;
+    // kırma çatı eteği: altıgen gövdeden kasnağa inen kurşun kaplı eğik yüz (ayrı malzeme), sonra yuvarlak kasnak
+    const drum = new THREE.CylinderGeometry(DR, DR + 0.05, 0.9, 32); drum.translate(c[0], H + 1.45, c[1]); p.push(drum);
+    const dband = new THREE.CylinderGeometry(DR + 0.12, DR + 0.12, 0.18, 32); dband.translate(c[0], H + 1.92, c[1]); p.push(dband);
+    // altı yüz: yüz yönleri +z'den başlayarak 60° arayla (güney yüzü kapı). Gövde aşağı doğru genişlediği için yüzün yeri yüksekliğe göre hesaplanır.
+    const apAt = (y: number) => (r + 0.2 - 0.2 * (y / H)) * Math.cos(Math.PI / 6) + 0.04;
     for (let k = 0; k < 6; k++) { const a = Math.PI / 2 + k * Math.PI / 3, nx = Math.cos(a), nz = Math.sin(a), ry = Math.atan2(nx, nz);
-      if (k === 0) { const d = archWin(1.8, 3.4); d.rotateY(ry); d.translate(c[0] + nx * (ap + 0.42), 0.4, c[1] + nz * (ap + 0.42)); dk.push(d);
-        const fr = bx(3.2, 4.6, 0.4, 1.5); fr.rotateY(ry); fr.translate(c[0] + nx * (ap + 0.2), 2.3, c[1] + nz * (ap + 0.2)); p.push(fr); continue; }
-      for (const y of [1.6, 3.6]) { const w = archWin(0.9, y > 2 ? 1.2 : 1.5); w.rotateY(ry); w.translate(c[0] + nx * ap, y, c[1] + nz * ap); dk.push(w); } }
-    return { p: merge(p), dk: merge(dk) }; }, []);
+      if (k === 0) { const fr = bx(3.0, 4.4, 0.36, 1.5); fr.rotateY(ry); const f0 = apAt(2.2) + 0.16; fr.translate(c[0] + nx * f0, 2.2, c[1] + nz * f0); p.push(fr);
+        const d = archWin(1.7, 3.3); d.rotateY(ry); const d0 = apAt(2.2) + 0.36; d.translate(c[0] + nx * d0, 0.42, c[1] + nz * d0); dk.push(d); continue; }
+      for (const [y, h] of [[1.3, 1.5], [3.4, 1.2]] as const) { const w = archWin(0.9, h); w.rotateY(ry); const ap = apAt(y + h / 2) + 0.03; w.translate(c[0] + nx * ap, y, c[1] + nz * ap); dk.push(w); } }
+    return { p: merge(p), dk: merge(dk), skirt }; }, []);
   // büstler (4. dönem) ve yerlerinde önceki dönemlerde çalılar
   const busts = useMemo(() => { const p: Parts = [], q: Parts = []; for (const b of BUSTS) { slab(p, b[0] - 0.45, b[0] + 0.45, b[1] - 0.45, b[1] + 0.45, 1.3, 0, 1); slab(p, b[0] - 0.55, b[0] + 0.55, b[1] - 0.55, b[1] + 0.55, 0.15, 1.3, 1); const h = new THREE.SphereGeometry(0.3, 12, 10); h.scale(0.9, 1.1, 1); h.translate(b[0], 2.15, b[1]); q.push(h); const sh = new THREE.CylinderGeometry(0.38, 0.5, 0.6, 10); sh.scale(1, 1, 0.6); sh.translate(b[0], 1.75, b[1]); q.push(sh); } return { base: merge(p), heads: merge(q) }; }, []);
   const bushes = useMemo(() => { const p: Parts = [], r = rng(4); for (const b of [...BUSTS, ...POSTS]) { const q = new THREE.IcosahedronGeometry(0.75 + r() * 0.25, 1); q.scale(1, 0.85, 1); q.translate(b[0], 0.6, b[1]); p.push(q); } const g = merge(p); g.computeVertexNormals(); return g; }, []);
-  const booths = useMemo(() => { const p: Parts = []; for (const q of POSTS) { slab(p, q[0] - 0.8, q[0] + 0.8, q[1] - 0.8, q[1] + 0.8, 0.3, 0, 1); } return merge(p); }, []);
+  const booths = useMemo(() => { const p: Parts = []; for (const q of POSTS) { slab(p, q[0] - 0.8, q[0] + 0.8, q[1] - 0.8, q[1] + 0.8, 0.14, 0, 1); } return merge(p); }, []);
   const ground = useMemo(() => { const g = new THREE.PlaneGeometry(G.x1 - G.x0, G.z1 - G.z0); g.rotateX(-Math.PI / 2); g.translate(0, 0.02, (G.z0 + G.z1) / 2); return g; }, []);
   const bushMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4a6b35', roughness: 0.95, flatShading: true }), []);
   const earthMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#7d6a4c', roughness: 1 }), []);
@@ -109,8 +116,9 @@ export function Garden({ m }: { m: Mats }) {
     <EraGroup when={(e) => e >= 2}>
       <mesh geometry={tomb.p} material={m.stone} castShadow receiveShadow />
       <mesh geometry={tomb.dk} material={m.dark} />
-      <mesh position={[TOMB.c[0], 6.15, TOMB.c[1]]} castShadow><sphereGeometry args={[TOMB.r * 0.86, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2]} /><primitive object={m.dome} attach="material" /></mesh>
-      <Alem m={m} y={6.15 + TOMB.r * 0.86} />
+      <mesh geometry={tomb.skirt} material={m.dome} castShadow receiveShadow />
+      <mesh position={[TOMB.c[0], 5.2 + 2.0, TOMB.c[1]]} castShadow><sphereGeometry args={[DR, 32, 14, 0, Math.PI * 2, 0, Math.PI / 2]} /><primitive object={m.dome} attach="material" /></mesh>
+      <Alem m={m} y={5.2 + 2.0 + DR} />
       <pointLight position={[TOMB.c[0], 3.2, TOMB.c[1] + TOMB.r + 1.4]} color="#ffe6bf" intensity={14} distance={14} decay={2} />
     </EraGroup>
     <EraGroup when={(e) => e <= 2}><mesh geometry={bushes} material={bushMat} castShadow receiveShadow /></EraGroup>
@@ -127,7 +135,7 @@ function Guards() {
   const refs = useRef<(THREE.Group | null)[]>([]);
   const mats = useMemo(() => ({ uni: new THREE.MeshStandardMaterial({ color: '#4c5a3e', roughness: 0.9 }), skin: new THREE.MeshStandardMaterial({ color: '#c9a184', roughness: 0.8 }), cap: new THREE.MeshStandardMaterial({ color: '#f1efe8', roughness: 0.5 }), dark: new THREE.MeshStandardMaterial({ color: '#1f1d1a', roughness: 0.7 }) }), []);
   useFrame(({ clock }) => { const t = clock.elapsedTime % 24; refs.current.forEach((g, i) => { if (!g) return; const s = i ? -1 : 1, q = POSTS[i];
-    const out = t < 3 ? t / 3 : t < 6 ? 1 : t < 9 ? 1 - (t - 6) / 3 : 0; g.position.set(q[0] + s * 0, 0.3, q[1] + out * 2.4); g.rotation.y = t >= 6 && t < 9 ? Math.PI : 0; g.position.y = 0.3 + (out > 0 && out < 1 ? Math.abs(Math.sin(clock.elapsedTime * 7)) * 0.04 : 0); }); });
+    const out = t < 3 ? t / 3 : t < 6 ? 1 : t < 9 ? 1 - (t - 6) / 3 : 0; const dz = out * 2.4, base = dz < 0.8 ? 0.14 : 0.02; g.position.set(q[0], base + (out > 0 && out < 1 ? Math.abs(Math.sin(clock.elapsedTime * 7)) * 0.04 : 0), q[1] + dz); g.rotation.y = t >= 6 && t < 9 ? Math.PI : 0; void s; }); });
   return <>{POSTS.map((_, i) => <group key={i} ref={(g) => { refs.current[i] = g; }}>
     <mesh position={[0, 1.05, 0]} material={mats.uni} castShadow><capsuleGeometry args={[0.22, 0.9, 4, 8]} /></mesh>
     {[-0.1, 0.1].map((x) => <mesh key={x} position={[x, 0.35, 0]} material={mats.dark} castShadow><cylinderGeometry args={[0.08, 0.07, 0.7, 6]} /></mesh>)}

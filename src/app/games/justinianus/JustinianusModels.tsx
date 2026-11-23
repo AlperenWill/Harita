@@ -64,30 +64,34 @@ export function Bridge({ m }: { m: Mats }) {
       g.translate(side * (DECK_X + L / 2), DECK_H / 2 + 0.02, 0); parts.push(g); }
     return merge(parts); }, []);
   // ayak mahmuzları: yukarı akıntıda (−z) yuvarlak burun ve yarım kubbe başlık, aşağı akıntıda (+z) sivri burun ve piramit başlık
-  const cutwaters = useMemo(() => { const parts: Parts = [], r = PIER_W / 2, h = 4.6, z0 = HALF_W, Lb = BAND + CUT_L - r;
+  const cutwaters = useMemo(() => { const box: Parts = [], round: Parts = [], r = PIER_W / 2, h = 4.6, z0 = HALF_W, L = BAND + CUT_L, Lb = L - r;
     for (const px of PIER_X) {
-      const b = bx(PIER_W, h, Lb, 2); b.translate(px, h / 2 - 0.3, -(z0 + Lb / 2)); parts.push(b);
-      const c = new THREE.CylinderGeometry(r, r, h, 16, 1, false, Math.PI / 2, Math.PI); c.translate(px, h / 2 - 0.3, -(z0 + Lb)); parts.push(c);
-      const cap = new THREE.SphereGeometry(r, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2); cap.scale(1, 0.7, 1); cap.translate(px, h - 0.3, -(z0 + Lb)); parts.push(cap);
-      const capB = bx(PIER_W, 0.5, Lb, 1); capB.translate(px, h - 0.05, -(z0 + Lb / 2)); parts.push(capB);
-      const tri = new THREE.Shape(); tri.moveTo(-r, 0); tri.lineTo(r, 0); tri.lineTo(0, -(BAND + CUT_L)); tri.closePath();
-      const d = new THREE.ExtrudeGeometry(tri, { depth: h, bevelEnabled: false }); d.rotateX(-Math.PI / 2); d.translate(px, -0.3, z0); parts.push(d);
-      const tri2 = new THREE.Shape(); tri2.moveTo(-r - 0.15, 0.1); tri2.lineTo(r + 0.15, 0.1); tri2.lineTo(0, -(BAND + CUT_L) - 0.2); tri2.closePath();
-      const capT = new THREE.ExtrudeGeometry(tri2, { depth: 0.4, bevelEnabled: false }); capT.rotateX(-Math.PI / 2); capT.translate(px, h - 0.3, z0); parts.push(capT); }
-    return merge(parts); }, []);
+      // yukarı akıntı (−z): gövdeden çıkan kutu + yarım silindir burun + yarım kubbe başlık
+      const b = bx(PIER_W, h, Lb + 0.3, 2); b.translate(px, h / 2 - 0.3, -(z0 + Lb / 2) + 0.15); box.push(b);
+      const capB = bx(PIER_W + 0.2, 0.35, Lb + 0.3, 1); capB.translate(px, h - 0.12, -(z0 + Lb / 2) + 0.15); box.push(capB);
+      const c = new THREE.CylinderGeometry(r, r, h, 20, 1, false, Math.PI / 2, Math.PI); c.translate(px, h / 2 - 0.3, -(z0 + Lb)); round.push(c);
+      const cap = new THREE.SphereGeometry(r, 20, 8, Math.PI / 2, Math.PI, 0, Math.PI / 2); cap.scale(1, 0.75, 1); cap.translate(px, h - 0.3, -(z0 + Lb)); round.push(cap);
+      // aşağı akıntı (+z): eşkenar dörtgen prizma (4 köşeli silindir z'de uzatılır; yarısı gövdenin içinde kalır) + aynı biçimde piramit başlık
+      const n = new THREE.CylinderGeometry(r, r, h, 4); n.scale(1, 1, L / r); n.translate(px, h / 2 - 0.3, z0); round.push(n);
+      const pc = new THREE.ConeGeometry(r * 1.06, 1.3, 4, 1, true); pc.scale(1, 1, (L * 1.06) / (r * 1.06)); pc.translate(px, h - 0.3 + 0.65, z0); round.push(pc); }
+    return { box: merge(box), round: merge(round) }; }, []);
   // doğu ucundaki apsis (yarım kubbesi doğuya bakar, açık yüzü batıda) ve batıdaki zafer takının temelleri
-  const ends = useMemo(() => { const parts: Parts = [], R = APSE.r, hw = 7.4;
+  const ends = useMemo(() => { const parts: Parts = [], flat: Parts = [], R = APSE.r, hw = 7.4;
     const outer = new THREE.CylinderGeometry(R, R, hw, 28, 1, true, 0, Math.PI); const inner = new THREE.CylinderGeometry(R - 0.9, R - 0.9, hw, 28, 1, true, 0, Math.PI); inner.scale(-1, 1, 1); inner.rotateY(Math.PI);
     for (const g of [outer, inner]) { g.translate(APSE.c[0], hw / 2 - 0.2, APSE.c[1]); parts.push(g); }
     const dome = new THREE.SphereGeometry(R, 22, 10, Math.PI / 2, Math.PI, 0, Math.PI / 2); dome.translate(APSE.c[0], hw - 0.2, APSE.c[1]); parts.push(dome);
-    for (const sz of [-1, 1]) { const pl = bx(1.2, hw + 0.6, 1.2, 1.5); pl.translate(APSE.c[0] - 0.2, (hw + 0.6) / 2 - 0.2, APSE.c[1] + sz * (R - 0.45)); parts.push(pl); }
-    const plinth = bx(R + 1.5, 0.6, R * 2 + 1.4, 2); plinth.translate(APSE.c[0] + R / 2 - 0.3, 0.1, APSE.c[1]); parts.push(plinth);
-    for (const f of ARCH_FEET) { const q = bx(FOOT_HALF[0] * 2, 1.1, FOOT_HALF[1] * 2, 1.5); q.translate(f[0], 0.35, f[1]); parts.push(q); }
-    return merge(parts); }, []);
-  const apseMat = useMemo(() => { const mm = m.stone.clone(); mm.side = THREE.DoubleSide; return mm; }, [m.stone]);
+    for (const sz of [-1, 1]) { const pl = bx(1.2, hw + 0.6, 1.2, 1.5); pl.translate(APSE.c[0] - 0.2, (hw + 0.6) / 2 - 0.2, APSE.c[1] + sz * (R - 0.45)); flat.push(pl); }
+    const plinth = bx(R + 1.5, 0.6, R * 2 + 1.4, 2); plinth.translate(APSE.c[0] + R / 2 - 0.3, 0.1, APSE.c[1]); flat.push(plinth);
+    for (const f of ARCH_FEET) { const q = bx(FOOT_HALF[0] * 2, 1.1, FOOT_HALF[1] * 2, 1.5); q.translate(f[0], 0.35, f[1]); flat.push(q); }
+    return { curved: merge(parts), flat: merge(flat) }; }, []);
+  // silindir ve küre UV'leri 0–1 aralığındadır; dünya ölçekli taş dokusu onlarda tek renk görünür. Bu yüzden ayrı tekrar oranlı kopyalar.
+  const roundMat = useMemo(() => { const mm = m.stone.clone(); mm.map = m.stone.map!.clone(); mm.map.repeat.set(2.5, 1.6); mm.map.needsUpdate = true; return mm; }, [m.stone]);
+  const apseMat = useMemo(() => { const mm = m.stone.clone(); mm.map = m.stone.map!.clone(); mm.map.repeat.set(4, 2.4); mm.map.needsUpdate = true; mm.side = THREE.DoubleSide; return mm; }, [m.stone]);
   return <group>
-    <mesh geometry={cutwaters} material={m.stone} castShadow receiveShadow />
-    <mesh geometry={ends} material={apseMat} castShadow receiveShadow />
+    <mesh geometry={cutwaters.box} material={m.stone} castShadow receiveShadow />
+    <mesh geometry={cutwaters.round} material={roundMat} castShadow receiveShadow />
+    <mesh geometry={ends.curved} material={apseMat} castShadow receiveShadow />
+    <mesh geometry={ends.flat} material={m.stone} castShadow receiveShadow />
     <mesh geometry={body} material={m.stone} castShadow receiveShadow />
     <mesh geometry={ramps} material={m.stone} castShadow receiveShadow />
     <mesh geometry={parapets} material={m.stone} castShadow receiveShadow />
