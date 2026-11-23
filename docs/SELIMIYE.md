@@ -33,7 +33,7 @@ Not: Bilgiler arama sonuçlarının özetlerinden alındı; sayfalar açılıp o
 - **Ayasofya'dan büyük kubbe iddiası:** Tek bir kaynakta; oyuna alınmadı.
 
 ## Temsilî olanlar
-- **Dış görünüş (fotoğrafa göre yenilendi):** Kurşun kaplı çatı ve kubbeler, sekizgen kasnak ve köşelerindeki sekiz payanda kulesi, köşegenlerde dört yarım kubbe, çatıda küçük kubbeler, kemerli pencere sıraları, avlunun üç yanında kubbeli revaklar, sekiz sütunlu şadırvan ve avlu taç kapısı var. İnce kalem minareler sekizgen kaideli, üç şerefeli ve uzun kurşun külahlı. Bunların hepsi biçim olarak fotoğrafa benzetildi; sayıları ve ölçüleri ölçülmüş değildir. Kubbe biraz basık çizildi (yükseklik × 0,86).
+- **Dış görünüş (fotoğrafa göre yenilendi):** Kurşun kaplı çatı ve kubbeler, sekizgen kasnak ve köşelerindeki sekiz payanda kulesi, köşegenlerde dört yarım kubbe, çatıda küçük kubbeler, kemerli pencere sıraları, avlunun üç yanında kubbeli revaklar, sekiz sütunlu şadırvan ve avlu taç kapısı var. Taç kapı duvardan 1,2 m öne taşar, 11 m yüksektir; kemerli niş, yazı kuşağı ve saçak altındaki küçük kemer dizisi temsilîdir (yazının içeriği yok). İnce kalem minareler sekizgen kaideli, üç şerefeli ve uzun kurşun külahlı. Bunların hepsi biçim olarak fotoğrafa benzetildi; sayıları ve ölçüleri ölçülmüş değildir. Kubbe biraz basık çizildi (yükseklik × 0,86).
 - Avlunun biçimi, revak sütunları ve ortadaki havuz (gerçek külliyenin avlusu farklı olabilir).
 - Ayakların ve kemerlerin ölçüsü ve biçimi; pencere sayıları ve yerleri.
 - Çini ve halı desenleri; avizeler.

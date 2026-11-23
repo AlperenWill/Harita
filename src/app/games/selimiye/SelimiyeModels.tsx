@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { bx, groundTex, mountainGeo, stoneTex, useGrassCards, weather } from '../shared/scenery';
-import { AREA, COLUMNS, COURT, DOOR, GATE, HALL, MINARETS, MINARET_R, OCT_R, PILLARS, PILLAR_R, POOL, SOUTH_ROW_Z, WALL_T } from './site';
+import { AREA, COLUMNS, COURT, DOOR, GATE, HALL, MINARETS, MINARET_R, OCT_R, PILLARS, PILLAR_R, POOL, PORTAL, SOUTH_ROW_Z, WALL_T } from './site';
 
 type Tier = 'low' | 'medium' | 'high';
 export function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
@@ -192,9 +192,16 @@ export function Court({ m }: { m: Mats }) {
     const xs = [-19.5, -14.95, -10.35, -5.75, 5.75, 10.35, 14.95, 19.5];
     for (let i = 0; i < xs.length - 1; i++) { const x0 = xs[i], x1 = xs[i + 1], cx = (x0 + x1) / 2, span = x1 - x0; arch(cx, SOUTH_ROW_Z, span, false);
       const r = Math.min(span / 2 - 0.3, 2.6), d = new THREE.SphereGeometry(r, 16, 7, 0, Math.PI * 2, 0, Math.PI / 2); d.translate(cx, top + 1.05, (SOUTH_ROW_Z + C.z1) / 2); lead.push(d); }
-    // avlu taç kapısı: duvardan yüksek, kapı açıklığının üstünde silme
-    slab(stone, GATE.x0 - 2.6, GATE.x0, C.z1, C.z1 + WALL_T, 8.6, F - 0.1); slab(stone, GATE.x1, GATE.x1 + 2.6, C.z1, C.z1 + WALL_T, 8.6, F - 0.1);
-    slab(stone, GATE.x0, GATE.x1, C.z1, C.z1 + WALL_T, 3, F + 5.5); slab(stone, GATE.x0 - 2.9, GATE.x1 + 2.9, C.z1 - 0.2, C.z1 + WALL_T + 0.2, 0.5, F + 8.5);
+    // avlu taç kapısı: duvardan öne taşan, avlu duvarının iki katı yüksek blok (PORTAL); kemerli niş ve çerçeve Court bileşeninde ayrı çizilir
+    { const P = PORTAL, zf = P.z1; slab(stone, -P.hw, GATE.x0, C.z1, zf, P.h, F - 0.1); slab(stone, GATE.x1, P.hw, C.z1, zf, P.h, F - 0.1);
+      slab(stone, GATE.x0, GATE.x1, C.z1, zf, P.h - 5.5, F + 5.5);
+      slab(stone, -P.hw - 0.35, P.hw + 0.35, C.z1 - 0.3, zf + 0.35, 0.6, F + P.h - 0.2);   // saçak silmesi
+      for (const sx of [-1, 1]) { slab(stone, sx * P.hw - 0.7, sx * P.hw + 0.7, zf - 0.9, zf + 0.25, P.h + 1.8, F - 0.1);   // köşe payeleri
+        const d = new THREE.SphereGeometry(0.75, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2); d.translate(sx * P.hw, F + P.h + 1.7, zf - 0.32); lead.push(d);
+        const fn = new THREE.ConeGeometry(0.15, 0.9, 6); fn.translate(sx * P.hw, F + P.h + 2.8, zf - 0.32); lead.push(fn); }
+      // çerçeve: nişin iki yanında ve üstünde öne çıkan şeritler
+      for (const sx of [-1, 1]) slab(stone, sx > 0 ? 4.3 : -5.1, sx > 0 ? 5.1 : -4.3, zf, zf + 0.18, 9.9, F - 0.1);
+      slab(stone, -5.1, 5.1, zf, zf + 0.18, 0.8, F + 9.8); }
     // şadırvan: sekiz sütun, sekizgen saçak ve kurşun kubbe
     const P = POOL; for (let k = 0; k < 8; k++) { const a = (k + 0.5) * Math.PI / 4, c = new THREE.CylinderGeometry(0.18, 0.22, 3.2, 8); c.translate(P.c[0] + Math.cos(a) * (P.r + 0.35), F + 2.2, P.c[1] + Math.sin(a) * (P.r + 0.35)); stone.push(c); }
     const eave = new THREE.CylinderGeometry(P.r + 1.2, P.r + 0.6, 0.6, 8); eave.translate(P.c[0], F + 4, P.c[1]); lead.push(eave);
@@ -206,7 +213,24 @@ export function Court({ m }: { m: Mats }) {
     <mesh rotation-x={-Math.PI / 2} position={[0, F + 0.02, (COURT.z0 + COURT.z1) / 2]} receiveShadow><planeGeometry args={[COURT.x1 - COURT.x0, COURT.z1 - COURT.z0]} /><primitive object={m.paving} attach="material" /></mesh>
     <mesh position={[POOL.c[0], F + 0.08, POOL.c[1]]} rotation-x={-Math.PI / 2}><circleGeometry args={[POOL.r, 28]} /><primitive object={m.water} attach="material" /></mesh>
     <mesh position={[POOL.c[0], F + 0.45, POOL.c[1]]} rotation-x={-Math.PI / 2} castShadow receiveShadow><ringGeometry args={[POOL.r, POOL.r + 0.7, 28]} /><primitive object={m.stone} attach="material" /></mesh>
+    <PortalNiche m={m} />
     <group position={[POOL.c[0], 0, POOL.c[1]]}><Alem m={m} y={F + 4.3 + (POOL.r + 0.2) * 0.75} s={0.6} /></group>
+  </group>;
+}
+
+/** Taç kapının önyüzü: kapı açıklığı boş bırakılmış, gölgede kalan koyu kemerli niş, kapı üstünde yazı kuşağı ve saçak altında mukarnas benzeri küçük kemer dizisi (temsilî) */
+function PortalNiche({ m }: { m: Mats }) {
+  const g = useMemo(() => { const zf = PORTAL.z1 + 0.02, r = 4;
+    const sh = new THREE.Shape(); sh.moveTo(-r, 0); sh.lineTo(r, 0); sh.lineTo(r, 9.4 - r); sh.absarc(0, 9.4 - r, r, 0, Math.PI, false); sh.closePath();
+    const hole = new THREE.Path(); hole.moveTo(GATE.x0, 0); hole.lineTo(GATE.x0, 5.5); hole.lineTo(GATE.x1, 5.5); hole.lineTo(GATE.x1, 0); hole.closePath(); sh.holes.push(hole);
+    const niche = new THREE.ShapeGeometry(sh, 16); niche.translate(0, F - 0.05, zf);
+    const band: Parts = []; for (let i = 0; i < 12; i++) { const w = archWin(0.62, 0.9); w.translate(-5.2 + 0.31 + i * (10.4 / 12) + 0.12, F + PORTAL.h - 1.35, PORTAL.z1 + 0.36); band.push(w); }
+    return { niche, band: merge(band) }; }, []);
+  return <group>
+    <mesh geometry={g.niche}><meshStandardMaterial color="#a88f66" roughness={0.95} /></mesh>
+    <mesh geometry={g.band} material={m.glass} />
+    <mesh position={[0, F + 6.3, PORTAL.z1 + 0.04]}><planeGeometry args={[6, 0.9]} /><meshStandardMaterial color="#2d4a3e" roughness={0.6} /></mesh>
+    <mesh position={[0, F + 6.3, PORTAL.z1 + 0.05]}><planeGeometry args={[5.4, 0.12]} /><meshStandardMaterial color="#d9b24a" metalness={0.8} roughness={0.35} /></mesh>
   </group>;
 }
 
