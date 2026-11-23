@@ -13,18 +13,31 @@ const inR = (r: Rect, x: number, z: number, m = 0) => x > r.x0 + m && x < r.x1 -
 export const LANE = { x0: -4.2, x1: 4.2, z0: -62, z1: 40 };
 export const SQUARE = { x0: -9, x1: 9, z0: -66, z1: -56 };
 export const SLOPE = 0.03;
+/** Restorasyon parseli: sokağın doğu yanında boş bir arsa; oyuncu konağı burada adım adım kurar (yürünmez) */
+export const LOT_SIDE = 1, LOT_Z = -34;
+export const LOT_REACH = 2.6;
+/** Yapım adımları (sırasıyla); biçim TEMSİLÎDİR, sistem kaynaktaki "ahşap çerçeve ve kerpiç dolgu" anlatımına dayanır */
+export const BUILD_STEPS = ['Taş zemin kat', 'Ahşap iskelet', 'Kerpiç dolgu', 'Sıva ve boya', 'Cumba ve payandalar', 'Kiremit çatı'];
 /** Konaklar: sokağın iki yanında; yürünmez. Yapı, kat ve renk bilgisi */
 export interface House { x: number; z: number; w: number; d: number; floors: number; color: string; cumba: 'sag' | 'sol' }
 const COLORS = ['#e7d7a8', '#c9dfe4', '#e6b8a2', '#d9cfe6', '#f0e6cc', '#b9d5b0'];
+// eslint-disable-next-line prefer-const
+export let LOT_HOUSE: House;
 export const HOUSES: House[] = (() => { const out: House[] = [];
   let k = 0;
   for (const side of [-1, 1] as const) {
     let z = -60;
     while (z < 38) { const d = 6.2 + (k * 7) % 3, w = 7 + ((k * 3) % 2), floors = k % 3 === 0 ? 3 : 2;
-      out.push({ x: side * (4.2 + 1 + w / 2 + ((k * 5) % 3) * 0.2), z: z + d / 2, w, d, floors, color: COLORS[k % COLORS.length], cumba: side > 0 ? 'sol' : 'sag' });
+      const hz = z + d / 2;
+      out.push({ x: side * (4.2 + 0.35 + w / 2 + ((k * 5) % 3) * 0.15), z: hz, w, d, floors, color: COLORS[k % COLORS.length], cumba: side > 0 ? 'sol' : 'sag' });
       z += d + 0.7; k++; }
   }
+  // restorasyon parseli: doğu yanında LOT_Z'ye en yakın ev çıkarılır, yeri boş arsa olur
+  const li = out.reduce((b, h, j) => (h.x > 0 && Math.abs(h.z - LOT_Z) < Math.abs(out[b].z - LOT_Z) ? j : b), out.findIndex((h) => h.x > 0));
+  LOT_HOUSE = out.splice(li, 1)[0];
   return out; })();
+export const LOT = { x0: LOT_HOUSE.x - LOT_HOUSE.w / 2, x1: LOT_HOUSE.x + LOT_HOUSE.w / 2, z0: LOT_HOUSE.z - LOT_HOUSE.d / 2, z1: LOT_HOUSE.z + LOT_HOUSE.d / 2 };
+export const LOT_AT: V2 = [3.0, LOT_HOUSE.z];
 export function groundY(_x: number, z: number): number { return Math.max(0, -z) * SLOPE; }
 export function walkable(x: number, z: number): boolean {
   if (inR(SQUARE, x, z, 1)) return true;
