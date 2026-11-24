@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, COLUMNS, SPOTS, START, TEMPLE, TOWER, groundY, walkable } from '../src/app/games/adada/site';
+import { BOUNDS, COLUMNS, PIECES, SLOT, SPOTS, START, TEMPLE, TOWER, canPlace, groundY, nearestPiece, walkable } from '../src/app/games/adada/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -35,5 +35,14 @@ describe('Adada Antik Kenti', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('anastilosis: parçaların hepsine ve sütun yerinin yanına yürünür; sıra kaideden başlığa; tamburlar yukarı doğru incelir', () => {
+    const r = reach();
+    for (const p of PIECES) { expect(r(p.at[0], p.at[1]), p.id).toBe(true); expect(nearestPiece(p.at[0], p.at[1], [])?.id).toBe(p.id); }
+    expect(walkable(SLOT[0], SLOT[1])).toBe(false);
+    expect(r(SLOT[0] + 1.6, SLOT[1]) || r(SLOT[0] - 1.6, SLOT[1]) || r(SLOT[0], SLOT[1] + 1.6)).toBe(true);
+    const order = [...PIECES].sort((a, b) => a.order - b.order); order.forEach((p, i) => expect(canPlace(i, p)).toBe(true));
+    expect(canPlace(0, order[2])).toBe(false);
+    const drums = order.slice(1, 4); for (let i = 1; i < drums.length; i++) expect(drums[i].r0).toBeLessThanOrEqual(drums[i - 1].r1 + 1e-9);
   });
 });

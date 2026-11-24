@@ -22,6 +22,24 @@ export const THEATRE = { c: [-28, -30] as V2, r0: 6, r1: 20 };
 /** Akropol kulesi (doğuda; yürünmez) */
 export const TOWER = { c: [24, -6] as V2, r: 3 };
 
+/* ===================== anastilosis: devrik bir sütunu yeniden dik ===================== */
+/** Tapınağın doğu yanında, kaidesi yerinde duran boş sütun yeri; parçalar çevrede dağınık. Doğru sıra: kaide → en kalın tambur → orta → en ince → başlık.
+ * Adada'da bu yöntemle bir anastilosis yapıldığı DOĞRULANMADI; mekanik yöntemi tanıtır, yer ve parçalar TEMSİLÎDİR (docs/ADADA.md). */
+export const SLOT: V2 = [13.2, -24];
+export const SLOT_REACH = 2.4, PIECE_REACH = 2.0;
+export interface Piece { id: string; name: string; at: V2; order: number; r0: number; r1: number; h: number }
+export const PIECES: Piece[] = [
+  { id: 'kaide', name: 'Kaide', at: [17.5, -28.5], order: 0, r0: 0.75, r1: 0.75, h: 0.55 },
+  { id: 't1', name: 'Kalın tambur', at: [9.5, -33], order: 1, r0: 0.58, r1: 0.55, h: 1.6 },
+  { id: 't2', name: 'Orta tambur', at: [19.5, -17.5], order: 2, r0: 0.55, r1: 0.52, h: 1.6 },
+  { id: 't3', name: 'İnce tambur', at: [14.5, -11.5], order: 3, r0: 0.52, r1: 0.49, h: 1.6 },
+  { id: 'baslik', name: 'Başlık', at: [6.5, -36.5], order: 4, r0: 0.6, r1: 0.75, h: 0.75 },
+];
+export function nearestPiece(x: number, z: number, taken: string[]): Piece | null { let b: Piece | null = null, d0 = Infinity;
+  for (const p of PIECES) { if (taken.includes(p.id)) continue; const d = Math.hypot(x - p.at[0], z - p.at[1]); if (d < PIECE_REACH && d < d0) { d0 = d; b = p; } } return b; }
+/** Parça yerine konabilir mi: sıradaki parça olmalı */
+export function canPlace(placed: number, p: Piece): boolean { return p.order === placed; }
+
 export const COLUMNS: V2[] = (() => { const out: V2[] = [];
   for (let z = STREET.z0; z <= STREET.z1 + 0.01; z += STREET.step) { out.push([STREET.colL, z]); out.push([STREET.colR, z]); }
   return out; })();
@@ -39,6 +57,7 @@ export function walkable(x: number, z: number): boolean {
   if (inR(TEMPLE, x, z, -0.5)) return false;
   if (Math.hypot(x - TOWER.c[0], z - TOWER.c[1]) < TOWER.r + 0.5) return false;
   for (const c of COLUMNS) if (Math.hypot(x - c[0], z - c[1]) < STREET.r + 0.35) return false;
+  if (Math.hypot(x - SLOT[0], z - SLOT[1]) < 1.1) return false;
   return true;
 }
 export function slide(p: V2, dx: number, dz: number): V2 {
