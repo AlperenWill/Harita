@@ -33,7 +33,10 @@ export function useMats(): Mats {
     const wood = canvasTex(128, 512, (g, r) => { g.fillStyle = '#6a4a30'; g.fillRect(0, 0, 128, 512); for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(${r() < 0.5 ? '40,26,14' : '140,100,66'},${0.2 + r() * 0.3})`; g.lineWidth = 1 + r() * 2; const x = r() * 128; g.beginPath(); g.moveTo(x, 0); g.bezierCurveTo(x + 6, 170, x - 6, 340, x + 3, 512); g.stroke(); } });
     // eski sıva: alt kısmı koyu boyalı (yağlı boya bandı), üstte lekeler
     const pl = canvasTex(256, 256, (g, r) => { g.fillStyle = '#e4dccb'; g.fillRect(0, 0, 256, 256); g.fillStyle = '#6f7f74'; g.fillRect(0, 170, 256, 86); g.fillStyle = '#4e5a52'; g.fillRect(0, 166, 256, 5);
-      for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(${r() < 0.6 ? '120,100,70' : '255,255,245'},${r() * 0.12})`; g.beginPath(); g.ellipse(r() * 256, r() * 256, 4 + r() * 26, 3 + r() * 16, r() * 3, 0, 7); g.fill(); } });
+      for (let i = 0; i < 14; i++) { g.fillStyle = `rgba(150,128,96,${0.03 + r() * 0.04})`; g.beginPath(); g.ellipse(r() * 256, r() * 160, 10 + r() * 22, 6 + r() * 12, r() * 3, 0, 7); g.fill(); }
+      for (let i = 0; i < 700; i++) { const v = r() < 0.5; g.fillStyle = v ? `rgba(110,92,66,${0.05 + r() * 0.12})` : `rgba(255,252,240,${0.05 + r() * 0.15})`; g.fillRect(r() * 256, r() * 256, 1 + r() * 2.2, 1 + r() * 2.2); }
+      for (let i = 0; i < 8; i++) { g.strokeStyle = `rgba(90,78,60,${0.12 + r() * 0.12})`; g.lineWidth = 0.8; g.beginPath(); let x = r() * 256, yy = r() * 160; g.moveTo(x, yy); for (let k = 0; k < 5; k++) { x += (r() - 0.5) * 18; yy += 4 + r() * 8; g.lineTo(x, yy); } g.stroke(); }
+      for (let x = 0; x < 256; x += 2) { g.fillStyle = `rgba(40,50,44,${0.06 + r() * 0.08})`; g.fillRect(x, 171 + r() * 80, 1, 2 + r() * 3); } });
     const rf = canvasTex(256, 256, (g, r) => { g.fillStyle = '#9a4e36'; g.fillRect(0, 0, 256, 256); for (let y = 0; y < 256; y += 16) for (let x = 0; x < 256; x += 14) { const v = 0.75 + r() * 0.4; g.fillStyle = `rgb(${(168 * v) | 0},${(86 * v) | 0},${(60 * v) | 0})`; g.fillRect(x + ((y / 16) % 2) * 7, y, 12, 14); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x + ((y / 16) % 2) * 7, y + 12, 12, 3); } });
     return {
       castle: weather(new THREE.MeshStandardMaterial({ map: cs.map, bumpMap: cs.bump, bumpScale: 0.6, roughness: 0.95 })),
@@ -76,7 +79,7 @@ export function Castle({ m }: { m: Mats }) {
 }
 
 /* ===================== koğuş binası ===================== */
-export function WardBlock({ m, tier }: { m: Mats; tier: Tier }) {
+export function WardBlock({ m, tier, dim = false }: { m: Mats; tier: Tier; dim?: boolean }) {
   const R = ROOMS, T = WARD_T, H2 = STOREY * 2 + 0.6, y = FLOOR;
   const outer = useMemo(() => { const p: Parts = [], W = WARD;
     slab(p, W.x0, W.x1, W.z0, W.z0 + T, H2, y); slab(p, W.x0, W.x1, W.z1 - T, W.z1, H2, y);
@@ -117,10 +120,6 @@ export function WardBlock({ m, tier }: { m: Mats; tier: Tier }) {
       for (const hh of bunk ? [0.45, 1.4] : [0.42]) { const f = new THREE.BoxGeometry(lx, 0.05, lz); f.translate(x, y + hh, z); iron.push(f); const mt = bx(lx - 0.06, 0.14, lz - 0.06, 1); mt.translate(x, y + hh + 0.1, z); cloth.push(mt); } };
     for (const w of WARDS) { for (const dx of [-3.3, -1.1, 1.1, 3.3]) bed(w.door + dx, R.wards.z0 + 1.15, 'z', true); bed(w.x0 + 0.7, R.wards.z0 + 3.5, 'x', false); }
     for (const c of CELLS) bed((c.x0 + c.x1) / 2 + 0.55, (R.cells.z0 + R.cells.z1) / 2 + 0.2, 'z', false);
-    // hücre kapıları: koridora açılmış parmaklıklı demir kanat
-    for (const c of CELLS) { const hx = c.door - 0.45, z = R.corridor.z1 - 0.05, a = -1.25, ca = Math.cos(a), sa = Math.sin(a);
-      for (let k = 0; k <= 6; k++) { const u = (k / 6) * 0.9, g = new THREE.BoxGeometry(0.04, 2.05, 0.04); g.translate(hx + u * ca, y + 1.05, z - u * sa); iron.push(g); }
-      for (const hh of [0.1, 1.0, 2.05]) { const g = new THREE.BoxGeometry(0.9, 0.06, 0.06); g.rotateY(a); g.translate(hx + 0.45 * ca, y + hh, z - 0.45 * sa); iron.push(g); } }
     return { iron: merge(iron), cloth: merge(cloth) }; }, [R, y]);
   const lights = tier === 'low' ? [[-8, END_DOOR_Z], [8, END_DOOR_Z]] : [[-13, END_DOOR_Z], [0, END_DOOR_Z], [13, END_DOOR_Z], [-5, -20], [15, -20]];
   return <group>
@@ -134,10 +133,29 @@ export function WardBlock({ m, tier }: { m: Mats; tier: Tier }) {
     <mesh geometry={win.glow}><meshStandardMaterial color="#b9cdd8" emissive="#c9dbe6" emissiveIntensity={0.45} /></mesh>
     <mesh geometry={furn.iron} material={m.iron} castShadow receiveShadow />
     <mesh geometry={furn.cloth} material={m.cloth} receiveShadow />
+    <CellDoors m={m} />
     {WARDS.map((w) => <mesh key={w.door} material={m.wood} position={[w.door - 0.62 - 0.05, y + 1.1, R.wards.z1 - 0.55]} rotation-y={Math.PI / 2 - 0.2}><boxGeometry args={[1.2, 2.2, 0.08]} /></mesh>)}
-    {lights.map(([x, z], i) => <pointLight key={i} position={[x, y + STOREY - 0.4, z]} color="#ffe2b0" intensity={i < 3 ? 22 : 30} distance={i < 3 ? 11 : 9} decay={2} />)}
+    {lights.map(([x, z], i) => <pointLight key={i} position={[x, y + STOREY - 0.4, z]} color={dim ? '#ffcf8a' : '#ffe2b0'} intensity={(i < 3 ? 22 : 30) * (dim ? 0.3 : 1)} distance={i < 3 ? 11 : 9} decay={2} />)}
     {lights.slice(0, 3).map(([x, z], i) => <mesh key={`b${i}`} position={[x, y + STOREY - 0.15, z]}><sphereGeometry args={[0.1, 8, 6]} /><meshStandardMaterial color="#fff3d6" emissive="#ffe2b0" emissiveIntensity={2} /></mesh>)}
   </group>;
+}
+
+/** Gece sayımı: hücre kapılarının durumu (oyun yazar, model okur) */
+export const doorState = { closed: Array.from({ length: CELL_N }, () => false) };
+const OPEN_A = -1.25;
+/** Parmaklıklı demir hücre kapıları: menteşe kapı açıklığının batı kenarında; açıkken koridora dönük, kilitlenince açıklığa oturur */
+function CellDoors({ m }: { m: Mats }) {
+  const geo = useMemo(() => { const p: Parts = [];
+    for (let k = 0; k <= 6; k++) { const g = new THREE.BoxGeometry(0.04, 2.05, 0.04); g.translate((k / 6) * 0.9, 1.05, 0); p.push(g); }
+    for (const hh of [0.1, 1.0, 2.05]) { const g = new THREE.BoxGeometry(0.9, 0.06, 0.06); g.translate(0.45, hh, 0); p.push(g); }
+    const lock = new THREE.BoxGeometry(0.12, 0.18, 0.1); lock.translate(0.8, 1.0, 0); p.push(lock);
+    return merge(p); }, []);
+  const refs = useRef<(THREE.Group | null)[]>([]), ang = useRef(CELLS.map(() => OPEN_A));
+  useFrame((_, dt) => { CELLS.forEach((_, i) => { const g = refs.current[i]; if (!g) return; const tgt = doorState.closed[i] ? 0 : OPEN_A, a = ang.current[i];
+    if (Math.abs(tgt - a) > 1e-3) { ang.current[i] = a + (tgt - a) * Math.min(1, dt * 6); g.rotation.y = ang.current[i]; } }); });
+  return <group>{CELLS.map((c, i) => <group key={i} ref={(g) => { refs.current[i] = g; }} position={[c.door - 0.45, FLOOR, ROOMS.corridor.z1 - 0.05]} rotation-y={OPEN_A}>
+    <mesh geometry={geo} material={m.iron} castShadow />
+  </group>)}</group>;
 }
 
 /* ===================== avlu ===================== */

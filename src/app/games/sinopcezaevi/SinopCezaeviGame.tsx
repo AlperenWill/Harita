@@ -10,8 +10,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Footprints, KeyRound, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { Flashlight, Footprints, KeyRound, Lock, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, Toast, TopRow } from '../shared/hud/Hud';
 import { adaptive, initialTier, useSettings } from '../shared/hud/settings';
 import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
 import { LookCrosshair } from '../shared/mouseLook';
@@ -19,16 +19,21 @@ import { Joystick } from '../shared/Joystick';
 import { WalkAudio, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { BOUNDS, CASTLE, GUARD, HOUSES, SHORE, SPOTS, START, TOWERS, WALL, WARD, groundY, nearestSpot, slide, type Spot } from './site';
-import { Boats, Castle, Courtyard, Grass, Ground, Hills, Houses, Quay, SUN_DIR, Sea, Trees, WardBlock, useMats } from './SinopModels';
+import { BOUNDS, CASTLE, CELL_DOORS, GUARD, HOUSES, ROUND, ROUND_CARD, SHORE, SPOTS, START, TOWERS, WALL, WARD, groundY, nearestDoor, nearestSpot, slide, type Spot } from './site';
+import { Boats, Castle, Courtyard, Grass, Ground, Hills, Houses, Quay, SUN_DIR, Sea, Trees, WardBlock, doorState, useMats } from './SinopModels';
 
 const THEME = { accent: '#3f5f73' };
 const EYE = 1.62, WALK = 1.7, RUN = 3.6;
 const audio = new WalkAudio({ freq: 600, gain: 0.07 }, 'any');
 
 /* ---------- durum ---------- */
-interface S { started: boolean; card: Spot | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false };
+type Card = Pick<Spot, 'id' | 'name' | 'kicker' | 'text' | 'source'>;
+/** round: 'idle' sayım başlamadı · 'on' gece, kapılar kilitleniyor · 'done' bitti */
+interface S { started: boolean; card: Card | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; round: 'idle' | 'on' | 'done'; locked: number; door: number; atGuard: boolean; toast: string | null; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false, round: 'idle' as const, locked: 0, door: -1, atGuard: false, toast: null };
+const resetDoors = () => { doorState.closed.fill(false); };
+let toastT: ReturnType<typeof setTimeout> | undefined;
+const say = (t: string) => { clearTimeout(toastT); useSinop.getState().set({ toast: t }); toastT = setTimeout(() => useSinop.getState().set({ toast: null }), 3200); };
 const useSinop = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
 const live = { x: START.at[0], z: START.at[1], view: { yaw: START.yaw, pitch: -0.02 }, speed: 0, bob: 0, step: 0, fly: null as null | [number, number, number] };
 const pause = { on: false };
@@ -39,19 +44,22 @@ export default function SinopCezaeviGame({ onExit }: { onExit: () => void }) {
   const S = useSinop(), G = useSettings();
   const stick = useRef({ x: 0, y: 0 });
   useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
-  useEffect(() => () => { audio.dispose(); useSinop.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  useEffect(() => () => { audio.dispose(); useSinop.setState(INITIAL); resetDoors(); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   const inspect = useCallback((s: Spot) => {
     const st = useSinop.getState(); st.set({ card: s, seen: st.seen.includes(s.id) ? st.seen : [...st.seen, s.id] }); audio.tone(true); audio.speak(`${s.name}. ${s.text}`);
   }, []);
-  const close = useCallback(() => { useSinop.getState().set({ card: null }); audio.hush(); }, []);
-  const restart = useCallback(() => { audio.hush(); useSinop.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  const close = useCallback(() => { const st = useSinop.getState(); if (st.card?.id === ROUND_CARD.id) { st.set({ round: 'done' }); resetDoors(); say('Sabah oldu: kapılar sayım bitince yeniden açıldı'); } st.set({ card: null }); audio.hush(); }, []);
+  const startRound = useCallback(() => { resetDoors(); useSinop.getState().set({ round: 'on', locked: 0 }); audio.tone(true); say('Gece çöktü. Fenerin yanında: koğuş binasına git, 12 hücre kapısını kilitle'); }, []);
+  const lockDoor = useCallback((i: number) => { const st = useSinop.getState(); if (i < 0 || doorState.closed[i]) return; doorState.closed[i] = true; const n = st.locked + 1; st.set({ locked: n, door: -1 }); audio.tone(n >= CELL_DOORS.length);
+    if (n >= CELL_DOORS.length) { st.set({ card: ROUND_CARD }); audio.speak(`${ROUND_CARD.name}. ${ROUND_CARD.text}`); } else say(`Kapı kilitlendi · ${n}/${CELL_DOORS.length}`); }, []);
+  const restart = useCallback(() => { audio.hush(); resetDoors(); useSinop.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useSinop.getState(); if (!s.started || pause.on) return;
-      if (e.code === 'KeyE') { if (s.card) close(); else if (s.near) inspect(s.near); }
+      if (e.code === 'KeyE') { if (s.card) close(); else if (s.round === 'on' && s.door >= 0) lockDoor(s.door); else if (s.round === 'idle' && s.atGuard) startRound(); else if (s.near) inspect(s.near); }
       if (e.code === 'Escape' && s.card) { close(); e.preventDefault(); }
       if (e.code === 'KeyM') s.set({ map: !s.map });
     };
@@ -59,7 +67,7 @@ export default function SinopCezaeviGame({ onExit }: { onExit: () => void }) {
     const blur = () => keys.clear();
     addEventListener('keydown', down); addEventListener('keyup', up); addEventListener('blur', blur);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); removeEventListener('blur', blur); keys.clear(); };
-  }, [inspect, close]);
+  }, [inspect, close, lockDoor, startRound]);
 
   useEffect(() => {
     if (!location.search.includes('debug')) return;
@@ -71,12 +79,15 @@ export default function SinopCezaeviGame({ onExit }: { onExit: () => void }) {
       fly: (x: number, y: number, z: number) => { live.fly = [x, y, z]; },
       land: () => { live.fly = null; },
       seeAll: () => useSinop.getState().set({ seen: SPOTS.map((s) => s.id) }),
+      night: () => startRound(),
+      lockAll: (n = CELL_DOORS.length) => { for (let i = 0; i < n; i++) lockDoor(i); },
+      lock: (i: number) => lockDoor(i),
       SPOTS,
     };
-  }, []);
+  }, [startRound, lockDoor]);
 
   const fpl = useFpLook(live.view, () => { const a = useSinop.getState(); return a.started && !a.card && !pause.on; }, () => audio.unlock());
-  const done = S.seen.length >= SPOTS.length;
+  const total = SPOTS.length + 1, found = S.seen.length + (S.round === 'done' ? 1 : 0), done = found >= total;
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dde7ee] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
@@ -92,18 +103,21 @@ export default function SinopCezaeviGame({ onExit }: { onExit: () => void }) {
           </Suspense>
         </Canvas>
         <TopRow onExit={onExit}
-          objective={S.started ? <Objective icon={<KeyRound size={15} />} label={done ? 'Hepsini buldun' : 'Cezaevinin izlerini bul'} done={S.seen.length} total={SPOTS.length} /> : undefined}
+          objective={S.started ? <Objective icon={<KeyRound size={15} />} label={S.round === 'on' ? `Gece sayımı: kapıları kilitle` : done ? 'Hepsini buldun' : 'Cezaevinin izlerini bul'} done={S.round === 'on' ? S.locked : found} total={S.round === 'on' ? CELL_DOORS.length : total} /> : undefined}
           right={<>{S.started && <IconButton label="Krokiyi aç/kapat (M)" active={S.map} onClick={() => S.set({ map: !S.map })}><MapIcon size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; if (v) keys.clear(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} /></>} />
-        {S.started && S.map && <Kroki seen={S.seen} />}
+        {S.started && S.map && <Kroki seen={S.seen} round={S.round} />}
+        {S.started && !S.card && <Toast text={S.toast} />}
         {S.started && (<>
           <Joystick stick={stick} onTouch={() => audio.unlock()} color="bg-[#3f5f73]" />
           <LookCrosshair locked={fpl.locked} />
-          {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
+          {!S.card && S.round === 'on' && S.door >= 0 && <InteractPrompt icon={<Lock size={18} />} label={`Hücre kapısını kilitle · ${S.locked + 1}/${CELL_DOORS.length}`} onClick={() => lockDoor(S.door)} />}
+          {!S.card && S.round === 'idle' && S.atGuard && <InteractPrompt icon={<Flashlight size={18} />} label="Gardiyan: gece sayımını başlat" onClick={startRound} />}
+          {!S.card && !(S.round === 'on' && S.door >= 0) && !(S.round === 'idle' && S.atGuard) && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
           {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
         </>)}
-        {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
+        {S.card && <InfoSheet kicker={S.card.id === ROUND_CARD.id ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Sinop · İç Kale · 1887–1997" title="Anadolu'nun Alkatrazı"
-          intro={<>Limandan Sinop Kalesi'nin surlarına yürü, kapıdan cezaevi avlusuna gir; koğuşları ve hücreleri dolaş: <b>7 ayrıntıyı</b> bul ve incele.</>}
+          intro={<>Limandan Sinop Kalesi'nin surlarına yürü, kapıdan cezaevi avlusuna gir; koğuşları ve hücreleri dolaş: <b>7 ayrıntıyı</b> bul ve incele. Gardiyan binasının kapısından <b>gece sayımını</b> başlat: fenerle koridoru dolaş, 12 hücre kapısını kilitle.</>}
           controls={CONTROLS} note="Ölçüler, bina düzeni, oda sayıları ve eşyalar temsilîdir." cta="Kaleye yürü" ctaIcon={<Footprints size={18} />}
           onStart={() => { audio.unlock(); S.set({ started: true }); }} onExit={onExit} />}
         {S.started && done && !S.endShown && !S.card && <EndSheet kicker="Sinop Tarihi Cezaevi" title="Surların ardındaki hatıralar"
@@ -113,26 +127,32 @@ export default function SinopCezaeviGame({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
-function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
+function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
   { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
+  { icon: <Lock size={16} />, text: <>Gece sayımı: gardiyan kapısında <b>E</b>, sonra her hücre kapısının önünde <b>E</b> ile kilitle</> },
 ];
 
 /* ---------- 3B dünya ---------- */
 function World({ tier }: { tier: Tier }) {
-  const m = useMats(), g = useRef<THREE.Group>(null), low = tier === 'low';
-  const { scene } = useThree(); useEffect(() => { scene.environmentIntensity = 0.35; }, [scene]);
+  const m = useMats(), g = useRef<THREE.Group>(null), low = tier === 'low', night = useSinop((s) => s.round === 'on');
+  const { scene, gl } = useThree(), dayEnv = useRef<number | null>(null);
+  useEffect(() => { scene.environmentIntensity = 0.35; }, [scene]);
+  /* drei Environment ortam ışığını kendi değerine döndürebildiği için gece değeri her karede yazılır; sabah eski değer geri konur */
+  useFrame(() => { if (night) { if (dayEnv.current === null) dayEnv.current = scene.environmentIntensity; scene.environmentIntensity = 0.04; } else if (dayEnv.current !== null) { scene.environmentIntensity = dayEnv.current; dayEnv.current = null; } });
+  useEffect(() => { scene.background = night ? new THREE.Color('#0c1522') : null; gl.toneMappingExposure = night ? 0.7 : 0.85; if (scene.fog) (scene.fog as THREE.Fog).color.set(night ? '#0c1522' : '#dce6ee'); }, [scene, gl, night]);
   useEffect(() => { g.current?.traverse((o) => { const mesh = o as THREE.Mesh; if (!mesh.isMesh) return; let cast = true; for (let q: THREE.Object3D | null = o; q; q = q.parent) if (q.userData.noCast) { cast = false; break; } mesh.castShadow = cast; mesh.receiveShadow = true; }); }, [tier]);
   const sky = SUN_DIR.clone().multiplyScalar(1000);
   return (
     <group ref={g}>
-      <group userData={{ noCast: true }}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3.4} rayleigh={1.4} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
+      {night && <Lantern />}
+      <group userData={{ noCast: true }} visible={!night}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3.4} rayleigh={1.4} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
       <fog attach="fog" args={['#dce6ee', 300, 2800]} />
-      <hemisphereLight args={['#dfeaf3', '#7d7458', 0.45]} />
-      <Sun tier={tier} dir={SUN_DIR} intensity={5.6} color="#fff0d8" />
-      {!low && <Clouds />}
+      <hemisphereLight args={night ? ['#4a5f86', '#1a1712', 0.5] : ['#dfeaf3', '#7d7458', 0.45]} />
+      <Sun tier={tier} dir={SUN_DIR} intensity={night ? 0.35 : 5.6} color={night ? '#9fb4d8' : '#fff0d8'} />
+      {!low && !night && <Clouds />}
       <Hills />
       <Ground tier={tier} />
       <Sea />
@@ -140,13 +160,19 @@ function World({ tier }: { tier: Tier }) {
       {!low && <Boats m={m} />}
       <Castle m={m} />
       <Courtyard m={m} />
-      <WardBlock m={m} tier={tier} />
+      <WardBlock m={m} tier={tier} dim={night} />
       <Houses m={m} />
       <Trees n={low ? 80 : 180} />
       <Grass n={low ? 2000 : 5000} />
       <Markers />
     </group>
   );
+}
+/** Gece sayımında oyuncunun elindeki fener (göz hizasının biraz altında, hafif titrer) */
+function Lantern() {
+  const ref = useRef<THREE.PointLight>(null);
+  useFrame(({ camera, clock }) => { const l = ref.current; if (!l) return; l.position.set(camera.position.x, camera.position.y - 0.35, camera.position.z); l.intensity = 9 + Math.sin(clock.elapsedTime * 13) * 0.6 + Math.sin(clock.elapsedTime * 7.3) * 0.4; });
+  return <pointLight ref={ref} color="#ffc979" intensity={9} distance={12} decay={1.6} />;
 }
 /** Bulunmamış ayrıntıların üstünde hafif parıltı (yakınken belirginleşir) */
 function Markers() {
@@ -171,6 +197,8 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
     let dx = 0, dz = 0; if (len > 0.08) { const k = 1 / Math.max(1e-6, Math.hypot(f, s)); dx = (-Math.sin(y) * f + Math.cos(y) * s) * k * sp * dt; dz = (-Math.cos(y) * f - Math.sin(y) * s) * k * sp * dt; }
     const [nx, nz] = slide([live.x, live.z], dx, dz), moved = Math.hypot(nx - live.x, nz - live.z); live.x = nx; live.z = nz; live.speed = dt > 0 ? moved / dt : 0;
     live.step += moved; if (live.step > 0.72) { live.step = 0; audio.step(1000); } live.bob += moved * 2.4;
+    const door = S.started && S.round === 'on' ? nearestDoor(live.x, live.z, doorState.closed) : -1; if (door !== S.door) S.set({ door });
+    const atGuard = S.started && Math.hypot(live.x - ROUND.at[0], live.z - ROUND.at[1]) < ROUND.reach; if (atGuard !== S.atGuard) S.set({ atGuard });
     const near = S.started ? nearestSpot(live.x, live.z) : null; if ((near?.id ?? '') !== nearId.current) { nearId.current = near?.id ?? ''; S.set({ near }); }
     const gy = groundY(live.x, live.z), sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.035 : 0;
     if (live.fly) applyFp(camera, live.fly[0], live.fly[1], live.fly[2], live.view, 0); else applyFp(camera, live.x, gy + EYE, live.z, live.view, sway);
@@ -180,7 +208,7 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
 }
 
 /* ---------- kroki ---------- */
-function Kroki({ seen }: { seen: string[] }) {
+function Kroki({ seen, round }: { seen: string[]; round: S['round'] }) {
   const [, force] = useState(0);
   useEffect(() => { const id = setInterval(() => force((x) => x + 1), 200); return () => clearInterval(id); }, []);
   const W = BOUNDS.x1 - BOUNDS.x0, Hh = BOUNDS.z1 - BOUNDS.z0, sx = (x: number) => x - BOUNDS.x0, sz = (z: number) => z - BOUNDS.z0;
@@ -196,6 +224,8 @@ function Kroki({ seen }: { seen: string[] }) {
         <rect x={sx(WARD.x0)} y={sz(WARD.z0)} width={WARD.x1 - WARD.x0} height={WARD.z1 - WARD.z0} fill="#a89c86" stroke="#5b5146" strokeWidth={0.6} />
         <rect x={sx(GUARD.x0)} y={sz(GUARD.z0)} width={GUARD.x1 - GUARD.x0} height={GUARD.z1 - GUARD.z0} fill="#efe9dd" stroke="#8a7a66" strokeWidth={0.5} />
         {HOUSES.map((h, i) => <rect key={i} x={sx(h.x - h.w / 2)} y={sz(h.z - h.d / 2)} width={h.w} height={h.d} fill="#efe9dd" stroke="#8a7a66" strokeWidth={0.4} transform={`rotate(${(-h.yaw * 180) / Math.PI} ${sx(h.x)} ${sz(h.z)})`} />)}
+        {round !== 'done' && <rect x={sx(ROUND.at[0]) - 1.8} y={sz(ROUND.at[1]) - 1.8} width={3.6} height={3.6} fill={round === 'on' ? '#ffc979' : '#fff'} stroke="#8a5a1a" strokeWidth={0.8} />}
+        {round === 'on' && CELL_DOORS.map((p, i) => <circle key={`d${i}`} cx={sx(p[0])} cy={sz(p[1])} r={0.9} fill={doorState.closed[i] ? '#3f5f73' : '#ffc979'} />)}
         {SPOTS.map((s) => <circle key={s.id} cx={sx(s.at[0])} cy={sz(s.at[1])} r={2} fill={seen.includes(s.id) ? THEME.accent : '#fff'} stroke={THEME.accent} strokeWidth={0.8} />)}
         <g transform={`translate(${sx(live.x)} ${sz(live.z)}) rotate(${(-live.view.yaw * 180) / Math.PI})`}><path d="M0,-3 L2.2,2.2 L0,1.1 L-2.2,2.2 Z" fill="#1f1b17" stroke="#fff" strokeWidth={0.4} /></g>
       </svg>

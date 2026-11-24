@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, CASTLE, CELLS, ROOMS, SPOTS, START, TOWERS, WARDS, WALL, groundY, walkable } from '../src/app/games/sinopcezaevi/site';
+import { BOUNDS, CASTLE, CELLS, CELL_DOORS, DOOR_REACH, GUARD, ROUND, ROUND_CARD, ROOMS, SPOTS, START, TOWERS, WARDS, WALL, groundY, nearestDoor, walkable } from '../src/app/games/sinopcezaevi/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -38,5 +38,24 @@ describe('Sinop Tarihi Cezaevi', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(6);
+  });
+  it('gece sayımı: gardiyan kapısından başlar, 12 hücre kapısının önüne yürünür', () => {
+    const r = reach();
+    expect(r(ROUND.at[0], ROUND.at[1])).toBe(true);
+    expect(ROUND.at[0]).toBeLessThan(GUARD.x0);
+    expect(CELL_DOORS).toHaveLength(12);
+    for (const [i, p] of CELL_DOORS.entries()) { expect(r(p[0], p[1]), `kapı ${i}`).toBe(true); expect(p[1]).toBeGreaterThan(ROOMS.corridor.z0); expect(p[1]).toBeLessThan(ROOMS.corridor.z1); }
+  });
+  it('kapı istemi yalnız önündeki kapıyı seçer; kilitli kapı yeniden seçilmez', () => {
+    const closed = CELL_DOORS.map(() => false);
+    for (let i = 0; i < CELL_DOORS.length - 1; i++) expect(Math.hypot(CELL_DOORS[i + 1][0] - CELL_DOORS[i][0], 0)).toBeGreaterThan(2 * DOOR_REACH);
+    const [x, z] = CELL_DOORS[5]; expect(nearestDoor(x, z, closed)).toBe(5);
+    closed[5] = true; expect(nearestDoor(x, z, closed)).toBe(-1);
+    expect(nearestDoor(0, 0, closed)).toBe(-1);
+  });
+  it('sayım kartı temsilî olarak işaretli ve kaynaklı', () => {
+    expect(ROUND_CARD.kicker).toMatch(/Temsil/);
+    expect(ROUND_CARD.text).toMatch(/temsilî/);
+    expect(ROUND_CARD.source.url).toMatch(/^https:\/\//);
   });
 });
