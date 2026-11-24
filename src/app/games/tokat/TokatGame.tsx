@@ -187,9 +187,10 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
     const near = S.started ? nearestSpot(live.x, live.z) : null; if ((near?.id ?? '') !== nearId.current) { nearId.current = near?.id ?? ''; S.set({ near }); }
     const ab = S.started && atBench(live.x, live.z); if (ab !== S.atBench) S.set({ atBench: ab });
     const sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.025 : 0;
-    if (S.printing) { const asp = (camera as THREE.PerspectiveCamera).aspect, h = asp < 1 ? 2.1 / Math.max(0.4, asp) * 0.62 : 1.5; applyFp(camera, BENCH.x - 0.15, BENCH.h + h, BENCH.z + h * 0.42 + 0.3, PV, 0); }
+    const portrait = (camera as THREE.PerspectiveCamera).aspect < 1;
+    if (S.printing) { const h = portrait ? 1.85 : 1.5; applyFp(camera, BENCH.x - 0.15, BENCH.h + h, BENCH.z + h * 0.42 + 0.3, PV, 0); }
     else applyFp(camera, live.x, EYE, live.z, live.view, sway);
-    easeFov(camera, FOV, dt);
+    easeFov(camera, S.printing && portrait ? 96 : FOV, dt);
   });
   return null;
 }

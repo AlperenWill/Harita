@@ -123,11 +123,11 @@ export function Hanging() {
   const texs = useMemo(() => { const r = rng(21), out: THREE.CanvasTexture[] = []; const grounds = ['#efe6d2', '#f3e9e0', '#e9dfc9'];
     for (let n = 0; n < 6; n++) { const c = document.createElement('canvas'); c.width = c.height = 256; const cells: Cell[] = TARGET.map(() => { const ks: KalipId[] = ['gul', 'yaprak', 'nar'], cs: ColorId[] = ['kirmizi', 'yesil', 'sari', 'lacivert']; return { k: ks[(r() * 3) | 0], c: cs[(r() * 4) | 0] }; }); drawYazma(c.getContext('2d')!, 256, cells, grounds[n % 3]); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; out.push(t); }
     const c = document.createElement('canvas'); c.width = c.height = 512; drawYazma(c.getContext('2d')!, 512, TARGET_CELLS); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; out.push(t); return out; }, []);
-  const rope = useMemo(() => merge([at(new THREE.CylinderGeometry(0.008, 0.008, 6, 6).rotateZ(Math.PI / 2), 0.4, 2.65, 2.2), at(new THREE.CylinderGeometry(0.008, 0.008, 6, 6).rotateZ(Math.PI / 2), 0.4, 2.65, 0.6)]), []);
+  const rope = useMemo(() => merge([at(new THREE.CylinderGeometry(0.008, 0.008, 6, 6).rotateZ(Math.PI / 2), 0.4, 2.96, 2.2), at(new THREE.CylinderGeometry(0.008, 0.008, 6, 6).rotateZ(Math.PI / 2), 0.4, 2.96, 0.6)]), []);
   return <group>
     <mesh geometry={rope}><meshStandardMaterial color="#6b5a48" /></mesh>
-    {texs.slice(0, 6).map((t, i) => <mesh key={i} position={[-2 + (i % 3) * 1.6 + (i > 2 ? 0.6 : 0), 2.1, i > 2 ? 0.6 : 2.2]} rotation-y={0.02 * i}>
-      <planeGeometry args={[1.05, 1.05]} /><meshStandardMaterial map={t} side={THREE.DoubleSide} roughness={0.95} />
+    {texs.slice(0, 6).map((t, i) => <mesh key={i} position={[-2 + (i % 3) * 1.6 + (i > 2 ? 0.6 : 0), 2.42, i > 2 ? 0.6 : 2.2]} rotation-y={0.02 * i}>
+      <planeGeometry args={[1.0, 1.0]} /><meshStandardMaterial map={t} side={THREE.DoubleSide} roughness={0.95} />
     </mesh>)}
     {/* örnek yazma: tezgâhın arkasındaki duvarda, çerçeveli */}
     <mesh position={[BENCH.x - 0.15, 2.55, ROOM.z0 + 0.03]}><planeGeometry args={[0.95, 0.95]} /><meshStandardMaterial map={texs[6]} roughness={0.9} /></mesh>
