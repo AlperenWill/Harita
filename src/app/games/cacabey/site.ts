@@ -21,6 +21,13 @@ export const ZONES = {
 /** Kubbe ve aydınlık feneri; altında kuyu-havuz */
 export const DOME = { r: 7, base: FLOOR + 8.4, oculus: 1.3 };
 export const WELL = { c: [0, 0] as V2, r: 1.5 };
+/** Kuyu gözlemi: kuyunun doğu kenarında, suya bakılan nokta */
+export const OBSERVE = { at: [2.4, 0] as V2, reach: 1.5 };
+/** Gözlem: yansımada yıldız, aydınlık fenerinin tam ortasından geçerken işaretlenir. Kuyunun ağzına göre oranlar: merkez halka yarıçapı ve yıldızların yolu */
+export const OBS = { ring: 0.13, need: 3 };
+/** Bir yıldızın konumu zamanla (0..1 ağız genişliğinde, soldan sağa); y sapması merkezden geçişi zorlaştırır */
+export function starPos(t: number, k: number): [number, number] { const sp = 0.075 + 0.02 * k, x = -0.6 + ((t * sp + k * 0.37) % 1.2), y = 0.04 * Math.sin(k * 1.7); return [x, y]; }
+export function centered(x: number, y: number): boolean { return Math.hypot(x, y) < OBS.ring; }
 /** Kuzeybatı köşesindeki silindirik minare */
 export const MINARET = { c: [-15.5, -15.5] as V2, r: 1.8, h: 23 };
 /** Yan odaların kapıları (avlunun doğu ve batı duvarında; içeri girilmez) */

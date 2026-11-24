@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, SPOTS, START, WELL, groundY, walkable } from '../src/app/games/cacabey/site';
+import { BOUNDS, OBS, OBSERVE, SPOTS, START, WELL, centered, groundY, starPos, walkable } from '../src/app/games/cacabey/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -29,4 +29,8 @@ describe('Cacabey Medresesi', () => {
     }
   });
   it('duraklar kaynaklı', () => { for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//); });
+  it('kuyu gözlemi: gözlem noktasına yürünür; her yıldız bir turda halkadan geçer (yakalanabilir)', () => {
+    expect(reach()(OBSERVE.at[0], OBSERVE.at[1])).toBe(true);
+    for (let k = 0; k < OBS.need; k++) { let inside = 0; for (let t = 0; t < 30; t += 0.02) { const [x, y] = starPos(t, k); if (centered(x, y)) inside += 0.02; } expect(inside, `yıldız ${k}`).toBeGreaterThan(1); }
+  });
 });

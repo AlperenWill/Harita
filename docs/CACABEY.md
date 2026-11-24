@@ -17,6 +17,15 @@ Oyuncu meydanda dolaşır ve taçkapıdan girer. Giriş holünden kubbeli orta a
 6. köşedeki kule
 7. cephanelikten camiye
 
+## Kuyudan gözle (mekanik)
+Kuyunun doğu kenarında **E** ile gözlem paneli açılır: kubbedeki aydınlık fenerinden görünen gece göğü suya yansır. Yıldız açıklığın tam ortasındaki halkadan geçerken **İşaretle**'ye basılır; üç yıldız işaretlenince kart açılır. Erken ya da geç basınca ipucu çıkar. Hedef toplam 8: 7 ayrıntı ve gözlem.
+- **Kaynak:** Kubbe açıklığından görünen gökyüzünün kuyuya yansıdığı ve gözlemlerin vakit belirleme, takvim ve kıble tayini için kullanıldığı [İstiklal](https://www.istiklal.com.tr/islam/ilk-astronomi-mektebi-kirsehir-cacabey-medresesinin-sirri-1090605h) haberinde aktarılıyor; bu bir aktarımdır.
+- **Temsilî:** Yıldızların hızı ve yolu, gözlemin bu biçimde yapılışı. Bir yıldızın açıklığın ortasından geçmesinin başucuna en yakın an olduğu genel bir gökbilim bilgisidir; bu medresede böyle kullanıldığı doğrulanmadı.
+- **Test:** `tests/cacabey.test.ts`, üç yıldızın her birinin halkada yakalanabilecek kadar kaldığını doğrular.
+
+## Model düzeltmeleri
+- Eyvanın beşik tonozu ters çiziliyordu: yarım silindirin alt yarısı seçilmişti, tonoz hamak gibi aşağı sarkıyordu ve üstünden gökyüzü görünüyordu. Üst yarısı seçildi. Dışa taş kabuk, avlu tarafına kemer silmesi, kuzey ucuna yarım daire alınlık eklendi.
+
 ## Kaynaklarda bulunanlar
 - **Yapım:** Taçkapı yazıtına göre hicrî 671 (1272–73) yılında, III. Keyhüsrev döneminde Kırşehir valisi Nûreddin Cebrâil bin Caca yaptırdı. Bazı kaynaklar 1271–72 diyor. [TDV İslâm Ansiklopedisi](https://islamansiklopedisi.org.tr/caca-bey-medresesi)
 - **Vakfiye:** 10 Mayıs 1272 tarihli; Arapça ve Moğolca yazılmış. [TDV İslâm Ansiklopedisi](https://islamansiklopedisi.org.tr/caca-bey-medresesi)
