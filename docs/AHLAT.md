@@ -22,3 +22,8 @@ Bilgiler arama sonuçlarındaki özetlerden alındı.
 - **Motif ve imzalar:** Motif çizimleri gerçek taşların kopyası değil. Usta imzaları gerçek kitabeler değil, işaretler.
 - **Kümbetler:** Ölçüleri ve ayrıntıları.
 - **Uzaklıklar:** Göl ve dağların uzaklığı.
+
+## Model notları
+- **Liken lekeleri:** Taşlardaki sarı lekeler fazla iriydi ve kabarcık gibi görünüyordu; küçültülüp soluklaştırıldı.
+- **Süslü şahideler:** Oyuncu taşa 0,8 m kadar yakın duruyordu, motif sığmıyordu. Durma noktası 1,6 m geriye alındı.
+- **Bayındır Kümbeti:** Sütunların üstünde gövde eksikti, aradan gökyüzü görünüyordu. Kuşak ve iç tavan eklendi.

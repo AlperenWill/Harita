@@ -34,7 +34,7 @@ export const STELES: Stele[] = [
   { id: 'geometrik', cell: [34, 10], usta: 0, name: 'Geometrik geçme', text: 'Birbirine geçen çizgilerle kurulan geometrik desenler de Ahlat şahidelerini süsler. (Çizim ve yeri temsilîdir.)' },
 ];
 export const SPECIAL_CELLS: [number, number][] = STELES.map((s) => s.cell);
-export const steleFront = (s: Stele): V2 => { const g = graveAt(...s.cell); return [g.x - GRAVE.len / 2 - 0.9, g.z]; };
+export const steleFront = (s: Stele): V2 => { const g = graveAt(...s.cell); return [g.x - GRAVE.len / 2 - 1.7, g.z]; };
 export const RUB_REACH = 1.5;
 export function nearestStele(x: number, z: number, done: string[]): Stele | null { for (const s of STELES) { if (done.includes(s.id)) continue; const [fx, fz] = steleFront(s); if (Math.hypot(x - fx, z - fz) < RUB_REACH) return s; } return null; }
 /** Aynı ustanın iki taşı */

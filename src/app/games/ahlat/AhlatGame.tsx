@@ -70,7 +70,7 @@ export default function AhlatGame({ onExit }: { onExit: () => void }) {
     (window as unknown as { __ahlat: unknown }).__ahlat = {
       go: (x: number, z: number) => { live.x = x; live.z = z; useAh.getState().set({ started: true, card: null }); },
       look: (yaw: number, pitch = 0) => { live.view.yaw = yaw; live.view.pitch = pitch; },
-      stele: (i: number) => { const st = STELES[i], g = graveAt(...st.cell); live.x = g.x - 2.2; live.z = g.z; live.view.yaw = -Math.PI / 2; live.view.pitch = 0.25; useAh.getState().set({ started: true, card: null }); },
+      stele: (i: number) => { const st = STELES[i], g = graveAt(...st.cell); live.x = g.x - 3.0; live.z = g.z; live.view.yaw = -Math.PI / 2; live.view.pitch = 0.18; useAh.getState().set({ started: true, card: null }); },
       rubAll: () => useAh.getState().set({ rubbed: STELES.map((q) => q.id), card: null }),
       book: (v: boolean) => useAh.getState().set({ book: v, card: null }),
       pair: (a: string, b: string) => checkPair(a, b),

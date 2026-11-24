@@ -50,10 +50,10 @@ export function Graves() {
   const { stele, foot, sand, n, mats } = useMemo(() => {
     const tex = canvasTex(128, 256, (g, r) => { g.fillStyle = '#9c6a52'; g.fillRect(0, 0, 128, 256); g.strokeStyle = 'rgba(60,32,22,0.55)'; g.lineWidth = 3; g.strokeRect(10, 10, 108, 236); g.strokeRect(20, 22, 88, 150);
       for (let y = 36; y < 160; y += 22) { g.beginPath(); for (let x = 26; x < 104; x += 6) g.lineTo(x, y + Math.sin(x * 0.4) * 3); g.stroke(); }
-      for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '214,170,60' : '200,200,170'},${0.25 + r() * 0.35})`; g.beginPath(); g.ellipse(r() * 128, r() * 256, 2 + r() * 8, 2 + r() * 6, 0, 0, 7); g.fill(); }
+      for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '196,160,70' : '190,190,165'},${0.15 + r() * 0.25})`; g.beginPath(); g.ellipse(r() * 128, r() * 256, 1 + r() * 3, 1 + r() * 2.5, 0, 0, 7); g.fill(); }
       for (let i = 0; i < 1500; i++) { g.fillStyle = `rgba(${r() < 0.5 ? '0,0,0' : '255,230,210'},${r() * 0.15})`; g.fillRect(r() * 128, r() * 256, 1.5, 1.5); } });
     const mat = new THREE.MeshStandardMaterial({ map: tex, bumpMap: tex, bumpScale: 0.6, roughness: 0.95 });
-    const sTex = canvasTex(128, 64, (g, r) => { g.fillStyle = '#8e624c'; g.fillRect(0, 0, 128, 64); for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(214,170,60,${0.2 + r() * 0.3})`; g.beginPath(); g.ellipse(r() * 128, r() * 64, 2 + r() * 6, 2 + r() * 4, 0, 0, 7); g.fill(); } }); sTex.wrapS = sTex.wrapT = THREE.RepeatWrapping;
+    const sTex = canvasTex(128, 64, (g, r) => { g.fillStyle = '#8e624c'; g.fillRect(0, 0, 128, 64); for (let i = 0; i < 60; i++) { g.fillStyle = `rgba(196,160,70,${0.12 + r() * 0.2})`; g.beginPath(); g.ellipse(r() * 128, r() * 64, 1 + r() * 2.5, 1 + r() * 2, 0, 0, 7); g.fill(); } }); sTex.wrapS = sTex.wrapT = THREE.RepeatWrapping;
     const smat = new THREE.MeshStandardMaterial({ map: sTex, roughness: 0.95 });
     let n = 0; for (let i = 0; i < NI; i++) for (let j = 0; j < NJ; j++) if (hasGrave(i, j) && !STELES.some((s) => s.cell[0] === i && s.cell[1] === j)) n++;
     const sg = new THREE.ExtrudeGeometry((() => { const s = new THREE.Shape(); s.moveTo(-0.45, 0); s.lineTo(0.45, 0); s.lineTo(0.3, 0.42); s.lineTo(-0.3, 0.42); s.closePath(); return s; })(), { depth: GRAVE.len - 0.4, bevelEnabled: false }); sg.translate(0, 0, -(GRAVE.len - 0.4) / 2); sg.rotateY(Math.PI / 2);
@@ -103,7 +103,10 @@ export function Kumbets() {
     for (let k = 0; k < 5; k++) { const a = Math.PI * 0.25 + (k / 4) * Math.PI * 0.5, cx = x + Math.sin(a) * 3.45, cz = z + Math.cos(a) * 3.45;
       const col = new THREE.CylinderGeometry(0.22, 0.24, 5.2, 10); col.translate(cx, y + 0.8 + 2.6, cz); p.push(col);
       for (let s = 0; s < 3; s++) { const c = bx(0.6 - s * 0.12 + 0.24, 0.22, 0.6 - s * 0.12 + 0.24, 1); c.translate(cx, y + 6.1 + s * 0.22, cz); p.push(c); } }
-    const inner = new THREE.CylinderGeometry(3.2, 3.2, 5.2, 20, 1, true); inner.translate(x, y + 0.8 + 2.6, z); dark.push(inner);
+    const inner = new THREE.CylinderGeometry(3.2, 3.2, 6.4, 20, 1, true); inner.translate(x, y + 0.8 + 3.2, z); dark.push(inner);
+    const ceil = new THREE.CircleGeometry(3.3, 20); ceil.rotateX(Math.PI / 2); ceil.translate(x, y + 7.15, z); dark.push(ceil);
+    // sütunların üstünde açık bölümü kapatan kuşak
+    const lintel = scaleUV(new THREE.CylinderGeometry(3.62, 3.62, 0.5, 12, 1, false, Math.PI * 0.25 - 0.05, Math.PI * 0.5 + 0.1), 3, 0.3); lintel.translate(x, y + 6.95, z); p.push(lintel);
     return { p: merge(p), dark: merge(dark) }; }, []);
   return <group>
     <mesh geometry={ulu} material={mat} castShadow receiveShadow />
