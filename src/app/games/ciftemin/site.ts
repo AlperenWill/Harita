@@ -89,7 +89,7 @@ export const SPOTS: Spot[] = [
 ];
 export const CARD_PANO = { id: 'pano', name: 'Kitabesiz kapının sırrı', kicker: 'Kaynaklar çelişiyor',
   text: 'Her iddiayı dayanağıyla eşleştirdin. Kimi kaynak yapıyı 1271\'de Hüdavend Hatun\'a bağlar, kimi 1253 der, kimi de kitabesi olmadığı için tarihin bilinmediğini söyler; bir çalışma ise yapının hiç bitirilmediğini öne sürer. Tarihçiler bu tür boşlukları, kanıtları tartarak doldurmaya çalışır.', source: SRC.wiki };
-export const START: { at: V2; yaw: number } = { at: [0, -48], yaw: 0 };
+export const START: { at: V2; yaw: number } = { at: [0, -48], yaw: Math.PI };
 export function nearestSpot(x: number, z: number): Spot | null {
   let best: Spot | null = null, bd = Infinity;
   for (const s of SPOTS) { const d = Math.hypot(s.at[0] - x, s.at[1] - z); if (d < s.reach && d < bd) { bd = d; best = s; } }
