@@ -201,7 +201,7 @@ export function Cliff({ m }: { m: Mats }) {
     const hill = grid(130, 40, (u, v) => { const x = X0 + u * (X1 - X0), z = FACE_Z - 0.5 - v * 260; return [x, top(x) - 0.6 + v * 140 + Math.sin(x * 0.04 + v * 9) * 6 * v, z]; }, X1 - X0, 260, undefined, 12);
     const hillG = rough(hill, 1.2);
     // 3) teras zemini (tüm kaya boyunca bir set) ve niş zeminleri
-    const terr = grid(130, 8, (u, v) => [X0 + u * (X1 - X0), TY, TERRACE.z1 + 0.2 - v * (TERRACE.z1 + 0.2 - FACE_Z - 0.3)], X1 - X0, 8.5, undefined, 5); rock.push(rough(terr, 0.12, (_x, _y, z) => (z < FACE_Z + 1.2 ? 0 : 1)));
+    const terr = grid(130, 8, (u, v) => [X0 + u * (X1 - X0), TY, TERRACE.z1 + 0.2 - v * (TERRACE.z1 + 0.2 - FACE_Z + 0.8)], X1 - X0, 8.5, undefined, 5); rock.push(rough(terr, 0.12, (_x, _y, z) => (z < FACE_Z + 1.2 ? 0 : 1)));
     // 4) eğimli yamaç (merdivenin dışında) ve merdiven
     rock.push(rough(grid(130, 12, (u, v) => { const x = X0 + u * (X1 - X0), z = STREET.z0 - v * (STREET.z0 - TERRACE.z1); return [x, SLOPE(z) + 0.02, z]; }, X1 - X0, 20, (u) => { const x = X0 + u * (X1 - X0); return x < STAIR.x0 || x > STAIR.x1; }), 0.35, (x) => Math.min(1, Math.abs(x - (STAIR.x0 + STAIR.x1) / 2) - 8)));
     const SW = 0.8;
@@ -223,12 +223,15 @@ export function Cliff({ m }: { m: Mats }) {
     for (let x = WEST.x0 + 1; x < WEST.x1; x += 1.8) rail.push(at(new THREE.BoxGeometry(0.05, 1, 0.05), x, TY + 0.5, TERRACE.z1 + 0.25));
     // 5) nişlerin içi: yan duvarlar, kemerli tavan, arka duvar, zemin; mezar blokları
     const blocks: THREE.BufferGeometry[] = [];
-    for (const t of holes) { const R = nicheR(t) + (t === WORK_NICHE ? 0 : 0.14), sp = TY + nicheSpring(t), zb = FACE_Z - BLOCK_SET - t.d - t.g;
+    { const t = WORK_NICHE, hw = WORK.cols / 2 + 0.05, zb = FACE_Z - BLOCK_SET - t.d - t.g, H = WORK.rows + 0.05;   // atölye: hücreleri saran dikdörtgen oyuk
+      for (const s of [-1, 1]) rock.push(wallG(t.x + s * hw, FACE_Z + 0.1, t.x + s * hw, zb - 0.1, TY, TY + H, 0.5));
+      rock.push(grid(10, 10, (u, v) => [t.x - hw + u * 2 * hw, TY + H, FACE_Z + 0.1 - v * (FACE_Z + 0.1 - zb + 0.1)], 2 * hw, FACE_Z - zb));
+      rock.push(grid(10, 12, (u, v) => [t.x - hw + u * 2 * hw, TY + v * H, zb - 0.05], 2 * hw, H)); }
+    for (const t of TOMBS) { const R = nicheR(t) + (t === WORK_NICHE ? 0 : 0.14), sp = TY + nicheSpring(t), zb = FACE_Z - BLOCK_SET - t.d - t.g;
       for (const s of [-1, 1]) rock.push(rough(wallG(t.x + s * R, FACE_Z + 0.05, t.x + s * R, zb - 0.1, TY, sp + 0.1, 0.5), 0.12, (_x, _y, z) => (z > FACE_Z - 0.4 ? 0 : 1)));
       rock.push(rough(grid(Math.ceil((FACE_Z - zb) / 0.5), 20, (u, v) => { const ang = Math.PI * v; return [t.x + R * Math.cos(ang), sp + R * Math.sin(ang), FACE_Z + 0.05 - u * (FACE_Z + 0.05 - zb + 0.1)]; }, FACE_Z - zb, Math.PI * R, undefined, 5), 0.12, (_x, _y, z) => (z > FACE_Z - 0.4 ? 0 : 1)));
       rock.push(grid(Math.ceil(2 * R / 0.5), Math.ceil(nicheTop(t) / 0.5), (u, v) => [t.x - R + u * 2 * R, TY + v * nicheTop(t), zb - 0.05], 2 * R, nicheTop(t), (u, v) => inNiche(t, t.x - R + u * 2 * R, v * nicheTop(t)), 5));
       rock.push(grid(4, 6, (u, v) => [t.x - R + u * 2 * R, TY + 0.01, FACE_Z + 0.05 - v * (FACE_Z + 0.05 - zb)], 2 * R, FACE_Z - zb, undefined, 5));
-      if (t === WORK_NICHE) continue;
       // blok: dikdörtgen gövde + yuvarlak tepe; ön yüzde mezar odasının kapısı
       const sh = new THREE.Shape(), hw = t.w / 2, bodyH = t.h - hw; sh.moveTo(-hw, 0); sh.lineTo(-hw, bodyH); sh.absarc(0, bodyH, hw, Math.PI, 0, true); sh.lineTo(hw, 0); sh.closePath();
       const ex = new THREE.ExtrudeGeometry(sh, { depth: t.d, bevelEnabled: true, bevelSize: 0.08, bevelThickness: 0.08, bevelSegments: 2, curveSegments: 20 }); const uvb = ex.attributes.uv as THREE.BufferAttribute; for (let i = 0; i < uvb.count; i++) uvb.setXY(i, uvb.getX(i) / 5, uvb.getY(i) / 5);

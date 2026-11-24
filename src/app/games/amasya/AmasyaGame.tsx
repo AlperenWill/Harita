@@ -34,7 +34,7 @@ const useAm = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
 const live = { x: START.at[0], z: START.at[1], view: { yaw: START.yaw, pitch: 0.1 }, speed: 0, bob: 0, step: 0, fly: null as null | [number, number, number] };
 const pause = { on: false };
 const keys = new Set<string>();
-const CV = { yaw: 0, pitch: 0.02 };
+const CV = { yaw: 0, pitch: 0 };
 let toastT: ReturnType<typeof setTimeout> | undefined;
 const say = (t: string, ms = 3600) => { clearTimeout(toastT); useAm.getState().set({ toast: t }); toastT = setTimeout(() => useAm.getState().set({ toast: null }), ms); };
 function startCarve() { useAm.getState().set({ carving: true }); say('Galeriyi yukarıdan aşağıya oy: yalnızca üstü açılmış hücreler oyulabilir. Mezar bloğuna dokunma.', 5200); }
@@ -185,7 +185,7 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
     const near = S.started ? nearestSpot(live.x, live.z) : null; if ((near?.id ?? '') !== nearId.current) { nearId.current = near?.id ?? ''; S.set({ near }); }
     const aw = S.started && atWork(live.x, live.z); if (aw !== S.atWork) S.set({ atWork: aw });
     const sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.03 : 0;
-    if (S.carving && !live.fly) { const asp = (camera as THREE.PerspectiveCamera).aspect, d = Math.max(14, 7.6 / Math.max(0.3, asp) / Math.tan((FOV / 2) * Math.PI / 180) * 0.5 + 2); applyFp(camera, WORK.x, TERRACE.y + 5.6, FACE_Z + d, CV, 0); }
+    if (S.carving && !live.fly) { const asp = (camera as THREE.PerspectiveCamera).aspect, tv = Math.tan((FOV / 2) * Math.PI / 180), d = Math.max(7.4 / tv, 5.6 / (tv * Math.max(0.3, asp))); applyFp(camera, WORK.x, TERRACE.y + 6, FACE_Z + d, CV, 0); }
     else if (live.fly) applyFp(camera, live.fly[0], live.fly[1], live.fly[2], live.view, 0); else applyFp(camera, live.x, groundY(live.x, live.z) + EYE, live.z, live.view, sway);
     easeFov(camera, FOV, dt);
   });
