@@ -226,7 +226,8 @@ export function Cliff({ m }: { m: Mats }) {
     { const t = WORK_NICHE, hw = WORK.cols / 2 + 0.05, zb = FACE_Z - BLOCK_SET - t.d - t.g, H = WORK.rows + 0.05;   // atölye: hücreleri saran dikdörtgen oyuk
       for (const s of [-1, 1]) rock.push(wallG(t.x + s * hw, FACE_Z + 0.1, t.x + s * hw, zb - 0.1, TY, TY + H, 0.5));
       rock.push(grid(10, 10, (u, v) => [t.x - hw + u * 2 * hw, TY + H, FACE_Z + 0.1 - v * (FACE_Z + 0.1 - zb + 0.1)], 2 * hw, FACE_Z - zb));
-      rock.push(grid(10, 12, (u, v) => [t.x - hw + u * 2 * hw, TY + v * H, zb - 0.05], 2 * hw, H)); }
+      rock.push(grid(10, 12, (u, v) => [t.x - hw + u * 2 * hw, TY + v * H, zb - 0.05], 2 * hw, H));
+      rock.push(grid(6, 8, (u, v) => [t.x - hw + u * 2 * hw, TY + 0.01, FACE_Z + 0.1 - v * (FACE_Z + 0.1 - zb + 0.1)], 2 * hw, FACE_Z - zb)); }
     for (const t of TOMBS) { const R = nicheR(t) + (t === WORK_NICHE ? 0 : 0.14), sp = TY + nicheSpring(t), zb = FACE_Z - BLOCK_SET - t.d - t.g;
       for (const s of [-1, 1]) rock.push(rough(wallG(t.x + s * R, FACE_Z + 0.05, t.x + s * R, zb - 0.1, TY, sp + 0.1, 0.5), 0.12, (_x, _y, z) => (z > FACE_Z - 0.4 ? 0 : 1)));
       rock.push(rough(grid(Math.ceil((FACE_Z - zb) / 0.5), 20, (u, v) => { const ang = Math.PI * v; return [t.x + R * Math.cos(ang), sp + R * Math.sin(ang), FACE_Z + 0.05 - u * (FACE_Z + 0.05 - zb + 0.1)]; }, FACE_Z - zb, Math.PI * R, undefined, 5), 0.12, (_x, _y, z) => (z > FACE_Z - 0.4 ? 0 : 1)));
