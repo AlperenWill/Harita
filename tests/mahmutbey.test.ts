@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, POSTS, SPOTS, START, groundY, walkable } from '../src/app/games/mahmutbey/site';
+import { BOUNDS, FADED, POSTS, SPOTS, START, cellCenter, groundY, motifAt, nearestFaded, walkable } from '../src/app/games/mahmutbey/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -29,4 +29,11 @@ describe('Mahmut Bey Camii', () => {
     }
   });
   it('duraklar kaynaklı', () => { for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//); });
+  it('kalem işi: solmuş gözlerin altına yürünür, ana kirişlerin altında değiller; düzen komşulardan çözülebilir', () => {
+    const r = reach();
+    for (const f of FADED) { const [x, z] = cellCenter(f.i, f.j); expect(r(x, z), f.id).toBe(true); expect(nearestFaded(x, z, [])?.id).toBe(f.id);
+      for (const bz of [-3.6, 1.6]) expect(Math.abs(z - bz), f.id).toBeGreaterThan(0.7);
+      // komşu satır ve sütunlardaki renkler eksik rengi tek biçimde belirler: (i±1) ve (j±1) farklı iki renk verir, üçüncüsü eksik olandır
+      const k = motifAt(f.i, f.j); expect(motifAt(f.i - 1, f.j)).not.toBe(k); expect(motifAt(f.i + 1, f.j)).not.toBe(k); expect(new Set([motifAt(f.i - 1, f.j), motifAt(f.i + 1, f.j), k]).size).toBe(3); }
+  });
 });

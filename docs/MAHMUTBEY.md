@@ -16,6 +16,15 @@ Oyuncu köy yolundan meydana yürür, son cemaat yerinden harime girer ve ahşap
 5. Dünya Mirası
 6. onarım
 
+## Kalem işini tamamla (mekanik)
+Harimin tavanında üç bezeme gözü solmuş. Oyuncu gözün altında **E**'ye basınca panel açılır: çevredeki 8 göz renkli, ortadaki eksiktir. Renkler bir düzene uyar: satır boyunca lacivert, yeşil, altın sırayla gelir, bir alt satır iki adım kayar. Oyuncu eksik rengi seçer; yanlış seçimde ipucu çıkar. Doğru seçince tavandaki göz boyanır. Üçü bitince kart açılır. Hedef toplam 9: 6 ayrıntı ve 3 göz.
+- **Kaynak:** Tavan, kiriş ve ahşap yüzeylerin kalem işiyle süslü olduğu ve iyi korunduğu bilgisi [YÖK Açık Bilim — Kasaba Köy Mahmud Bey Camii](https://acikbilim.yok.gov.tr/handle/20.500.12812/466539) tezinden; arama özetinden alındı.
+- **Temsilî:** Renk düzeni, solmuş gözler ve onarım biçimi. Panelde gösterilen düzen tavanın genel dokusuyla birebir aynı değildir. Bu camide hangi parçaların onarıldığı doğrulanmadı.
+
+## Model düzeltmeleri
+- Giriş duvarının iç yüzü taş görünüyordu (öteki iç duvarlar sıvalıydı). Kapı boşluğunun iki yanına ve üstüne iç sıva eklendi.
+- Genel olarak model iyi durumdaydı: ahşap direkler, kirişler, kalem işi tavan, mahfil, mihrap ve minber yerindeydi. Bu yüzden büyük bir yeniden yapım gerekmedi.
+
 ## Kaynaklarda bulunanlar
 - **Yapım:** 1366'da Candaroğulları döneminde Mahmut Bey yaptırdı. Kaynaklar onu Kötürüm Bayezid'in kardeşi ya da Âdil Bey'in oğlu olarak tanıtıyor. [Kastamonu İl Kültür ve Turizm](https://kastamonu.ktb.gov.tr/Eklenti/49682,kasaba-camii-brosurpdf.pdf), [YÖK Açık Bilim](https://acikbilim.yok.gov.tr/handle/20.500.12812/466539)
 - **Çivisiz:** Ahşap öğeler çivi kullanılmadan, geçmeyle birleştirilmiş. [Küre Ansiklopedisi](https://kureansiklopedi.com/tr/detay/mahmutbey-camii-civisiz-camii-9bfbc)

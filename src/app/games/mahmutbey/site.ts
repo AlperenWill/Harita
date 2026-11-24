@@ -22,6 +22,18 @@ export const MAHFIL = { z0: 3.2, z1: 6, y: 2.8 };
 /** Mihrap ve minber (mihrap güney duvarında; minber sağında) */
 export const MIHRAB: V2 = [0, -8];
 export const MINBAR = { x0: 2.2, x1: 3.2, z0: -7.6, z1: -4.2 };
+/* ===================== kalem işini tamamla ===================== */
+/** Tavanda solmuş üç bezeme gözü (temsilî). Gözlerin motif rengi bir düzene uyar: renk = (i + 2j) mod 3 → lacivert, yeşil, altın.
+ * Oyuncu solmuş gözün altında durup komşulara bakarak eksik rengi seçer. */
+export const MOTIF_NAMES = ['Lacivert', 'Yeşil', 'Altın'];
+export const motifAt = (i: number, j: number) => (((i + 2 * j) % 3) + 3) % 3;
+/** Tavan ızgarası: x yönünde 0,95 m'lik kiriş aralıkları, z yönünde 1,4 m'lik gözler */
+export const GRID = { x0: HALL.x0 + 0.5, dx: 0.95, z0: HALL.z0 + 0.7, dz: 1.4 };
+export const cellCenter = (i: number, j: number): V2 => [GRID.x0 + (i + 0.5) * GRID.dx, GRID.z0 + (j + 0.5) * GRID.dz];
+export const FADED: { id: string; i: number; j: number }[] = [{ id: 'g1', i: 3, j: 3 }, { id: 'g2', i: 10, j: 5 }, { id: 'g3', i: 1, j: 4 }];
+export const FADED_REACH = 1.2;
+export function nearestFaded(x: number, z: number, done: string[]) { let b: (typeof FADED)[number] | null = null, d0 = Infinity;
+  for (const f of FADED) { if (done.includes(f.id)) continue; const [cx, cz] = cellCenter(f.i, f.j), d = Math.hypot(x - cx, z - cz); if (d < FADED_REACH && d < d0) { d0 = d; b = f; } } return b; }
 /** Köy alanı (yürünebilir dış alan) */
 export const VILLAGE = { x0: -60, x1: 60, z0: -40, z1: 70 };
 /** Köy evleri (yürünmez) */

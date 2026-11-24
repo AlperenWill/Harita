@@ -10,8 +10,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { DoorOpen, Footprints, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { Brush, DoorOpen, Footprints, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Modal, Objective, StartSheet, Toast, TopRow } from '../shared/hud/Hud';
 import { adaptive, initialTier, useSettings } from '../shared/hud/settings';
 import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
 import { LookCrosshair } from '../shared/mouseLook';
@@ -19,17 +19,26 @@ import { Joystick } from '../shared/Joystick';
 import { WalkAudio, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { BOUNDS, CEMETERY, HALL, HOUSES, PORCH, POSTS, SPOTS, START, groundY, nearestSpot, slide, type Spot } from './site';
-import { Cemetery, Grass, Ground, Houses, Mosque, Mountains, SUN_DIR, Trees, useMats } from './MahmutbeyModels';
+import { BOUNDS, CEMETERY, FADED, HALL, HOUSES, MOTIF_NAMES, PORCH, POSTS, SPOTS, START, cellCenter, groundY, motifAt, nearestFaded, nearestSpot, slide, type Spot } from './site';
+import { Cemetery, Grass, Ground, Houses, Mosque, Mountains, PaintCells, SUN_DIR, Trees, paintState, useMats } from './MahmutbeyModels';
 
 const THEME = { accent: '#8a4a2a' };
 const EYE = 1.62, WALK = 1.7, RUN = 3.6;
 const audio = new WalkAudio({ freq: 600, gain: 0.07 }, 'any');
 
 /* ---------- durum ---------- */
-interface S { started: boolean; card: Spot | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false };
+type Card = Pick<Spot, 'id' | 'name' | 'kicker' | 'text' | 'source'>;
+type Cell = (typeof FADED)[number];
+interface S { started: boolean; card: Card | null; seen: string[]; near: Spot | null; nearCell: Cell | null; painting: Cell | null; done: string[]; toast: string | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, card: null, seen: [] as string[], near: null, nearCell: null, painting: null, done: [] as string[], toast: null as string | null, map: false, endShown: false };
 const useMahmutbey = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
+const PAINT_CARD: Card = { id: 'kalemisi', name: 'Tavan bezemesi tamamlandı', kicker: 'Kalem işi',
+  text: 'Caminin tavanı, kirişleri ve ahşap yüzeyleri kalem işi boyalı bezemelerle süslüdür ve bunlar dönemin ahşap camileri içinde iyi korunmuş örneklerdendir. Bezemeyi onaran usta, eksik bir parçayı çevresindeki desenin düzenine bakarak tamamlar. Oyundaki renk düzeni ve solmuş gözler temsilîdir; bu camide hangi parçaların onarıldığı bu oyunda doğrulanmadı.',
+  source: { title: 'YÖK Açık Bilim — Kastamonu Kasaba Köy Mahmud Bey Camii', url: 'https://acikbilim.yok.gov.tr/handle/20.500.12812/466539' } };
+let toastTimer = 0;
+function choose(c: Cell, k: number) { const s = useMahmutbey.getState(); if (k !== motifAt(c.i, c.j)) { audio.tone(false); s.set({ toast: 'Bu renk düzene uymuyor: satır ve sütun boyunca renklerin nasıl sıralandığına bak.' }); clearTimeout(toastTimer); toastTimer = window.setTimeout(() => useMahmutbey.getState().set({ toast: null }), 3000); return; }
+  const done = [...s.done, c.id]; paintState.done = done; audio.tone(true);
+  if (done.length === FADED.length) { s.set({ done, painting: null, card: PAINT_CARD, toast: null }); audio.speak(`${PAINT_CARD.name}. ${PAINT_CARD.text}`); } else { s.set({ done, painting: null, toast: `Göz tamamlandı · ${done.length}/${FADED.length}` }); clearTimeout(toastTimer); toastTimer = window.setTimeout(() => useMahmutbey.getState().set({ toast: null }), 2200); } }
 const live = { x: START.at[0], z: START.at[1], view: { yaw: START.yaw, pitch: -0.02 }, speed: 0, bob: 0, step: 0, fly: null as null | [number, number, number] };
 const pause = { on: false };
 const keys = new Set<string>();
@@ -39,19 +48,20 @@ export default function MahmutbeyGame({ onExit }: { onExit: () => void }) {
   const S = useMahmutbey(), G = useSettings();
   const stick = useRef({ x: 0, y: 0 });
   useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
-  useEffect(() => () => { audio.dispose(); useMahmutbey.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  useEffect(() => () => { audio.dispose(); paintState.done = []; useMahmutbey.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   const inspect = useCallback((s: Spot) => {
     const st = useMahmutbey.getState(); st.set({ card: s, seen: st.seen.includes(s.id) ? st.seen : [...st.seen, s.id] }); audio.tone(true); audio.speak(`${s.name}. ${s.text}`);
   }, []);
   const close = useCallback(() => { useMahmutbey.getState().set({ card: null }); audio.hush(); }, []);
-  const restart = useCallback(() => { audio.hush(); useMahmutbey.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  const restart = useCallback(() => { audio.hush(); paintState.done = []; useMahmutbey.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useMahmutbey.getState(); if (!s.started || pause.on) return;
-      if (e.code === 'KeyE') { if (s.card) close(); else if (s.near) inspect(s.near); }
+      if (e.code === 'KeyE') { if (s.card) close(); else if (s.painting) s.set({ painting: null }); else if (s.nearCell) s.set({ painting: s.nearCell }); else if (s.near) inspect(s.near); }
+      if (e.code === 'Escape' && s.painting) s.set({ painting: null });
       if (e.code === 'Escape' && s.card) { close(); e.preventDefault(); }
       if (e.code === 'KeyM') s.set({ map: !s.map });
     };
@@ -70,13 +80,15 @@ export default function MahmutbeyGame({ onExit }: { onExit: () => void }) {
       map: (v: boolean) => useMahmutbey.getState().set({ map: v }),
       fly: (x: number, y: number, z: number) => { live.fly = [x, y, z]; },
       land: () => { live.fly = null; },
-      seeAll: () => useMahmutbey.getState().set({ seen: SPOTS.map((s) => s.id) }),
+      seeAll: () => { paintState.done = FADED.map((f) => f.id); useMahmutbey.getState().set({ seen: SPOTS.map((s) => s.id), done: paintState.done }); },
+      paint: (i: number) => useMahmutbey.getState().set({ painting: FADED[i] }),
+      fill: (n: number) => { paintState.done = FADED.slice(0, n).map((f) => f.id); useMahmutbey.getState().set({ done: paintState.done }); },
       SPOTS,
     };
   }, []);
 
-  const fpl = useFpLook(live.view, () => { const a = useMahmutbey.getState(); return a.started && !a.card && !pause.on; }, () => audio.unlock());
-  const done = S.seen.length >= SPOTS.length;
+  const fpl = useFpLook(live.view, () => { const a = useMahmutbey.getState(); return a.started && !a.card && !a.painting && !pause.on; }, () => audio.unlock());
+  const total = SPOTS.length + FADED.length, found = S.seen.length + S.done.length, done = found >= total;
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dfe8ec] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
@@ -92,18 +104,21 @@ export default function MahmutbeyGame({ onExit }: { onExit: () => void }) {
           </Suspense>
         </Canvas>
         <TopRow onExit={onExit}
-          objective={S.started ? <Objective icon={<DoorOpen size={15} />} label={done ? 'Hepsini buldun' : 'Caminin ayrıntılarını bul'} done={S.seen.length} total={SPOTS.length} /> : undefined}
+          objective={S.started ? <Objective icon={<DoorOpen size={15} />} label={done ? 'Hepsini buldun' : 'Ayrıntıları bul, tavanı tamamla'} done={found} total={total} /> : undefined}
           right={<>{S.started && <IconButton label="Krokiyi aç/kapat (M)" active={S.map} onClick={() => S.set({ map: !S.map })}><MapIcon size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; if (v) keys.clear(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} /></>} />
         {S.started && S.map && <Kroki seen={S.seen} />}
         {S.started && (<>
           <Joystick stick={stick} onTouch={() => audio.unlock()} color="bg-[#8a4a2a]" />
           <LookCrosshair locked={fpl.locked} />
-          {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          <Toast text={S.toast} tone="info" />
+          {!S.card && S.painting && <PaintPanel cell={S.painting} onClose={() => S.set({ painting: null })} />}
+          {!S.card && !S.painting && S.nearCell && <InteractPrompt icon={<Brush size={18} />} label="Solmuş gözü tamamla" onClick={() => S.set({ painting: S.nearCell })} />}
+          {!S.card && !S.painting && !S.nearCell && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · tavanda solmuş 3 bezeme gözünün altında dur, rengini tamamla<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
         </>)}
-        {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
+        {S.card && <InfoSheet kicker={S.card.id === 'kalemisi' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Kastamonu · Kasaba Köyü · 1366 · UNESCO" title="Çivisiz Cami"
-          intro={<>Köy yolundan Candaroğulları'nın ahşap camisine yürü; çivisiz birleştirilmiş direkleri ve kalem işi tavanı keşfet: <b>6 ayrıntıyı</b> bul ve incele.</>}
+          intro={<>Köy yolundan Candaroğulları'nın ahşap camisine yürü; çivisiz birleştirilmiş direkleri ve kalem işi tavanı keşfet: <b>6 ayrıntıyı</b> bul ve incele. Tavanda <b>solmuş 3 bezeme gözü</b> var: altında durup komşu gözlerin renk düzenine bakarak eksik rengi tamamla.</>}
           controls={CONTROLS} note="Ölçüler, direk sayısı ve bezeme desenleri temsilîdir." cta="Köye gir" ctaIcon={<Footprints size={18} />}
           onStart={() => { audio.unlock(); S.set({ started: true }); }} onExit={onExit} />}
         {S.started && done && !S.endShown && !S.card && <EndSheet kicker="Mahmut Bey Camii" title="Ahşabın ustalığı"
@@ -113,11 +128,12 @@ export default function MahmutbeyGame({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
-function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
+function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
   { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
+  { icon: <Brush size={16} />, text: <>Solmuş tavan gözünün altında <b>E</b>: komşu gözlere bak, eksik rengi seç</> },
 ];
 
 /* ---------- 3B dünya ---------- */
@@ -136,6 +152,7 @@ function World({ tier }: { tier: Tier }) {
       <Mountains />
       <Ground tier={tier} />
       <Mosque m={m} />
+      <PaintCells />
       <Cemetery m={m} />
       <Houses m={m} />
       <Trees n={low ? 120 : 260} />
@@ -158,7 +175,7 @@ function Markers() {
 function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: number }> }) {
   const { camera } = useThree(), nearId = useRef('');
   useFrame((_, raw) => {
-    const dt = Math.min(raw, 0.05), S = useMahmutbey.getState(), active = S.started && !S.card && !pause.on;
+    const dt = Math.min(raw, 0.05), S = useMahmutbey.getState(), active = S.started && !S.card && !S.painting && !pause.on;
     const kx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
     const ky = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
     let wx = active ? Math.max(-1, Math.min(1, stick.current.x + kx)) : 0, wy = active ? Math.max(-1, Math.min(1, stick.current.y + ky)) : 0;
@@ -167,6 +184,7 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
     let dx = 0, dz = 0; if (len > 0.08) { const k = 1 / Math.max(1e-6, Math.hypot(f, s)); dx = (-Math.sin(y) * f + Math.cos(y) * s) * k * sp * dt; dz = (-Math.cos(y) * f - Math.sin(y) * s) * k * sp * dt; }
     const [nx, nz] = slide([live.x, live.z], dx, dz), moved = Math.hypot(nx - live.x, nz - live.z); live.x = nx; live.z = nz; live.speed = dt > 0 ? moved / dt : 0;
     live.step += moved; if (live.step > 0.72) { live.step = 0; audio.step(900); } live.bob += moved * 2.4;
+    const nc = S.started ? nearestFaded(live.x, live.z, S.done) : null; if (nc !== S.nearCell) S.set({ nearCell: nc });
     const near = S.started ? nearestSpot(live.x, live.z) : null; if ((near?.id ?? '') !== nearId.current) { nearId.current = near?.id ?? ''; S.set({ near }); }
     const gy = groundY(live.x, live.z), sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.035 : 0;
     if (live.fly) applyFp(camera, live.fly[0], live.fly[1], live.fly[2], live.view, 0); else applyFp(camera, live.x, gy + EYE, live.z, live.view, sway);
@@ -176,6 +194,18 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
 }
 
 /* ---------- kroki ---------- */
+/** Solmuş göz: çevresindeki 8 göz görünür, ortadaki eksik; 3 renkten biri seçilir */
+const SW = ['#2d4a6e', '#3e6a4a', '#d6a63c'];
+function PaintPanel({ cell, onClose }: { cell: Cell; onClose: () => void }) {
+  const cellBox = (k: number | null, key: string) => <div key={key} className="grid aspect-square place-items-center rounded-sm" style={{ background: k === null ? '#b9a98c' : '#7a2a22', outline: '2px solid #e6c56a', outlineOffset: -4 }}>{k === null ? <span className="text-lg font-bold text-[#7a2a22]">?</span> : <span className="block h-1/2 w-1/2" style={{ background: SW[k], clipPath: 'polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)' }} />}</div>;
+  return (
+    <Modal title="Kalem işini tamamla" onClose={onClose}>
+      <p className="mb-2 text-sm text-[#4a433c]">Tavandaki gözler bir renk düzeniyle boyanmış. Ortadaki göz solmuş: komşularına bak, hangi renk gelmeli?</p>
+      <div className="mx-auto mb-3 grid w-[min(70vw,240px)] grid-cols-3 gap-1 rounded bg-[#5a3c24] p-1">{[-1, 0, 1].flatMap((dj) => [-1, 0, 1].map((di) => cellBox(di === 0 && dj === 0 ? null : motifAt(cell.i + di, cell.j + dj), `${di},${dj}`)))}</div>
+      <div className="grid grid-cols-3 gap-2">{MOTIF_NAMES.map((n, k) => <button key={n} onClick={() => choose(cell, k)} className="flex flex-col items-center gap-1 rounded-xl bg-[#f1e6c8] py-2 text-sm font-semibold ring-1 ring-black/10 active:scale-95"><span className="block h-6 w-6" style={{ background: SW[k], clipPath: 'polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)' }} />{n}</button>)}</div>
+    </Modal>
+  );
+}
 function Kroki({ seen }: { seen: string[] }) {
   const [, force] = useState(0);
   useEffect(() => { const id = setInterval(() => force((x) => x + 1), 200); return () => clearInterval(id); }, []);
@@ -189,6 +219,7 @@ function Kroki({ seen }: { seen: string[] }) {
         {POSTS.map((p, i) => <circle key={i} cx={sx(p[0])} cy={sz(p[1])} r={0.5} fill="#7a5434" />)}
         <rect x={sx(CEMETERY.x0)} y={sz(CEMETERY.z0)} width={CEMETERY.x1 - CEMETERY.x0} height={CEMETERY.z1 - CEMETERY.z0} fill="none" stroke="#6b5a46" strokeWidth={0.6} />
         {HOUSES.map((h, i) => <rect key={i} x={sx(h.x - h.w / 2)} y={sz(h.z - h.d / 2)} width={h.w} height={h.d} fill="#e2d6c0" stroke="#8a7a66" strokeWidth={0.4} transform={`rotate(${(-h.yaw * 180) / Math.PI} ${sx(h.x)} ${sz(h.z)})`} />)}
+        {FADED.map((f) => { const [x, z] = cellCenter(f.i, f.j); return <rect key={f.id} x={sx(x) - 0.5} y={sz(z) - 0.7} width={1} height={1.4} fill="#d6a63c" />; })}
         {SPOTS.map((s) => <circle key={s.id} cx={sx(s.at[0])} cy={sz(s.at[1])} r={1.8} fill={seen.includes(s.id) ? THEME.accent : '#fff'} stroke={THEME.accent} strokeWidth={0.8} />)}
         <g transform={`translate(${sx(live.x)} ${sz(live.z)}) rotate(${(-live.view.yaw * 180) / Math.PI})`}><path d="M0,-3 L2.2,2.2 L0,1.1 L-2.2,2.2 Z" fill="#1f1b17" stroke="#fff" strokeWidth={0.4} /></g>
       </svg>
