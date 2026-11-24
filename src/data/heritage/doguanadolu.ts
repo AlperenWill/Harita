@@ -97,6 +97,12 @@ const sites: HeritageSite[] = [
     didYouKnow: 'Adaların üzerinde ağaçlar yetişir ve yerel halk bu adacıklara binerek gölde dolaşabilir.',
   },
   {
+    id: 'malazgirt', name: 'Malazgirt Meydan Muharebesi Tarihi Millî Parkı', province: 'Muş', category: 'kultur-peyzaji', period: 'selcuklu',
+    coord: [42.5300, 39.1430], wiki: 'Malazgirt Meydan Muharebesi',
+    summary: '26 Ağustos 1071’de Alp Arslan ile IV. Romanos Diogenes arasındaki savaşın yapıldığı alan; 2018’de tarihi millî park ilan edildi.',
+    didYouKnow: 'Parkta 1071 adımlık bir yürüyüş yolu (Fetih Yolu) bulunur.',
+  },
+  {
     id: 'mus-alaeddin', name: 'Alaeddin Bey Külliyesi', province: 'Muş', category: 'mimari', period: 'osmanli',
     coord: [41.4950, 38.7460], wiki: 'Alaeddin Bey Camii',
     summary: 'Muş’un merkezindeki cami, hamam ve çarşıdan oluşan 18. yüzyıl külliyesi.',
