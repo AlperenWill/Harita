@@ -53,7 +53,7 @@ export function useMats(): Mats {
       grass: new THREE.MeshStandardMaterial({ map: gr, roughness: 1 }),
       dark: new THREE.MeshStandardMaterial({ color: '#2a211b', roughness: 1 }),
       facade: new THREE.MeshStandardMaterial({ map: fc, roughness: 0.92 }),
-      win: new THREE.MeshStandardMaterial({ map: wn, roughness: 0.4, emissive: '#c9d6dc', emissiveIntensity: 0.25 }),
+      win: new THREE.MeshStandardMaterial({ map: wn, roughness: 0.4, emissive: '#c9d6dc', emissiveIntensity: 0.25, side: THREE.DoubleSide }),
     };
   }, []);
 }
@@ -143,7 +143,8 @@ export function Han({ m }: { m: Mats }) {
     const swg = new THREE.ExtrudeGeometry(sw, { depth: T, bevelEnabled: false, curveSegments: 12 }); const su = swg.attributes.uv as THREE.BufferAttribute; for (let i = 0; i < su.count; i++) su.setXY(i, su.getX(i) / 4, su.getY(i) / 4); swg.translate(0, 0, z1 - T); st.push(swg);
     // kapı geçidi: yan duvarlar ve tonoz
     const pz0 = ring.z1, pz1 = z1 - T, pl = pz1 - pz0; for (const s of [-1, 1]) st.push(at(bx(0.6, 3.2, pl, 3), s * (gate + 0.3), 1.6, (pz0 + pz1) / 2));
-    { const v = new THREE.CylinderGeometry(gate, gate, pl, 16, 1, true, -Math.PI / 2, Math.PI); v.rotateX(Math.PI / 2); st.push(at(v, 0, 3.2, (pz0 + pz1) / 2)); }
+    { const pos: number[] = [], uv: number[] = [], idx: number[] = [], N = 16; for (let i = 0; i <= N; i++) { const a = (Math.PI * i) / N; for (const z of [pz0, pz1]) { pos.push(gate * Math.cos(a), 3.2 + gate * Math.sin(a), z); uv.push((a * gate) / 4, z / 4); } if (i) { const k = i * 2; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); } }
+      const v = new THREE.BufferGeometry(); v.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); v.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); v.setIndex(idx); v.computeVertexNormals(); st.push(v); }
     // avlu cepheleri: zeminde kemerli revak, üstte kemerli galeri
     const sides = [{ L: court.x1 - court.x0, x: 0, z: court.z0, rot: 0 }, { L: court.x1 - court.x0, x: 0, z: court.z1, rot: Math.PI }, { L: court.z1 - court.z0, x: court.x0, z: (court.z0 + court.z1) / 2, rot: Math.PI / 2 }, { L: court.z1 - court.z0, x: court.x1, z: (court.z0 + court.z1) / 2, rot: -Math.PI / 2 }];
     for (const s of sides) { const n = Math.round(s.L / 3.4); const a1 = arcade(s.L + 0.6, h1, n, 2.3, 2.6, 0.7), a2 = arcade(s.L + 0.6, h2 - h1, n, 2.1, 2.5, 0.6); a2.translate(0, h1, 0);
@@ -156,7 +157,7 @@ export function Han({ m }: { m: Mats }) {
     for (const b of back) { const w = bx(b.L, h2, 0.5, 4); w.rotateY(b.rot); w.translate(b.x - Math.sin(b.rot) * 0.25 * (b.rot === 0 || b.rot === Math.PI ? 0 : 1), h2 / 2, b.z - Math.cos(b.rot) * 0.25); st.push(w);
       const n = Math.round(b.L / 3.4); for (let i = 0; i < n; i++) for (const yy of [0, h1]) { const t = -b.L / 2 + (b.L / n) * (i + 0.5); if (b.rot === Math.PI && Math.abs(t) < 2.5 && yy === 0) continue; const d = new THREE.PlaneGeometry(1.1, yy ? 1.9 : 2.2); d.translate(t, yy + (yy ? 1.4 : 1.1), 0.03); d.rotateY(b.rot); d.translate(b.x, 0, b.z); (yy ? wood : dark).push(d); } }
     // avlu zemini ve revak zemini
-    const fl = new THREE.PlaneGeometry(ring.x1 - ring.x0, ring.z1 - ring.z0); fl.rotateX(-Math.PI / 2); const fu = fl.attributes.uv as THREE.BufferAttribute; for (let i = 0; i < fu.count; i++) fu.setXY(i, fu.getX(i) * 7, fu.getY(i) * 7); fl.translate(0, 0.02, (ring.z0 + ring.z1) / 2);
+    const fl = new THREE.PlaneGeometry(ring.x1 - ring.x0, z1 - ring.z0); fl.rotateX(-Math.PI / 2); const fu = fl.attributes.uv as THREE.BufferAttribute; for (let i = 0; i < fu.count; i++) fu.setXY(i, fu.getX(i) * 7, fu.getY(i) * 7); fl.translate(0, 0.02, (ring.z0 + z1) / 2);
     // çatı: dış ile halka arasını örten kırma çatı (dört eğimli şerit) ve bacalar
     const roofRing = () => { const out: THREE.BufferGeometry[] = []; const rp = (pts: number[][]) => { const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pts.flat(), 3)); const uvs = pts.map((p) => [p[0] / 4 + p[2] / 4, p[1] / 3]).flat(); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geo.computeVertexNormals(); out.push(geo); };
       const o = { x0: x0 - 0.8, x1: x1 + 0.8, z0: z0 - 0.8, z1: z1 + 0.8 }, i = { x0: court.x0 + 0.3, x1: court.x1 - 0.3, z0: court.z0 + 0.3, z1: court.z1 - 0.3 }, yo = h2 + 0.1, yi = h2 + 0.1, ridge = h2 + 3.2;
@@ -259,8 +260,8 @@ const ITEM_COL: Record<ItemId, string> = { kahve: '#3a2618', su: '#a9d3e8', loku
 export function Dolap({ m, angle, shelves }: { m: Mats; angle: number; shelves: (ItemId | null)[] }) {
   const ref = useRef<THREE.Group>(null);
   useFrame((_, dt) => { const g = ref.current; if (!g) return; g.rotation.y += (angle - g.rotation.y) * Math.min(1, dt * 2.2); });
-  const body = useMemo(() => { const parts: THREE.BufferGeometry[] = [new THREE.CylinderGeometry(0.5, 0.5, 1.15, 24, 1, true, Math.PI / 2, Math.PI), new THREE.BoxGeometry(0.03, 1.15, 1.0)];
-    for (let k = 0; k < 4; k++) { const d = new THREE.CylinderGeometry(0.5, 0.5, 0.03, 24, 1, false, Math.PI / 2, Math.PI); parts.push(at(d, 0, -0.575 + k * (1.15 / 3), 0)); } return merge(parts); }, []);
+  const body = useMemo(() => { const parts: THREE.BufferGeometry[] = [new THREE.CylinderGeometry(0.5, 0.5, 1.15, 24, 1, true, 0, Math.PI), new THREE.BoxGeometry(0.03, 1.15, 1.0)];
+    for (let k = 0; k < 4; k++) { const d = new THREE.CylinderGeometry(0.5, 0.5, 0.03, 24, 1, false, 0, Math.PI); parts.push(at(d, 0, -0.575 + k * (1.15 / 3), 0)); } return merge(parts); }, []);
   return <group position={[DOLAP[0], UP + 0.6 + 0.575, DOLAP[1]]}>
     <group ref={ref}>
       <mesh geometry={body} material={m.timber} castShadow receiveShadow />

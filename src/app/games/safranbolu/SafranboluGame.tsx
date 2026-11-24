@@ -37,7 +37,7 @@ const pause = { on: false };
 const keys = new Set<string>();
 let toastT: ReturnType<typeof setTimeout> | undefined;
 const say = (t: string, ms = 3600) => { clearTimeout(toastT); useSf.getState().set({ toast: t }); toastT = setTimeout(() => useSf.getState().set({ toast: null }), ms); };
-function openDolap() { live.x = DOLAP_AT[0]; live.z = DOLAP_AT[1]; live.view.yaw = -Math.PI / 2; live.view.pitch = -0.12; useSf.getState().set({ dolap: true }); }
+function openDolap() { live.x = DOLAP_AT[0] - 1.1; live.z = DOLAP_AT[1]; live.view.yaw = -Math.PI / 2; live.view.pitch = -0.36; useSf.getState().set({ dolap: true }); }
 function closeDolap() { useSf.getState().set({ dolap: false }); }
 function putItem(id: ItemId) { const s = useSf.getState(); if (s.busy) return; const k = s.shelves.indexOf(null); if (k < 0) { say('Raflar dolu: bir rafa dokunup boşalt.', 2200); return; } const sh = [...s.shelves]; sh[k] = id; s.set({ shelves: sh }); audio.step(700); }
 function clearShelf(k: number) { const s = useSf.getState(); if (s.busy) return; const sh = [...s.shelves]; sh[k] = null; s.set({ shelves: sh }); }
