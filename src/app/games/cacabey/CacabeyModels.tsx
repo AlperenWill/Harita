@@ -53,6 +53,7 @@ function gapWall(w: W, gap: number, gapH: number): W[] {
   const mk = (s: number, e: number, h: number, y0: number): W => (alongX ? { ...w, x0: s, x1: e, h, y0 } : { ...w, z0: s, z1: e, h, y0 });
   return [mk(a0, g0, w.h, 0), mk(g1, a1, w.h, 0), mk(g0, g1, w.h - gapH, gapH)];
 }
+const mergeAll = (parts: THREE.BufferGeometry[]) => mergeGeometries(parts.map((g) => (g.index ? g.toNonIndexed() : g)))!;
 export function Madrasa({ m }: { m: Mats }) {
   const B = BUILDING, Z = ZONES, D = DOME;
   const outer = useMemo(() => wallGeo([
@@ -79,13 +80,20 @@ export function Madrasa({ m }: { m: Mats }) {
     const ring = new THREE.ExtrudeGeometry(s, { depth: 1, bevelEnabled: false, curveSegments: 40 }); ring.rotateX(-Math.PI / 2); ring.translate(0, D.base, 0); const uv = ring.attributes.uv as THREE.BufferAttribute; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 2.2, uv.getY(i) / 2.2); parts.push(ring);
     return merge(parts); }, [B, Z, D]);
   const dome = useMemo(() => { const t0 = Math.asin(D.oculus / D.r); return { out: new THREE.SphereGeometry(D.r + 0.4, 40, 16, 0, Math.PI * 2, t0, Math.PI / 2 - t0), inn: new THREE.SphereGeometry(D.r - 0.05, 40, 16, 0, Math.PI * 2, t0, Math.PI / 2 - t0) }; }, [D]);
-  const vault = useMemo(() => { const g = new THREE.CylinderGeometry(4.8, 4.8, Z.avlu.z0 - 0.6 - (B.z0 + T) + 0.4, 24, 1, true, -Math.PI / 2, Math.PI); g.rotateX(Math.PI / 2); g.translate(0, FLOOR + 6.4, (Z.avlu.z0 - 0.6 + B.z0 + T) / 2); return g; }, [B, Z]);
+  // eyvan tonozu: yarım silindirin ÜST yarısı (önceden alt yarısı seçilmişti: tonoz hamak gibi aşağı sarkıyordu); dışta taş kabuk, kuzey ucunda yarım daire alınlık
+  const vault = useMemo(() => { const L = Z.avlu.z0 - 0.6 - (B.z0 + T) + 0.4, cz = (Z.avlu.z0 - 0.6 + B.z0 + T) / 2;
+    const inn = new THREE.CylinderGeometry(4.0, 4.0, L, 24, 1, true, Math.PI / 2, Math.PI); inn.rotateX(Math.PI / 2); inn.translate(0, FLOOR + 6.4, cz);
+    const out = new THREE.CylinderGeometry(4.8, 4.8, L + 0.8, 24, 1, true, Math.PI / 2, Math.PI); out.rotateX(Math.PI / 2); out.translate(0, FLOOR + 6.4, cz - 0.4);
+    const sh = new THREE.Shape(); sh.moveTo(-4.8, 0); sh.absarc(0, 0, 4.8, Math.PI, 0, true); sh.lineTo(-4.8, 0); const end = new THREE.ExtrudeGeometry(sh, { depth: T, bevelEnabled: false, curveSegments: 20 }); end.translate(0, FLOOR + 6.4 - 0.01, B.z0);
+    const rimS = new THREE.Shape(); rimS.moveTo(-4.8, 0); rimS.absarc(0, 0, 4.8, Math.PI, 0, true); rimS.lineTo(4.0, 0); rimS.absarc(0, 0, 4.0, 0, Math.PI, false); rimS.closePath(); const rim = new THREE.ExtrudeGeometry(rimS, { depth: 0.6, bevelEnabled: false, curveSegments: 20 }); rim.translate(0, FLOOR + 6.4, Z.avlu.z0 - 0.6);
+    return { inn, out: mergeAll([out, end, rim]) }; }, [B, Z]);
   const pat = useMemo(() => patternTex(), []);
   return <group>
     <mesh geometry={outer} material={m.stone} castShadow receiveShadow />
     <mesh geometry={inner} material={m.inner} castShadow receiveShadow />
     <mesh geometry={roof} material={m.stone} castShadow receiveShadow />
-    <mesh geometry={vault} material={m.inner} castShadow receiveShadow material-side={THREE.DoubleSide} />
+    <mesh geometry={vault.inn} material={m.inner} receiveShadow material-side={THREE.DoubleSide} />
+    <mesh geometry={vault.out} material={m.stone} castShadow receiveShadow material-side={THREE.DoubleSide} />
     <mesh geometry={dome.out} material={m.stone} position={[0, D.base + 1, 0]} castShadow />
     <mesh geometry={dome.inn} material={m.inner} position={[0, D.base + 1, 0]} material-side={THREE.BackSide} />
     {/* aydınlık feneri: kubbenin tepesinde kısa, açık bir silindir */}

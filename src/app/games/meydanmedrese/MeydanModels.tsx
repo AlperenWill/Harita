@@ -90,12 +90,12 @@ export function Madrasa({ m }: { m: Mats }) {
 /** Eyvan: üç yanı kapalı, beşik (sivri) tonozlu oda; dışarıdan bakınca kuzeye taşan kütle */
 function Eyvan({ m }: { m: Mats }) {
   const g = useMemo(() => { const p: Parts = [], E = EYVAN_ROOM, t = 0.9, hw = (E.x1 - E.x0) / 2, L = BUILD.z0 - E.z0;
-    slab(p, E.x0, E.x0 + t, E.z0, BUILD.z0, H, 0); slab(p, E.x1 - t, E.x1, E.z0, BUILD.z0, H, 0); slab(p, E.x0, E.x1, E.z0, E.z0 + t, H, 0);
+    slab(p, E.x0, E.x0 + t, E.z0, BUILD.z0, H, 0); slab(p, E.x1 - t, E.x1, E.z0, BUILD.z0, H, 0); slab(p, E.x0, E.x1, E.z0, E.z0 + t, H + 0.8, 0);   // arka duvar çatıya kadar (önceden üstünde gökyüzü görünen bir aralık kalıyordu)
     // sivri tonoz: iç kabuk (iki çeyrek ellips) ve üstte dolu kütle
-    const sh = new THREE.Shape(), iw = hw - t, sp = 4.0; sh.moveTo(-hw, sp); sh.lineTo(-iw, sp); sh.quadraticCurveTo(-iw, sp + iw * 1.1, 0, sp + iw * 1.45); sh.quadraticCurveTo(iw, sp + iw * 1.1, iw, sp); sh.lineTo(hw, sp); sh.lineTo(hw, H + 0.6); sh.lineTo(-hw, H + 0.6); sh.closePath();
-    const v = new THREE.ExtrudeGeometry(sh, { depth: L - t, bevelEnabled: false, curveSegments: 10 }); v.translate(0, 0, E.z0 + t); p.push(v);
+    const sh = new THREE.Shape(), iw = hw - t, sp = 3.4;   /* tepe ≈ 6,8 m < H (önceden tepe H’yi aşıp şekli kendi üstüne katlıyordu) */ sh.moveTo(-hw, sp); sh.lineTo(-iw, sp); sh.bezierCurveTo(-iw, sp + iw * 0.7, -iw * 0.2, sp + iw * 0.85, 0, sp + iw * 1.1); sh.bezierCurveTo(iw * 0.2, sp + iw * 0.85, iw, sp + iw * 0.7, iw, sp); sh.lineTo(hw, sp); sh.lineTo(hw, H + 0.6); sh.lineTo(-hw, H + 0.6); sh.closePath();
+    const v = new THREE.ExtrudeGeometry(sh, { depth: L - t, bevelEnabled: false, curveSegments: 14 }); v.translate(0, 0, E.z0 + t); p.push(v);
     // ağız kemeri (avlu tarafında)
-    const fr = new THREE.Shape(), ow = iw + 0.5; fr.moveTo(-ow - 0.6, 0); fr.lineTo(-iw, 0); fr.lineTo(-iw, sp); fr.quadraticCurveTo(-iw, sp + iw * 1.1, 0, sp + iw * 1.45); fr.quadraticCurveTo(iw, sp + iw * 1.1, iw, sp); fr.lineTo(iw, 0); fr.lineTo(ow + 0.6, 0); fr.lineTo(ow + 0.6, H + 0.9); fr.lineTo(-ow - 0.6, H + 0.9); fr.closePath();
+    const fr = new THREE.Shape(), ow = iw + 0.5; fr.moveTo(-ow - 0.6, 0); fr.lineTo(-iw, 0); fr.lineTo(-iw, sp); fr.bezierCurveTo(-iw, sp + iw * 0.7, -iw * 0.2, sp + iw * 0.85, 0, sp + iw * 1.1); fr.bezierCurveTo(iw * 0.2, sp + iw * 0.85, iw, sp + iw * 0.7, iw, sp); fr.lineTo(iw, 0); fr.lineTo(ow + 0.6, 0); fr.lineTo(ow + 0.6, H + 0.9); fr.lineTo(-ow - 0.6, H + 0.9); fr.closePath();
     const f = new THREE.ExtrudeGeometry(fr, { depth: 0.4, bevelEnabled: false, curveSegments: 10 }); f.translate(0, 0, BUILD.z0 + WALL_T - 0.05); p.push(f);
     return merge(p); }, []);
   const roof = useMemo(() => { const E = EYVAN_ROOM, gg = bx(E.x1 - E.x0 + 0.3, 0.4, BUILD.z0 - E.z0 + 0.3, 2); gg.translate(0, H + 0.8, (E.z0 + BUILD.z0) / 2); return gg; }, []);
@@ -104,6 +104,7 @@ function Eyvan({ m }: { m: Mats }) {
     <mesh geometry={g} material={vMat} castShadow receiveShadow />
     <mesh geometry={roof} material={m.roof} castShadow receiveShadow />
     <mesh position={[0, 0.03, (EYVAN_ROOM.z0 + BUILD.z0) / 2]} rotation-x={-Math.PI / 2} receiveShadow><planeGeometry args={[EYVAN_ROOM.x1 - EYVAN_ROOM.x0, BUILD.z0 - EYVAN_ROOM.z0]} /><primitive object={m.court} attach="material" /></mesh>
+    <pointLight position={[0, 4.2, (EYVAN_ROOM.z0 + BUILD.z0) / 2]} color="#ffe3b5" intensity={10} distance={10} decay={2} />
     <mesh position={[0, 0.25, EYVAN_ROOM.z0 + 1.6]} castShadow receiveShadow><boxGeometry args={[5.4, 0.5, 2.2]} /><primitive object={m.stone} attach="material" /></mesh>
   </group>;
 }
@@ -113,8 +114,8 @@ function Revak({ m }: { m: Mats }) {
     for (const [x, z] of COLUMNS) { p.push(new THREE.CylinderGeometry(COL_R, COL_R + 0.05, 3.2, 12).translate(x, 1.6, z)); p.push(bx(0.9, 0.3, 0.9, 1).translate(x, 3.35, z)); p.push(bx(0.9, 0.25, 0.9, 1).translate(x, 0.12, z)); }
     for (const s of [-1, 1]) { const zs = COLUMNS.filter((c) => c[0] === s * REVAK_X).map((c) => c[1]).sort((a, b) => a - b);
       for (let i = 0; i + 1 < zs.length; i++) { const span = zs[i + 1] - zs[i], r = span / 2 - 0.45; const t = new THREE.TorusGeometry(r, 0.22, 6, 14, Math.PI); t.scale(1, 1.25, 1); t.rotateY(Math.PI / 2); t.translate(s * REVAK_X, 3.5, (zs[i] + zs[i + 1]) / 2); p.push(t); }
-      p.push(bx(1.2, 1.1, zs[zs.length - 1] - zs[0] + 1, 2).translate(s * REVAK_X, 4.6, (zs[0] + zs[zs.length - 1]) / 2));
-      p.push(bx(1.2, 0.3, zs[zs.length - 1] - zs[0] + 1, 2).translate(s * (REVAK_X + 0.6), 5.0, (zs[0] + zs[zs.length - 1]) / 2));
+      p.push(bx(1.0, 0.7, zs[zs.length - 1] - zs[0] + 1, 2).translate(s * REVAK_X, 5.65, (zs[0] + zs[zs.length - 1]) / 2));
+      p.push(bx(1.4, 0.3, zs[zs.length - 1] - zs[0] + 1, 2).translate(s * (REVAK_X + 0.5), 6.1, (zs[0] + zs[zs.length - 1]) / 2));
       for (let k = 0; k < 6; k++) { const z = -9.5 + k * 3.8, x = s * 11.6; const d = new THREE.SphereGeometry(1.5, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2); d.translate(x, 4.7, z); dm.push(d); dm.push(new THREE.CylinderGeometry(1.55, 1.65, 0.3, 14).translate(x, 4.65, z)); } }
     return { p: merge(p), dm: merge(dm) }; }, []);
   return <group>
@@ -142,7 +143,7 @@ export function Houses({ m }: { m: Mats }) {
 }
 export function Mountains() {
   const list = useMemo(() => { const r = rng(41), out: { p: [number, number, number]; g: THREE.BufferGeometry }[] = [];
-    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2 + r() * 0.2, dd = 420 + r() * 260; out.push({ p: [Math.cos(a) * dd, -4, Math.sin(a) * dd], g: mountainGeo(300 + r() * 160, 260 + r() * 220, 170 + i, 3.2, i % 3 ? '#7a6f58' : '#86806a') }); }   /* Hakkâri: kenti çevreleyen dik ve yüksek dağlar */
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2 + r() * 0.2, dd = 700 + r() * 300; out.push({ p: [Math.cos(a) * dd, -4, Math.sin(a) * dd], g: mountainGeo(360 + r() * 160, 190 + r() * 130, 170 + i, 3.2, i % 3 ? '#7a6f58' : '#86806a') }); }   /* Hakkâri: kenti çevreleyen dik ve yüksek dağlar */
     return out; }, []);
   return <group userData={{ noCast: true }}>{list.map((mm, i) => <mesh key={i} geometry={mm.g} position={mm.p}><meshStandardMaterial vertexColors roughness={1} /></mesh>)}</group>;
 }

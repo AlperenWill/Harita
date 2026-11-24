@@ -9,8 +9,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { Footprints, Landmark, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { Footprints, Hand, Landmark, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, Toast, TopRow } from '../shared/hud/Hud';
 import { adaptive, initialTier, useSettings } from '../shared/hud/settings';
 import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
 import { LookCrosshair } from '../shared/mouseLook';
@@ -18,17 +18,31 @@ import { Joystick } from '../shared/Joystick';
 import { WalkAudio, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { AGORA, AREA, BOUNDS, SPOTS, START, STREET, TEMPLE, THEATRE, TOWER, groundY, nearestSpot, slide, type Spot } from './site';
-import { Grass, Mountains, Pines, Ruins, SUN_DIR, Stoas, Temple, Terrain, useMats } from './AdadaModels';
+import { AGORA, AREA, BOUNDS, PIECES, SLOT, SLOT_REACH, SPOTS, START, STREET, TEMPLE, THEATRE, TOWER, canPlace, groundY, nearestPiece, nearestSpot, slide, type Piece, type Spot } from './site';
+import { Anastylosis, Grass, Mountains, Pines, Ruins, SUN_DIR, Stoas, Temple, Terrain, anaState, useMats } from './AdadaModels';
 
 const THEME = { accent: '#7d6a3a' };
 const EYE = 1.62, WALK = 1.7, RUN = 3.6;
 const audio = new WalkAudio({ freq: 620, gain: 0.07 }, 'any');
 
 /* ---------- durum ---------- */
-interface S { started: boolean; card: Spot | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false };
+type Card = Pick<Spot, 'id' | 'name' | 'kicker' | 'text' | 'source'>;
+interface S { started: boolean; card: Card | null; seen: string[]; near: Spot | null; nearPiece: Piece | null; nearSlot: boolean; carry: Piece | null; placed: number; toast: string | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, card: null, seen: [] as string[], near: null, nearPiece: null, nearSlot: false, carry: null, placed: 0, toast: null as string | null, map: false, endShown: false };
 const useAda = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
+const ANA_CARD: Card = { id: 'anastilosis', name: 'Sütun yeniden ayakta', kicker: 'Anastilosis',
+  text: 'Anastilosis, yıkılmış bir yapının özgün parçalarını yeniden yerlerine koyarak ayağa kaldırma yöntemidir. Her bloğun tek ve özgün konumu, yoğun inceleme ve deneme-yanılmayla bulunur; bu yüzden tamburların çapı, yüzeydeki izler ve kırık yüzlerin uyumu önemlidir. Adada\'da böyle bir çalışma yapıldığı bu oyunda doğrulanmadı; sütunun yeri ve parçaları temsilîdir.',
+  source: { title: 'Aphrodisias Kazısı — Anastylosis', url: 'https://aphrodisias-excavations.com/anastylosis/' } };
+let toastTimer = 0;
+function toast(t: string, ms = 2800) { useAda.getState().set({ toast: t }); clearTimeout(toastTimer); toastTimer = window.setTimeout(() => useAda.getState().set({ toast: null }), ms); }
+const NEXT_HINT = ['önce zemine oturan kaide gelir', 'kaidenin üstüne en kalın tambur gelir', 'sonra orta kalınlıktaki tambur', 'sütun yukarı doğru incelir: en ince tambur', 'en üste başlık'];
+/** Parçayı al: elinde başka parça varsa o yerine döner */
+function pickPiece(p: Piece) { const s = useAda.getState(); const taken = anaState.taken.filter((id) => id !== s.carry?.id); taken.push(p.id); anaState.taken = taken; s.set({ carry: p }); audio.step(500); toast(`Aldın: ${p.name}${s.carry ? ` (${s.carry.name} yerine bırakıldı)` : ''}`); }
+/** Taşıdığın parçayı sütun yerine koy */
+function placePiece() { const s = useAda.getState(), p = s.carry; if (!p) { toast(`Sütun yeri boş. ${NEXT_HINT[s.placed]}; parçayı bul ve getir.`); return; }
+  if (!canPlace(s.placed, p)) { audio.tone(false); toast(`${p.name} sırada değil: ${NEXT_HINT[s.placed]}.`); return; }
+  const placed = s.placed + 1; anaState.placed = placed; audio.step(260); audio.tone(true);
+  if (placed === PIECES.length) { s.set({ carry: null, placed, card: ANA_CARD }); audio.speak(`${ANA_CARD.name}. ${ANA_CARD.text}`); } else { s.set({ carry: null, placed }); toast(`${p.name} yerine oturdu · ${placed}/${PIECES.length}`); } }
 const live = { x: START.at[0], z: START.at[1], view: { yaw: START.yaw, pitch: -0.02 }, speed: 0, bob: 0, step: 0, fly: null as null | [number, number, number] };
 const pause = { on: false };
 const keys = new Set<string>();
@@ -38,19 +52,19 @@ export default function AdadaGame({ onExit }: { onExit: () => void }) {
   const S = useAda(), G = useSettings();
   const stick = useRef({ x: 0, y: 0 });
   useEffect(() => { audio.setMuted(G.muted); }, [G.muted]);
-  useEffect(() => () => { audio.dispose(); useAda.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  useEffect(() => () => { audio.dispose(); anaState.taken = []; anaState.placed = 0; useAda.setState(INITIAL); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   const inspect = useCallback((s: Spot) => {
     const st = useAda.getState(); st.set({ card: s, seen: st.seen.includes(s.id) ? st.seen : [...st.seen, s.id] }); audio.tone(true); audio.speak(`${s.name}. ${s.text}`);
   }, []);
   const close = useCallback(() => { useAda.getState().set({ card: null }); audio.hush(); }, []);
-  const restart = useCallback(() => { audio.hush(); useAda.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
+  const restart = useCallback(() => { audio.hush(); anaState.taken = []; anaState.placed = 0; useAda.setState({ ...INITIAL, started: true }); Object.assign(live, { x: START.at[0], z: START.at[1], speed: 0 }); live.view.yaw = START.yaw; live.view.pitch = -0.02; }, []);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useAda.getState(); if (!s.started || pause.on) return;
-      if (e.code === 'KeyE') { if (s.card) close(); else if (s.near) inspect(s.near); }
+      if (e.code === 'KeyE') { if (s.card) close(); else if (s.nearSlot && s.placed < PIECES.length) placePiece(); else if (s.nearPiece) pickPiece(s.nearPiece); else if (s.near) inspect(s.near); }
       if (e.code === 'Escape' && s.card) { close(); e.preventDefault(); }
       if (e.code === 'KeyM') s.set({ map: !s.map });
     };
@@ -69,13 +83,14 @@ export default function AdadaGame({ onExit }: { onExit: () => void }) {
       map: (v: boolean) => useAda.getState().set({ map: v }),
       fly: (x: number, y: number, z: number) => { live.fly = [x, y, z]; },
       land: () => { live.fly = null; },
-      seeAll: () => useAda.getState().set({ seen: SPOTS.map((s) => s.id) }),
+      seeAll: () => { anaState.placed = PIECES.length; anaState.taken = PIECES.map((p) => p.id); useAda.getState().set({ seen: SPOTS.map((s) => s.id), placed: PIECES.length }); },
+      build: (n: number) => { anaState.placed = n; anaState.taken = PIECES.slice(0, n).map((p) => p.id); useAda.getState().set({ placed: n }); },
       SPOTS,
     };
   }, []);
 
   const fpl = useFpLook(live.view, () => { const a = useAda.getState(); return a.started && !a.card && !pause.on; }, () => audio.unlock());
-  const done = S.seen.length >= SPOTS.length;
+  const total = SPOTS.length + 1, found = S.seen.length + (S.placed >= PIECES.length ? 1 : 0), done = found >= total;
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dde7ee] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
@@ -91,18 +106,21 @@ export default function AdadaGame({ onExit }: { onExit: () => void }) {
           </Suspense>
         </Canvas>
         <TopRow onExit={onExit}
-          objective={S.started ? <Objective icon={<Landmark size={15} />} label={done ? 'Hepsini buldun' : 'Kentin izlerini bul'} done={S.seen.length} total={SPOTS.length} /> : undefined}
+          objective={S.started ? <Objective icon={<Landmark size={15} />} label={done ? 'Hepsini buldun' : S.carry ? `Taşıyorsun: ${S.carry.name}` : S.placed > 0 && S.placed < PIECES.length ? `Sütun ${S.placed}/${PIECES.length}` : 'İzleri bul, sütunu dik'} done={found} total={total} /> : undefined}
           right={<>{S.started && <IconButton label="Krokiyi aç/kapat (M)" active={S.map} onClick={() => S.set({ map: !S.map })}><MapIcon size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; if (v) keys.clear(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} /></>} />
         {S.started && S.map && <Kroki seen={S.seen} />}
         {S.started && (<>
           <Joystick stick={stick} onTouch={() => audio.unlock()} color="bg-[#7d6a3a]" />
           <LookCrosshair locked={fpl.locked} />
-          {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          <Toast text={S.toast} tone="info" />
+          {!S.card && S.nearSlot && S.placed < PIECES.length && <InteractPrompt icon={<Hand size={18} />} label={S.carry ? `Yerleştir: ${S.carry.name}` : 'Sütun yeri'} onClick={placePiece} />}
+          {!S.card && !(S.nearSlot && S.placed < PIECES.length) && S.nearPiece && <InteractPrompt icon={<Hand size={18} />} label={`Al: ${S.nearPiece.name}`} onClick={() => pickPiece(S.nearPiece!)} />}
+          {!S.card && !(S.nearSlot && S.placed < PIECES.length) && !S.nearPiece && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · tapınağın doğusundaki boş sütun yerine dağınık parçaları sırayla taşı<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
         </>)}
-        {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
+        {S.card && <InfoSheet kicker={S.card.id === 'anastilosis' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Isparta · Sütçüler · Pisidia" title="Dağ Eteğindeki Kent"
-          intro={<>Sütunlu caddenin başından yürü; agoraya geç, Trajan Tapınağı kalıntısına çık ve tiyatronun çanağına in: <b>5 ayrıntıyı</b> incele.</>}
+          intro={<>Sütunlu caddenin başından yürü; agoraya geç, Trajan Tapınağı kalıntısına çık ve tiyatronun çanağına in: <b>5 ayrıntıyı</b> incele. Tapınağın doğusunda devrilmiş bir sütunun parçaları dağınık duruyor: kaideyi, üç tamburu ve başlığı bulup <b>doğru sırayla üst üste koy</b>.</>}
           controls={CONTROLS} note="Yerleşim, sütun sayıları ve yapı biçimleri temsilîdir; tiyatro kapasitesi kaynaklarda tutarsızdır." cta="Kente gir" ctaIcon={<Footprints size={18} />}
           onStart={() => { audio.unlock(); S.set({ started: true }); }} onExit={onExit} />}
         {S.started && done && !S.endShown && !S.card && <EndSheet kicker="Adada Antik Kenti" title="Kesintisiz bir yaşam"
@@ -112,11 +130,12 @@ export default function AdadaGame({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
-function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
+function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
   { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
+  { icon: <Hand size={16} />, text: <>Yerdeki sütun parçasında <b>E</b>: al; sütun yerinde <b>E</b>: yerleştir (aşağıdan yukarı, kalından inceye)</> },
 ];
 
 /* ---------- 3B dünya ---------- */
@@ -136,6 +155,7 @@ function World({ tier }: { tier: Tier }) {
       <Terrain tier={tier} />
       <Stoas m={m} />
       <Temple m={m} />
+      <Anastylosis m={m} />
       <Ruins m={m} />
       <Pines n={low ? 40 : 110} />
       <Grass n={low ? 1500 : 4000} />
@@ -166,6 +186,8 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
     let dx = 0, dz = 0; if (len > 0.08) { const k = 1 / Math.max(1e-6, Math.hypot(f, s)); dx = (-Math.sin(y) * f + Math.cos(y) * s) * k * sp * dt; dz = (-Math.cos(y) * f - Math.sin(y) * s) * k * sp * dt; }
     const [nx, nz] = slide([live.x, live.z], dx, dz), moved = Math.hypot(nx - live.x, nz - live.z); live.x = nx; live.z = nz; live.speed = dt > 0 ? moved / dt : 0;
     live.step += moved; if (live.step > 0.72) { live.step = 0; audio.step(1000); } live.bob += moved * 2.4;
+    const np = S.started ? nearestPiece(live.x, live.z, anaState.taken) : null; if (np !== S.nearPiece) S.set({ nearPiece: np });
+    const ns = S.started && Math.hypot(live.x - SLOT[0], live.z - SLOT[1]) < SLOT_REACH; if (ns !== S.nearSlot) S.set({ nearSlot: ns });
     const near = S.started ? nearestSpot(live.x, live.z) : null; if ((near?.id ?? '') !== nearId.current) { nearId.current = near?.id ?? ''; S.set({ near }); }
     const gy = groundY(live.x, live.z), sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.035 : 0;
     if (live.fly) applyFp(camera, live.fly[0], live.fly[1], live.fly[2], live.view, 0); else applyFp(camera, live.x, gy + EYE, live.z, live.view, sway);
@@ -190,6 +212,8 @@ function Kroki({ seen }: { seen: string[] }) {
         <rect x={sx(AGORA.x0)} y={sz(AGORA.z0)} width={AGORA.x1 - AGORA.x0} height={AGORA.z1 - AGORA.z0} fill="#ece4cc" stroke="#9a8c74" strokeWidth={0.5} />
         <rect x={sx(TEMPLE.x0)} y={sz(TEMPLE.z0)} width={TEMPLE.x1 - TEMPLE.x0} height={TEMPLE.z1 - TEMPLE.z0} fill="#a89c84" stroke="#5b5146" strokeWidth={0.6} />
         <circle cx={sx(TOWER.c[0])} cy={sz(TOWER.c[1])} r={TOWER.r} fill="#8a7e68" />
+        {PIECES.map((p) => anaState.taken.includes(p.id) ? null : <rect key={p.id} x={sx(p.at[0]) - 0.9} y={sz(p.at[1]) - 0.9} width={1.8} height={1.8} fill="#8a7e68" />)}
+        <circle cx={sx(SLOT[0])} cy={sz(SLOT[1])} r={1.6} fill="none" stroke="#4a433c" strokeWidth={0.6} />
         {SPOTS.map((s) => <circle key={s.id} cx={sx(s.at[0])} cy={sz(s.at[1])} r={2} fill={seen.includes(s.id) ? THEME.accent : '#fff'} stroke={THEME.accent} strokeWidth={0.8} />)}
         <g transform={`translate(${sx(live.x)} ${sz(live.z)}) rotate(${(-live.view.yaw * 180) / Math.PI})`}><path d="M0,-3 L2.2,2.2 L0,1.1 L-2.2,2.2 Z" fill="#1f1b17" stroke="#fff" strokeWidth={0.4} /></g>
       </svg>

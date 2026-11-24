@@ -10,8 +10,8 @@ import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { PerformanceMonitor, Sky } from '@react-three/drei';
 import { create } from 'zustand';
-import { DoorOpen, Footprints, Map as MapIcon, MousePointer2, Search } from 'lucide-react';
-import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
+import { DoorOpen, Footprints, Map as MapIcon, MousePointer2, Search, Sparkles } from 'lucide-react';
+import { Controls, EndSheet, GameMenu, Hint, HudTheme, IconButton, InfoSheet, InteractPrompt, Modal, Objective, StartSheet, TopRow } from '../shared/hud/Hud';
 import { adaptive, initialTier, useSettings } from '../shared/hud/settings';
 import { applyFp, easeFov, useFpLook } from '../shared/fpLook';
 import { LookCrosshair } from '../shared/mouseLook';
@@ -19,7 +19,7 @@ import { Joystick } from '../shared/Joystick';
 import { WalkAudio, type Tier } from '../shared/walkKit';
 import { Clouds, Sun } from '../shared/scenery';
 import { Polish, SkyEnvironment } from '../shared/Polish';
-import { BOUNDS, BUILDING, MINARET, SPOTS, SQUARE, START, WELL, ZONES, groundY, nearestSpot, slide, type Spot } from './site';
+import { BOUNDS, BUILDING, MINARET, OBS, OBSERVE, SPOTS, SQUARE, START, WELL, ZONES, centered, groundY, nearestSpot, slide, starPos, type Spot } from './site';
 import { Grass, Ground, Madrasa, Minaret, Mountains, Portal, SUN_DIR, Town, Trees, Well, useMats } from './CacabeyModels';
 
 const THEME = { accent: '#2f6f8a' };
@@ -27,9 +27,13 @@ const EYE = 1.62, WALK = 1.7, RUN = 3.6;
 const audio = new WalkAudio({ freq: 600, gain: 0.07 }, 'any');
 
 /* ---------- durum ---------- */
-interface S { started: boolean; card: Spot | null; seen: string[]; near: Spot | null; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
-const INITIAL = { started: false, card: null, seen: [] as string[], near: null, map: false, endShown: false };
+type Card = Pick<Spot, 'id' | 'name' | 'kicker' | 'text' | 'source'>;
+interface S { started: boolean; card: Card | null; seen: string[]; near: Spot | null; nearObs: boolean; observing: boolean; observed: boolean; map: boolean; endShown: boolean; set: (p: Partial<S>) => void }
+const INITIAL = { started: false, card: null, seen: [] as string[], near: null, nearObs: false, observing: false, observed: false, map: false, endShown: false };
 const useCacabey = create<S>((set) => ({ ...INITIAL, set: (p) => set(p) }));
+const OBS_CARD: Card = { id: 'gozlem', name: 'Gökyüzü kuyuda', kicker: 'Kuyu gözlemi',
+  text: 'Kubbedeki aydınlık fenerinin tam altındaki kuyunun suyu, açıklıktan görünen gökyüzünü yansıtır. Bir yıldızın bu küçük açıklığın tam ortasından geçtiği an, o yıldızın gökyüzünün en tepesine (başucuna) en yakın olduğu andır; böyle gözlemlerin vakit belirleme, takvim hesapları ve kıble tayini için kullanıldığı aktarılır. Oyundaki yıldızlar ve hızları temsilîdir.',
+  source: { title: 'İstiklal — İlk astronomi mektebi Kırşehir Cacabey Medresesi\'nin sırrı', url: 'https://www.istiklal.com.tr/islam/ilk-astronomi-mektebi-kirsehir-cacabey-medresesinin-sirri-1090605h' } };
 const live = { x: START.at[0], z: START.at[1], view: { yaw: START.yaw, pitch: -0.02 }, speed: 0, bob: 0, step: 0, fly: null as null | [number, number, number] };
 const pause = { on: false };
 const keys = new Set<string>();
@@ -51,7 +55,8 @@ export default function CacabeyGame({ onExit }: { onExit: () => void }) {
     const down = (e: KeyboardEvent) => {
       keys.add(e.code); if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       const s = useCacabey.getState(); if (!s.started || pause.on) return;
-      if (e.code === 'KeyE') { if (s.card) close(); else if (s.near) inspect(s.near); }
+      if (e.code === 'KeyE') { if (s.card) close(); else if (s.observing) return; else if (s.nearObs && !s.observed) s.set({ observing: true }); else if (s.near) inspect(s.near); }
+      if (e.code === 'Escape' && s.observing) s.set({ observing: false });
       if (e.code === 'Escape' && s.card) { close(); e.preventDefault(); }
       if (e.code === 'KeyM') s.set({ map: !s.map });
     };
@@ -70,13 +75,14 @@ export default function CacabeyGame({ onExit }: { onExit: () => void }) {
       map: (v: boolean) => useCacabey.getState().set({ map: v }),
       fly: (x: number, y: number, z: number) => { live.fly = [x, y, z]; },
       land: () => { live.fly = null; },
-      seeAll: () => useCacabey.getState().set({ seen: SPOTS.map((s) => s.id) }),
+      seeAll: () => useCacabey.getState().set({ seen: SPOTS.map((s) => s.id), observed: true }),
+      observe: (v: boolean) => useCacabey.getState().set({ observing: v }),
       SPOTS,
     };
   }, []);
 
-  const fpl = useFpLook(live.view, () => { const a = useCacabey.getState(); return a.started && !a.card && !pause.on; }, () => audio.unlock());
-  const done = S.seen.length >= SPOTS.length;
+  const fpl = useFpLook(live.view, () => { const a = useCacabey.getState(); return a.started && !a.card && !a.observing && !pause.on; }, () => audio.unlock());
+  const total = SPOTS.length + 1, found = S.seen.length + (S.observed ? 1 : 0), done = found >= total;
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-[#dfe8ec] text-white" style={{ touchAction: 'none' }} {...fpl.handlers}>
       <HudTheme theme={THEME}>
@@ -92,18 +98,20 @@ export default function CacabeyGame({ onExit }: { onExit: () => void }) {
           </Suspense>
         </Canvas>
         <TopRow onExit={onExit}
-          objective={S.started ? <Objective icon={<DoorOpen size={15} />} label={done ? 'Hepsini buldun' : 'Medresenin ayrıntılarını bul'} done={S.seen.length} total={SPOTS.length} /> : undefined}
+          objective={S.started ? <Objective icon={<DoorOpen size={15} />} label={done ? 'Hepsini buldun' : 'Ayrıntıları bul, kuyudan gözle'} done={found} total={total} /> : undefined}
           right={<>{S.started && <IconButton label="Krokiyi aç/kapat (M)" active={S.map} onClick={() => S.set({ map: !S.map })}><MapIcon size={18} /></IconButton>}<GameMenu onPause={(v) => { pause.on = v; if (v) keys.clear(); }} help={<Controls items={CONTROLS} />} onRestart={restart} onExit={onExit} /></>} />
         {S.started && S.map && <Kroki seen={S.seen} />}
         {S.started && (<>
           <Joystick stick={stick} onTouch={() => audio.unlock()} color="bg-[#2f6f8a]" />
           <LookCrosshair locked={fpl.locked} />
-          {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && S.observing && <ObservePanel onClose={() => S.set({ observing: false })} onDone={() => { S.set({ observing: false, observed: true, card: OBS_CARD }); audio.tone(true); audio.speak(`${OBS_CARD.name}. ${OBS_CARD.text}`); }} />}
+          {!S.card && !S.observing && S.nearObs && !S.observed && <InteractPrompt icon={<Sparkles size={18} />} label="Kuyuya bak, gözle" onClick={() => S.set({ observing: true })} />}
+          {!S.card && !S.observing && !(S.nearObs && !S.observed) && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · kuyunun doğu kenarından suya bak, yıldız açıklığın ortasından geçerken işaretle<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
         </>)}
-        {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
+        {S.card && <InfoSheet kicker={S.card.id === 'gozlem' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Kırşehir · Selçuklu · 1272–73" title="Göğe Açılan Kubbe"
-          intro={<>Kubbesindeki açıklıktan gökyüzünün kuyuya düştüğü Selçuklu medresesini keşfet; taçkapıdan gir, kubbenin altında kuyuya bak: <b>7 ayrıntıyı</b> bul ve incele.</>}
+          intro={<>Kubbesindeki açıklıktan gökyüzünün kuyuya düştüğü Selçuklu medresesini keşfet; taçkapıdan gir, kubbenin altında kuyuya bak: <b>7 ayrıntıyı</b> bul ve incele. Kuyunun kenarından suya bakıp <b>yıldızların açıklığın ortasından geçişini işaretle</b>.</>}
           controls={CONTROLS} note="Ölçüler, iç düzen ve bezemeler temsilîdir." cta="Medreseye git" ctaIcon={<Footprints size={18} />}
           onStart={() => { audio.unlock(); S.set({ started: true }); }} onExit={onExit} />}
         {S.started && done && !S.endShown && !S.card && <EndSheet kicker="Cacabey Medresesi" title="Göğü okuyan medrese"
@@ -113,11 +121,12 @@ export default function CacabeyGame({ onExit }: { onExit: () => void }) {
     </div>
   );
 }
-function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
+function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
   { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
+  { icon: <Sparkles size={16} />, text: <>Kuyunun doğu kenarında <b>E</b>: suya yansıyan gökyüzünde yıldız ortadaki halkadan geçerken işaretle</> },
 ];
 
 /* ---------- 3B dünya ---------- */
@@ -160,7 +169,7 @@ function Markers() {
 function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: number }> }) {
   const { camera } = useThree(), nearId = useRef('');
   useFrame((_, raw) => {
-    const dt = Math.min(raw, 0.05), S = useCacabey.getState(), active = S.started && !S.card && !pause.on;
+    const dt = Math.min(raw, 0.05), S = useCacabey.getState(), active = S.started && !S.card && !S.observing && !pause.on;
     const kx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
     const ky = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
     let wx = active ? Math.max(-1, Math.min(1, stick.current.x + kx)) : 0, wy = active ? Math.max(-1, Math.min(1, stick.current.y + ky)) : 0;
@@ -169,6 +178,7 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
     let dx = 0, dz = 0; if (len > 0.08) { const k = 1 / Math.max(1e-6, Math.hypot(f, s)); dx = (-Math.sin(y) * f + Math.cos(y) * s) * k * sp * dt; dz = (-Math.cos(y) * f - Math.sin(y) * s) * k * sp * dt; }
     const [nx, nz] = slide([live.x, live.z], dx, dz), moved = Math.hypot(nx - live.x, nz - live.z); live.x = nx; live.z = nz; live.speed = dt > 0 ? moved / dt : 0;
     live.step += moved; if (live.step > 0.72) { live.step = 0; audio.step(900); } live.bob += moved * 2.4;
+    const no = S.started && Math.hypot(live.x - OBSERVE.at[0], live.z - OBSERVE.at[1]) < OBSERVE.reach; if (no !== S.nearObs) S.set({ nearObs: no });
     const near = S.started ? nearestSpot(live.x, live.z) : null; if ((near?.id ?? '') !== nearId.current) { nearId.current = near?.id ?? ''; S.set({ near }); }
     const gy = groundY(live.x, live.z), sway = live.speed > 0.2 ? Math.sin(live.bob) * 0.035 : 0;
     if (live.fly) applyFp(camera, live.fly[0], live.fly[1], live.fly[2], live.view, 0); else applyFp(camera, live.x, gy + EYE, live.z, live.view, sway);
@@ -178,6 +188,31 @@ function Controller({ stick }: { stick: React.MutableRefObject<{ x: number; y: n
 }
 
 /* ---------- kroki ---------- */
+/** Kuyu gözlemi: suyun yüzünde aydınlık fenerinden görünen gece göğü; yıldız ortadaki halkadan geçerken işaretle (3 kez) */
+function ObservePanel({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [t, setT] = useState(0), [hits, setHits] = useState(0), [msg, setMsg] = useState<string | null>(null), t0 = useRef(performance.now());
+  useEffect(() => { let id = 0; const loop = () => { setT((performance.now() - t0.current) / 1000); id = requestAnimationFrame(loop); }; id = requestAnimationFrame(loop); return () => cancelAnimationFrame(id); }, []);
+  const k = hits, [sx, sy] = starPos(t, k), on = centered(sx, sy), S2 = 240, R = S2 / 2;
+  const mark = () => { if (on) { audio.tone(true); const n = hits + 1; setMsg(n < OBS.need ? `İşaretlendi (${n}/${OBS.need}). Sıradaki yıldızı bekle.` : null); setHits(n); t0.current = performance.now(); if (n >= OBS.need) window.setTimeout(onDone, 500); }
+    else { audio.tone(false); setMsg(Math.hypot(sx, sy) > 0.5 ? 'Yıldız henüz açıklığın içinde değil.' : 'Biraz erken ya da geç: yıldız halkanın tam ortasındayken işaretle.'); } };
+  return (
+    <Modal title="Kuyudan gözle" onClose={onClose}>
+      <p className="mb-2 text-sm text-[#4a433c]">Kubbedeki açıklıktan görünen gökyüzü suya yansıyor. Yıldız açıklığın tam ortasındaki halkadan geçerken <b>İşaretle</b>'ye bas ({hits}/{OBS.need}).</p>
+      <div className="mx-auto mb-3" style={{ width: S2, height: S2 }}>
+        <svg viewBox={`0 0 ${S2} ${S2}`} width={S2} height={S2} aria-label="Kuyudaki yansıma">
+          <circle cx={R} cy={R} r={R - 2} fill="#8a7e68" />
+          <circle cx={R} cy={R} r={R - 14} fill="#16283a" />
+          {Array.from({ length: 26 }, (_, i) => <circle key={i} cx={R + Math.cos(i * 2.39) * (R - 26) * ((i * 37) % 100) / 100} cy={R + Math.sin(i * 2.39) * (R - 26) * ((i * 37) % 100) / 100} r={0.8} fill="#cfd8e6" opacity={0.6} />)}
+          <circle cx={R} cy={R} r={OBS.ring * (R - 14)} fill="none" stroke={on ? '#f2c94c' : '#6f8aa6'} strokeWidth={2} strokeDasharray="4 3" />
+          <circle cx={R + sx * (R - 14)} cy={R + sy * (R - 14)} r={5} fill="#fff6d6" />
+          <circle cx={R + sx * (R - 14)} cy={R + sy * (R - 14)} r={10} fill="#fff6d6" opacity={0.25} />
+        </svg>
+      </div>
+      <button onClick={mark} className="w-full rounded-xl bg-[#2f5f7d] py-3 text-sm font-semibold text-white active:scale-95">İşaretle</button>
+      {msg && <p className="mt-2 text-sm font-semibold text-[#4a433c]">{msg}</p>}
+    </Modal>
+  );
+}
 function Kroki({ seen }: { seen: string[] }) {
   const [, force] = useState(0);
   useEffect(() => { const id = setInterval(() => force((x) => x + 1), 200); return () => clearInterval(id); }, []);

@@ -194,7 +194,7 @@ function KitabePanel({ onClose, onDone }: { onClose: () => void; onDone: () => v
   return (
     <Modal title="Kitabeyi oku" onClose={onClose}>
       <p className="mb-2 text-sm text-[#4a433c]">Kitabenin sonunda yıl, Doğu Arap rakamlarıyla yazılmış:</p>
-      <p className="mb-3 text-center font-serif text-4xl tracking-[0.3em] text-[#1f1b17]" dir="rtl">{digits.map((d, i) => <span key={i} className={i < pos ? 'text-[#1f9d63]' : i === pos && step === 1 ? 'underline decoration-[#b3392b] decoration-4 underline-offset-8' : ''}>{EAST_DIGITS[d]}</span>)}</p>
+      <p className="mb-3 text-center font-serif text-4xl tracking-[0.3em] text-[#1f1b17]" dir="ltr">{digits.map((d, i) => <span key={i} className={i < pos ? 'text-[#1f9d63]' : i === pos && step === 1 ? 'underline decoration-[#b3392b] decoration-4 underline-offset-8' : ''}>{EAST_DIGITS[d]}</span>)}</p>
       {step === 1 ? <>
         <p className="mb-2 text-xs text-[#4a433c]">Rakamlar soldan sağa okunur. Altı çizili işaretin karşılığını seç ({pos + 1}/4):</p>
         <div className="mb-2 grid grid-cols-5 gap-1.5">{EAST_DIGITS.map((e, d) => <button key={d} onClick={() => pickDigit(d)} className="rounded-lg bg-[#f1e6c8] py-1.5 text-center ring-1 ring-black/10 active:scale-95"><span className="block font-serif text-xl leading-none">{e}</span><span className="text-[11px] font-semibold">{d}</span></button>)}</div>

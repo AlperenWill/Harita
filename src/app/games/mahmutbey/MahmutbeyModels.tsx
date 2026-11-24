@@ -6,9 +6,10 @@
  */
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { bx, groundTex, mountainGeo, stoneTex, useGrassCards, weather } from '../shared/scenery';
-import { CEMETERY, FLOOR, HALL, HOUSES, MAHFIL, MIHRAB, MINBAR, PORCH, POSTS, VILLAGE, WALL_T, inBuilding, terrainBase } from './site';
+import { CEMETERY, FLOOR, HALL, HOUSES, MAHFIL, MIHRAB, MINBAR, PORCH, POSTS, VILLAGE, WALL_T, inBuilding, terrainBase, FADED, GRID, cellCenter, motifAt } from './site';
 
 type Tier = 'low' | 'medium' | 'high';
 export function rng(seed: number) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
@@ -53,6 +54,9 @@ export function Mosque({ m }: { m: Mats }) {
   const inner = useMemo(() => { const parts: THREE.BufferGeometry[] = [], y = FLOOR + H / 2;
     const p = (w: number, x: number, z: number, ry: number) => { const g = new THREE.PlaneGeometry(w, H); g.rotateY(ry); g.translate(x, y, z); parts.push(g); };
     p(HALL.x1 - HALL.x0, 0, HALL.z0 + 0.01, 0); p(HALL.z1 - HALL.z0, HALL.x0 + 0.01, (HALL.z0 + HALL.z1) / 2, Math.PI / 2); p(HALL.z1 - HALL.z0, HALL.x1 - 0.01, (HALL.z0 + HALL.z1) / 2, -Math.PI / 2);
+    // giriş duvarının iç yüzü (önceden taş görünüyordu): kapı boşluğunun iki yanı ve üstü
+    for (const [x0, x1] of [[HALL.x0, -1.1], [1.1, HALL.x1]]) p(x1 - x0, (x0 + x1) / 2, HALL.z1 - 0.01, Math.PI);
+    { const g = new THREE.PlaneGeometry(2.2, H - 2.5); g.rotateY(Math.PI); g.translate(0, FLOOR + 2.5 + (H - 2.5) / 2, HALL.z1 - 0.01); parts.push(g); }
     return merge(parts); }, []);
   // ahşap iskelet: direkler, yastıklı başlıklar, ana kirişler, tavan kirişleri (kalem işi), tavan tahtası
   const timber = useMemo(() => { const parts: THREE.BufferGeometry[] = [], y = FLOOR;
@@ -175,4 +179,19 @@ export function Mountains() {
     for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2 + r() * 0.3, dd = 900 + r() * 500; out.push({ p: [Math.cos(a) * dd, -10, Math.sin(a) * dd], g: mountainGeo(450 + r() * 250, 220 + r() * 200, 50 + i, 2, '#3f5a34') }); }
     return out; }, []);
   return <group userData={{ noCast: true }}>{list.map((mm, i) => <mesh key={i} geometry={mm.g} position={mm.p}><meshStandardMaterial vertexColors roughness={1} /></mesh>)}</group>;
+}
+
+/* ===================== kalem işi gözleri: solmuş ve tamamlanmış ===================== */
+export const paintState = { done: [] as string[] };
+const MOTIF_COLORS = ['#2d4a6e', '#3e6a4a', '#d6a63c'];
+export function motifTex(k: number | null) { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d')!;
+  if (k === null) { g.fillStyle = '#b9a98c'; g.fillRect(0, 0, 128, 128); g.fillStyle = 'rgba(120,90,60,0.25)'; for (let i = 0; i < 60; i++) g.fillRect((i * 37) % 128, (i * 59) % 128, 10, 3); g.strokeStyle = 'rgba(122,42,34,0.35)'; g.lineWidth = 4; g.strokeRect(6, 6, 116, 116); }
+  else { g.fillStyle = '#7a2a22'; g.fillRect(0, 0, 128, 128); g.strokeStyle = '#e6c56a'; g.lineWidth = 5; g.strokeRect(5, 5, 118, 118); g.fillStyle = MOTIF_COLORS[k]; g.beginPath(); for (let i = 0; i <= 8; i++) { const a = (i / 8) * Math.PI * 2 + Math.PI / 8; g.lineTo(64 + Math.cos(a) * 42, 64 + Math.sin(a) * 42); } g.fill();
+    g.fillStyle = '#f0e6cc'; g.beginPath(); g.arc(64, 64, 10, 0, 7); g.fill(); for (let j = 0; j < 4; j++) { const a = (j / 4) * Math.PI * 2; g.beginPath(); g.ellipse(64 + Math.cos(a) * 24, 64 + Math.sin(a) * 24, 9, 4, a, 0, 7); g.fill(); } }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
+export function PaintCells() {
+  const faded = useMemo(() => motifTex(null), []), filled = useMemo(() => FADED.map((f) => motifTex(motifAt(f.i, f.j))), []);
+  const refs = useRef<(THREE.MeshStandardMaterial | null)[]>([]), seen = useRef('');
+  useFrame(() => { const key = paintState.done.join(); if (key === seen.current) return; seen.current = key; FADED.forEach((f, i) => { const mt = refs.current[i]; if (mt) { mt.map = paintState.done.includes(f.id) ? filled[i] : faded; mt.needsUpdate = true; } }); });
+  return <group>{FADED.map((f, i) => { const [x, z] = cellCenter(f.i, f.j); return <mesh key={f.id} position={[x, FLOOR + H + 0.245, z]} rotation-x={Math.PI / 2}><planeGeometry args={[GRID.dx - 0.28, GRID.dz - 0.1]} /><meshStandardMaterial ref={(mt) => { refs.current[i] = mt; }} map={faded} roughness={0.85} /></mesh>; })}</group>;
 }

@@ -128,3 +128,21 @@ export function nearestSpot(x: number, z: number): Spot | null {
   return best;
 }
 export const BOUNDS = { x0: -58, x1: 58, z0: -46, z1: 54 };
+
+/* ===================== gece sayımı (temsilî mekanik) ===================== */
+/** Gardiyan binasının kapısı: sayım buradan başlar (kapı x = GUARD.x0, z = 14) */
+export const ROUND = { at: [GUARD.x0 - 1.4, 14] as V2, reach: 1.8 };
+/** Hücre kapılarının önü (koridorda): gardiyan burada durup kapıyı kilitler */
+export const CELL_DOORS: V2[] = CELLS.map((c) => [c.door, ROOMS.corridor.z1 - 0.7]);
+export const DOOR_REACH = 1.1;
+/** Kilitlenmemiş en yakın hücre kapısı (yoksa −1) */
+export function nearestDoor(x: number, z: number, closed: boolean[]): number {
+  let best = -1, bd = DOOR_REACH;
+  CELL_DOORS.forEach((p, i) => { if (closed[i]) return; const d = Math.hypot(p[0] - x, p[1] - z); if (d < bd) { bd = d; best = i; } });
+  return best;
+}
+export const ROUND_CARD = {
+  id: 'sayim', name: 'Gece sayımı', kicker: 'Temsilî sahne',
+  text: 'Gece çökünce gardiyan koridoru dolaşıp on iki hücrenin kapısını tek tek kilitledi. Kaçmanın çok zor sayıldığı bu kalede hücreler, cezaevinin en sert bölümü olarak anlatılır. Sayımın Sinop\'ta nasıl yapıldığına dair ayrıntılı bir kaynak bulamadık; bu sahne temsilîdir.',
+  source: SRC.kure,
+};

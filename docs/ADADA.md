@@ -15,6 +15,18 @@ Oyuncu sütunlu caddenin başından yürür, agoraya geçer, Trajan Tapınağı 
 4. Trajan Tapınağı
 5. Tiyatro
 
+## Sütunu dik (mekanik)
+Trajan Tapınağı'nın doğusunda kaidesi kaldırılmış boş bir sütun yeri var. Devrilmiş sütunun parçaları çevreye dağılmış: kaide, üç tambur ve başlık. Oyuncu bir parçaya yaklaşıp **E** ile alır; elinde biri varsa o yerine döner. Sütun yerinde **E** ile yerleştirir. Doğru sıra aşağıdan yukarıya, kalından inceye: **kaide → kalın tambur → orta tambur → ince tambur → başlık**. Sırası gelmeyen parça kabul edilmez, ipucu çıkar. Sütun tamamlanınca kart açılır. Hedef toplam 6: 5 ayrıntı ve sütun.
+- **Kaynak:** Anastilosis yönteminin tanımı (her bloğun özgün yerinin inceleme ve deneme-yanılmayla bulunması) için [Aphrodisias Kazısı — Anastylosis](https://aphrodisias-excavations.com/anastylosis/).
+- **Temsilî:** Adada'da böyle bir anastilosis çalışması yapıldığı **doğrulanmadı**; arama Bergama Trajan Tapınağı gibi başka örnekler getirdi. Sütunun yeri, parçaları ve sayıları oyun için kurgulandı.
+- **Ek bilgi (oyuna alınmadı):** Kentte 2.–3. yüzyıla tarihlenen dört imparatorluk tapınağı anılıyor; tapınaklardan birinin Zeus Megistos–Serapis'e ait olduğu yalnızca gezi sitelerinde geçiyor. Ayrıca Roma yolunun Aziz Paul Yolu'nun parçası olduğu aktarılıyor. [Wikipedia — Adada (Pisidia)](https://en.wikipedia.org/wiki/Adada_(Pisidia)), [Lonely Planet](https://www.lonelyplanet.com/turkey/lake-district/attractions/adada/a/poi-sig/1543711/1319708)
+
+## Model düzeltmeleri
+- Sütunlar taş blok dokusuyla tuğla baca gibi görünüyordu. Cadde, tapınak ve yeni sütuna derzsiz, yıpranmış kireçtaşı dokusu verildi.
+- Cadde lentolarının bir ucu kırık sütunların üstünde havada kalıyordu. Artık lento yalnızca iki ucu ayakta sütuna oturan çiftlerde var.
+- Tiyatronun oturma sıraları yalnızca zemin rengiydi. Yamaca oturan yay biçimli taş basamaklar eklendi; aralarda merdiven boşlukları var.
+- Akropol kulesinde taşlar dev boyuttaydı; kuleye ayrı ölçekli doku verildi.
+
 ## Kaynaklarda bulunanlar
 - **Konum:** Isparta'nın Sütçüler ilçesinde, Sağrak köyü yakınında (yerel adı Karabavlu), Toros eteğinde bir Pisidia kenti. [Süleyman Demirel Üniversitesi — Adada Ancient City Survey](https://insantoplum.sdu.edu.tr/arkeoloji/en/surveys/adada-ancient-city-survey-14248s.html)
 - **Süreklilik:** Kazılar yaklaşık 17 yüzyıllık kesintisiz yerleşim izi gösteriyor. [Hürriyet Daily News](https://www.hurriyetdailynews.com/ancient-city-reveals-traces-of-17-centuries-of-uninterrupted-life-221078)

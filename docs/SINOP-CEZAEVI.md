@@ -33,3 +33,15 @@ Not: Bilgiler arama sonuçlarındaki özetlerden alındı. Doğrulanmayanlar:
 - Koğuş binasının düzeni: koridor, 4 koğuş, 12 hücre. Ranzalar, yataklar ve parmaklıklı kapılar da temsilî. Gerçek cezaevinde birden çok avlu ve bina var.
 - Gardiyan binası, bilgi panoları, avlu döşemesi, çınarlar.
 - Rıhtım, kayıklar ve kent evleri.
+
+## Mekanik: gece sayımı (temsilî)
+- **Başlatma:** Gardiyan binasının kapısında (`ROUND`) **E**'ye basınca gece çöker. Gökyüzü kararır, güneş ve ortam ışığı kısılır, koridor lambaları sönükleşir. Oyuncunun elinde titreyen bir fener (nokta ışık) olur.
+- **Kilitleme:** Oyuncu koğuş binasına gider ve 12 hücre kapısının önünde (`CELL_DOORS`, erişim 1,1 m) **E** ile kapıyı kilitler. Parmaklıklı demir kapı menteşesi üzerinde dönüp açıklığa oturur.
+- **Takip:** Hedef çubuğu `k/12` gösterir. Krokide gardiyan kapısı ve kilitlenmemiş kapılar sarı işaretle görünür.
+- **Bitiş:** 12 kapı kilitlenince "Gece sayımı" kartı açılır. Kart "Temsilî sahne" olarak işaretli, kaynağı [Küre Ansiklopedisi](https://kureansiklopedi.com/tr/detay/sinop-tarihi-cezaevi-4a0b8). Kart kapanınca sabah olur ve kapılar yeniden açılır. Sayım, hedefin 8. maddesi sayılır.
+- **Doğrulanmayan:** Sayımın Sinop'ta nasıl yapıldığına dair ayrıntılı bir kaynak bulunamadı. Sahne, cezaevlerindeki genel sayım ve kilitleme uygulamasını canlandırır. Kart metni bunu açıkça söyler.
+
+## Model düzeltmeleri
+- **Hücre kapıları:** Birleşik demir geometriden ayrılıp menteşeli, ayrı ayrı dönen kanatlar oldu. Kilit kutusu eklendi.
+- **Sıva dokusu:** İri, bulanık lekeler duvarda 30–40 cm'lik lekeler gibi görünüyordu. Yerine ince gözenekler, birkaç soluk leke, kılcal çatlaklar ve yağlı boya bandında aşınma izleri kondu.
+- **Gece ışığı:** drei `Environment` ortam ışığını kendi değerine döndürdüğü için gece değeri her karede yazılıyor. Sabah olunca eski değer geri konuyor.

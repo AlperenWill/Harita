@@ -111,7 +111,7 @@ const sites: HeritageSite[] = [
   {
     id: 'cizre-kirmizi', name: 'Cizre Kırmızı Medrese', province: 'Şırnak', category: 'mimari', period: 'selcuklu',
     coord: [42.1900, 37.3300], wiki: 'Kırmızı Medrese',
-    summary: 'Dicle kıyısındaki Cizre’de, Bohtan Beyliği dönemine ait, adını kırmızı boyalı süslemelerinden alan medrese.',
+    summary: 'Dicle kıyısındaki Cizre’de, Cizre Beyliği dönemine bağlanan, adını kırmızı tuğlalarından alan medrese; 2020’de başlayan onarımla yeniden açıldı.',
     didYouKnow: 'Kentte, Kürt edebiyatının klasiği Mem û Zîn ile anılan bir türbe de bulunur.',
   },
   {
