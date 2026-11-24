@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOUNDS, CELLS, POOL, SPOTS, START, groundY, walkable } from '../src/app/games/meydanmedrese/site';
+import { BOUNDS, CELLS, COLUMNS, EAST_DIGITS, EYVAN_ROOM, HIJRI, KITABE_AT, POOL, SPOTS, START, YEAR_CHOICES, groundY, hijriToGregorian, walkable } from '../src/app/games/meydanmedrese/site';
 
 function reach() {
   const cell = 0.5, nx = Math.round((BOUNDS.x1 - BOUNDS.x0) / cell) + 1, nz = Math.round((BOUNDS.z1 - BOUNDS.z0) / cell) + 1, seen = new Uint8Array(nx * nz);
@@ -19,7 +19,10 @@ describe('Meydan Medresesi', () => {
   it('taç kapıdan avluya girilir; duvarlar, hücreler ve havuz geçilmez', () => {
     expect(walkable(0, 15)).toBe(true);      // taç kapı
     expect(walkable(6, 15)).toBe(false);     // duvar
-    expect(walkable(0, -15.2)).toBe(true);   // eyvan geçidi
+    expect(walkable(0, -15.2)).toBe(true);   // eyvan ağzı
+    expect(walkable(0, -18)).toBe(true);     // eyvanın içi
+    expect(walkable(0, EYVAN_ROOM.z0 + 0.4)).toBe(false);   // eyvanın arka duvarı: dışarı çıkılmaz
+    for (const c of COLUMNS) expect(walkable(c[0], c[1])).toBe(false);
     expect(walkable(-6, -15.2)).toBe(false); // kuzey duvarı
     for (const c of CELLS) expect(walkable((c.x0 + c.x1) / 2, 0)).toBe(false);
     expect(walkable(POOL.x, POOL.z)).toBe(false);
@@ -30,5 +33,11 @@ describe('Meydan Medresesi', () => {
   it('duraklar kaynaklı ve birbirinden ayrık', () => {
     for (const s of SPOTS) expect(s.source.url).toMatch(/^https:\/\//);
     for (const a of SPOTS) for (const b of SPOTS) if (a !== b) expect(Math.hypot(a.at[0] - b.at[0], a.at[1] - b.at[1]), `${a.id}-${b.id}`).toBeGreaterThan(3);
+  });
+  it('kitabe: okuma noktasına yürünür; H. 1112 = M. 1700–1701; seçeneklerde doğru cevap var; rakam tablosu 10 işaret', () => {
+    expect(reach()(KITABE_AT[0], KITABE_AT[1])).toBe(true);
+    expect(hijriToGregorian(HIJRI)).toEqual([1700, 1701]);
+    expect(YEAR_CHOICES).toContain('1700–1701');
+    expect(EAST_DIGITS).toHaveLength(10);
   });
 });
