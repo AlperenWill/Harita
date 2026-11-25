@@ -4,7 +4,7 @@ Kod: `src/app/monuments/anitkabir/interior.ts` (veri, ölçüler, çarpışma), 
 
 ## Kaynaklardan alınanlar
 - Şeref Holü'nün iki yanında dikdörtgen planlı, mermer zeminli, **dokuzar çapraz tonozla** örtülü galeriler var. Bölmeler siyah mermer şeritlerle ayrılır.
-- Girişte eşiğin ardından siyah mermerle çevrili enine kırmızı mermer dikdörtgen girişi işaretler.
+- Girişte eşiklerin ardından siyah mermerle çevrili enine kırmızı mermer dikdörtgenler **üç girişi** işaretler.
 - Zemin kırmızı ağırlıklıdır. Türk halı ve kilim motifleri (koç boynuzu, "yaba") halı izlenimi verir.
 - Yan duvarlar kaplan postu beyaz mermer ve yeşil mermerle kaplıdır. Kaynaklar, mermerin geldiği yer konusunda birbirini tutmuyor.
 - Tavan 27 kirişlidir ve 16. yüzyıl halı ve kilim desenli mozaikle bezelidir.
@@ -35,7 +35,12 @@ Not: anitkabir.tsk.tr ve Vikipedi sayfaları çalışma ortamından açılamadı
   - hol tavanı 14,2 m,
   - niş 11 × 6,5 m,
   - pencere 8 × 11 m.
-- Kaynakta "kırmızı dikdörtgenler üç girişi işaretler" geçiyor. Cephede yan giriş olmadığı için tek büyük bronz kapı modellendi. Kapı ölçüsü (6 × 11 m) bulunamadı, temsilîdir.
+- Giriş, kullanıcının paylaştığı fotoğraflara göre kuruldu:
+  - Kalın giriş duvarından üç derin geçit geçer: ortada büyük geçit (5,4 × 11,5 m), iki yanda dar geçitler (2,6 × 9 m). Aralarında iri payeler vardır. Ölçüler fotoğraftan tahmindir.
+  - Geçitlerin tavanı kırmızı kasetlidir. Dış uçlarında açık duran bronz kafes kapılar vardır; cam yoktur.
+  - Gençliğe Hitabe (solda) ve Onuncu Yıl Nutku (sağda) yan geçitlerin dış duvarlarına yazılıdır.
+  - Gençliğe Hitabe tam metindir. Onuncu Yıl Nutku'ndan yalnızca açılış ve kapanış yazıldı. Metinler kaynakla karşılaştırılmadı.
+  - Yazıların yeri kaynaklarda farklı anlatılıyor (giriş kapısının iki yanı ya da dış cephe); fotoğraf esas alındı.
 - Lahit ölçüsü 40 tondan hesaplandı: 1,6 × 1,45 × 6,4 m, kırmızı mermer ~2,7 t/m³.
 - Müzenin plan düzeni temsilîdir. İlk bölüm Misak-ı Millî Kulesi'nin yanındaki galerili yapıda, öteki bölümler kaide içindedir.
   - Müze zemini meydanın 0,9 m altına alındı; 7 m'lik panoramalar ancak böyle sığıyor.
