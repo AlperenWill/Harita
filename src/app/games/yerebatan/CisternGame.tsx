@@ -70,7 +70,7 @@ function Game({ onExit }: { onExit: () => void }) {
     inspecting: useRef<string | null>(null), active: useRef(false),
   };
   shared.inspecting.current = inspect;
-  shared.active.current = started && (isTouch || locked) && !settings;
+  shared.active.current = started && (isTouch || locked || !G.pointerLock) && !settings;
 
   useEffect(() => setEl(wrap.current), []);
   // test/inceleme: ?debug ile ışınlanma (window.__yer.tp(x, z, yaw))
@@ -108,7 +108,7 @@ function Game({ onExit }: { onExit: () => void }) {
 
   const enter = () => {
     cisternAudio.unlock(); setStarted(true);
-    if (!isTouch) wrap.current?.requestPointerLock?.();
+    if (!isTouch && useSettings.getState().pointerLock) wrap.current?.requestPointerLock?.();
   };
   const medusaSeen = seen.filter((s) => MEDUSA_IDS.includes(s)).length;
 
@@ -158,7 +158,7 @@ function Game({ onExit }: { onExit: () => void }) {
       )}
 
       {!started && <StartCard onEnter={enter} onExit={onExit} />}
-      {started && !isTouch && !locked && !settings && !card && (
+      {started && !isTouch && G.pointerLock && !locked && !settings && !card && (
         <button onClick={() => wrap.current?.requestPointerLock?.()} className="absolute inset-0 grid place-items-center bg-[#1f1b17]/20">
           <span className="rounded-2xl bg-[#f7f5f1] px-5 py-3 text-sm font-semibold text-[#1f1b17] shadow-[0_10px_30px_rgba(31,27,23,0.2)]">Devam etmek için tıkla (fareyle bakış)</span>
         </button>
@@ -262,7 +262,7 @@ const CONTROLS = isTouch ? [
   { icon: <Eye size={16} />, text: <>İncele düğmesi: sütunu ya da Medusa’yı incele</> },
 ] : [
   { icon: <Footprints size={16} />, text: <><b>WASD</b>: yürü (A/D yana adım)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Tıkla, fareyle bak · Esc imleci bırakır</> },
+  { icon: <MousePointer2 size={16} />, text: <>Fareyle basılı tutup sürükle: bak</> },
   { icon: <Eye size={16} />, text: <><b>E</b>: nişangâh parladığında incele</> },
 ];
 function Fallback({ onExit }: { onExit: () => void }) {

@@ -149,13 +149,13 @@ function Game({ onExit }: { onExit: () => void }) {
   const allCrests = g.crests.length >= CRESTS.length, allExhibits = g.exhibits.length >= EXHIBITS.length, allViews = g.viewed.length >= VIEWPOINTS.length;
   const nextView = VIEWPOINTS.find((v) => !g.viewed.includes(v.id));
   const objective = (() => {
-    if (g.chapter === 'zindan') return { icon: <Flashlight size={15} />, label: allCrests ? 'Armalar tamam · ışıklı kapıya yürü' : 'Fenerle gizli armaları bul', done: g.crests.length, total: CRESTS.length };
+    if (g.chapter === 'zindan') return { icon: <Flashlight size={15} />, label: allCrests ? 'Armalar tamam · ışıklı kapıya yürü' : 'Fenerle gizli armaları bul · kapı hep açık', done: g.crests.length, total: CRESTS.length };
     if (g.chapter === 'merdiven') return { icon: <Footprints size={15} />, label: 'Kulenin tepesine çık · pencerelerden bak', done: windows.length, total: WINDOWS.length };
-    if (g.chapter === 'sergi') return { icon: <Search size={15} />, label: allExhibits ? 'Vitrinler tamam · ışıklı kapıdan terasa çık' : 'Vitrinleri incele', done: g.exhibits.length, total: EXHIBITS.length };
+    if (g.chapter === 'sergi') return { icon: <Search size={15} />, label: allExhibits ? 'Vitrinler tamam · ışıklı kapıdan terasa çık' : 'Vitrinleri incele · teras kapısı hep açık', done: g.exhibits.length, total: EXHIBITS.length };
     if (g.chapter === 'teras') return { icon: <Binoculars size={15} />, label: nextView ? `Bul: ${nextView.name} (${dirName(bearingOf(nextView.coord))})` : 'Bütün noktalar bulundu', done: g.viewed.length, total: VIEWPOINTS.length };
     return null;
   })();
-  const hint = isTouch ? 'Sol joystick: yürü · ekranı sürükle: bak' : 'WASD: yürü · tıkla, fareyle bak (Esc: bırak)';
+  const hint = isTouch ? 'Sol joystick: yürü · ekranı sürükle: bak' : 'WASD: yürü · fareyle sürükle: bak';
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-black" style={{ touchAction: 'none' }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
@@ -164,16 +164,17 @@ function Game({ onExit }: { onExit: () => void }) {
         camera={{ fov: 50, near: 0.1, far: 40000, position: [60, 30, 60] }} onCreated={({ gl }) => { gl.toneMapping = THREE.ACESFilmicToneMapping; }}>
         <Suspense fallback={null}>
           {g.chapter === 'giris' && <Intro blocks={Math.round(device.cityBlocks / 2)} />}
-          {g.chapter === 'zindan' && <DungeonScene found={g.crests} open={allCrests} onAim={setNear} />}
+          {g.chapter === 'zindan' && <DungeonScene found={g.crests} open onAim={setNear} />}
           {g.chapter === 'merdiven' && <StaircaseScene />}
-          {g.chapter === 'sergi' && <ExhibitScene seen={g.exhibits} near={near} open={allExhibits} />}
+          {g.chapter === 'sergi' && <ExhibitScene seen={g.exhibits} near={near} open />}
           {(g.chapter === 'teras' || g.chapter === 'son') && <TerracePanorama shadows={device.shadows} blocks={device.cityBlocks} />}
-          <Player chapter={g.chapter} done={{ crests: allCrests, windows, exhibits: g.exhibits, viewed: g.viewed, open: g.chapter === 'zindan' ? allCrests : allExhibits }} onEvent={onEvent} />
+          <Player chapter={g.chapter} done={{ crests: allCrests, windows, exhibits: g.exhibits, viewed: g.viewed, open: true }} onEvent={onEvent} />
         </Suspense>
       </Canvas>
 
       <TopRow onExit={onExit} objective={objective ? <Objective icon={objective.icon} label={objective.label} done={objective.done} total={objective.total} /> : undefined}
-        right={<GameMenu onPause={setPaused} help={<Controls items={CONTROLS} />} onRestart={() => { g.restart(); go('zindan'); }} onExit={onExit} />} />
+        right={<GameMenu onPause={setPaused} help={<Controls items={CONTROLS} />} onRestart={() => { g.restart(); go('zindan'); }} onExit={onExit}
+          extra={(close) => <div className="grid grid-cols-2 gap-2" data-ui>{([['zindan', 'Zindan'], ['merdiven', 'Merdiven'], ['sergi', 'Sergi'], ['teras', 'Teras']] as [Chapter, string][]).map(([c, l]) => <button key={c} onClick={() => { close(); go(c); }} className={`h-11 rounded-xl text-sm font-semibold ring-1 ring-black/10 ${g.chapter === c ? 'bg-[#1f1b17] text-white' : 'bg-white text-[#1f1b17]'}`}>{l}</button>)}</div>} />} />
       {g.chapter !== 'giris' && <LookCrosshair locked={look.locked} />}
 
       {/* merdiven: nefes göstergesi */}
@@ -241,7 +242,7 @@ function EndCard({ crests, exhibits, views, onReplay, onExit }: { crests: number
 const THEME = { accent: '#b5582f' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <><b>WASD</b> ya da oklar: yürü · telefonda sol joystick</> },
-  { icon: <MousePointer2 size={16} />, text: <>Tıkla, fareyle 360° bak (Esc imleci bırakır) · telefonda ekranı sürükle</> },
+  { icon: <MousePointer2 size={16} />, text: <>Fareyle basılı tutup sürükle: 360° bak · telefonda ekranı sürükle</> },
   { icon: <Flashlight size={16} />, text: <>Zindan: fener baktığın yere düşer; armaya kısa süre tut</> },
   { icon: <Wind size={16} />, text: <>Merdiven: yürüyerek çık; nefes azalınca dur, pencere önünde dinlen</> },
   { icon: <Eye size={16} />, text: <>Sergi: vitrine yaklaşıp bak, <b>E</b> ile incele</> },

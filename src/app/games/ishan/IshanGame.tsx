@@ -118,7 +118,7 @@ export default function IshanGame({ onExit }: { onExit: () => void }) {
 }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Eye size={16} />, text: <>Pencere altındaki taşta <b>E</b>: çık ve içeri bak (bakış serbest) · <b>I</b>: bilgi · <b>E</b>: in</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ile incele</> },
 ];

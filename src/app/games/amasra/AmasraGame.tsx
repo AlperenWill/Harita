@@ -115,7 +115,7 @@ export default function AmasraGame({ onExit }: { onExit: () => void }) {
 }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Shield size={16} />, text: <>Surda parıldayan kabartmaya yaklaş: <b>E</b> ile incele</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntılar ve Boztepe seyir yeri: <b>E</b></> },
 ];

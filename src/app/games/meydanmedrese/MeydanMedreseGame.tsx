@@ -106,7 +106,7 @@ export default function MeydanMedreseGame({ onExit }: { onExit: () => void }) {
           {!S.card && S.reading && <KitabePanel onClose={() => S.set({ reading: false })} onDone={() => { S.set({ reading: false, read: true, card: KITABE_CARD }); audio.tone(true); audio.speak(`${KITABE_CARD.name}. ${KITABE_CARD.text}`); }} />}
           {!S.card && !S.reading && S.nearKitabe && !S.read && <InteractPrompt icon={<BookOpen size={18} />} label="Kitabeyi oku" onClick={() => S.set({ reading: true })} />}
           {!S.card && !S.reading && !(S.nearKitabe && !S.read) && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · taç kapının önünde kitabedeki yılı oku<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · taç kapının önünde kitabedeki yılı oku<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id === 'kitabe' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Hakkâri · Biçer · 1700–1701" title="Biçer'in Avlusu"
@@ -123,7 +123,7 @@ export default function MeydanMedreseGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <BookOpen size={16} />, text: <>Taç kapının hemen önünde <b>E</b>: kitabedeki yılı çöz</> },
 ];

@@ -122,7 +122,7 @@ export default function ArslantepeGame({ onExit }: { onExit: () => void }) {
 }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Stamp size={16} />, text: <>Mühürlü kapıda <b>E</b>: baskıyla örtüşen mührü seç (baskı = mührün ayna görüntüsü)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ile incele · <b>M</b>: kroki</> },
 ];

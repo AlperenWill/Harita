@@ -156,7 +156,7 @@ export default function HasankeyfGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Truck size={16} />, text: <>Taşıma: <b>W/S</b> ileri-geri, <b>A/D</b> dönüş; yokuşta yavaşla</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
 ];

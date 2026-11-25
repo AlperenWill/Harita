@@ -390,7 +390,7 @@ function DialogueBox() {
   );
 }
 function Hint({ text }: { text: string }) {
-  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · tıkla, fareyle bak</span></HudHint>;
+  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · fareyle sürükle: bak</span></HudHint>;
 }
 function InfoCard({ poi, onClose }: { poi: Poi | null; onClose: () => void }) {
   if (!poi) return null;
@@ -409,7 +409,7 @@ function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void })
 const THEME = { accent: '#b07a2a' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: koş)</> },
-  { icon: <Move size={16} />, text: <>Bilgisayarda sahneye tıkla, fareyle bak (Esc bırakır) · telefonda ekranı sürükle</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda fareyle basılı tutup sürükle · telefonda ekranı sürükle</> },
   { icon: <Search size={16} />, text: <><b>E</b>: konuş / incele / rampa · <b>F</b>: incele</> },
   { icon: <Sun size={16} />, text: <>Güneş düğmesi: günün saatini ve müziği değiştir</> },
 ];

@@ -63,7 +63,7 @@ function Game({ onExit }: { onExit: () => void }) {
       <LookCrosshair locked={input.locked} />
       {S.puzzle && <PuzzlePanel stop={S.puzzle} tiles={S.tiles} onTap={tap} onLeave={() => S.set({ puzzle: null })} />}
       {S.started && !S.puzzle && !S.card && S.near && !S.done.includes(S.near.id) && <InteractPrompt icon={<Puzzle size={18} />} label={`Onar: ${S.near.name}`} onClick={() => S.set({ puzzle: S.near })} />}
-      {S.started && !S.puzzle && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · W/S yürü · tıkla, fareyle bak (Esc: bırak)</span></Hint>}
+      {S.started && !S.puzzle && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · WASD: bakılan yöne yürü · fareyle sürükle: bak</span></Hint>}
       {S.card && !S.listOpen && <InfoCard kicker={`Nakış ${S.done.indexOf(S.card.id) + 1} / ${STOPS.length} · ${S.card.motifName}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} />}
       {!S.started && <TitleCard kicker="Ağrı · Doğubayazıt · 18. yüzyıl" title="İshak Paşa Sarayı: Taşın Nakışı" note="Plan stilizedir; motifler saraydaki süslemelerden esinlenilmiş temsilî çizimlerdir." cta="Taç kapıdan gir" onExit={onExit} controls={CONTROLS} icon={<Puzzle size={18} />} onStart={() => { audio.unlock(); S.set({ started: true }); }}>
         <p>Ağrı Dağı’na bakan sarayın avlularını gez. Her durakta yüzyıllar içinde aşınmış bir taş süsleme var: parçalara dokunarak çevir, motifi tamamla, panoyu yerine oturt.</p></TitleCard>}
@@ -94,8 +94,8 @@ function PuzzlePanel({ stop, tiles, onTap, onLeave }: { stop: Stop; tiles: numbe
 /* ---------- arayüz teması ve kontroller (ortak HUD) ---------- */
 const THEME = { accent: '#a8782c' };
 const CONTROLS = [
-  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da <b>W/S</b>: ileri / geri yürü</> },
-  { icon: <MousePointer2 size={16} />, text: <>Yatay sürükle ya da <b>tıkla, fareyle bak</b> (Esc imleci bırakır)</> },
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da <b>WASD</b>: bakılan yöne yürü (yolun çevresinde serbest)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Yatay sürükle ya da <b>fareyle sürükle</b>: bak</> },
   { icon: <Puzzle size={16} />, text: <><b>E</b> / Onar: panoyu aç · parçaya dokun: 90° döner; motifi tamamla</> },
   { icon: <ChevronRight size={16} />, text: <>Sağdaki oklar ya da çift dokunuş: sonraki / önceki durak</> },
 ];
@@ -133,7 +133,7 @@ function Controller() {
     if (!S.started) { camera.position.set(110, 26, 70); camera.quaternion.copy(_q.setFromRotationMatrix(_m.lookAt(camera.position, _l.set(0, 6, -6), THREE.Object3D.DEFAULT_UP))); return; }
     if (nav.to !== null) { const d = nav.to - live.s, st = Math.sign(d) * Math.min(Math.abs(d), nav.speed * dt); live.s += st; live.v = 0; if (st) audio.step(800); if (Math.abs(nav.to - live.s) < 0.01) nav.to = null; }
     if (nav.turn) { const k = Math.sign(nav.turn) * Math.min(Math.abs(nav.turn), dt * 4); live.yaw += k; nav.turn -= k; }
-    if (stepWalk(camera, live, cs.current, { ROUTE_LEN, routeAt }, dt, !S.card && !S.puzzle && !S.listOpen && nav.to === null && !pause.on, 3.2)) audio.step(800);
+    if (stepWalk(camera, live, cs.current, { ROUTE_LEN, routeAt }, dt, !S.card && !S.puzzle && !S.listOpen && nav.to === null && !pause.on, 3.2, 1.65, 1.2)) audio.step(800);
     const n = nav.to === null ? nearStop(live.s) : null, id = n?.id ?? '';   // yolculuk sırasında aradaki duraklar bulmaca açmaz
     const focus = S.puzzle ?? S.card;   // bulmaca/kart açıkken kamera panoya döner: tamamlanan motif görünür
     if (focus) { const [px, py, pz] = focus.panel.at, dx = px - camera.position.x, dz = pz - camera.position.z, want = wrapA(Math.atan2(-dx, -dz) - cs.current.head);

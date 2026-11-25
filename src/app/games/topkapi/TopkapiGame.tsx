@@ -425,7 +425,7 @@ function MiniMap() {
   );
 }
 function Hint({ text }: { text: string }) {
-  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · tıkla, fareyle bak</span></HudHint>;
+  return <HudHint>{text}<span className="hidden [@media(pointer:fine)]:inline"> · WASD yürü · fareyle sürükle: bak</span></HudHint>;
 }
 function TitleCard({ onStart, onExit }: { onStart: () => void; onExit?: () => void }) {
   return <StartSheet kicker="İstanbul · Sarayburnu" title="Topkapı Sarayı" intro={<>Sarayın avlularında, Divan’da, Harem’de ve Hazine’de serbestçe dolaş. Kâtip <b>{GUIDE.name}</b> sana yol gösterecek; yanına gidince anlatır. Parlayan düğmelerle yapıları ve hazineleri incele.</>}
@@ -438,7 +438,7 @@ function EndCard({ onStay, onExit }: { onStay: () => void; onExit: () => void })
 const THEME = { accent: '#b0413e' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: koş)</> },
-  { icon: <Move size={16} />, text: <>Bilgisayarda sahneye tıkla, fareyle bak (Esc bırakır) · telefonda ekranı sürükle</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda fareyle basılı tutup sürükle · telefonda ekranı sürükle</> },
   { icon: <DoorOpen size={16} />, text: <><b>E</b>: konuş / incele / kapı · <b>F</b>: incele</> },
   { icon: <MapIcon size={16} />, text: <>Kroki düğmesi: avlu planını aç / kapat</> },
 ];

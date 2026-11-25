@@ -131,7 +131,7 @@ export default function TiosGame({ onExit }: { onExit: () => void }) {
 }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Binoculars size={16} />, text: <>Kule kapısında <b>E</b>: çık · nişangâhı yerin üzerine getir, <b>E</b> ile gözle · <b>Q</b>: in</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ile incele</> },
 ];

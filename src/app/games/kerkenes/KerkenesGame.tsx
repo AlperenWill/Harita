@@ -109,7 +109,7 @@ export default function KerkenesGame({ onExit }: { onExit: () => void }) {
           <LookCrosshair locked={fpl.locked} />
           {!S.card && <ToolPanel title={<span className="flex items-center gap-1"><Radar size={14} /> Manyetik tarama · {S.done.length}/{PLOTS.length}</span>} defaultOpen={false}><SurveyMini plot={S.plot} rev={S.rev} /></ToolPanel>}
           {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · ipli tarama alanlarının içinde gidip gel, toprağın altını tara<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · ipli tarama alanlarının içinde gidip gel, toprağın altını tara<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id.startsWith('tarama') ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Yozgat · Kerkenes Dağı · Demir Çağı" title="Taş Surlu Kent"
@@ -126,7 +126,7 @@ export default function KerkenesGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <Radar size={16} />, text: <>İpli karelerin içinde yürü: geçtiğin şerit taranır; alanın %85'i taranınca gömülü plan ortaya çıkar</> },
 ];

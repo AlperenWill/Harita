@@ -111,7 +111,7 @@ export default function GaziantepKaleGame({ onExit }: { onExit: () => void }) {
           <Toast text={S.toast} tone="ok" />
           {!S.card && S.nearDmg && <InteractPrompt icon={<Hammer size={18} />} label="Gediği onar" onClick={() => repair(S.nearDmg!)} />}
           {!S.card && !S.nearDmg && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · surun içinde moloz yığınlı 4 gediği bul, onar<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · surun içinde moloz yığınlı 4 gediği bul, onar<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id === 'onarim' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Gaziantep · Kale · Roma – Osmanlı" title="Antep'in Tepesi"
@@ -128,7 +128,7 @@ export default function GaziantepKaleGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <Hammer size={16} />, text: <>Surdaki yıkık yerlerin önündeki moloz yığınına yaklaş, <b>E</b> ile onar</> },
 ];

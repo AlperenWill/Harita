@@ -118,7 +118,7 @@ export default function MamaHatunGame({ onExit }: { onExit: () => void }) {
 }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <CircleDot size={16} />, text: <>Nişlerin önünden geç: sayılır · aşınmış dilimde <b>E</b>: doğru taşı seç</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ile incele</> },
 ];

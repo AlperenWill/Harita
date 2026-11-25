@@ -8,6 +8,7 @@
  * Kalite: ReflectionOptimizer.reflectionPlan (düzlemsel yansıma / ortam küpü, transmission, kristal sayısı, LOD); kare hızı düşerse kademe iner.
  * Şanlıurfa ve öteki oyunlarla tutarlılık: aynı cihaz profili, ?q= / ?debug, pil tasarrufu, sesli okuma, WebGL yoksa fotoğraf yedeği.
  */
+import { freePos, freeStep, inputDir } from '../shared/route';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -43,7 +44,7 @@ interface S { started: boolean; zone: Zone; found: string[]; card: Sparkle | nul
 const INITIAL = { started: false, zone: 'medhal' as Zone, found: [] as string[], card: null, near: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
-const live = { s: 0, v: 0, input: 0, goal: null as number | null, rig: newRig(0, 13, 0), view: { yaw: 0, pitch: 0 }, aimed: false, bob: 0 };
+const live = { s: 0, v: 0, input: 0, o: 0, strafe: 0, goal: null as number | null, rig: newRig(0, 13, 0), view: { yaw: 0, pitch: 0 }, aimed: false, bob: 0 };
 
 export default function DolmabahceGame({ onExit }: { onExit: () => void }) {
   if (!supportsWebGL) return <Fallback onExit={onExit} />;
@@ -77,7 +78,7 @@ function Game({ onExit }: { onExit: () => void }) {
     };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
-    let raf = 0; const loop = () => { const k = keys.current, kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); live.input = THREE.MathUtils.clamp(kb - stick.current.y, -1, 1); if (Math.abs(live.input) > 0.1) live.goal = null; raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
+    let raf = 0; const loop = () => { const k = keys.current, kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); live.input = THREE.MathUtils.clamp(kb - stick.current.y, -1, 1); live.strafe = THREE.MathUtils.clamp((k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0) + stick.current.x, -1, 1); if (Math.hypot(live.input, live.strafe) > 0.1) live.goal = null; raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [open, close, goNext]);
   useEffect(() => {
@@ -113,7 +114,7 @@ function Game({ onExit }: { onExit: () => void }) {
         </button>
       )}
       {S.started && <><Joystick stick={stick} onTouch={() => palaceAudio.unlock()} /><LookCrosshair locked={fpl.locked} /></>}
-      {S.started && !S.card && <Hint>Parlayan nesneye yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak · N: sıradaki parıltı</span></Hint>}
+      {S.started && !S.card && <Hint>Parlayan nesneye yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · WASD · fareyle sürükle: bak · N: sıradaki parıltı</span></Hint>}
       {S.card && <Card k={S.card} onClose={close} />}
       {!S.started && <TitleCard onStart={start} onExit={onExit} />}
       {S.started && S.found.length === SPARKLES.length && !S.endShown && !S.card && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
@@ -162,17 +163,18 @@ function Halos({ saver }: { saver: boolean }) {
 const _c = new THREE.Vector3(), _l = new THREE.Vector3(), _m = new THREE.Matrix4(), _q = new THREE.Quaternion();
 function Controller() {
   const { camera } = useThree();
-  const st = useRef({ step: 0, near: '', zone: '' as Zone | '', chimed: new Set<string>(), fov: 55, last: 0 }), cam = useRef({ p: new THREE.Vector3(0, 2.6, 18), q: new THREE.Quaternion() });
+  const st = useRef({ step: 0, near: '', zone: '' as Zone | '', chimed: new Set<string>(), fov: 55, last: 0, dir: null as [number, number] | null }), cam = useRef({ p: new THREE.Vector3(0, 2.6, 18), q: new THREE.Quaternion() });
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState(), t = clock.elapsedTime;
     // hız: girdi ya da otomatik hedef; yumuşak hızlanma (lüks mekânda ani hareket yok)
-    const R0 = routeAt(live.s), facing = -Math.sin(live.view.yaw) * R0.dir[0] - Math.cos(live.view.yaw) * R0.dir[1] >= -0.15 ? 1 : -1;   // bakılan yöne göre rotada ileri/geri
-    let want = S.started && !S.card && !pause.on ? live.input * 3.2 * facing : 0;
-    if (live.goal !== null && !S.card) { const d = live.goal - live.s; if (Math.abs(d) < 0.15) live.goal = null; else want = Math.sign(d) * Math.min(5, Math.abs(d) * 1.4 + 0.8); }
-    live.v += (want - live.v) * (1 - Math.exp(-dt * 4));
-    const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt));
-    const R = routeAt(live.s), r = live.rig, moved = live.s - before;
-    r.x = R.p[0]; r.y = R.p[1]; r.z = R.p[2]; r.speed = dt > 0 ? Math.abs(moved) / dt : 0;   // ilk karede dt = 0 olabilir: NaN animasyonu kalıcı bozar
+    // serbest yürüyüş: bakılan yöne W/S + A/D (joystick), rota koridorunda (en çok 1,2 m sapma); otomatik hedef rota boyunca
+    const s0 = live.s, o0 = live.o;
+    if (live.goal !== null && !S.card) { const d = live.goal - live.s; if (Math.abs(d) < 0.15) live.goal = null; else { live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + Math.sign(d) * Math.min(5, Math.abs(d) * 1.4 + 0.8) * dt)); live.o *= Math.exp(-dt * 2); } }
+    const idir = S.started && !S.card && !pause.on && live.goal === null ? inputDir(live.view.yaw, live.input, live.strafe) : null; if (idir) st.current.dir = idir;
+    live.v += ((idir ? Math.min(1, Math.hypot(live.input, live.strafe)) * 3.2 : 0) - live.v) * (1 - Math.exp(-dt * 4));
+    if (st.current.dir && live.v > 0.01) freeStep(routeAt, ROUTE_LEN, live, st.current.dir[0] * live.v * dt, st.current.dir[1] * live.v * dt, 1.2);
+    const R = routeAt(live.s), P = freePos(routeAt, live.s, live.o), r = live.rig, moved = (live.s >= s0 ? 1 : -1) * Math.hypot(live.s - s0, live.o - o0);
+    r.x = P[0]; r.y = P[1]; r.z = P[2]; r.speed = dt > 0 ? Math.abs(moved) / dt : 0;   // ilk karede dt = 0 olabilir: NaN animasyonu kalıcı bozar
     if (Math.abs(moved) > 1e-4) { const want2 = Math.atan2(-R.dir[0] * Math.sign(moved), -R.dir[1] * Math.sign(moved)); r.yaw += Math.atan2(Math.sin(want2 - r.yaw), Math.cos(want2 - r.yaw)) * (1 - Math.exp(-dt * 8)); }
     st.current.step += Math.abs(moved); if (st.current.step > 0.75) { st.current.step = 0; palaceAudio.step(R.surface); }
     // bölge, yakın nesne, kristal tınısı
@@ -185,7 +187,7 @@ function Controller() {
     } else {
       if (!live.aimed) { live.aimed = true; live.view.yaw = Math.atan2(-R.dir[0], -R.dir[1]); live.view.pitch = 0.08; }
       live.bob += Math.abs(moved) * 3.1;
-      applyFp(camera, R.p[0], R.p[1] + 1.62, R.p[2], live.view, r.speed > 0.1 ? Math.sin(live.bob) * 0.025 : 0);
+      applyFp(camera, P[0], P[1] + 1.62, P[2], live.view, r.speed > 0.1 ? Math.sin(live.bob) * 0.025 : 0);
       const want = z === 'muayede' || z === 'avize' ? 68 : 62, pc = camera as THREE.PerspectiveCamera; st.current.fov += (want - st.current.fov) * (1 - Math.exp(-dt * 3)); if (Math.abs(pc.fov - st.current.fov) > 0.05) { pc.fov = st.current.fov; pc.updateProjectionMatrix(); }
     }
     if (t - st.current.last > 0.15) { st.current.last = t; palaceAudio.listener([camera.position.x, camera.position.y - 1.6, camera.position.z], [-Math.sin(live.view.yaw), -Math.cos(live.view.yaw)]); }
@@ -199,8 +201,8 @@ function Card({ k, onClose }: { k: Sparkle; onClose: () => void }) {
 }
 const THEME = { accent: '#b98b2e' };
 const CONTROLS = [
-  { icon: <Footprints size={16} />, text: <>Joystick ya da W/S: rotada yürü (bakılan yöne)</> },
-  { icon: <Move size={16} />, text: <>Bilgisayarda tıkla, fareyle bak · telefonda ekranı sürükle</> },
+  { icon: <Footprints size={16} />, text: <>Joystick ya da WASD: bakılan yöne yürü (yolun çevresinde serbest)</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda fareyle basılı tutup sürükle · telefonda ekranı sürükle</> },
   { icon: <Info size={16} />, text: <>E: parlayan nesneyi incele</> },
   { icon: <ChevronsRight size={16} />, text: <>≫ ya da N: sıradaki parıltıya yürü</> },
 ];

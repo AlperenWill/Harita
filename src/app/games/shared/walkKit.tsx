@@ -1,5 +1,5 @@
 /**
- * Rotaya kilitli yürüyüş oyunları için ortak parçalar (Ani, İshak Paşa, Akdamar).
+ * Rota koridorunda yürüyüş oyunları için ortak parçalar (Ani, İshak Paşa, Akdamar). Oyuncu rotaya raylı bağlı değildir.
  * Troya / Efes / Pamukkale ile aynı sözleşme: ?q=low|medium|high, ?debug, tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek.
  * Dokunmatik: dikey sürükleme yürütür, yatay sürükleme bakar. Masaüstü: W/S yürü, tıkla ve fareyle bak (imleç kilidi, Esc bırakır).
  */
@@ -22,7 +22,7 @@ export const dprFor = (t: Tier): [number, number] => (t === 'high' ? [1, 2] : t 
 export const wrapA = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
 export { makeRoute, type V3 } from './route';
-import type { V3 } from './route';
+import { freePos, freeStep, inputDir, type V3 } from './route';
 
 /* ---------- canvas dokuları ---------- */
 /** Kesme taş duvar dokusu (sıralı bloklar, derzler) */
@@ -58,8 +58,8 @@ export class WalkAudio {
 }
 
 /* ---------- giriş: klavye + sürükleme ---------- */
-export interface Live { s: number; v: number; input: number; yaw: number; pitch: number }
-export const newLive = (): Live => ({ s: 0, v: 0, input: 0, yaw: 0, pitch: 0 });
+export interface Live { s: number; v: number; input: number; yaw: number; pitch: number; /** yanal sapma (rota koridoru) */ o: number; /** yana adım girişi (A/D) */ strafe: number }
+export const newLive = (): Live => ({ s: 0, v: 0, input: 0, yaw: 0, pitch: 0, o: 0, strafe: 0 });
 /** Klavye döngüsü ve işaretçi işleyicileri. canMove false iken sürükleme yalnızca bakış içindir. */
 /** lookEnabled: fareyle bakış (imleç kilidi) ne zaman açık olsun; kart/bulmaca açıkken false ver ki düğmelere tıklanabilsin */
 export function useWalkInput(live: Live, enabled: () => boolean, onKey?: (e: KeyboardEvent) => void, unlock?: () => void, lookEnabled: () => boolean = enabled) {
@@ -70,7 +70,7 @@ export function useWalkInput(live: Live, enabled: () => boolean, onKey?: (e: Key
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
-    const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current; const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
+    const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current; const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb; live.strafe = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
       void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: bakış fareyle (imleç kilidi) ya da sürüklemeyle
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
@@ -78,23 +78,29 @@ export function useWalkInput(live: Live, enabled: () => boolean, onKey?: (e: Key
   return {
     locked: look.locked,
     onPointerDown: (e: React.PointerEvent) => { unlock?.(); look.lock(e); if (!enabled()) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; },
-    onPointerMove: (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; },
+    onPointerMove: (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId || d.mouse) return;   // fare: ortak sürükleyerek bakış (mouseLook)
+      live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; },
     onPointerUp: (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (!drag.current.mouse) live.input = 0; drag.current = null; } },
   };
 }
 
 /* ---------- birinci şahıs kamera adımı (useFrame içinde çağrılır) ---------- */
 const _e = new THREE.Euler(0, 0, 0, 'YXZ');
-export interface CamState { step: number; bob: number; head: number }
-/** live.s'yi ilerletir, kamerayı rotaya koyar; adım sesi için true döner */
-export function stepWalk(camera: THREE.Camera, live: Live, cs: CamState, route: { ROUTE_LEN: number; routeAt: (s: number) => { p: V3; dir: [number, number] } }, dt: number, canWalk: boolean, speed = 3.4, eye = 1.65): boolean {
-  const back = Math.cos(live.yaw) < 0 ? -1 : 1, want = canWalk ? live.input * speed * back : 0;
+export interface CamState { step: number; bob: number; head: number; dir?: [number, number] }
+/**
+ * Rota koridorunda serbest yürüyüş: W/S ileri-geri, A/D yana, bakılan yöne doğru; rotadan en çok `width` m sapılır.
+ * Kamera rotayı kendiliğinden takip ETMEZ (bakış tamamen oyuncunun): cs.head yalnızca başlangıçta rota yönüne konur.
+ */
+export function stepWalk(camera: THREE.Camera, live: Live, cs: CamState, route: { ROUTE_LEN: number; routeAt: (s: number) => { p: V3; dir: [number, number] } }, dt: number, canWalk: boolean, speed = 3.4, eye = 1.65, width = 2): boolean {
+  if (Number.isNaN(cs.head)) { const R0 = route.routeAt(live.s); cs.head = Math.atan2(-R0.dir[0], -R0.dir[1]); }
+  const yawW = cs.head + live.yaw, dir = canWalk ? inputDir(yawW, live.input, live.strafe) : null; if (dir) cs.dir = dir;
+  const want = dir ? Math.min(1, Math.hypot(live.input, live.strafe)) * speed : 0;
   live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
-  const before = live.s; live.s = Math.max(0, Math.min(route.ROUTE_LEN, live.s + live.v * dt)); const moved = Math.abs(live.s - before), R = route.routeAt(live.s);
+  const before = live.s, o0 = live.o; if (cs.dir && live.v > 0.01) freeStep(route.routeAt, route.ROUTE_LEN, live, cs.dir[0] * live.v * dt, cs.dir[1] * live.v * dt, width);
+  const moved = Math.hypot(live.s - before, live.o - o0), P = freePos(route.routeAt, live.s, live.o);
   cs.step += moved; cs.bob += moved * 2.2; let stepped = false; if (cs.step > 0.78) { cs.step = 0; stepped = true; }
-  const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(cs.head)) cs.head = hd; cs.head += wrapA(hd - cs.head) * (1 - Math.exp(-dt * 3));
-  _e.set(live.pitch - 0.05, cs.head + live.yaw, 0); camera.quaternion.setFromEuler(_e);
-  camera.position.set(R.p[0], R.p[1] + eye + Math.sin(cs.bob) * 0.03 * Math.min(1, Math.abs(live.v) / 2), R.p[2]);
+  _e.set(live.pitch - 0.05, yawW, 0); camera.quaternion.setFromEuler(_e);
+  camera.position.set(P[0], P[1] + eye + Math.sin(cs.bob) * 0.03 * Math.min(1, Math.abs(live.v) / 2), P[2]);
   return stepped;
 }
 

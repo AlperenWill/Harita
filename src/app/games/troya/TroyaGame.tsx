@@ -8,6 +8,7 @@
  * KAMERA: birinci şahıs, rotaya kilitli (W/S ya da dikey sürükleme), bakış serbest (Efes, Pamukkale ile aynı şema).
  * Öteki oyunlarla tutarlılık: ?q=, ?debug (__troya), tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek.
  */
+import { freePos, walkFree } from '../shared/route';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -51,7 +52,7 @@ interface S { started: boolean; solved: string[]; quiz: Stop | null; wrong: stri
 const INITIAL = { started: false, solved: [] as string[], quiz: null, wrong: null, card: null, near: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
-const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: 0 };
+const live = { s: 0, v: 0, input: 0, o: 0, strafe: 0, yaw: 0, pitch: 0 };
 
 export default function TroyaGame({ onExit }: { onExit: () => void }) {
   if (!supportsWebGL) return <Fallback onExit={onExit} />;
@@ -77,14 +78,14 @@ function Game({ onExit }: { onExit: () => void }) {
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
-    const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current; const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
+    const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current; const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb; live.strafe = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
       void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [close, answer, inspect]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __troya: unknown }).__troya = { go: (s: number) => { live.s = s; useDb.getState().set({ started: true }); }, look: (y: number, p = 0) => { live.yaw = y; live.pitch = p; }, answer, state: () => ({ ...useDb.getState(), s: live.s }), STOPS, ROUTE_LEN, routeAt }; }, [answer]);
   const onDown = (e: React.PointerEvent) => { audio.unlock(); look.lock(e); if (!useDb.getState().started) return; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
-  const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; };
+  const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId || d.mouse) return; live.yaw += (e.clientX - d.x) * 0.005; if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + (e.clientY - d.y) * 0.004, -1, 0.9); else live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); d.x = e.clientX; d.y = e.clientY; };
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (!drag.current.mouse) live.input = 0; drag.current = null; } };
   const quizzes = STOPS.filter((s) => s.answer);
   const nextQ = quizzes.find((q) => !S.solved.includes(q.id));
@@ -99,7 +100,7 @@ function Game({ onExit }: { onExit: () => void }) {
         <Suspense fallback={null}><World tier={tier} /><SkyEnvironment sky={'#dfe7ec'} sun={'#fff2df'} ground={'#a99a6c'} sunDir={[SUN_DIR.x, SUN_DIR.y, SUN_DIR.z]} /><Polish tier={tier} /></Suspense>
       </Canvas>
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Layers size={15} />} label={nextQ ? `Sıradaki: ${nextQ.name}` : 'Katman cetveli tamam'} done={S.solved.filter((id) => quizzes.some((q) => q.id === id)).length} total={quizzes.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
-      {S.started && !S.card && !S.quiz && <Hint>Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · 1/2/3: cevap</span></Hint>}
+      {S.started && !S.card && !S.quiz && <Hint>Dikey sürükle: yürü · yatay: bak<span className="hidden [@media(pointer:fine)]:inline"> · WASD · fareyle sürükle: bak · 1/2/3: cevap</span></Hint>}
       {S.started && S.near && !S.card && !S.quiz && <InteractPrompt icon={<Search size={18} />} label={`${S.near.answer && !S.solved.includes(S.near.id) ? 'Bilmece' : 'İncele'}: ${S.near.name}`} onClick={inspect} muted={S.solved.includes(S.near.id)} />}
       {S.quiz && <Quiz q={S.quiz} wrong={S.wrong} onPick={answer} />}
       {S.card && <Card s={S.card} onClose={close} />}
@@ -138,21 +139,18 @@ function World({ tier }: { tier: Tier }) {
 
 /* ---------- hareket + kamera ---------- */
 const _e = new THREE.Euler(0, 0, 0, 'YXZ'), _m = new THREE.Matrix4(), _l = new THREE.Vector3(), _q = new THREE.Quaternion();
-const wrapA = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 function Controller() {
   const { camera } = useThree(), st = useRef({ step: 0, bob: 0, head: NaN, stop: '' });
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState();
-    const back = Math.cos(live.yaw) < 0 ? -1 : 1, want = S.started && !S.card && !S.quiz && !pause.on ? live.input * WALK * back : 0;
-    live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
-    const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt)); const moved = live.s - before, R = routeAt(live.s);
+    const moved = walkFree(live, st.current, routeAt, ROUTE_LEN, dt, WALK, 3, S.started && !S.card && !S.quiz && !pause.on), P = freePos(routeAt, live.s, live.o);
     st.current.step += Math.abs(moved); if (st.current.step > 0.78) { st.current.step = 0; audio.step(); } st.current.bob += Math.abs(moved) * 2.2;
     const sp = S.started ? nearStop(live.s) : null;
     if ((sp?.id ?? '') !== st.current.stop) { st.current.stop = sp?.id ?? ''; S.set(sp ? { near: sp } : { near: null, quiz: null, wrong: null, card: null }); }   // yaklaşınca yalnızca "İncele" çıkar; uzaklaşınca açık kart/bilmece kapanır
-    const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(st.current.head)) st.current.head = hd; st.current.head += wrapA(hd - st.current.head) * (1 - Math.exp(-dt * 3));
+    
     if (!S.started) { camera.position.set(110, 22, 100); camera.quaternion.copy(_q.setFromRotationMatrix(_m.lookAt(camera.position, _l.set(20, 4, 0), THREE.Object3D.DEFAULT_UP))); return; }
     _e.set(live.pitch - 0.05, st.current.head + live.yaw, 0); camera.quaternion.setFromEuler(_e);
-    camera.position.set(R.p[0], R.p[1] + EYE + Math.sin(st.current.bob) * 0.03 * Math.min(1, Math.abs(live.v) / 2), R.p[2]);
+    camera.position.set(P[0], P[1] + EYE + Math.sin(st.current.bob) * 0.03 * Math.min(1, Math.abs(live.v) / 2), P[2]);
   });
   return null;
 }
@@ -175,7 +173,7 @@ function Card({ s, onClose }: { s: Stop; onClose: () => void }) {
 }
 const THEME = { accent: '#b07a3c' };
 const CONTROLS = [
-  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da WASD: bakılan yöne yürü (yolun çevresinde serbest)</> },
   { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
   { icon: <Info size={16} />, text: <>yapının yanında <b>E</b> / İncele: bilmeceyi aç, doğru katmanı seç</> },
 ];

@@ -110,7 +110,7 @@ export default function OdunpazariGame({ onExit }: { onExit: () => void }) {
           <Toast text={S.toast} tone="info" />
           {!S.card && S.nearLot && S.step < BUILD_STEPS.length && <InteractPrompt icon={<Hammer size={18} />} label={`Yap: ${BUILD_STEPS[S.step]}`} onClick={buildNext} />}
           {!S.card && !(S.nearLot && S.step < BUILD_STEPS.length) && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · iskeleli boş parselde konağı adım adım kur<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · iskeleli boş parselde konağı adım adım kur<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id === 'konak' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Eskişehir · Odunpazarı · 19. yüzyıl" title="Cumbalı Sokak"
@@ -127,7 +127,7 @@ export default function OdunpazariGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <Hammer size={16} />, text: <>Boş parselin önünde <b>E</b>: konağın sıradaki bölümünü yap</> },
 ];

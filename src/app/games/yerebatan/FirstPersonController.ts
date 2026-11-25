@@ -63,7 +63,7 @@ export function headBob(s: FPState, speed01: number) {
 /* ---------- DOM girdileri ---------- */
 export interface LookInput { dyaw: number; dpitch: number }
 /**
- * Fare (Pointer Lock) ve dokunma bakışı. Bakış birikimi `acc`a yazılır; oyun döngüsü her karede okuyup sıfırlar.
+ * Fare (basılı tutup sürükleme; ayarda imleç kilidi açıksa Pointer Lock) ve dokunma bakışı. Bakış birikimi `acc`a yazılır; oyun döngüsü her karede okuyup sıfırlar.
  * Dokunmatikte: ekranın sol yarısı joystick'e, sağ yarısı bakışa ayrılır (aynı anda iki parmak).
  */
 export function useLookInput(el: HTMLElement | null, acc: { current: LookInput }, opts: { sens: number; enabled: boolean; onLockChange?: (locked: boolean) => void }) {
@@ -71,8 +71,12 @@ export function useLookInput(el: HTMLElement | null, acc: { current: LookInput }
   const sens = opts.sens, enabled = opts.enabled;
   useEffect(() => {
     if (!el || !enabled) return;
+    let drag = false;   // imleç kilidi kapalıyken: sol tuş basılı sürükleme bakışı çevirir
+    const mDown = (e: MouseEvent) => { if (e.button === 0 && !(e.target as Element | null)?.closest?.('button,a,input,select,textarea,label,[role=dialog],[data-ui]')) drag = true; };
+    const mUp = (e: MouseEvent) => { if (e.button === 0) drag = false; };
     const onMouse = (e: MouseEvent) => {
-      if (document.pointerLockElement !== el) return;
+      if (drag && (e.buttons & 1) !== 1) drag = false;
+      if (document.pointerLockElement !== el && !drag) return;
       const d = mouseDelta(e.movementX, e.movementY, sens); acc.current.dyaw += d.dyaw; acc.current.dpitch += d.dpitch;
     };
     const lockChange = () => cb.current?.(document.pointerLockElement === el);
@@ -86,11 +90,11 @@ export function useLookInput(el: HTMLElement | null, acc: { current: LookInput }
       }
     };
     const tEnd = (e: TouchEvent) => { for (const t of Array.from(e.changedTouches)) touches.delete(t.identifier); };
-    document.addEventListener('mousemove', onMouse); document.addEventListener('pointerlockchange', lockChange);
+    document.addEventListener('mousemove', onMouse); document.addEventListener('pointerlockchange', lockChange); el.addEventListener('mousedown', mDown); document.addEventListener('mouseup', mUp);
     el.addEventListener('touchstart', tStart, { passive: true }); el.addEventListener('touchmove', tMove, { passive: true });
     el.addEventListener('touchend', tEnd); el.addEventListener('touchcancel', tEnd);
     return () => {
-      document.removeEventListener('mousemove', onMouse); document.removeEventListener('pointerlockchange', lockChange);
+      document.removeEventListener('mousemove', onMouse); document.removeEventListener('pointerlockchange', lockChange); el.removeEventListener('mousedown', mDown); document.removeEventListener('mouseup', mUp);
       el.removeEventListener('touchstart', tStart); el.removeEventListener('touchmove', tMove); el.removeEventListener('touchend', tEnd); el.removeEventListener('touchcancel', tEnd);
     };
   }, [el, acc, sens, enabled]);

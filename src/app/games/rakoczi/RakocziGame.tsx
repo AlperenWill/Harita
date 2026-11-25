@@ -121,7 +121,7 @@ export default function RakocziGame({ onExit }: { onExit: () => void }) {
           {!S.card && !S.ordering && S.nearLetter && <InteractPrompt icon={<FileText size={18} />} label={`Al: ${S.nearLetter.name}`} onClick={() => takeLetter(S.nearLetter!)} />}
           {!S.card && !S.ordering && !S.nearLetter && deskReady && <InteractPrompt icon={<Feather size={18} />} label="Belgeleri sırala" onClick={() => S.set({ ordering: true })} />}
           {!S.card && !S.ordering && !S.nearLetter && !deskReady && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · 6 belgeyi bul, Mikes'in masasında tarih sırasına diz<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · 6 belgeyi bul, Mikes'in masasında tarih sırasına diz<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id.startsWith('let-') || S.card.id === 'sira' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Tekirdağ · Rodosto · 1720–1735" title="Rodosto'daki Sürgün"
@@ -138,7 +138,7 @@ export default function RakocziGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <FileText size={16} />, text: <>Parlayan kâğıt tomarına yaklaş, <b>E</b> ile al; 6 belge bulununca Mikes'in masasında <b>E</b> ile sırala</> },
 ];

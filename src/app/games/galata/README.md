@@ -28,7 +28,8 @@ src/app/pages/GalataPage.tsx   rota; tests/galata.test.ts
 ```
 
 ## Bölümler ve mekanik gerekçeleri
-Kontroller her bölümde aynı: masaüstünde WASD/oklar yürür, tıklayınca imleç kilitlenir ve fareyle bakılır (Esc bırakır);
+Kontroller her bölümde aynı: masaüstünde WASD/oklar yürür, fareyle basılı tutup sürükleyerek bakılır (imleç kilitlenmez; isteyen Ayarlar'dan açar);
+kapılar hep açıktır (görevler isteğe bağlı) ve ≡ menüden istenen kata (zindan, merdiven, sergi, teras) geçilir;
 telefonda sol joystick yürür, ekranın geri kalanında sürükleme bakar. Kamera, yürüme ve bölüm kuralları `Player.tsx`'te,
 saf hareket mantığı `firstPerson.ts`'te.
 

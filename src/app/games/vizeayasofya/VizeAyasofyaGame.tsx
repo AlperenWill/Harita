@@ -117,7 +117,7 @@ export default function VizeAyasofyaGame({ onExit }: { onExit: () => void }) {
           {!S.card && S.aiming && <CompassHud />}
           {!S.card && S.nearCompass && !S.qibla && <InteractPrompt icon={<Compass size={18} />} label={S.aiming ? 'Bu yön kıble' : 'Kıbleyi bul'} onClick={useCompass} />}
           {!S.card && !(S.nearCompass && !S.qibla) && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · kubbenin altındaki pusulayla kıbleyi bul<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · kubbenin altındaki pusulayla kıbleyi bul<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id === 'kible' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Kırklareli · Vize · Bizye" title="Bizye'nin Katedrali"
@@ -154,7 +154,7 @@ function CompassHud() {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <Compass size={16} />, text: <>Kubbenin altında pusula: <b>E</b> ile aç, Mekke yönüne (≈{QIBLA_DEG}°) dön, yeniden <b>E</b></> },
 ];

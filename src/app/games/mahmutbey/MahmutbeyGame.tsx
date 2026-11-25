@@ -115,7 +115,7 @@ export default function MahmutbeyGame({ onExit }: { onExit: () => void }) {
           {!S.card && S.painting && <PaintPanel cell={S.painting} onClose={() => S.set({ painting: null })} />}
           {!S.card && !S.painting && S.nearCell && <InteractPrompt icon={<Brush size={18} />} label="Solmuş gözü tamamla" onClick={() => S.set({ painting: S.nearCell })} />}
           {!S.card && !S.painting && !S.nearCell && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · tavanda solmuş 3 bezeme gözünün altında dur, rengini tamamla<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · tavanda solmuş 3 bezeme gözünün altında dur, rengini tamamla<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id === 'kalemisi' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Kastamonu · Kasaba Köyü · 1366 · UNESCO" title="Çivisiz Cami"
@@ -132,7 +132,7 @@ export default function MahmutbeyGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <Brush size={16} />, text: <>Solmuş tavan gözünün altında <b>E</b>: komşu gözlere bak, eksik rengi seç</> },
 ];

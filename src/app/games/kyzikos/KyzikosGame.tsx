@@ -111,7 +111,7 @@ export default function KyzikosGame({ onExit }: { onExit: () => void }) {
           {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
           {!S.card && <ActionDock><RoundAction label="Zaman merceği (T)" primary={S.lens} size={56} onClick={toggleLens}><History size={24} /></RoundAction></ActionDock>}
           <Toast text={S.toast} tone="ok" />
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · saat düğmesi ya da T: zaman merceği<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · saat düğmesi ya da T: zaman merceği<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Balıkesir · Erdek · Kyzikos" title="Hadrian'ın Tapınağı"
@@ -128,7 +128,7 @@ export default function KyzikosGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <History size={16} />, text: <>Saat düğmesi ya da <b>T</b>: zaman merceği (tapınağın ve amfiteatrın eski hâli)</> },
 ];

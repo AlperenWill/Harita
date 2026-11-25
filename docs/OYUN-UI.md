@@ -44,11 +44,14 @@ Oyunda kullanımı: `const G = useSettings()`; kademe `initialTier(G)`, otomatik
 ## Kamera ve kontroller (masaüstü)
 - **Bütün yürüyüş oyunları birinci şahıstır** (göz hizası ~1,62 m); oyuncunun kendi modeli çizilmez. Kapadokya'da sepetin içinden bakılır.
 - Kamera klavyeyle (A/D, sol/sağ oklar) **çevrilmez**.
-- Sahneye tıkla → imleç kilitlenir, fareyle bak; Esc imleci bırakır. Kart, bulmaca ya da menü açılınca kilit kendiliğinden bırakılır.
+- **İmleç kilitlenmez:** farenin sol tuşunu basılı tutup sürükle → bak; bırakınca imleç serbest. İsteyen Menü › Ayarlar › İmleç kilidi'ni açar
+  (o zaman tıkla → imleç kilitlenir, Esc bırakır; kart, bulmaca ya da menü açılınca kilit kendiliğinden bırakılır).
   Ortak kod: `src/app/games/shared/mouseLook.tsx` (`useMouseLook`, `LookCrosshair`) ve `src/app/games/shared/fpLook.tsx`
   (`useFpLook`: fare kilidi + dokunmatik sürükleme, `applyFp`: kamerayı göz hizasına koyar).
 - W/S (ve oklar yukarı/aşağı) yürür; A/D serbest yürünen oyunlarda yana adımdır, Akdamar'da teknede dümendir.
-  Rotaya bağlı oyunlarda (Hattuşa, Dolmabahçe, Troya, Efes…) W bakılan yöne göre rotada ileri/geri götürür.
+  Eski rotalı oyunlarda (Ani, İshak Paşa, Efes, Pamukkale, Troya, Zil Kale, Dolmabahçe, Hattuşa) da oyuncu raya bağlı değildir: WASD
+  bakılan yöne yürütür, yolun çevresindeki koridorda serbestçe dolaşılır (`shared/route.ts`: `walkFree`, `freeStep`, `freePos`; genişlik
+  oyuna göre 1,2–5 m). Kamera rotayı kendiliğinden izlemez. Galata'da kapılar hep açıktır, menüden istenen kata geçilir.
 - Dokunmatik: sol alttaki joystick yürür (rotalı eski oyunlarda dikey sürükleme), ekranın geri kalanında sürükleme bakar.
 - Akdamar adası yörünge kamerasıdır (yürüyüş değil): sürükleyerek döndür, tekerlek yaklaştırır.
 
