@@ -19,7 +19,7 @@ function fixNormals(g: THREE.BufferGeometry) { const n = g.attributes.normal as 
 const merge = (parts: THREE.BufferGeometry[]) => fixNormals(mergeGeometries(parts.map((g) => { const n = g.index ? g.toNonIndexed() : g; if (!n.attributes.normal) n.computeVertexNormals(); if (!n.attributes.uv) n.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(n.attributes.position.count * 2), 2)); return n; }))!);
 export const at = (g: THREE.BufferGeometry, x: number, y: number, z: number) => { g.translate(x, y, z); return g; };
 
-export interface Mats { seat: THREE.MeshStandardMaterial; wall: THREE.MeshStandardMaterial; marble: THREE.MeshStandardMaterial; dark: THREE.MeshStandardMaterial; grass: THREE.MeshStandardMaterial; soil: THREE.MeshStandardMaterial; plaster: THREE.MeshStandardMaterial; roof: THREE.MeshStandardMaterial; leaf: THREE.MeshStandardMaterial; terra: THREE.MeshStandardMaterial }
+export interface Mats { seat: THREE.MeshStandardMaterial; wall: THREE.MeshStandardMaterial; marble: THREE.MeshStandardMaterial; dark: THREE.MeshStandardMaterial; grass: THREE.MeshStandardMaterial; soil: THREE.MeshStandardMaterial; plaster: THREE.MeshStandardMaterial; roof: THREE.MeshStandardMaterial; leaf: THREE.MeshStandardMaterial; terra: THREE.MeshStandardMaterial; bark: THREE.MeshStandardMaterial }
 export function useMats(): Mats {
   return useMemo(() => {
     const st = stoneTex('konuralp-tas', ['#b9b2a2', '#c4bdac', '#aca595', '#cfc8b6', '#b3a994'], [14, 10], [40, 46]);
@@ -38,17 +38,21 @@ export function useMats(): Mats {
       roof: new THREE.MeshStandardMaterial({ map: tile, roughness: 0.8 }),
       leaf: new THREE.MeshStandardMaterial({ color: '#4c7236', roughness: 0.95 }),
       terra: new THREE.MeshStandardMaterial({ color: '#b86a42', roughness: 0.8 }),
+      bark: new THREE.MeshStandardMaterial({ color: '#5e4a38', roughness: 1 }),
     };
   }, []);
 }
 
+/** Sınırların dışında arazi yükselir (ağaçlar da aynı yüzeye oturur) */
+const outside = (x: number, z: number) => Math.max(0, x - BOUNDS.x1, BOUNDS.x0 - x, z - BOUNDS.z1, BOUNDS.z0 - z);
+const terrainY = (x: number, z: number) => groundY(x, z) + outside(x, z) * 0.25;
 /** Arazi: yamaç; oturma alanının altında sıraların hemen altında kalır */
 export function Terrain({ m }: { m: Mats }) {
   const g = useMemo(() => {
     const S = 420, N = 300, t = new THREE.PlaneGeometry(S, S, N, N); t.rotateX(-Math.PI / 2); const p = t.attributes.position as THREE.BufferAttribute, u = t.attributes.uv as THREE.BufferAttribute;
     for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), r = Math.hypot(x, z); let y = groundY(x, z);
       if (z < 1.5 && r < TH.r1 + 1.5) y = Math.min(hill(x, z), seatY(r)) - 0.08;   // oturma alanının altı
-      const out = Math.max(0, x - BOUNDS.x1, BOUNDS.x0 - x, z - BOUNDS.z1, BOUNDS.z0 - z); p.setY(i, y + out * 0.25); u.setXY(i, u.getX(i) * 140, u.getY(i) * 140); }
+      p.setY(i, y + outside(x, z) * 0.25); u.setXY(i, u.getX(i) * 140, u.getY(i) * 140); }
     t.computeVertexNormals(); return t;
   }, []);
   const mts = useMemo(() => [
@@ -109,16 +113,17 @@ export function Theatre({ m }: { m: Mats }) {
 /** Doğu tepede köy evleri ve çevrede ağaçlar (tiyatronun bir kısmı hâlâ evlerin altında) */
 export function Surround({ m, n }: { m: Mats; n: number }) {
   const g = useMemo(() => {
-    const r = rng(17), pl: THREE.BufferGeometry[] = [], rf: THREE.BufferGeometry[] = [], lf: THREE.BufferGeometry[] = [];
-    for (let i = 0; i < 9; i++) { const x = 84 + (i % 3) * 13 + r() * 4, z = -60 + Math.floor(i / 3) * 16 + r() * 4, y = groundY(x, z), w = 7 + r() * 3, d = 6 + r() * 2, h = 5.5;
+    const r = rng(17), pl: THREE.BufferGeometry[] = [], rf: THREE.BufferGeometry[] = [], lf: THREE.BufferGeometry[] = [], tk: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 9; i++) { const x = 84 + (i % 3) * 13 + r() * 4, z = -60 + Math.floor(i / 3) * 16 + r() * 4, y = terrainY(x, z), w = 7 + r() * 3, d = 6 + r() * 2, h = 5.5;
       pl.push(at(bx(w, h, d, 3), x, y + h / 2 - 0.5, z)); const c = new THREE.ConeGeometry(Math.SQRT2, 1, 4, 1); c.rotateY(Math.PI / 4); c.scale((w + 1.2) / 2, 2.2, (d + 1.2) / 2); rf.push(at(c, x, y + h - 0.5 + 1.1, z)); }
     for (let i = 0; i < n * 3 && lf.length < n; i++) { const x = (r() - 0.5) * 300, z = (r() - 0.5) * 300, rr = Math.hypot(x, z); if (rr < TH.r1 + 10 || (x > 55 && x < 105 && z > -70 && z < -20) || (Math.abs(x) < 32 && z > 0 && z < 45)) continue;
-      const s = 1.4 + r() * 1.6, y = groundY(Math.max(BOUNDS.x0, Math.min(BOUNDS.x1, x)), Math.max(BOUNDS.z0, Math.min(BOUNDS.z1, z))); lf.push(at(new THREE.IcosahedronGeometry(s * 1.4, 0), x, y + s * 2.2, z)); }
-    return { pl: merge(pl), rf: merge(rf), lf: merge(lf) };
+      const s = 1.4 + r() * 1.6, y = terrainY(x, z) - 0.2; lf.push(at(new THREE.IcosahedronGeometry(s * 1.4, 0), x, y + s * 2.2, z)); tk.push(at(new THREE.CylinderGeometry(0.16 * s, 0.24 * s, s * 2.2, 6), x, y + s * 1.1, z)); }
+    return { pl: merge(pl), rf: merge(rf), lf: merge(lf), tk: merge(tk) };
   }, [n]);
   return <group>
     <mesh geometry={g.pl} material={m.plaster} castShadow receiveShadow />
     <mesh geometry={g.rf} material={m.roof} castShadow />
     <mesh geometry={g.lf} material={m.leaf} castShadow />
+    <mesh geometry={g.tk} material={m.bark} castShadow />
   </group>;
 }

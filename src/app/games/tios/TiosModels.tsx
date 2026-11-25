@@ -18,7 +18,7 @@ function fixNormals(g: THREE.BufferGeometry) { const n = g.attributes.normal as 
 const merge = (parts: THREE.BufferGeometry[]) => fixNormals(mergeGeometries(parts.map((g) => { const n = g.index ? g.toNonIndexed() : g; if (!n.attributes.normal) n.computeVertexNormals(); if (!n.attributes.uv) n.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(n.attributes.position.count * 2), 2)); return n; }))!);
 const at = (g: THREE.BufferGeometry, x: number, y: number, z: number) => { g.translate(x, y, z); return g; };
 
-export interface Mats { ground: THREE.MeshStandardMaterial; wall: THREE.MeshStandardMaterial; marble: THREE.MeshStandardMaterial; dark: THREE.MeshStandardMaterial; sea: THREE.MeshStandardMaterial; river: THREE.MeshStandardMaterial; pave: THREE.MeshStandardMaterial; leaf: THREE.MeshStandardMaterial; brick: THREE.MeshStandardMaterial }
+export interface Mats { ground: THREE.MeshStandardMaterial; wall: THREE.MeshStandardMaterial; marble: THREE.MeshStandardMaterial; dark: THREE.MeshStandardMaterial; sea: THREE.MeshStandardMaterial; river: THREE.MeshStandardMaterial; pave: THREE.MeshStandardMaterial; leaf: THREE.MeshStandardMaterial; brick: THREE.MeshStandardMaterial; bark: THREE.MeshStandardMaterial }
 export function useMats(): Mats {
   return useMemo(() => {
     const wl = stoneTex('tios-sur', ['#8f877a', '#9c9486', '#837b6f', '#a59c8b', '#8a8070'], [22, 16], [28, 34]);
@@ -35,10 +35,14 @@ export function useMats(): Mats {
       pave: new THREE.MeshStandardMaterial({ map: pv, roughness: 0.9 }),
       leaf: new THREE.MeshStandardMaterial({ color: '#4c7236', roughness: 0.95 }),
       brick: new THREE.MeshStandardMaterial({ color: '#9a5a3f', roughness: 0.9 }),
+      bark: new THREE.MeshStandardMaterial({ color: '#5e4a38', roughness: 1 }),
     };
   }, []);
 }
 
+/** Sınırların dışında arazi yükselir (ağaçlar da aynı yüzeye oturur) */
+const outside = (x: number, z: number) => Math.max(0, z - BOUNDS.z1, x - BOUNDS.x1 - 30, BOUNDS.x0 - 40 - x);
+const landY = (x: number, z: number) => groundY(x, z) + outside(x, z) * 0.35;
 /** Arazi: denize doğru alçalan kıyı, nehir yatağı; eğime göre kaya, kıyıda kum, öbür yerde çimen */
 export function Land({ m }: { m: Mats }) {
   const g = useMemo(() => {
@@ -47,7 +51,7 @@ export function Land({ m }: { m: Mats }) {
     for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i); let y = groundY(x, z);
       if (z < SEA_Z + 2 && acroD(x, z) > 1.15) y = Math.min(y, -Math.min(4, (SEA_Z + 2 - z) * 0.18));   // deniz tabanı
       if (x > RIVER.x0 - 1 && x < RIVER.x1 + 1) y = Math.min(y, -1.2);
-      const out = Math.max(0, z - BOUNDS.z1, x - BOUNDS.x1 - 30, BOUNDS.x0 - 40 - x); y += out * 0.35; ys[i] = y; p.setY(i, y); u.setXY(i, x / 6, z / 6); }
+      y += outside(x, z) * 0.35; ys[i] = y; p.setY(i, y); u.setXY(i, x / 6, z / 6); }
     t.computeVertexNormals(); const n = t.attributes.normal as THREE.BufferAttribute, col = new Float32Array(p.count * 3), c = new THREE.Color();
     for (let i = 0; i < p.count; i++) { const steep = 1 - n.getY(i), z = p.getZ(i), y = ys[i];
       if (steep > 0.25) c.set('#8a8274'); else if (y < 0.6 && z < SEA_Z + 8) c.set('#d8c79c'); else if (y < -0.2) c.set('#a99a78'); else c.set('#7f9a52');
@@ -133,11 +137,11 @@ export function Ruins({ m }: { m: Mats }) {
 /** Ağaçlar ve Filyos'un yeni evleri (nehrin doğusunda) */
 export function Surround({ m, n }: { m: Mats; n: number }) {
   const geo = useMemo(() => {
-    const r = rng(29), parts: THREE.BufferGeometry[] = [];
+    const r = rng(29), parts: THREE.BufferGeometry[] = [], tk: THREE.BufferGeometry[] = [];
     for (let i = 0; i < n * 4 && parts.length < n; i++) { const x = -60 + r() * 260, z = -30 + r() * 200; if (z < SEA_Z + 12 || acroD(x, z) < 1.4 || (x > RIVER.x0 - 4 && x < RIVER.x1 + 4)) continue;
       if (x > -25 && x < 90 && z > -30 && z < 66) continue;   // kalıntı alanı açık
-      const s = 1.4 + r() * 1.6; parts.push(at(new THREE.IcosahedronGeometry(s * 1.4, 0), x, groundY(x, z) + s * 2.2, z)); }
-    return merge(parts);
+      const s = 1.4 + r() * 1.6, y = landY(x, z) - 0.2; parts.push(at(new THREE.IcosahedronGeometry(s * 1.4, 0), x, y + s * 2.2, z)); tk.push(at(new THREE.CylinderGeometry(0.16 * s, 0.24 * s, s * 2.2, 6), x, y + s * 1.1, z)); }
+    return { lf: merge(parts), tk: merge(tk) };
   }, [n]);
-  return <mesh geometry={geo} material={m.leaf} castShadow />;
+  return <group><mesh geometry={geo.lf} material={m.leaf} castShadow /><mesh geometry={geo.tk} material={m.bark} castShadow /></group>;
 }

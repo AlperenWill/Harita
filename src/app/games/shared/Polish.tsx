@@ -7,6 +7,7 @@
  *  - Düşük kademe / pil tasarrufu: son işlem yok.
  */
 import { Environment, Lightformer } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
 import { Bloom, EffectComposer, N8AO, SMAA, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import './safeBump';   // son işlem tek bir NaN pikseli tüm kareye yayar; kabartma gölgelendiricisi NaN üretmesin
@@ -23,6 +24,8 @@ export function SkyEnvironment({ sky = '#cfe3ee', sun = '#fff1d8', ground = '#b9
 }
 
 export function Polish({ tier, saver = false, ao = 1.6 }: { tier: 'low' | 'medium' | 'high'; saver?: boolean; ao?: number }) {
+  const scene = useThree((s) => s.scene);
+  if (typeof location !== 'undefined' && location.search.includes('debug')) (window as unknown as { __scene?: unknown }).__scene = scene;   // denetim betikleri için
   if (tier === 'low' || saver) return null;
   return (
     <EffectComposer multisampling={0}>

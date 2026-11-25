@@ -15,6 +15,7 @@
  * Şanlıurfa ve öteki oyunlarla tutarlılık: aynı cihaz profili (?q=low|medium|high), ?debug kancası (__zil), pil tasarrufu, PerformanceMonitor
  *   ile kademe düşürme, tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek ekran; kartlarda kaynak bağlantısı.
  */
+import '../shared/safeBump';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
