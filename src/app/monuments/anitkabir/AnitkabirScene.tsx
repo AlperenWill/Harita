@@ -134,8 +134,7 @@ function Mausoleum({ m, quality, night }: { m: Materials; quality: Quality; nigh
           <Block pos={[x, top + (h - colH) + 0.3, 0]} size={[len + 1.6, 0.4, wid + 1.6]} mat={m.travertine} />
           {[-1, 1].map((s) => <Block key={'k' + s} pos={[hx0 - 0.15, PODIUM_H + dh / 2, s * (dw / 2 + 0.3)]} size={[0.5, dh, 0.6]} mat={m.bronze} />)}
           <Block pos={[hx0 - 0.15, PODIUM_H + dh + 0.3, 0]} size={[0.5, 0.6, dw + 1.2]} mat={m.bronze} />
-          {/* Gençliğe Hitabe (solda) ve Onuncu Yıl Nutku (sağda): taş üzerine altın varak yazı panoları, kapının iki yanında */}
-          {[-1, 1].map((s) => <Block key={'y' + s} pos={[hx0 - 0.07, PODIUM_H + 6, s * 8.6]} size={[0.14, 7, 5.6]} mat={m.gold} />)}
+          {/* yazılar artık yan geçitlerin içinde (HallShell); cephede altın levha yok */}
           <Block pos={[STAIR_X0 + STAIRS_DEPTH * 0.5, PODIUM_H * 0.5 + 0.9, 0]} size={[2, 1.8, 3.2]} mat={m.marble} />
           {[-1, 1].map((s) => <Block key={'r' + s} pos={[STAIR_X0 - 0.07, PODIUM_H * 0.5, s * (STAIRS.width / 2 + 3)]} size={[0.14, PODIUM_H * 0.7, 5]} mat={m.travertineLight} />)}
         </>
