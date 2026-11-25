@@ -4,6 +4,7 @@
  * Oyuncu iskeleden adaya çıkar, kayalık yollarda dolaşır, Bizans katolikonuna girer ve altındaki Helenistik temel taşlarını görür.
  * 5 ayrıntı: ada adı, Amazon efsanesi, katolikon, tapınak temelleri, Argonotlar. Yaklaşınca "İncele: … E" istemi çıkar. Kroki (M).
  */
+import { SceneFog } from '../shared/SceneFog';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -142,7 +143,7 @@ function World({ tier }: { tier: Tier }) {
   return (
     <group ref={g}>
       <group userData={{ noCast: true }}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3.2} rayleigh={1.3} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
-      <fog attach="fog" args={['#cfe3ea', 260, 2400]} />
+      <SceneFog args={['#cfe3ea', 260, 2400]} />
       <hemisphereLight args={['#e6eef4', '#8a8266', 0.45]} />
       <Sun tier={tier} dir={SUN_DIR} intensity={5.4} color="#fff0d8" />
       {!low && <Clouds />}

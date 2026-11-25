@@ -5,6 +5,7 @@
  * 7 ayrıntıyı bulur: kapı ve onarım yazıtı, burçlar, Selçuklu tahkimatı, Çoruh'a bakış, kazı alanı, İpek Yolu, "Çinimaçin" adı.
  * Yaklaşınca yalnızca "İncele: … E" istemi çıkar; kart oyuncu E'ye (dokunmatikte düğmeye) basınca açılır. Kroki (M) bulunanları gösterir.
  */
+import { SceneFog } from '../shared/SceneFog';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -130,7 +131,7 @@ function World({ tier }: { tier: Tier }) {
   return (
     <group ref={g}>
       <group userData={{ noCast: true }}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3.4} rayleigh={1.4} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
-      <fog attach="fog" args={['#d9e4ea', 160, 2200]} />
+      <SceneFog args={['#d9e4ea', 160, 2200]} />
       <hemisphereLight args={['#dfeaf3', '#7d7458', 0.45]} />
       <Sun tier={tier} dir={SUN_DIR} intensity={5.6} color="#fff0d8" />
       {!low && <Clouds />}

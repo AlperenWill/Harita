@@ -4,6 +4,7 @@
  * Kilise kazı buluntuları yüzünden kapalıdır. Oyuncu köyde kilisenin çevresinde dolaşır, dört ayrıntıyı inceler (E) ve pencere
  * altlarındaki üç taşa çıkıp içeri bakar (payeler ve kazı, apsis, kubbe freski). 4 ayrıntı + 3 pencere.
  */
+import { SceneFog } from '../shared/SceneFog';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -131,7 +132,7 @@ function World({ tier }: { tier: Tier }) {
   return (
     <group ref={g}>
       <group userData={{ noCast: true }}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3} rayleigh={1.4} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
-      <fog attach="fog" args={['#dfe6ea', 600, 4000]} />
+      <SceneFog args={['#dfe6ea', 600, 4000]} />
       <hemisphereLight args={['#e7eef2', '#4f5d48', 0.55]} />
       <Sun tier={tier} dir={SUN_DIR} intensity={5.2} color="#fff0d6" />
       {!low && <Clouds />}

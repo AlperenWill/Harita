@@ -114,7 +114,10 @@ export function Banks({ m }: { m: Mats }) {
     const town: THREE.BufferGeometry[] = [], troofs: THREE.BufferGeometry[] = [], tcols = ['#e9e0cf', '#e2cba2', '#efe9df', '#d8c3ae', '#e6d8c0'];
     for (let i = 0; i < 46; i++) { const w = 7 + r() * 8, d = 8 + r() * 6, h = 6 + r() * 9, x = -150 + i * 6.6 + r() * 2, z = RIVER.z1 + 30 + r() * 30, b = bx(w, h, d, 4).toNonIndexed(), cc = new THREE.Color(tcols[(r() * tcols.length) | 0]), n = b.attributes.position.count, col = new Float32Array(n * 3); for (let k = 0; k < n; k++) col.set([cc.r, cc.g, cc.b], k * 3); b.setAttribute('color', new THREE.BufferAttribute(col, 3)); town.push(at(b, x, h / 2, z));
       const rf = new THREE.ConeGeometry(Math.SQRT1_2, 1, 4, 1); rf.rotateY(Math.PI / 4); rf.scale(w + 1, 2, d + 1); troofs.push(at(rf, x, h + 1, z)); }
-    return { south, walk, street, lane, trunks: merge(trunks), crowns: merge(crowns), lamps: merge(lamps), town: merge(town), troofs: merge(troofs) };
+    // kent dokusu cephesi: 4 m'lik dokuda iki pencere (köşe rengi çarpar); arkadan bakınca düz kutu görünmesin
+    const wt = canvasTex(128, 128, (c) => { c.fillStyle = '#ffffff'; c.fillRect(0, 0, 128, 128); for (const x of [20, 76]) { c.fillStyle = '#d8d2c4'; c.fillRect(x - 3, 30, 38, 52); c.fillStyle = '#46505a'; c.fillRect(x, 33, 32, 46); c.fillStyle = '#d8d2c4'; c.fillRect(x + 15, 33, 2, 46); } c.fillStyle = '#c9bfae'; c.fillRect(0, 120, 128, 8); });
+    const townMat = new THREE.MeshStandardMaterial({ vertexColors: true, map: wt, roughness: 0.9 });
+    return { south, walk, street, lane, trunks: merge(trunks), crowns: merge(crowns), lamps: merge(lamps), town: merge(town), troofs: merge(troofs), townMat };
   }, []);
   return <group>
     <group userData={{ noCast: true }}><mesh geometry={g.south} material={m.grass} receiveShadow /></group>
@@ -124,7 +127,7 @@ export function Banks({ m }: { m: Mats }) {
     <mesh geometry={g.trunks} material={m.wood} castShadow />
     <mesh geometry={g.crowns} castShadow><meshStandardMaterial color="#5f7a3e" roughness={0.95} /></mesh>
     <mesh geometry={g.lamps} material={m.iron} />
-    <mesh geometry={g.town} receiveShadow castShadow><meshStandardMaterial vertexColors roughness={0.9} /></mesh>
+    <mesh geometry={g.town} material={g.townMat} receiveShadow castShadow />
     <mesh geometry={g.troofs} material={m.roof} castShadow />
   </group>;
 }

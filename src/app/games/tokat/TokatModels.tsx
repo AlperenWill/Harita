@@ -76,7 +76,13 @@ export function Room({ m }: { m: Mats }) {
     for (const s of [-1, 1]) wood.push(at(new THREE.BoxGeometry(0.06, 2.2, 0.45), s * (W / 2 - 0.62) + 0.2, 1.1, z0 + 0.25));
     const floor = new THREE.PlaneGeometry(W, D); floor.rotateX(-Math.PI / 2); floor.translate(0, 0, 0);
     const win = at(new THREE.PlaneGeometry(2.2, 1.4).rotateY(-Math.PI / 2), x1 + 0.02, 1.7, 0);
-    return { walls: merge(walls), beams: merge(beams), wood: merge(wood), floor, win };
+    // kapının dışı: küçük avlu (taş döşeme, alçak duvarlar), karşıda sıvalı komşu ev ve kiremit çatısı; kapıdan bakınca boşluk görünmesin
+    const yard = new THREE.PlaneGeometry(14, 9); yard.rotateX(-Math.PI / 2); const yu = yard.attributes.uv as THREE.BufferAttribute; for (let i = 0; i < yu.count; i++) yu.setXY(i, yu.getX(i) * 4, yu.getY(i) * 3); yard.translate(0, -0.01, z1 + 4.8);
+    walls.push(at(bx(12, 5.6, 2, 3), 0, 2.8, z1 + 7.2));
+    for (const s of [-1, 1]) walls.push(at(bx(0.4, 2.2, 6, 3), s * 5.4, 1.1, z1 + 3.2));
+    const roof = new THREE.CylinderGeometry(0.01, 3, 1.8, 4, 1); roof.rotateY(Math.PI / 4); roof.scale(13.2 / 4.24, 1, 3.6 / 4.24); roof.translate(0, 5.6 + 0.9, z1 + 7.2);
+    const ywin = [-3.5, 0, 3.5].map((x) => at(new THREE.PlaneGeometry(1.1, 1.4).rotateY(Math.PI), x, 3.4, z1 + 6.18));
+    return { walls: merge(walls), beams: merge(beams), wood: merge(wood), floor, win: merge([win, ...ywin]), yard, roof };
   }, []);
   return <group>
     <mesh geometry={g.walls} material={m.wall} receiveShadow castShadow />
@@ -84,6 +90,8 @@ export function Room({ m }: { m: Mats }) {
     <mesh geometry={g.wood} material={m.wood} castShadow receiveShadow />
     <mesh geometry={g.floor} material={m.floor} receiveShadow />
     <mesh geometry={g.win} material={m.win} />
+    <mesh geometry={g.yard} receiveShadow><meshStandardMaterial color="#9a9284" roughness={0.95} /></mesh>
+    <mesh geometry={g.roof} castShadow><meshStandardMaterial color="#9c4a32" roughness={0.85} /></mesh>
   </group>;
 }
 /** Raflarda ıhlamur kalıplar (üstleri oyma desenli), tezgâh yanında boya kapları */

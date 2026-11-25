@@ -9,6 +9,7 @@
  * Şanlıurfa ve öteki oyunlarla tutarlılık: aynı cihaz profili (?q=), ?debug (__hattusa), pil tasarrufu, tr-TR sesli okuma (erkek bekçi sesi),
  *   WebGL yoksa Vikipedi fotoğraflı yedek, kaynaklı kartlar.
  */
+import { SceneFog } from '../shared/SceneFog';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -140,7 +141,7 @@ function World({ tier, saver }: { tier: Tier; saver: boolean }) {
   return (
     <group>
       <Sky sunPosition={[SUN.x * 100, SUN.y * 100, SUN.z * 100]} turbidity={9} rayleigh={1.6} mieCoefficient={0.006} />
-      <fog attach="fog" args={['#dccbaa', 300, tier === 'low' ? 1100 : 2200]} />
+      <SceneFog args={['#dccbaa', 300, tier === 'low' ? 1100 : 2200]} />
       <hemisphereLight args={['#f2e6cf', '#7d6a48', 0.9]} />
       <directionalLight position={SUN.clone().multiplyScalar(400).toArray()} intensity={2.2} color="#ffe2b8" />
       <Terrain tier={tier} />

@@ -4,6 +4,7 @@
  * Oyuncu burunda yürür, kiliseye iki kapısından girip dolaşır, dört ayrıntıyı inceler (E). Batı cephesinin önünde bulmacaya geçer:
  * eksik taşları açık-koyu düzene göre (sıralar dönüşümlü, kemer taşları dönüşümlü) yerine koyar. 4 ayrıntı + cephe.
  */
+import { SceneFog } from '../shared/SceneFog';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -135,7 +136,7 @@ function World({ tier, filled, puzzle }: { tier: Tier; filled: Record<string, To
   return (
     <group ref={g}>
       <group userData={{ noCast: true }}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3} rayleigh={1.4} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
-      <fog attach="fog" args={['#dfe6ea', 600, 4000]} />
+      <SceneFog args={['#dfe6ea', 600, 4000]} />
       <hemisphereLight args={['#e7eef2', '#4f5d48', 0.55]} />
       <Sun tier={tier} dir={SUN_DIR} intensity={5.2} color="#fff0d6" />
       {!low && <Clouds />}

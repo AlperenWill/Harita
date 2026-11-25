@@ -5,6 +5,7 @@
  * hücrelere bakar. 7 ayrıntı: Sinop Kalesi, "Anadolu'nun Alkatrazı", 1887, koğuşlar, hücreler, Sabahattin Ali, ünlü mahkûmlar ve müze.
  * Yaklaşınca yalnızca "İncele: … E" istemi çıkar; kart E ile açılır. Kroki (M).
  */
+import { SceneFog } from '../shared/SceneFog';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -149,7 +150,7 @@ function World({ tier }: { tier: Tier }) {
     <group ref={g}>
       {night && <Lantern />}
       <group userData={{ noCast: true }} visible={!night}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3.4} rayleigh={1.4} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
-      <fog attach="fog" args={['#dce6ee', 300, 2800]} />
+      <SceneFog args={['#dce6ee', 300, 2800]} />
       <hemisphereLight args={night ? ['#4a5f86', '#1a1712', 0.5] : ['#dfeaf3', '#7d7458', 0.45]} />
       <Sun tier={tier} dir={SUN_DIR} intensity={night ? 0.35 : 5.6} color={night ? '#9fb4d8' : '#fff0d8'} />
       {!low && !night && <Clouds />}
