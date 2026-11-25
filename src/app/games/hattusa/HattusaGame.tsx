@@ -9,6 +9,8 @@
  * Şanlıurfa ve öteki oyunlarla tutarlılık: aynı cihaz profili (?q=), ?debug (__hattusa), pil tasarrufu, tr-TR sesli okuma (erkek bekçi sesi),
  *   WebGL yoksa Vikipedi fotoğraflı yedek, kaynaklı kartlar.
  */
+import { freePos, freeStep, inputDir } from '../shared/route';
+import { SceneFog } from '../shared/SceneFog';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -76,7 +78,7 @@ interface S { started: boolean; ritual: RitualState; dialog: { gate: GateId; i: 
 const INITIAL = { started: false, ritual: newRitual(), dialog: null, warn: null, inspect: null, seen: [] as string[], nearRelief: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
-const live = { s: 0, v: 0, input: 0, auto: null as number | null, rig: newRig(0, 0, 0), speechDone: false, warnT: 0, view: { yaw: 0, pitch: 0 }, aimed: false, bob: 0 };
+const live = { s: 0, v: 0, input: 0, o: 0, strafe: 0, auto: null as number | null, rig: newRig(0, 0, 0), speechDone: false, warnT: 0, view: { yaw: 0, pitch: 0 }, aimed: false, bob: 0 };
 
 export default function HattusaGame({ onExit }: { onExit: () => void }) {
   if (!supportsWebGL) return <Fallback onExit={onExit} />;
@@ -102,7 +104,7 @@ function Game({ onExit }: { onExit: () => void }) {
       if (e.code === 'Escape' && st.inspect) inspect(null); if (e.code === 'KeyN') goNext(); };
     const up = (e: KeyboardEvent) => keys.current.delete(e.code);
     addEventListener('keydown', down); addEventListener('keyup', up);
-    let raf = 0; const loop = () => { const k = keys.current; live.input = THREE.MathUtils.clamp((k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0) - stick.current.y, -1, 1); if (Math.abs(live.input) > 0.1) live.auto = null; raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
+    let raf = 0; const loop = () => { const k = keys.current; live.input = THREE.MathUtils.clamp((k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0) - stick.current.y, -1, 1); live.strafe = THREE.MathUtils.clamp((k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0) + stick.current.x, -1, 1); if (Math.hypot(live.input, live.strafe) > 0.1) live.auto = null; raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
   }, [advance, perform, inspect, goNext]);
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __hattusa: unknown }).__hattusa = { go: (s: number) => { live.s = s; live.auto = null; useDb.getState().set({ started: true }); }, open: (id: GateId) => { const st = useDb.getState(); st.set({ ritual: { ...st.ritual, phase: { ...st.ritual.phase, [id]: 'open' } } }); }, perform, advance, inspect, state: () => ({ ...useDb.getState(), s: live.s }), panels: () => Object.fromEntries(Object.entries(PANELS).map(([k, m]) => [k, m ? m.getWorldPosition(new THREE.Vector3()).toArray().map((v) => +v.toFixed(1)) : null])), GATES: GATES.map((g) => ({ id: g.id, s: g.s })), ROUTE_LEN, YAZ_S }; }, [perform, advance, inspect]);
@@ -125,7 +127,7 @@ function Game({ onExit }: { onExit: () => void }) {
       {S.dialog && <Dialog d={S.dialog} onNext={advance} />}
       {S.inspect && <ReliefCard r={RELIEFS[S.inspect]} onClose={() => inspect(null)} />}
       {S.started && <><Joystick stick={stick} onTouch={() => audio.unlock()} /><LookCrosshair locked={fpl.locked} /></>}
-      {S.started && !S.dialog && !S.inspect && <Hint>Yürü ve bak · kapıda ya da kabartmada E<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak · N: sıradaki kapı</span></Hint>}
+      {S.started && !S.dialog && !S.inspect && <Hint>Yürü ve bak · kapıda ya da kabartmada E<span className="hidden [@media(pointer:fine)]:inline"> · WASD · fareyle sürükle: bak · N: sıradaki kapı</span></Hint>}
       {!S.started && <TitleCard onExit={onExit} onStart={() => { audio.unlock(); S.set({ started: true }); }} />}
       {S.started && S.seen.includes('alay') && S.seen.includes('ana') && !S.endShown && !S.inspect && <EndCard onStay={() => S.set({ endShown: true })} onExit={onExit} />}
       </HudTheme>
@@ -140,7 +142,7 @@ function World({ tier, saver }: { tier: Tier; saver: boolean }) {
   return (
     <group>
       <Sky sunPosition={[SUN.x * 100, SUN.y * 100, SUN.z * 100]} turbidity={9} rayleigh={1.6} mieCoefficient={0.006} />
-      <fog attach="fog" args={['#dccbaa', 300, tier === 'low' ? 1100 : 2200]} />
+      <SceneFog args={['#dccbaa', 300, tier === 'low' ? 1100 : 2200]} />
       <hemisphereLight args={['#f2e6cf', '#7d6a48', 0.9]} />
       <directionalLight position={SUN.clone().multiplyScalar(400).toArray()} intensity={2.2} color="#ffe2b8" />
       <Terrain tier={tier} />
@@ -287,7 +289,7 @@ const PANELS: Record<string, THREE.Mesh | null> = { kral: null, alay: null, ana:
 const _c = new THREE.Vector3(), _l = new THREE.Vector3(), _q = new THREE.Quaternion(), _m = new THREE.Matrix4();
 function Controller() {
   const { camera } = useThree(); if (location.search.includes('debug')) (window as unknown as { __hcam: unknown }).__hcam = camera;
-  const cam = useRef({ p: new THREE.Vector3(-200, 90, 160), q: new THREE.Quaternion() }), st = useRef({ step: 0, au: 0, near: '' as string });
+  const cam = useRef({ p: new THREE.Vector3(-200, 90, 160), q: new THREE.Quaternion() }), st = useRef({ step: 0, au: 0, near: '' as string, dir: null as [number, number] | null });
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState();
     // ritüel zaman akışı + konuşma başlangıcı
@@ -295,16 +297,18 @@ function Controller() {
     for (const g of GATES) if (S.ritual.phase[g.id] === 'bow' && rit.phase[g.id] === 'speech') { S.set({ dialog: { gate: g.id, i: 0 } }); if (useSettings.getState().tts) audio.speak(SPEECH[g.id].lines[0]); }
     // hareket (ritüel/konuşma/inceleme sırasında durur)
     const busy = !!S.dialog || !!S.inspect || GATES.some((g) => ['bow', 'speech', 'opening'].includes(rit.phase[g.id]));
-    const R0 = routeAt(live.s), facing = -Math.sin(live.view.yaw) * R0.dir[0] - Math.cos(live.view.yaw) * R0.dir[1] >= -0.15 ? 1 : -1;   // bakılan yöne göre rotada ileri/geri
-    let want = S.started && !busy && !pause.on ? live.input * WALK * facing : 0;
-    if (live.auto !== null && !busy) { const d = live.auto - live.s; if (Math.abs(d) < 0.4) live.auto = null; else want = Math.sign(d) * Math.min(AUTO, Math.abs(d) * 1.5 + 1); }
-    live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
-    const r = guard(rit, live.s, live.s + live.v * dt); rit = r.st; const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, r.s)); if (r.warn && Math.abs(live.v) > 0.3) { live.warnT = 2.5; if (S.warn !== r.warn.text) S.set({ warn: r.warn.text }); live.auto = null; }
+    // serbest yürüyüş: bakılan yöne W/S + A/D (joystick), rota koridorunda (en çok 4 m sapma); kapı ritüeli rota boyunca geçişi denetler
+    const tgt = { s: live.s, o: live.o }, s0 = live.s, o0 = live.o;
+    if (live.auto !== null && !busy) { const d = live.auto - live.s; if (Math.abs(d) < 0.4) live.auto = null; else { tgt.s = live.s + Math.sign(d) * Math.min(AUTO, Math.abs(d) * 1.5 + 1) * dt; tgt.o *= Math.exp(-dt * 2); } }
+    const idir = S.started && !busy && !pause.on && live.auto === null ? inputDir(live.view.yaw, live.input, live.strafe) : null; if (idir) st.current.dir = idir;
+    live.v += ((idir ? Math.min(1, Math.hypot(live.input, live.strafe)) * WALK : 0) - live.v) * (1 - Math.exp(-dt * 5));
+    if (st.current.dir && live.v > 0.01 && live.auto === null) freeStep(routeAt, ROUTE_LEN, tgt, st.current.dir[0] * live.v * dt, st.current.dir[1] * live.v * dt, 4);
+    const r = guard(rit, live.s, tgt.s); rit = r.st; const before = s0; live.s = Math.max(0, Math.min(ROUTE_LEN, r.s)); live.o = tgt.o; if (r.warn && Math.abs(live.v) > 0.3) { live.warnT = 2.5; if (S.warn !== r.warn.text) S.set({ warn: r.warn.text }); live.auto = null; }
     live.warnT -= dt; if (live.warnT <= 0 && S.warn) S.set({ warn: null });
     const key = (x: RitualState) => GATES.map((g) => x.phase[g.id]).join() + '|' + x.passed.join();
     if (key(rit) !== key(S.ritual)) S.set({ ritual: rit }); else S.ritual.t = rit.t;   // süreler yerinde güncellenir (yeniden çizim yok)
-    const R = routeAt(live.s), moved = live.s - before, rg = live.rig;
-    rg.x = R.p[0]; rg.y = R.p[1]; rg.z = R.p[2]; rg.speed = dt > 0 ? Math.abs(moved) / dt : 0;
+    const R = routeAt(live.s), P = freePos(routeAt, live.s, live.o), moved = (live.s >= before ? 1 : -1) * Math.hypot(live.s - before, live.o - o0), rg = live.rig;
+    rg.x = P[0]; rg.y = P[1]; rg.z = P[2]; rg.speed = dt > 0 ? Math.abs(moved) / dt : 0;
     if (Math.abs(moved) > 1e-4) { const yw = Math.atan2(-R.dir[0] * Math.sign(moved), -R.dir[1] * Math.sign(moved)); rg.yaw += Math.atan2(Math.sin(yw - rg.yaw), Math.cos(yw - rg.yaw)) * (1 - Math.exp(-dt * 8)); }
     const bowing = GATES.find((g) => rit.phase[g.id] === 'bow'); rg.point = bowing ? new THREE.Vector3(bowing.at[0], R.p[1] + 1.2, bowing.at[1]) : null;   // sunu jesti: el kapıya uzanır
     const nearestWall = distToWall(R.p[0], R.p[2]), stone = nearestWall < 9;
@@ -320,8 +324,8 @@ function Controller() {
       camera.position.copy(C.p); camera.quaternion.copy(C.q);
     } else {   // birinci şahıs: göz hizası; ritüelde eğilince göz alçalır
       if (!live.aimed) { live.aimed = true; live.view.yaw = Math.atan2(-R.dir[0], -R.dir[1]); live.view.pitch = 0.05; }
-      live.bob += Math.abs(moved) * 3.1; const eye = R.p[1] + (bowing ? 1.2 : 1.62) + (rg.speed > 0.1 ? Math.sin(live.bob) * 0.03 : 0);
-      applyFp(camera, R.p[0], Math.max(eye, heightAt(R.p[0], R.p[2]) + 1.1), R.p[2], live.view);
+      live.bob += Math.abs(moved) * 3.1; const eye = heightAt(P[0], P[2]) + (bowing ? 1.2 : 1.62) + (rg.speed > 0.1 ? Math.sin(live.bob) * 0.03 : 0);
+      applyFp(camera, P[0], Math.max(eye, heightAt(P[0], P[2]) + 1.1), P[2], live.view);
       const pc = camera as THREE.PerspectiveCamera; if (Math.abs(pc.fov - 64) > 0.1) { pc.fov += (64 - pc.fov) * (1 - Math.exp(-dt * 5)); pc.updateProjectionMatrix(); }
     }
     st.current.au += dt; if (st.current.au > 0.2) { audio.update(Math.min(1, Math.max(0, (nearestWall - 6) / 30)), st.current.au); st.current.au = 0; }
@@ -345,8 +349,8 @@ function ReliefCard({ r, onClose }: { r: Relief; onClose: () => void }) {
 }
 const THEME = { accent: '#a8622f' };
 const CONTROLS = [
-  { icon: <Footprints size={16} />, text: <>Joystick ya da W/S: yolda yürü (bakılan yöne)</> },
-  { icon: <Move size={16} />, text: <>Bilgisayarda tıkla, fareyle bak · telefonda ekranı sürükle</> },
+  { icon: <Footprints size={16} />, text: <>Joystick ya da WASD: bakılan yöne yürü (yolun çevresinde serbest)</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda fareyle basılı tutup sürükle · telefonda ekranı sürükle</> },
   { icon: <ChevronsRight size={16} />, text: <>≫ ya da N: sıradaki kapıya git</> },
   { icon: <Info size={16} />, text: <>kapıda E: “Ritüeli yap”</> },
   { icon: <Info size={16} />, text: <>kabartmada E: “Rölyefi incele”</> },

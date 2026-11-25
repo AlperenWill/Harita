@@ -357,7 +357,7 @@ function Toast() {
 const THEME = { accent: '#c0612b' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick / WASD ile yürü (Shift: koş)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Bilgisayarda tıkla, fareyle bak (Esc bırakır) · telefonda sürükle</> },
+  { icon: <MousePointer2 size={16} />, text: <>Bilgisayarda fareyle basılı tutup sürükle · telefonda sürükle</> },
   { icon: <Info size={16} />, text: <>E: incele / parçayı al</> },
   { icon: <Info size={16} />, text: <>J: defter</> },
   { icon: <Info size={16} />, text: <>T: zamanı hızlandır</> },

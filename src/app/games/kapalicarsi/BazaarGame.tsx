@@ -133,8 +133,8 @@ function Game({ onExit }: { onExit: () => void }) {
     T.last = now; T.id = e.pointerId; T.x0 = T.lx = e.clientX; T.y0 = T.ly = e.clientY; T.mouse = e.pointerType === 'mouse';
   };
   const onMove = (e: React.PointerEvent) => {
-    const T = touch.current; if (e.pointerId !== T.id) return; const dx = e.clientX - T.lx, dy = e.clientY - T.ly; T.lx = e.clientX; T.ly = e.clientY;
-    if (T.mouse) { live.yaw -= dx * 0.004; live.pitch = THREE.MathUtils.clamp(live.pitch - dy * 0.003, -0.6, 0.9); return; }
+    const T = touch.current; if (e.pointerId !== T.id) return; const dx = e.clientX - T.lx; T.lx = e.clientX; T.ly = e.clientY;
+    if (T.mouse) return;   // fare: ortak sürükleyerek bakış (mouseLook)
     live.yaw -= dx * 0.005; T.fwd = THREE.MathUtils.clamp(-(e.clientY - T.y0) / 70, -1, 1); live.auto = null;
   };
   const onUp = (e: React.PointerEvent) => { const T = touch.current; if (e.pointerId !== T.id) return; T.id = -1; T.fwd = 0; };
@@ -307,7 +307,7 @@ function Prompts({ onTalk, onEnter }: { onTalk: (id: number) => void; onEnter: (
         {prompt.esnaf !== null && <button onClick={() => onTalk(prompt.esnaf!)} className="flex h-12 items-center gap-2 rounded-full bg-[#b5652a] px-4 text-sm font-semibold text-white shadow-lg"><MessageCircle size={18} /> Konuş: {esnafTitle(L.esnaf[prompt.esnaf])}<span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
         {prompt.shop !== null && <button onClick={() => onEnter(prompt.shop!)} className={`flex h-12 max-w-[70vw] items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg ${visited.includes(prompt.shop) ? 'bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5' : 'bg-[#b5652a] text-white'}`}><DoorOpen size={18} className="shrink-0" /><span className="truncate">Dükkâna gir: {L.shops[prompt.shop].sign}</span><span className="hidden opacity-60 [@media(pointer:fine)]:inline">· E</span></button>}
       </div>
-      <p className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 px-4 py-1.5 text-xs sm:block">WASD yürü · tıkla, fareyle bak (Esc: bırak) · çift tıkla: en yakın dükkân · E: konuş/gir · J: defter</p>
+      <p className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 px-4 py-1.5 text-xs sm:block">WASD yürü · fareyle sürükle: bak · çift tıkla: en yakın dükkân · E: konuş/gir · J: defter</p>
       <p className="pointer-events-none absolute bottom-6 left-4 rounded-full bg-[#f7f5f1]/90 text-[#1f1b17] ring-1 ring-black/5 px-3 py-1.5 text-[11px] sm:hidden">Sürükle: yürü/dön · çift dokun: en yakın dükkân</p>
     </>
   );
@@ -375,7 +375,7 @@ function WinCard({ secs, onNew, onExit }: { secs: number; onNew: () => void; onE
 const THEME = { accent: '#b5652a' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <><b>WASD</b> ya da joystick: yürü (A/D yana adım)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Tıkla, fareyle bak (Esc imleci bırakır) · telefonda sürükle</> },
+  { icon: <MousePointer2 size={16} />, text: <>Fareyle basılı tutup sürükle: bak · telefonda sürükle</> },
   { icon: <MessageCircle size={16} />, text: <><b>E</b>: esnafla konuş / dükkâna gir · Esc: dükkândan çık</> },
   { icon: <BookOpen size={16} />, text: <>Defter: topladığın ipuçları · çift dokunuş: en yakın dükkân</> },
 ];

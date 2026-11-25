@@ -242,7 +242,7 @@ function EndCard({ onReplay, onExit }: { onReplay: () => void; onExit: () => voi
 const THEME = { accent: '#2f6f9a' };
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b>: yürü</> },
-  { icon: <Move size={16} />, text: <>Bilgisayarda tıkla, fareyle bak (Esc bırakır) · telefonda ekranı sürükle</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda fareyle basılı tutup sürükle · telefonda ekranı sürükle</> },
   { icon: <Hand size={16} />, text: <>El düğmesi ya da <b>E</b> / <b>Boşluk</b>: Can’la konuş / konuşmayı geç</> },
 ];
 function Fallback({ onExit }: { onExit: () => void }) {

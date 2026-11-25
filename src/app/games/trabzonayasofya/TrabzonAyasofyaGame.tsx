@@ -5,6 +5,7 @@
  * Komnenosların kilisesi, güney sundurmasındaki Âdem-Havva frizi, apsisteki kartal, çan kulesi, kubbe altındaki freskler,
  * kilise-cami-müze dönüşümü, denize bakan tepe. Yaklaşınca yalnızca "İncele: … E" istemi çıkar; kart E ile açılır. Kroki (M).
  */
+import { SceneFog } from '../shared/SceneFog';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -99,7 +100,7 @@ export default function TrabzonAyasofyaGame({ onExit }: { onExit: () => void }) 
           <Joystick stick={stick} onTouch={() => audio.unlock()} color="bg-[#9a5a2e]" />
           <LookCrosshair locked={fpl.locked} />
           {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Trabzon · Karadeniz kıyısı · 13. yüzyıl" title="Kubbenin Altında"
@@ -116,7 +117,7 @@ export default function TrabzonAyasofyaGame({ onExit }: { onExit: () => void }) 
 function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
 ];
 
@@ -129,7 +130,7 @@ function World({ tier }: { tier: Tier }) {
   return (
     <group ref={g}>
       <group userData={{ noCast: true }}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3.4} rayleigh={1.4} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
-      <fog attach="fog" args={['#d6e2ea', 200, 2200]} />
+      <SceneFog args={['#d6e2ea', 200, 2200]} />
       <hemisphereLight args={['#dfeaf3', '#7d7458', 0.45]} />
       <Sun tier={tier} dir={SUN_DIR} intensity={5.6} color="#fff0d8" />
       {!low && <Clouds />}

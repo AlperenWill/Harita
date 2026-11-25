@@ -142,7 +142,7 @@ export default function TilloGame({ onExit }: { onExit: () => void }) {
 }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <CalendarDays size={16} />, text: <>Soldaki takvimle tarihi değiştir; <b>Gün doğumunu izle</b> (G)</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya ya da doğu duvarına yaklaş: <b>E</b></> },
 ];

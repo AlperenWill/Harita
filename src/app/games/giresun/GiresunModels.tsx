@@ -62,8 +62,8 @@ export function Sea() {
 export function Forest({ n }: { n: number }) {
   // gövde ve taç ayrı renkte: köşe renkleri (gövde kahverengi, taç beyaz) × örnek rengi (yeşil tonları); önceden gövdeler de yeşildi
   const geo = useMemo(() => { const parts: Parts = [], r = rng(8); const paint = (g: THREE.BufferGeometry, c: THREE.Color) => { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([c.r, c.g, c.b], i * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
-    const t = new THREE.CylinderGeometry(0.22, 0.35, 3.2, 6).toNonIndexed(); t.translate(0, 1.6, 0); parts.push(paint(t, new THREE.Color('#7a6248').multiplyScalar(2.2)));
-    for (let i = 0; i < 5; i++) { const c = new THREE.IcosahedronGeometry(1.4 + r() * 0.6, 1).toNonIndexed(); c.translate((r() - 0.5) * 2, 3.6 + r() * 1.6, (r() - 0.5) * 2); parts.push(paint(c, new THREE.Color(1, 1, 1))); }
+    const t = new THREE.CylinderGeometry(0.22, 0.35, 4.2, 6).toNonIndexed(); t.translate(0, 2.1, 0); parts.push(paint(t, new THREE.Color('#7a6248').multiplyScalar(2.2)));
+    for (let i = 0; i < 5; i++) { const c = new THREE.IcosahedronGeometry(1.4 + r() * 0.6, 1).toNonIndexed(); c.translate((r() - 0.5) * 2, 4.7 + r() * 1.4, (r() - 0.5) * 2); /* taç altı göz hizasının üstünde */ parts.push(paint(c, new THREE.Color(1, 1, 1))); }
     const g = merge(parts); g.computeVertexNormals(); return g; }, []);
   const mat = useMemo(() => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true }), []);
   const ref = useRef<THREE.InstancedMesh>(null);

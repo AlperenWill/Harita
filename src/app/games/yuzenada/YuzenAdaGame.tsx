@@ -108,7 +108,7 @@ export default function YuzenAdaGame({ onExit }: { onExit: () => void }) {
           <LookCrosshair locked={fpl.locked} />
           {!S.card && S.board && <InteractPrompt icon={<Ship size={18} />} label={S.board === 'bin' ? 'Adaya bin' : 'İskeleye in'} onClick={board} />}
           {!S.card && !S.board && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>{S.riding ? 'Adadasın: ada öbür iskeleye yanaşınca E ile in' : 'Büyük ada iskeleye yanaşınca E ile bin'} · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>{S.riding ? 'Adadasın: ada öbür iskeleye yanaşınca E ile in' : 'Büyük ada iskeleye yanaşınca E ile bin'} · parıltılı ayrıntıya yaklaş, E ile incele<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={`${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Bingöl · Solhan · Hazarşah" title="Sal Gibi Ada"
@@ -125,7 +125,7 @@ export default function YuzenAdaGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
 ];
 

@@ -134,7 +134,7 @@ export default function DiyarbakirSurGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Spot) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <Binoculars size={16} />, text: <><b>B</b> ya da dürbün düğmesi: yakınlaştır; kitabeyi ortada kısa bir süre tut</> },
 ];

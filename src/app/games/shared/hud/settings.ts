@@ -7,9 +7,9 @@ import { create } from 'zustand';
 
 export type Quality = 'auto' | 'low' | 'medium' | 'high';
 export type Tier = 'low' | 'medium' | 'high';
-export interface GameSettings { quality: Quality; muted: boolean; volume: number; tts: boolean; sensitivity: number; battery: boolean }
+export interface GameSettings { quality: Quality; muted: boolean; volume: number; tts: boolean; sensitivity: number; battery: boolean; pointerLock: boolean }
 const KEY = 'miras-oyun-ayarlari';
-const DEFAULTS: GameSettings = { quality: 'auto', muted: false, volume: 0.8, tts: true, sensitivity: 1, battery: false };
+const DEFAULTS: GameSettings = { quality: 'auto', muted: false, volume: 0.8, tts: true, sensitivity: 1, battery: false, pointerLock: false };
 function load(): GameSettings { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') }; } catch { return DEFAULTS; } }
 
 export const useSettings = create<GameSettings & { set: (p: Partial<GameSettings>) => void }>((set, get) => ({

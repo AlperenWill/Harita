@@ -20,7 +20,7 @@ tests/zilkale.test.ts         # rota, köprü, açılma anları, sis matematiği
 ```
 
 ## Oynanış
-- **Vadi:** birinci şahıs, rotaya kilitli; yalnız ileri/geri (W/S ya da dikey sürükleme), bakış serbest (fare, yatay sürükleme, ←/→). Arkana dönüp ileri basarsan geldiğin yöne yürürsün. Yokuşta bakış eğime kendiliğinden uyar.
+- **Vadi:** birinci şahıs; patikanın çevresinde serbest (WASD bakılan yöne, patikadan en çok 1,2 m sapma; dikey sürükleme), bakış serbest (fare sürükleme, yatay sürükleme). Arkana dönüp ileri basarsan geldiğin yöne yürürsün. Yokuşta bakış eğime kendiliğinden uyar.
 - **Kale tepesi:** rotanın son ~14 metresinde kamera sabit geniş açıya geçer: kale, kayalık burun ve uzaktaki sırtlar. Kamera kalenin dışında, ~40 m uzakta durur; duvarların içine girmez.
 - **Açılma anları:** taş köprü, şelale ve kale girişi. Sis ~2 sn içinde tabanın %12'sine iner, ekranda yerin adı belirir. Uzaklaşınca sis ~5 sn içinde geri gelir.
 - **Tarih Katmanı:** köy evi, serender, köprünün kayıp kitabesi, dış surlar, ana burç. Yaklaşınca yapı çözülerek “sağlam hâle” döner, cızırtı ve fısıltı sesi çalar, kaynaklı bir kart açılır. Çift dokunuş seni henüz görmediğin en yakın noktaya götürür.

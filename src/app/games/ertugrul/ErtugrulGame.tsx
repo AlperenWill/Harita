@@ -113,7 +113,7 @@ export default function ErtugrulGame({ onExit }: { onExit: () => void }) {
             <div className="grid grid-cols-2 gap-1.5">{ERAS.map((e, i) => <button key={e.id} onClick={() => pickEra(i)} className={`rounded-lg px-2 py-1.5 text-left text-[11px] font-semibold leading-tight transition active:scale-95 ${S.era === i ? 'text-white' : 'bg-black/5 text-[#1f1b17]'}`} style={S.era === i ? { background: THEME.accent } : undefined}>{e.chip}{S.eraSeen.includes(e.id) ? ' ✓' : ''}</button>)}</div>
           </ToolPanel>}
           {!S.card && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · türbe bahçesinde zaman şeridinden dönem seç (1–4)<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · türbe bahçesinde zaman şeridinden dönem seç (1–4)<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id.startsWith('era-') ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Bilecik · Söğüt · 13. yüzyıl" title="Söğüt'te Bir Sessizlik"
@@ -130,7 +130,7 @@ export default function ErtugrulGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <History size={16} />, text: <>Sol üstteki <b>zaman şeridi</b> ya da <b>1–4</b>: dönem seç. Bahçedeyken seçilen dönem sayılır</> },
 ];

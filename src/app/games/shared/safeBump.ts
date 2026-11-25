@@ -73,3 +73,21 @@ export function installSafeBump(): boolean {
 }
 
 export const SAFE_BUMP_INSTALLED = installSafeBump();
+
+/**
+ * Sıfır uzunluklu köşe normalleri (birleştirilmiş geometride dejenere üçgenler) de aynı siyah kareyi üretir: köşe gölgelendiricisindeki
+ * `normalize(transformedNormal)` NaN verir (Konuralp'te yakalandı; Hattuşa, Amasra ve Yason'da da bulundu). Normal sıfırsa yukarıyı al.
+ */
+const NV_FROM = 'vNormal = normalize( transformedNormal );';
+const NV_TO = 'vNormal = dot( transformedNormal, transformedNormal ) > 1e-20 ? normalize( transformedNormal ) : vec3( 0.0, 1.0, 0.0 );';
+const NF_FROM = 'vec3 normal = normalize( vNormal );';
+const NF_TO = 'vec3 normal = dot( vNormal, vNormal ) > 1e-20 ? normalize( vNormal ) : vec3( 0.0, 0.0, 1.0 );';
+export function installSafeNormals(): boolean {
+  const chunks = THREE.ShaderChunk as unknown as Record<string, string>;
+  if (chunks.normal_vertex.includes(NV_TO) && chunks.normal_fragment_begin.includes(NF_TO)) return true;
+  if (!chunks.normal_vertex.includes(NV_FROM) || !chunks.normal_fragment_begin.includes(NF_FROM)) return false;
+  chunks.normal_vertex = chunks.normal_vertex.replace(NV_FROM, NV_TO);
+  chunks.normal_fragment_begin = chunks.normal_fragment_begin.replace(NF_FROM, NF_TO);
+  return true;
+}
+export const SAFE_NORMALS_INSTALLED = installSafeNormals();

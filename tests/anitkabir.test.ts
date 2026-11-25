@@ -35,7 +35,7 @@ describe('yürüme modu', () => {
   });
   it('meydandan kapıdan geçip lahde kadar engelsiz yürünür; duvarlar ve lahit engeldir', () => {
     for (let x = WALK.spawn.x; x < SARCOPHAGUS[0] - 4; x += 0.5) expect(hit(x, 0), `x=${x}`).toBe(false);
-    expect(hit(HALL.front + 0.5, 6)).toBe(true);           // kapının yanındaki ön duvar
+    expect(hit(HALL.front + 0.5, 4)).toBe(true);           // geçitler arasındaki paye
     expect(hit(SARCOPHAGUS[0], 0)).toBe(true);
     expect(hit(FRONT_X + 1, MAUSOLEUM.wid / 2 - 1)).toBe(true);   // köşe sütunu
   });
@@ -54,11 +54,11 @@ describe('Şeref Holü (v2)', () => {
     for (let x = HALL.x0 + 1; x < HALL.x1 - 1; x += 0.5) { const nearPier = pierXs().some((p) => Math.abs(p - x) < 1.2); if (!nearPier) expect(hit(x, 17), `galeri x=${x}`).toBe(false); }
     expect(hit((HALL.x0 + HALL.x1) / 2, COL_Z)).toBe(true);
   });
-  it('ortadaki büyük kapıdan holün içine girilir', () => {
-    for (const z of [-2.5, 0, 2.5]) for (let x = HALL.front - 2; x < HALL.x0 + 2; x += 0.25) expect(hit(x, z), `z=${z} x=${x}`).toBe(false);
+  it('üç geçitten de holün içine girilir', () => {
+    for (const z of [-HALL.sideDoor.z, -2, 0, 2, HALL.sideDoor.z]) for (let x = HALL.front - 1; x < HALL.x0 + 2; x += 0.25) expect(hit(x, z), `z=${z} x=${x}`).toBe(false);
   });
-  it('yan giriş yok: ön duvar kapının dışında kapalı', () => {
-    for (const z of [-14.4, -8, 8, 14.4]) expect(hit((HALL.front + HALL.x0) / 2, z), `z=${z}`).toBe(true);
+  it('geçitler arasındaki payeler ve dış kısımlar kapalı', () => {
+    for (const z of [-14.4, -4, 4, 14.4]) expect(hit((HALL.front + HALL.x0) / 2, z), `z=${z}`).toBe(true);
   });
 });
 

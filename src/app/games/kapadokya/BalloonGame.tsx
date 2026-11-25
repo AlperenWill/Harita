@@ -101,7 +101,7 @@ function Game({ onExit }: { onExit: () => void }) {
             <RoundAction label="Brülör: yüksel" primary size={68} {...btn(1)}><Flame size={28} /></RoundAction>
             <RoundAction label="Kapak: alçal" size={54} {...btn(-1)}><ArrowDown size={22} /></RoundAction>
           </ActionDock>}
-          {!S.card && <Hint>Alevi basılı tut: yüksel · ok: alçal · sürükle: etrafa bak<span className="hidden [@media(pointer:fine)]:inline"> · W/Boşluk · S · tıkla, fareyle bak · E: incele</span></Hint>}
+          {!S.card && <Hint>Alevi basılı tut: yüksel · ok: alçal · sürükle: etrafa bak<span className="hidden [@media(pointer:fine)]:inline"> · W/Boşluk · S · fareyle sürükle: bak · E: incele</span></Hint>}
         </>}
         {S.card && <InfoSheet kicker={`Kapadokya · ${S.seen.indexOf(S.card.id) + 1}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => audio.speak(`${S.card!.name}. ${S.card!.text}`)} />}
         {!S.started && <StartSheet kicker="Nevşehir · Göreme · UNESCO Dünya Mirası" title="Gün Doğumunda Balon"
@@ -232,7 +232,7 @@ const THEME = { accent: '#e8702a' };   // gün doğumu turuncusu
 const CONTROLS = [
   { icon: <Flame size={16} />, text: <>Alevi <b>basılı tut</b>: yüksel <span className="hidden [@media(pointer:fine)]:inline">(W / Boşluk)</span></> },
   { icon: <ArrowDown size={16} />, text: <>Ok düğmesi: alçal <span className="hidden [@media(pointer:fine)]:inline">(S)</span></> },
-  { icon: <Move size={16} />, text: <>Bilgisayarda tıkla, fareyle bak · telefonda sürükle</> },
+  { icon: <Move size={16} />, text: <>Bilgisayarda fareyle basılı tutup sürükle · telefonda sürükle</> },
   { icon: <Search size={16} />, text: <>Noktanın üstündeyken <b>E</b> / İncele: bilgi kartı</> },
   { icon: <Wind size={16} />, text: <>Soldaki tablo: hangi yükseklikte rüzgâr nereye eser</> },
 ];

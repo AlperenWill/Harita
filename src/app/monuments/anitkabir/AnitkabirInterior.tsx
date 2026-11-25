@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { MAUSOLEUM, PODIUM_H, mausoleumColumns, type V3 } from './layout';
 import { COL_Z, DOORS, HALL, INNER, LIBRARY, MUSE1, MUSE2, PANORAMAS, SARCOPHAGUS, SARC_SIZE, SHOWCASES, VAULTS, arcOf, pierXs, torchPositions, type Level, type Panorama, type Showcase, type Vault } from './interior';
 import type { Materials } from './materials';
+import { GENCLIGE_HITABE, ONUNCU_YIL } from './inscriptions';
 
 const BOX = new THREE.BoxGeometry(1, 1, 1);
 const CYL = new THREE.CylinderGeometry(1, 1, 1, 14);
@@ -40,19 +41,28 @@ export function HallShell({ m }: { m: Materials }) {
       for (let k = 1; k < 3; k++) mull.push({ p: [b.a + (L * k) / 3, y0 + 7.0, z], s: [0.12, 11.6, 0.14] });
       for (const yy of [4.2, 8.6]) mull.push({ p: [cx, y0 + yy, z], s: [L, 0.12, 0.14] }); }
     return { glass, para, band, mull }; }, [bays, hz, y0]);
-  const segs = [[-hz, -door.w / 2], [door.w / 2, hz]];
+  const sd = HALL.sideDoor, D = x0 - front;
+  const segs = [[-hz, -sd.z - sd.w / 2], [-sd.z + sd.w / 2, -door.w / 2], [door.w / 2, sd.z - sd.w / 2], [sd.z + sd.w / 2, hz]];
   const fx = (front + x0) / 2;
+  const passes = [{ z: 0, w: door.w, h: door.h }, { z: -sd.z, w: sd.w, h: sd.h }, { z: sd.z, w: sd.w, h: sd.h }];
+  const lattice = useMemo(() => latticeMat(), []);
+  const panels = useMemo(() => [inscriptionMat(GENCLIGE_HITABE), inscriptionMat(ONUNCU_YIL)], []);
   return (
     <group>
-      {/* ön duvar: ortada tek büyük kapı (yan giriş yok) */}
-      {segs.map(([a, b], i) => <B key={i} p={[fx, y0 + H / 2, (a + b) / 2]} s={[x0 - front, H, b - a]} m={m.travertineLight} />)}
-      <B p={[fx, y0 + door.h + (H - door.h) / 2, 0]} s={[x0 - front, H - door.h, door.w]} m={m.travertineLight} />
-      {/* içe açık duran iki bronz kanat: dikey kasa, yatay panel çıtaları */}
-      {[-1, 1].map((s) => <group key={'k' + s} position={[x0, y0, s * (door.w / 2 - 0.1)]}>
-        <B p={[door.w / 4, door.h / 2, 0]} s={[door.w / 2, door.h, 0.16]} m={m.bronze} />
-        {[0.12, 0.3, 0.5, 0.7, 0.88].map((k) => <B key={k} p={[door.w / 4, door.h * k, -s * 0.1]} s={[door.w / 2 - 0.3, 0.16, 0.06]} m={m.bronze} />)}
-        {[0.08, 0.92].map((k) => <B key={'v' + k} p={[(door.w / 2) * k, door.h / 2, -s * 0.1]} s={[0.16, door.h - 0.4, 0.06]} m={m.bronze} />)}
+      {/* kalın ön duvar: ortada büyük geçit, iki yanında dar geçitler; aralarında iri payeler */}
+      {segs.map(([a, b], i) => <B key={i} p={[fx, y0 + H / 2, (a + b) / 2]} s={[D, H, b - a]} m={m.travertineLight} />)}
+      {passes.map((p, i) => <group key={'p' + i}>
+        <B p={[fx, y0 + p.h + (H - p.h) / 2, p.z]} s={[D, H - p.h, p.w]} m={m.travertineLight} />
+        {/* geçit tavanı: kırmızı kaset, açık renk çerçeve */}
+        <mesh geometry={BOX} material={m.travertine} position={[fx, y0 + p.h - 0.04, p.z]} scale={[D - 0.2, 0.08, p.w - 0.1]} />
+        <mesh geometry={BOX} material={m.redMarble} position={[fx, y0 + p.h - 0.09, p.z]} scale={[D - 0.9, 0.04, p.w - 0.8]} />
+        {/* dış uçta açık duran bronz kafes kapı kanatları (cam yok): duvarlara katlanmış */}
+        {(i === 0 ? [-1, 1] : [i === 1 ? 1 : -1]).map((s) => { const leafW = i === 0 ? p.w / 2 : p.w; return <mesh key={s} material={lattice} position={[front + leafW / 2 + 0.05, y0 + (p.h - 0.4) / 2, p.z + s * (p.w / 2 - 0.06)]} rotation-y={0}>
+          <boxGeometry args={[leafW, p.h - 0.4, 0.06]} /></mesh>; })}
       </group>)}
+      {/* yazılar: yan geçitlerin dış duvarlarında, geçide bakan yüzde (solda Gençliğe Hitabe, sağda Onuncu Yıl Nutku) */}
+      {[-1, 1].map((s, i) => <mesh key={'y' + s} material={panels[i]} position={[fx, y0 + 0.9 + 3.6, s * (sd.z + sd.w / 2 - 0.02)]} rotation-y={s < 0 ? 0 : Math.PI}>
+        <planeGeometry args={[D - 0.5, 7.2]} /></mesh>)}
       {/* yan cephe: sütun araları korkuluk + bronz kayıtlı yüksek pencere + üst kuşak (sütunla hol arasında koridor YOK) */}
       <Inst mat={m.travertineLight} items={win3.para} /><Inst mat={m.travertineLight} items={win3.band} />
       <Inst mat={m.glass} items={win3.glass} /><Inst mat={m.bronze} items={win3.mull} />
@@ -89,14 +99,14 @@ export function HallInterior({ m, night, lite }: { m: Materials; night: boolean;
       {/* zemin: orta hol kilim desenli kırmızı mermer, galeriler krem mermer */}
       <mesh geometry={BOX} material={m.hallFloor} position={[cx, floorY + 0.02, 0]} scale={[len, 0.04, (pierZ + pier / 2) * 2]} receiveShadow />
       {[-1, 1].map((s) => <mesh key={s} geometry={BOX} material={m.gallery} position={[cx, floorY + 0.02, s * galC]} scale={[len, 0.04, galW]} receiveShadow />)}
-      {/* girişi işaretleyen, siyah mermerle çevrili enine kırmızı dikdörtgen */}
-      <group position={[x0 + 1.9, floorY + 0.045, 0]}>
-        <mesh geometry={BOX} material={m.dark} scale={[3.2, 0.01, door.w + 1.6]} /><mesh geometry={BOX} material={m.redMarble} position={[0, 0.006, 0]} scale={[2.7, 0.01, door.w + 1.1]} />
-      </group>
+      {/* üç girişi işaretleyen, siyah mermerle çevrili enine kırmızı dikdörtgenler */}
+      {[[0, door.w], [-HALL.sideDoor.z, HALL.sideDoor.w], [HALL.sideDoor.z, HALL.sideDoor.w]].map(([z, w], i) => <group key={'r' + i} position={[x0 + 1.9, floorY + 0.045, z]}>
+        <mesh geometry={BOX} material={m.dark} scale={[3.2, 0.01, w + 1.2]} /><mesh geometry={BOX} material={m.redMarble} position={[0, 0.006, 0]} scale={[2.7, 0.01, w + 0.7]} />
+      </group>)}
       {/* duvar kaplamaları: kaplan postu beyaz mermer + yeşil mermer kuşak */}
       {/* giriş duvarı kaplaması: üç kapı açıklığı boş kalır (önceden tek levha kapıları kapatıyordu) */}
-      {([[-halfW, -door.w / 2], [door.w / 2, halfW]] as const).map(([a, b], i) => <B key={'fw' + i} p={[x0 + 0.03, floorY + (ceilY - floorY) / 2, (a + b) / 2]} s={[0.06, ceilY - floorY, b - a]} m={m.tiger} />)}
-      <B p={[x0 + 0.03, floorY + door.h + (ceilY - floorY - door.h) / 2, 0]} s={[0.06, ceilY - floorY - door.h, door.w]} m={m.tiger} />
+      {(() => { const sd = HALL.sideDoor; return [[-halfW, -sd.z - sd.w / 2], [-sd.z + sd.w / 2, -door.w / 2], [door.w / 2, sd.z - sd.w / 2], [sd.z + sd.w / 2, halfW]] as const; })().map(([a, b], i) => <B key={'fw' + i} p={[x0 + 0.03, floorY + (ceilY - floorY) / 2, (a + b) / 2]} s={[0.06, ceilY - floorY, b - a]} m={m.tiger} />)}
+      {[[0, door.w, door.h], [-HALL.sideDoor.z, HALL.sideDoor.w, HALL.sideDoor.h], [HALL.sideDoor.z, HALL.sideDoor.w, HALL.sideDoor.h]].map(([z, w, h], i) => <B key={'fl' + i} p={[x0 + 0.03, floorY + h + (ceilY - floorY - h) / 2, z]} s={[0.06, ceilY - floorY - h, w]} m={m.tiger} />)}
       {[-1, 1].map((s) => <B key={'bw' + s} p={[x1 - 0.03, floorY + (galleryY + vaultRise - floorY) / 2, s * galC]} s={[0.06, galleryY + vaultRise - floorY, galW]} m={m.tiger} />)}
       {[-1, 1].map((s) => <B key={'pw' + s} p={[cx, floorY + 0.6, s * (halfW - 0.05)]} s={[len, 1.2, 0.1]} m={m.tiger} />)}
       {/* paye sıraları + kemer üstü kiriş + üst duvar (orta holün yan duvarı) */}
@@ -301,4 +311,31 @@ export function Museum({ m, level }: { m: Materials; level: Level }) {
     {/* ışık: halka koridor ve panoramalar (resimler hafif öz ışıklı) */}
     {[[M.x0 + 2.5, 0], [midX, M.z1 - 2.5], [midX, M.z0 + 2.5], [M.x1 - 2.5, 0], [I.x0 + 6, 0], [midX + 6, 0]].map(([x, z], i) => <pointLight key={i} position={[x, y + 5.5, z]} color="#ffe8c8" intensity={420} distance={30} decay={2} />)}
   </group>;
+}
+
+/* ---------- giriş: bronz kafes ve yazı panoları ---------- */
+/** Bronz kafes kapı: kare ızgara ve köşegen çıtalar (saydam aralıklar; cam yok) */
+function latticeMat() {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d')!;
+  g.clearRect(0, 0, 256, 256); g.strokeStyle = '#6b4f2a'; g.lineWidth = 10; g.strokeRect(5, 5, 246, 246);
+  g.lineWidth = 6; for (let i = 0; i <= 4; i++) { const t = (i / 4) * 256; g.beginPath(); g.moveTo(t, 0); g.lineTo(t, 256); g.moveTo(0, t); g.lineTo(256, t); g.stroke(); }
+  g.lineWidth = 3; for (let i = -4; i <= 4; i++) { g.beginPath(); g.moveTo(i * 64, 0); g.lineTo(i * 64 + 256, 256); g.moveTo(i * 64 + 256, 0); g.lineTo(i * 64, 256); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1.4, 4); t.anisotropy = 8;
+  return new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.4, transparent: false, side: THREE.DoubleSide, metalness: 0.6, roughness: 0.45, color: '#c8a46a' });
+}
+/** Yazı panosu: açık renk taş, ince çerçeve, kazınmış altın harfler (başlık, metin, imza) */
+function inscriptionMat(ins: { title: string; text: string; sign: string }) {
+  const W = 640, H = 1640, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d')!;
+  g.fillStyle = '#d9cdb5'; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 2500; i++) { g.fillStyle = `rgba(${Math.random() < 0.5 ? '160,145,120' : '245,238,222'},${Math.random() * 0.12})`; g.fillRect(Math.random() * W, Math.random() * H, 2, 2); }
+  g.strokeStyle = '#9c8a6c'; g.lineWidth = 6; g.strokeRect(18, 18, W - 36, H - 36); g.lineWidth = 2; g.strokeRect(32, 32, W - 64, H - 64);
+  const gold = (y: number, txt: string, size: number, align: CanvasTextAlign = 'center', x = W / 2) => { g.font = `600 ${size}px Georgia, 'Times New Roman', serif`; g.textAlign = align;
+    g.fillStyle = 'rgba(60,45,25,.55)'; g.fillText(txt, x + 1.5, y + 1.5); g.fillStyle = '#b8892e'; g.fillText(txt, x, y); };
+  gold(110, ins.title, 46);
+  g.font = "500 27px Georgia, 'Times New Roman', serif"; const words = ins.text.split(' '), lines: string[] = []; let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (g.measureText(t).width > W - 110) { lines.push(cur); cur = w; } else cur = t; } if (cur) lines.push(cur);
+  const lh = Math.min(38, (H - 320) / lines.length); lines.forEach((l, i) => gold(180 + i * lh, l, Math.min(27, lh * 0.74), 'left', 55));
+  gold(H - 80, ins.sign, 26);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 });
 }

@@ -15,6 +15,8 @@
  * Şanlıurfa ve öteki oyunlarla tutarlılık: aynı cihaz profili (?q=low|medium|high), ?debug kancası (__zil), pil tasarrufu, PerformanceMonitor
  *   ile kademe düşürme, tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek ekran; kartlarda kaynak bağlantısı.
  */
+import { freePos, walkFree } from '../shared/route';
+import '../shared/safeBump';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -51,7 +53,7 @@ interface S { started: boolean; seen: string[]; card: Layer | null; near: Layer 
 const INITIAL = { started: false, seen: [] as string[], card: null, near: null, reveal: null, summit: false, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
-const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.05, goal: null as number | null, open: 0, sigma: BASE_DENSITY, rig: newRig(0, 0, 0), morph: {} as Record<string, number>, opened: new Set<string>() };
+const live = { s: 0, v: 0, input: 0, o: 0, strafe: 0, yaw: 0, pitch: -0.05, goal: null as number | null, open: 0, sigma: BASE_DENSITY, rig: newRig(0, 0, 0), morph: {} as Record<string, number>, opened: new Set<string>() };
 const U = makeMorphUniforms();
 
 export default function ZilKaleGame({ onExit }: { onExit: () => void }) {
@@ -87,7 +89,7 @@ function Game({ onExit }: { onExit: () => void }) {
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current;
-      const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
+      const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb; live.strafe = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
       void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
@@ -105,6 +107,7 @@ function Game({ onExit }: { onExit: () => void }) {
   };
   const onMove = (e: React.PointerEvent) => {
     const d = drag.current; if (!d || d.id !== e.pointerId) return; const dx = e.clientX - d.x, dy = e.clientY - d.y; d.x = e.clientX; d.y = e.clientY;
+    if (d.mouse) return;   // fare: ortak sürükleyerek bakış (mouseLook)
     live.yaw += dx * 0.005;
     if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + dy * 0.004, -1, 0.9);
     else { live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); if (Math.abs(live.input) > 0.1) live.goal = null; }
@@ -136,7 +139,7 @@ function Game({ onExit }: { onExit: () => void }) {
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<History size={15} />} label={nextL ? `Sıradaki iz: ${nextL.name}` : 'Bütün izler bulundu'} done={S.seen.length} total={LAYERS.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
       {S.reveal && <p key={S.reveal} className="pointer-events-none absolute inset-x-0 top-[28%] text-center text-3xl font-bold tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,.6)] sm:text-4xl" style={{ animation: 'zkfade 4.2s ease-out forwards' }}>{S.reveal}<span className="mt-1 block text-sm font-normal text-white/85">sis aralanıyor</span></p>}
       <style>{'@keyframes zkfade{0%{opacity:0;transform:translateY(8px)}15%{opacity:1;transform:none}70%{opacity:1}100%{opacity:0}}'}</style>
-      {S.started && !S.card && <Hint>{S.summit ? 'Zil Kale · geri yürümek için aşağı sürükle' : 'Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki tarih izi'}<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · N</span></Hint>}
+      {S.started && !S.card && <Hint>{S.summit ? 'Zil Kale · geri yürümek için aşağı sürükle' : 'Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki tarih izi'}<span className="hidden [@media(pointer:fine)]:inline"> · WASD · fareyle sürükle: bak · N</span></Hint>}
       {S.started && S.near && !S.card && <InteractPrompt label={live.opened.has(S.near.id) ? `Bilgi: ${S.near.name}` : `Tarih katmanı: ${S.near.name}`} onClick={openLayer} muted={S.seen.includes(S.near.id)} />}
       {S.card && <Card l={S.card} onClose={close} />}
       {!S.started && <TitleCard onExit={onExit} onStart={start} />}
@@ -254,11 +257,10 @@ function Controller({ plan, wind: wu, sky, charRef }: { plan: FogPlan; wind: Win
   useFrame(({ clock }, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState(), t = clock.elapsedTime;
     // --- hareket: bakış geriye dönükse ileri girdisi geldiğin yöne yürütür
-    const back = Math.cos(live.yaw) < 0 && !S.summit ? -1 : 1;
-    let want = S.started && !pause.on ? live.input * WALK * back : 0;
-    if (live.goal !== null) { const d = live.goal - live.s; if (Math.abs(d) < 0.3) live.goal = null; else want = Math.sign(d) * Math.min(WALK * 1.4, Math.abs(d) * 1.5 + 0.8); }
-    live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
-    const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt)); const moved = live.s - before, R = routeAt(live.s);
+    const s0 = live.s, o0 = live.o; if (Math.hypot(live.input, live.strafe) > 0.1) live.goal = null;
+    if (live.goal !== null) { const d = live.goal - live.s; if (Math.abs(d) < 0.3) live.goal = null; else { live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + Math.sign(d) * Math.min(WALK * 1.4, Math.abs(d) * 1.5 + 0.8) * dt)); live.o *= Math.exp(-dt * 2); } }
+    walkFree(live, st.current, routeAt, ROUTE_LEN, dt, WALK, 1.2, S.started && !pause.on && live.goal === null);
+    const moved = (live.s >= s0 ? 1 : -1) * Math.hypot(live.s - s0, live.o - o0), R = routeAt(live.s), P = freePos(routeAt, live.s, live.o);
     st.current.step += Math.abs(moved); if (st.current.step > 0.8) { st.current.step = 0; zilAudio.step(R.surface); }
     st.current.bob += Math.abs(moved) * 2.2;
     // --- sis: açılma anı + rüzgâr
@@ -277,16 +279,16 @@ function Controller({ plan, wind: wu, sky, charRef }: { plan: FogPlan; wind: Win
       if (S.card?.id === l.id && tg === 0 && next < 0.4) S.set({ card: null }); }
     if ((near?.id ?? null) !== (S.near?.id ?? null)) S.set({ near });
     // --- kamera: vadide birinci şahıs (rotaya kilitli, serbest bakış); kale tepesinde sabit geniş açı
-    const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(st.current.head)) st.current.head = hd; st.current.head += wrapA(hd - st.current.head) * (1 - Math.exp(-dt * 3));
+    
     const bob = Math.sin(st.current.bob) * 0.035 * Math.min(1, Math.abs(live.v) / 2);
     const grade = (routeAt(live.s + 2).p[1] - routeAt(live.s - 2).p[1]) / 4; st.current.grade += (Math.atan(grade) * 0.55 - st.current.grade) * (1 - Math.exp(-dt * 2));   // yokuşta bakış eğime uyar
-    _e.set(live.pitch + st.current.grade, st.current.head + live.yaw, 0); _q.setFromEuler(_e); _p.set(R.p[0], R.p[1] + EYE + bob, R.p[2]);
+    _e.set(live.pitch + st.current.grade, st.current.head + live.yaw, 0); _q.setFromEuler(_e); _p.set(P[0], P[1] + EYE + bob, P[2]);
     if (!S.started) { _p.set(riverX(34), waterY(34) + 5, 34); _q.setFromRotationMatrix(_m.lookAt(_p, _l.set(riverX(-50), waterY(-50) + 9, -50), THREE.Object3D.DEFAULT_UP)); }   // açılış: dere üstünden vadiye
     const sw = THREE.MathUtils.smoothstep(live.s, SUMMIT_S - 2, SUMMIT_S + 5);
     camera.position.copy(_p); camera.quaternion.copy(_q);
     const summit = sw > 0.5; if (summit !== st.current.summit) { st.current.summit = summit; S.set({ summit }); }
     // oyuncu karakteri yalnız tepede görünür (birinci şahısta kendi gövdemizi görmeyiz)
-    const r = live.rig; r.x = R.p[0]; r.y = R.p[1]; r.z = R.p[2]; r.speed = dt > 0 ? Math.abs(moved) / dt : 0; r.wind = w.speed;
+    const r = live.rig; r.x = P[0]; r.y = P[1]; r.z = P[2]; r.speed = dt > 0 ? Math.abs(moved) / dt : 0; r.wind = w.speed;
     if (Math.abs(moved) > 1e-4) { const yw = Math.atan2(R.dir[0] * Math.sign(moved), R.dir[1] * Math.sign(moved)); r.yaw += wrapA(yw - r.yaw) * (1 - Math.exp(-dt * 8)); }
     if (charRef.current) charRef.current.visible = false;   // birinci şahıs: kendi gövdemizi çizmeyiz
     // uzak dağlar yalnızca tepede açılır (sis içinden "parlamasınlar")
@@ -304,7 +306,7 @@ function Card({ l, onClose }: { l: Layer; onClose: () => void }) {
 }
 const THEME = { accent: '#3f8a5f' };
 const CONTROLS = [
-  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da WASD: bakılan yöne yürü (yolun çevresinde serbest)</> },
   { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
   { icon: <ChevronsRight size={16} />, text: <>izin yanında <b>E</b>: tarih katmanını aç · çift dokun ya da N: sıradaki ize git</> },
 ];

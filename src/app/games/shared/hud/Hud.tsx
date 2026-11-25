@@ -15,7 +15,7 @@
  */
 import { useSettings, urlQuality, type Quality } from './settings';
 import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { ArrowLeft, BatteryLow, BookOpen, ExternalLink, HelpCircle, Menu, RotateCcw, Settings, Volume2, VolumeX, X, Captions, CaptionsOff, Map as MapIcon, Play } from 'lucide-react';
+import { ArrowLeft, BatteryLow, BookOpen, ExternalLink, HelpCircle, Menu, RotateCcw, Settings, Volume2, VolumeX, X, Captions, CaptionsOff, Map as MapIcon, Play, MousePointer2 } from 'lucide-react';
 
 /* ---------- tema ---------- */
 export interface HudTheme { accent: string; accentInk?: string }
@@ -79,7 +79,7 @@ export function Objective({ label, done, total, icon }: { label: ReactNode; done
 /* ---------- menü (≡) ----------
  * Konya / Antalya oyunlarındaki duraklatma menüsü gibi: tek düğme, açılınca oyun durur; alt alta tam genişlikte seçenekler.
  * Ana görünüm: Devam et · Nasıl oynanır · Ayarlar · Baştan başla · Haritaya dön. Ayarlar ayrı sayfa: ses, sesli anlatım. */
-export function GameMenu({ help, onRestart, onExit, onPause, tts = true, look = true }: { help?: ReactNode; onRestart?: () => void; onExit: () => void; onPause?: (paused: boolean) => void; /** sesli anlatım ayarı gösterilsin mi */ tts?: boolean; /** bakış hassasiyeti ayarı gösterilsin mi */ look?: boolean }) {
+export function GameMenu({ help, onRestart, onExit, onPause, tts = true, look = true, extra }: { /** menüye eklenen oyuna özel satırlar (ör. bölüm seçimi); close menüyü kapatır */ extra?: (close: () => void) => ReactNode; help?: ReactNode; onRestart?: () => void; onExit: () => void; onPause?: (paused: boolean) => void; /** sesli anlatım ayarı gösterilsin mi */ tts?: boolean; /** bakış hassasiyeti ayarı gösterilsin mi */ look?: boolean }) {
   const [view, setView] = useState<null | 'main' | 'settings' | 'help'>(null);
   const open = (v: typeof view) => { if (v && document.pointerLockElement) document.exitPointerLock?.(); setView(v); onPause?.(v !== null); };   // menü açılınca imleç serbest kalır
   const t = useTheme(), st = useSettings();
@@ -91,6 +91,7 @@ export function GameMenu({ help, onRestart, onExit, onPause, tts = true, look = 
     {view === 'main' && <Modal title="Duraklatıldı" onClose={() => open(null)}>
       <div className="grid gap-2">
         <button onClick={() => open(null)} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl text-[15px] font-bold" style={{ background: t.accent, color: t.accentInk ?? '#fff' }}><Play size={16} /> Devam et</button>
+        {extra?.(() => open(null))}
         {help && <MenuRow icon={<HelpCircle size={18} />} label="Nasıl oynanır" onClick={() => setView('help')} />}
         <MenuRow icon={<Settings size={18} />} label="Ayarlar" onClick={() => setView('settings')} />
         {onRestart && <MenuRow icon={<RotateCcw size={18} />} label="Baştan başla" onClick={() => { open(null); onRestart(); }} />}
@@ -109,7 +110,7 @@ export function GameMenu({ help, onRestart, onExit, onPause, tts = true, look = 
           <Slider label="Ses seviyesi" value={st.volume} disabled={st.muted} onChange={(v) => st.set({ volume: v })} />
           {tts && <Toggle icon={st.tts ? <Captions size={18} /> : <CaptionsOff size={18} />} label="Sesli anlatım" on={st.tts} onClick={() => st.set({ tts: !st.tts })} />}
         </Section>
-        {look && <Section title="Kontrol"><Slider label="Bakış hassasiyeti" value={(st.sensitivity - 0.4) / 1.6} onChange={(v) => st.set({ sensitivity: 0.4 + v * 1.6 })} format={() => `${st.sensitivity.toFixed(1)}×`} /></Section>}
+        {look && <Section title="Kontrol"><Slider label="Bakış hassasiyeti" value={(st.sensitivity - 0.4) / 1.6} onChange={(v) => st.set({ sensitivity: 0.4 + v * 1.6 })} format={() => `${st.sensitivity.toFixed(1)}×`} /><Toggle icon={<MousePointer2 size={18} />} label="İmleç kilidi (fare: tıkla ve bak, Esc bırakır)" on={st.pointerLock} onClick={() => st.set({ pointerLock: !st.pointerLock })} /></Section>}
         <MenuRow icon={<ArrowLeft size={18} />} label="Geri" onClick={() => setView('main')} />
       </div>
     </Modal>}

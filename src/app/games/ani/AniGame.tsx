@@ -62,7 +62,7 @@ function Game({ onExit }: { onExit: () => void }) {
       {pending && !S.vf && <InteractPrompt icon={<Camera size={18} />} label={`Vizörü aç: ${S.near!.name}`} onClick={() => S.set({ vf: true })} />}
       {pending && S.vf && <Viewfinder name={S.near!.name} framed={S.framed} onShoot={shoot} />}
       {S.flash > 0 && <Flash key={S.flash} />}
-      {S.started && !pending && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · W/S yürü · tıkla, fareyle bak (Esc: bırak) · Boşluk: çek</span></Hint>}
+      {S.started && !pending && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sonraki durak<span className="hidden [@media(pointer:fine)]:inline"> · WASD: bakılan yöne yürü · fareyle sürükle: bak · Boşluk: çek</span></Hint>}
       {S.card && !S.albumOpen && <InfoCard kicker={`Fotoğraf ${S.album.indexOf(S.card.id) + 1} / ${SHOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} />}
       {!S.started && <TitleCard kicker="Kars · Arpaçay kıyısı · UNESCO Dünya Mirası" title="Ani: Bin Bir Kilise Kenti" note="Plan stilizedir; yapılar ve kanyonlar ölçekli değildir." cta="Surlardan gir" icon={<Camera size={18} />} onExit={onExit} controls={CONTROLS} onStart={() => { audio.unlock(); S.set({ started: true }); }}>
         <p>İki kanyonun arasındaki platoda kurulmuş Ortaçağ başkenti Ani’yi belgeleme ekibinin fotoğrafçısı olarak gez. Her yapının yanında vizör açılır: yapıyı ortala, deklanşöre bas, albümü doldur.</p></TitleCard>}
@@ -91,8 +91,8 @@ function Flash() { const [o, setO] = useState(0.85); useEffect(() => { const t =
 /* ---------- arayüz teması ve kontroller (ortak HUD) ---------- */
 const THEME = { accent: '#b5523b' };
 const CONTROLS = [
-  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da <b>W/S</b>: ileri / geri yürü</> },
-  { icon: <MousePointer2 size={16} />, text: <>Yatay sürükle ya da <b>tıkla, fareyle bak</b> (Esc imleci bırakır)</> },
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da <b>WASD</b>: bakılan yöne yürü (yolun çevresinde serbest)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Yatay sürükle ya da <b>fareyle sürükle</b>: bak</> },
   { icon: <Camera size={16} />, text: <><b>E</b>: vizörü aç · yapıyı ortaya al, deklanşöre bas (<b>E</b> / <b>Boşluk</b>)</> },
   { icon: <ChevronRight size={16} />, text: <>Sağdaki oklar ya da çift dokunuş: sonraki / önceki durak</> },
 ];
@@ -133,10 +133,9 @@ function Controller() {
       if (Math.abs(nav.to - live.s) < 0.01) { const sh = nearShot(live.s), R = routeAt(live.s), hd = Math.atan2(-R.dir[0], -R.dir[1]); cs.current.head = hd; nav.to = null;
         if (sh) { live.yaw = wrapA(Math.atan2(-(sh.target[0] - R.p[0]), -(sh.target[2] - R.p[2])) - hd); } } }   // varınca yapıya dön (dar dikey ekranda da kadrajda kalsın)
     if (nav.turn) { const k = Math.sign(nav.turn) * Math.min(Math.abs(nav.turn), dt * 4); live.yaw += k; nav.turn -= k; }
-    if (stepWalk(camera, live, cs.current, { ROUTE_LEN, routeAt }, dt, !S.card && !S.albumOpen && nav.to === null && !pause.on)) audio.step(650);
+    if (stepWalk(camera, live, cs.current, { ROUTE_LEN, routeAt }, dt, !S.card && !S.albumOpen && nav.to === null && !pause.on, 3.4, 1.65, 5)) audio.step(650);
     const n = nearShot(live.s);
-    if (n && S.vf && n.target[1] < -10) { const want = Math.max(-0.7, Math.atan2(n.target[1] - camera.position.y, Math.hypot(n.target[0] - camera.position.x, n.target[2] - camera.position.z)) + 0.05); live.pitch += (want - live.pitch) * (1 - Math.exp(-dt * 2)); }   // kanyon dibindeki hedef: dokunmatikte eğim olmadığı için kamera kendiliğinden aşağı bakar
-    else if (n === null && live.pitch < -0.2) live.pitch += (0 - live.pitch) * (1 - Math.exp(-dt * 2));
+    // bakış yukarı-aşağı tamamen oyuncunun: kamera hedefe kendiliğinden eğilmez
     camera.getWorldDirection(_f); const framed = !!n && aimError([camera.position.x, camera.position.z], [_f.x, _f.z], [n.target[0], n.target[2]]) < AIM_TOL;
     if ((n?.id ?? null) !== (S.near?.id ?? null) || framed !== S.framed) S.set({ near: n, framed, ...(n ? {} : { card: null }), ...((n?.id ?? null) !== (S.near?.id ?? null) ? { vf: false } : {}) });
   });

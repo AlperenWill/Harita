@@ -10,6 +10,7 @@
  * DOKUNMATİK: tek parmak sürükleme = yürü (dikey) + bak (yatay); çift dokunuş = henüz görülmemiş sıradaki pencereye git.
  * Öteki oyunlarla tutarlılık: ?q=low|medium|high, ?debug (__efes), pil tasarrufu, tr-TR sesli okuma, WebGL yoksa Vikipedi fotoğraflı yedek.
  */
+import { freePos, walkFree } from '../shared/route';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -66,7 +67,7 @@ interface S { started: boolean; seen: string[]; card: Window | null; near: Windo
 const INITIAL = { started: false, seen: [] as string[], card: null, near: null, endShown: false };
 const useDb = create<S>((set) => ({ ...INITIAL, muted: false, tts: true, set: (p) => set(p) }));
 const pause = { on: false };   // ≡ menü açıkken oyun durur
-const live = { s: 0, v: 0, input: 0, yaw: 0, pitch: -0.04, goal: null as number | null, morph: {} as Record<string, number>, open: new Set<string>() };
+const live = { s: 0, v: 0, input: 0, o: 0, strafe: 0, yaw: 0, pitch: -0.04, goal: null as number | null, morph: {} as Record<string, number>, open: new Set<string>() };
 const U: U = Object.fromEntries([...WINDOWS.map((w) => w.id), 'all'].map((k) => [k, { value: 0 }]));
 
 export default function EfesGame({ onExit }: { onExit: () => void }) {
@@ -96,7 +97,7 @@ function Game({ onExit }: { onExit: () => void }) {
     addEventListener('keydown', down); addEventListener('keyup', up);
     let raf = 0, last = performance.now();
     const loop = (now: number) => { const dt = Math.min(0.05, (now - last) / 1000); last = now; const k = keys.current;
-      const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb;
+      const kb = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0); if (!drag.current || drag.current.mouse) live.input = kb; live.strafe = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
       void dt; raf = requestAnimationFrame(loop); };   // kamera klavyeyle çevrilmez: fareyle (imleç kilidi) ya da sürüklemeyle bakılır
     raf = requestAnimationFrame(loop);
     return () => { removeEventListener('keydown', down); removeEventListener('keyup', up); cancelAnimationFrame(raf); };
@@ -104,7 +105,7 @@ function Game({ onExit }: { onExit: () => void }) {
   useEffect(() => { if (location.search.includes('debug')) (window as unknown as { __efes: unknown }).__efes = { go: (s: number) => { live.s = s; live.goal = null; useDb.getState().set({ started: true }); }, look: (y: number, p = 0) => { live.yaw = y; live.pitch = p; }, state: () => ({ ...useDb.getState(), s: live.s, morph: { ...live.morph } }), WINDOWS, ROUTE_LEN }; }, []);
 
   const onDown = (e: React.PointerEvent) => { audio.unlock(); look.lock(e); if (!useDb.getState().started) return; const now = performance.now(); if (now - lastTap.current < 300) goNext(); lastTap.current = now; drag.current = { id: e.pointerId, x: e.clientX, y0: e.clientY, y: e.clientY, mouse: e.pointerType === 'mouse' }; };
-  const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; const dx = e.clientX - d.x, dy = e.clientY - d.y; d.x = e.clientX; d.y = e.clientY; live.yaw += dx * 0.005;
+  const onMove = (e: React.PointerEvent) => { const d = drag.current; if (!d || d.id !== e.pointerId) return; const dx = e.clientX - d.x, dy = e.clientY - d.y; d.x = e.clientX; d.y = e.clientY; if (d.mouse) return;   /* fare: ortak sürükleyerek bakış (mouseLook) */ live.yaw += dx * 0.005;
     if (d.mouse) live.pitch = THREE.MathUtils.clamp(live.pitch + dy * 0.004, -1, 0.9); else { live.input = THREE.MathUtils.clamp(-(e.clientY - d.y0) / 70, -1, 1); if (Math.abs(live.input) > 0.1) live.goal = null; } };
   const onUp = (e: React.PointerEvent) => { if (drag.current?.id === e.pointerId) { if (!drag.current.mouse) live.input = 0; drag.current = null; } };
   const start = () => { audio.unlock(); S.set({ started: true }); };
@@ -122,7 +123,7 @@ function Game({ onExit }: { onExit: () => void }) {
       </Canvas>
 
       <TopRow onExit={onExit} objective={S.started ? <Objective icon={<Hourglass size={15} />} label={nextW ? `Sıradaki: ${nextW.name}` : 'Bütün pencereler açıldı'} done={S.seen.length} total={WINDOWS.length} /> : undefined} right={<GameMenu onPause={(v) => { pause.on = v; }} help={<Controls items={CONTROLS} />} onExit={onExit} />} />
-      {S.started && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki pencere<span className="hidden [@media(pointer:fine)]:inline"> · W/S · tıkla, fareyle bak (Esc: bırak) · N</span></Hint>}
+      {S.started && !S.card && <Hint>Dikey sürükle: yürü · yatay: bak · çift dokun: sıradaki pencere<span className="hidden [@media(pointer:fine)]:inline"> · WASD · fareyle sürükle: bak · N</span></Hint>}
       {S.started && S.near && !S.card && <InteractPrompt icon={<Hourglass size={18} />} label={live.open.has(S.near.id) ? `Bilgi: ${S.near.name}` : `Zaman penceresi: ${S.near.name}`} onClick={openWin} muted={S.seen.includes(S.near.id)} />}
       {S.card && <Card w={S.card} onClose={close} />}
       {!S.started && <TitleCard onExit={onExit} onStart={start} />}
@@ -159,17 +160,15 @@ function World({ tier, saver }: { tier: Tier; saver: boolean }) {
 }
 
 const _e = new THREE.Euler(0, 0, 0, 'YXZ'), _q = new THREE.Quaternion(), _m = new THREE.Matrix4(), _l = new THREE.Vector3();
-const wrapA = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 function Controller({ saver }: { saver: boolean }) {
   const { camera } = useThree();
   const st = useRef({ step: 0, bob: 0, grade: 0, head: NaN });
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05), S = useDb.getState();
-    const back = Math.cos(live.yaw) < 0 ? -1 : 1;
-    let want = S.started && !pause.on ? live.input * WALK * back : 0;
-    if (live.goal !== null) { const d = live.goal - live.s; if (Math.abs(d) < 0.3) live.goal = null; else want = Math.sign(d) * Math.min(WALK * 1.4, Math.abs(d) * 1.5 + 0.8); }
-    live.v += (want - live.v) * (1 - Math.exp(-dt * 5));
-    const before = live.s; live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + live.v * dt)); const moved = live.s - before, R = routeAt(live.s);
+    const s0 = live.s, o0 = live.o; if (Math.hypot(live.input, live.strafe) > 0.1) live.goal = null;
+    if (live.goal !== null) { const d = live.goal - live.s; if (Math.abs(d) < 0.3) live.goal = null; else { live.s = Math.max(0, Math.min(ROUTE_LEN, live.s + Math.sign(d) * Math.min(WALK * 1.4, Math.abs(d) * 1.5 + 0.8) * dt)); live.o *= Math.exp(-dt * 2); } }
+    walkFree(live, st.current, routeAt, ROUTE_LEN, dt, WALK, 2.5, S.started && !pause.on && live.goal === null);
+    const moved = Math.hypot(live.s - s0, live.o - o0), P = freePos(routeAt, live.s, live.o);
     st.current.step += Math.abs(moved); if (st.current.step > 0.8) { st.current.step = 0; audio.step(); } st.current.bob += Math.abs(moved) * 2.2;
     // zaman pencereleri
     let all = 0;
@@ -181,11 +180,11 @@ function Controller({ saver }: { saver: boolean }) {
     if ((near?.id ?? null) !== (S.near?.id ?? null)) S.set({ near });
     U.all.value = all;
     // kamera
-    const hd = Math.atan2(-R.dir[0], -R.dir[1]); if (Number.isNaN(st.current.head)) st.current.head = hd; st.current.head += wrapA(hd - st.current.head) * (1 - Math.exp(-dt * 3));
+    
     const grade = (routeAt(live.s + 2).p[1] - routeAt(live.s - 2).p[1]) / 4; st.current.grade += (Math.atan(grade) * 0.55 - st.current.grade) * (1 - Math.exp(-dt * 2));
     if (!S.started) { camera.position.set(118, 24, 26); camera.quaternion.copy(_q.setFromRotationMatrix(_m.lookAt(camera.position, _l.set(20, 2, -30), THREE.Object3D.DEFAULT_UP))); return; }
     _e.set(live.pitch + st.current.grade, st.current.head + live.yaw, 0); camera.quaternion.setFromEuler(_e);
-    camera.position.set(R.p[0], R.p[1] + EYE + Math.sin(st.current.bob) * 0.035 * Math.min(1, Math.abs(live.v) / 2), R.p[2]);
+    camera.position.set(P[0], P[1] + EYE + Math.sin(st.current.bob) * 0.035 * Math.min(1, Math.abs(live.v) / 2), P[2]);
   });
   return null;
 }
@@ -196,7 +195,7 @@ function Card({ w, onClose }: { w: Window; onClose: () => void }) {
 }
 const THEME = { accent: '#b98a3e' };
 const CONTROLS = [
-  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da W/S: ileri/geri</> },
+  { icon: <Footprints size={16} />, text: <>Dikey sürükle ya da WASD: bakılan yöne yürü (yolun çevresinde serbest)</> },
   { icon: <MousePointer2 size={16} />, text: <>yatay sürükle ya da fare: etrafa bak</> },
   { icon: <Hourglass size={16} />, text: <>noktada <b>E</b> / Zaman penceresi: yapıyı Roma dönemine döndür</> },
   { icon: <ChevronsRight size={16} />, text: <>çift dokun ya da N: sıradaki pencereye git</> },

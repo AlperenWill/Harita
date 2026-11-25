@@ -4,6 +4,7 @@
  * Oyuncu iskeleden adaya çıkar, kayalık yollarda dolaşır, Bizans katolikonuna girer ve altındaki Helenistik temel taşlarını görür.
  * 5 ayrıntı: ada adı, Amazon efsanesi, katolikon, tapınak temelleri, Argonotlar. Yaklaşınca "İncele: … E" istemi çıkar. Kroki (M).
  */
+import { SceneFog } from '../shared/SceneFog';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -111,7 +112,7 @@ export default function GiresunGame({ onExit }: { onExit: () => void }) {
           <Toast text={S.toast} tone="info" />
           {!S.card && S.nearBoard && <InteractPrompt icon={<Sailboat size={18} />} label={S.boat ? 'Kayıktan in' : 'Kayığa bin'} onClick={toggleBoat} />}
           {!S.card && !S.nearBoard && !S.boat && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · iskelenin ucunda kayığa bin, şamandıraları sırayla geçerek adayı dolaş<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · iskelenin ucunda kayığa bin, şamandıraları sırayla geçerek adayı dolaş<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id === 'tur' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Giresun · Giresun Adası · Antik ve Bizans" title="Ares'in Adası"
@@ -128,7 +129,7 @@ export default function GiresunGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <Sailboat size={16} />, text: <>İskelenin ucunda <b>E</b>: kayığa bin ya da in; kayıkta joystick ya da WASD ile kürek çek, baktığın yöne gidersin</> },
 ];
@@ -142,7 +143,7 @@ function World({ tier }: { tier: Tier }) {
   return (
     <group ref={g}>
       <group userData={{ noCast: true }}><Sky sunPosition={[sky.x, sky.y, sky.z]} turbidity={3.2} rayleigh={1.3} mieCoefficient={0.005} mieDirectionalG={0.85} /></group>
-      <fog attach="fog" args={['#cfe3ea', 260, 2400]} />
+      <SceneFog args={['#cfe3ea', 260, 2400]} />
       <hemisphereLight args={['#e6eef4', '#8a8266', 0.45]} />
       <Sun tier={tier} dir={SUN_DIR} intensity={5.4} color="#fff0d8" />
       {!low && <Clouds />}

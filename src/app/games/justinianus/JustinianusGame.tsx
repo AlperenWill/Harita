@@ -112,7 +112,7 @@ export default function JustinianusGame({ onExit }: { onExit: () => void }) {
           <Toast text={S.toast} tone={S.toastTone} />
           {!S.card && S.nearGauge && S.phase !== 'run' && <InteractPrompt icon={<Waves size={18} />} label={S.survived ? 'Taşkını yeniden başlat' : 'Taşkını başlat'} onClick={startFlood} muted={S.survived} />}
           {!S.card && !(S.nearGauge && S.phase !== 'run') && S.near && <InteractPrompt icon={<Search size={18} />} label={`İncele: ${S.near.name}`} onClick={() => inspect(S.near!)} muted={S.seen.includes(S.near.id)} />}
-          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · ovadaki taşkın ölçeğinden taşkını başlat, köprüye çık<span className="hidden [@media(pointer:fine)]:inline"> · tıkla, fareyle bak · M: kroki</span></Hint>}
+          {!S.card && <Hint>Joystick ya da WASD ile yürü · E ile incele · ovadaki taşkın ölçeğinden taşkını başlat, köprüye çık<span className="hidden [@media(pointer:fine)]:inline"> · fareyle sürükle: bak · M: kroki</span></Hint>}
         </>)}
         {S.card && <InfoSheet kicker={S.card.id === 'taskin' ? S.card.kicker : `${S.card.kicker} · ${S.seen.length}/${SPOTS.length}`} title={S.card.name} text={S.card.text} source={S.card.source} onClose={close} onListen={() => speakAgain(S.card!)} />}
         {!S.started && <StartSheet kicker="Sakarya · Beşköprü · MS 562" title="Taş Kemerler"
@@ -129,7 +129,7 @@ export default function JustinianusGame({ onExit }: { onExit: () => void }) {
 function speakAgain(s: Card) { audio.hush(); audio.speak(`${s.name}. ${s.text}`); }
 const CONTROLS = [
   { icon: <Footprints size={16} />, text: <>Joystick ya da <b>WASD</b> ile yürü (A/D yana adım, Shift: hızlı)</> },
-  { icon: <MousePointer2 size={16} />, text: <>Ekranı sürükle ya da tıkla, fareyle bak (Esc bırakır)</> },
+  { icon: <MousePointer2 size={16} />, text: <>Ekranı ya da fareyle basılı tutup sürükle: bak</> },
   { icon: <Search size={16} />, text: <>Parıltılı ayrıntıya yaklaş: <b>E</b> ya da düğme ile incele · <b>M</b>: kroki</> },
   { icon: <Waves size={16} />, text: <>Taşkın ölçeğinde <b>E</b>: taşkını başlat. Su belini geçerse sel seni sürükler; köprünün tabliyesine ya da rampanın yüksek kısmına çık</> },
 ];
